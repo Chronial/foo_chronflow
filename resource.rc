@@ -1,0 +1,136 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// Deutsch (Deutschland) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_DEU)
+#ifdef _WIN32
+LANGUAGE LANG_GERMAN, SUBLANG_GERMAN
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_CONFIG DIALOGEX 0, 0, 336, 286
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_SYSMENU
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    GROUPBOX        "Image Source",IDC_STATIC,7,7,324,111
+    LTEXT           "Enter one source per line. Priority is top first.",IDC_STATIC,11,51,145,8
+    EDITTEXT        IDC_SOURCES,11,61,290,51,ES_MULTILINE | ES_AUTOHSCROLL | WS_VSCROLL
+    LTEXT           "Sort (If this returns ""!hide"", the media file is ignored)",IDC_STATIC,11,21,169,8
+    EDITTEXT        IDC_FILTER,11,32,292,14,ES_AUTOHSCROLL
+    GROUPBOX        "Render Settings",IDC_STATIC,7,123,324,156
+    GROUPBOX        "Camera (no titleformat, static numbers)",IDC_STATIC,11,134,315,33
+    LTEXT           "Position:",IDC_STATIC,16,150,28,8
+    LTEXT           "Point at:",IDC_STATIC,173,150,27,8
+    LTEXT           "X:",IDC_STATIC,49,150,8,8
+    EDITTEXT        IDC_CAM_POS_X,56,147,25,14,ES_RIGHT | ES_AUTOHSCROLL,WS_EX_RIGHT
+    LTEXT           "Y:",IDC_STATIC,88,150,8,8
+    EDITTEXT        IDC_CAM_POS_Y,95,147,25,14,ES_RIGHT | ES_AUTOHSCROLL,WS_EX_RIGHT
+    LTEXT           "Z:",IDC_STATIC,127,150,8,8
+    EDITTEXT        IDC_CAM_POS_Z,134,147,25,14,ES_RIGHT | ES_AUTOHSCROLL,WS_EX_RIGHT
+    LTEXT           "X:",IDC_STATIC,208,150,8,8
+    EDITTEXT        IDC_CAM_TAR_X,215,147,25,14,ES_RIGHT | ES_AUTOHSCROLL,WS_EX_RIGHT
+    LTEXT           "Y:",IDC_STATIC,247,150,8,8
+    EDITTEXT        IDC_CAM_TAR_Y,254,147,25,14,ES_RIGHT | ES_AUTOHSCROLL,WS_EX_RIGHT
+    LTEXT           "Z:",IDC_STATIC,286,150,8,8
+    EDITTEXT        IDC_CAM_TAR_Z,293,147,25,14,ES_RIGHT | ES_AUTOHSCROLL,WS_EX_RIGHT
+    GROUPBOX        "Covers ($cpos() is the position of the cover)",IDC_STATIC,11,172,315,103
+    GROUPBOX        "Position",IDC_STATIC,16,182,305,59
+    LTEXT           "X:",IDC_STATIC,22,194,8,8
+    EDITTEXT        IDC_COVER_POS_X,33,191,284,14,ES_AUTOHSCROLL
+    LTEXT           "Y:",IDC_STATIC,22,209,8,8
+    EDITTEXT        IDC_COVER_POS_Y,33,206,284,14,ES_AUTOHSCROLL
+    LTEXT           "Z:",IDC_STATIC,22,225,8,8
+    EDITTEXT        IDC_COVER_POS_Z,33,222,284,14,ES_AUTOHSCROLL
+    GROUPBOX        "Rotation",IDC_STATIC,16,241,305,28
+    EDITTEXT        IDC_COVER_ROT_Z,33,250,284,14,ES_AUTOHSCROLL
+    LTEXT           "Z:",IDC_STATIC,22,253,8,8
+    PUSHBUTTON      "R\ne\nf\nr\ne\ns\nh",IDC_BTN_REFRESH,308,31,18,81,BS_CENTER | BS_MULTILINE
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_CONFIG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 331
+        VERTGUIDE, 11
+        VERTGUIDE, 16
+        VERTGUIDE, 22
+        VERTGUIDE, 33
+        VERTGUIDE, 317
+        VERTGUIDE, 321
+        VERTGUIDE, 326
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 279
+        HORZGUIDE, 154
+        HORZGUIDE, 198
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+#endif    // Deutsch (Deutschland) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

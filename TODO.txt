@@ -1,0 +1,31 @@
+Alben nicht nach vorne holen, wenn nur an ihnen vorbeigescannt wird
+? Multisampling deaktivieren, wenn supersampling aktiv ist!!
+Supersampling nur auf den oberen Teil anwenden
+Supersamling nicht auf den Text
+Nur cover rendern, die auch wirklich auf dem Bildschirm sind. (aber sicherstellen, dass wir nicht mehr als texBuffersize covers gleichzeitig anzeigen)
+Coverposition per titleformat: einstellbare Intervalle vorausberechnen, dazwischen interpolieren
+Covername anzeigen
+Blending und Alphatest nur bei texturen mit alpha
+Cover image overlay (so we can overlay "shine" effects or something like that)
+MouseFlicker: - Bildschirmauflösung beachten bei win2pos (bewegung relativ zur Bildschirmbreite)
+zooming
+motion blur
+anti aliasing
+3d models
+Nach bewegungsende max. 7 Bilder hochladen, und noch einen frame rendern, wenn noch mehr in der Queue sind
+Cover nach vorne holen
+Fullscreen support
+
+DbAlbumCollection - Handle illegal chars in titleformat strings (see titleformat_helper in uie_albumart)
+No Cover Image
+
+Config:
+	- Display String formatting
+
+== Low Prio ==
+Texturkompression anschauen (geht das schneller, ausschaltbar machen?)
+
+Transparente png covers (von hinten nach vorne rendern! -> alpha test aus)
+                        -- border clamp ändern (1-pixel ramen am Rand)
+                        -- ausschaltbar (spart texturspeicher)
+						-- Transparenz-support entfernen?
