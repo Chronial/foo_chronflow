@@ -32,8 +32,6 @@
 #include "CollectionPos.h"
 #include "Helpers.h"
 #include "ImgTexture.h"
-#include "ImgFileTexture.h"
-#include "TextTexture.h"
 #include "AlbumCollection.h"
 #include "AsynchTexLoader.h"
 #include "DisplayPosition.h"
@@ -44,8 +42,8 @@
 #include "Console.h"
 #endif
 
-#include "DirAlbumCollection.h"
-#include "BrowseAlbumCollection.h"
+#include "MyActions.h"
+
 #include "DbAlbumCollection.h"
 
 
@@ -55,3 +53,6 @@
 // global Variables
 extern AsynchTexLoader* gTexLoader;
 extern AlbumCollection* gCollection;
+
+
+HWND gGetMainWindow();

@@ -178,10 +178,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\BrowseAlbumCollection.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\CollectionPos.cpp"
 				>
 			</File>
@@ -198,19 +194,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\DirAlbumCollection.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\DisplayPosition.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\Helpers.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\ImgFileTexture.cpp"
 				>
 			</File>
 			<File
@@ -223,6 +211,10 @@
 			</File>
 			<File
 				RelativePath=".\MouseFlicker.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\MyActions.cpp"
 				>
 			</File>
 			<File
@@ -248,10 +240,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\BrowseAlbumCollection.h"
-				>
-			</File>
-			<File
 				RelativePath=".\chronflow.h"
 				>
 			</File>
@@ -272,10 +260,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\DirAlbumCollection.h"
-				>
-			</File>
-			<File
 				RelativePath=".\DisplayPosition.h"
 				>
 			</File>
@@ -284,15 +268,15 @@
 				>
 			</File>
 			<File
-				RelativePath=".\ImgFileTexture.h"
-				>
-			</File>
-			<File
 				RelativePath=".\ImgTexture.h"
 				>
 			</File>
 			<File
 				RelativePath=".\MouseFlicker.h"
+				>
+			</File>
+			<File
+				RelativePath=".\MyActions.h"
 				>
 			</File>
 			<File

@@ -1,4 +1,5 @@
 #pragma once
+/*
 #include "imgtexture.h"
 
 class TextTexture :
@@ -10,3 +11,4 @@ public:
 	~TextTexture(void);
 	void generateBitmap(wchar_t* text);
 };
+*/

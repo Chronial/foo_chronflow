@@ -6,12 +6,15 @@ using namespace Gdiplus;
 bool ImgTexture::forcePowerOfTwo = false;
 int  ImgTexture::maxGlTextureSize = 128;
 
-ImgTexture::ImgTexture()
+ImgTexture::ImgTexture(const char * imageFile)
 {
 	status = STATUS_NONE;
 	bitmap = 0;
 	bitmapData = 0;
 	glTexture = 0;
+
+	this->imageFile = imageFile;
+	loadImage();
 }
 
 ImgTexture::~ImgTexture(void)
@@ -21,8 +24,12 @@ ImgTexture::~ImgTexture(void)
 	if (bitmapData)
 		delete bitmapData;
 	if (glTexture){
-		MessageBoxW(NULL,L"Destructed ImgTexture with existing glTexture\nMemory Leak!",L"Internal Error",MB_OK |MB_ICONINFORMATION);
+		MessageBoxW(NULL,L"Destructed ImgTexture with existing glTexture\nMemory Leak!",L"Chronflow Error",MB_OK |MB_ICONINFORMATION);
 	}
+}
+
+const char* ImgTexture::getIdentifier(){
+	return imageFile;
 }
 
 void ImgTexture::glBind(void)
@@ -117,8 +124,21 @@ void ImgTexture::setMaxGlTextureSize(int size)
 
 
 int ImgTexture::getMaxSize(){
-	return maxGlTextureSize;
+	return min(512, maxGlTextureSize);
 }
+
+void ImgTexture::loadImage()
+{
+	bitmap = new Bitmap(pfc::stringcvt::string_wide_from_utf8(imageFile));
+	if ((bitmap->GetLastStatus() != Ok) ||
+		(1 > (bitmap->GetWidth())) ||
+		(1 > (bitmap->GetHeight()))){
+		delete bitmap;
+		bitmap = getErrorBitmap();
+	}
+	prepareUpload();
+}
+
 
 void ImgTexture::prepareUpload(void)
 {

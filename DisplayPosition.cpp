@@ -96,3 +96,13 @@ float DisplayPosition::getCenteredOffset(void)
 {
 	return centeredOffset;
 }
+
+void DisplayPosition::hardSetCenteredPos(CollectionPos pos)
+{
+	centeredPos = pos;
+}
+
+void DisplayPosition::hardSetTarget(CollectionPos pos)
+{
+	targetPos = pos;
+}

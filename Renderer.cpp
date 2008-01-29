@@ -17,6 +17,10 @@ Renderer::~Renderer(void)
 {
 }
 
+void Renderer::setRenderingContext(){
+	wglMakeCurrent(hDC,hRC);
+}
+
 bool Renderer::setupGlWindow(HWND hWnd)
 {
 	{ // Window Creation
@@ -207,7 +211,7 @@ void Renderer::setProjectionMatrix(bool pickMatrix, int x, int y){
 }
 
 
-bool Renderer::positionOnPoint(int x, int y, CollectionPos* out) 
+bool Renderer::positionOnPoint(int x, int y, CollectionPos& out) 
 {
 	GLuint buf[256];
 	glSelectBuffer(256, buf);
@@ -230,7 +234,7 @@ bool Renderer::positionOnPoint(int x, int y, CollectionPos* out)
 		p += names;
 	}
 	if (minZ != INFINITE){
-		*out = displayPosition->getCenteredPos() + (selectedName - SELECTION_CENTER);
+		out = displayPosition->getCenteredPos() + (selectedName - SELECTION_CENTER);
 		return true;
 	} else {
 		return false;

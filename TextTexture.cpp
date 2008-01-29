@@ -1,5 +1,5 @@
 #include "chronflow.h"
-
+/*
 using namespace Gdiplus;
 
 TextTexture::TextTexture(wchar_t* text)
@@ -46,3 +46,4 @@ void TextTexture::generateBitmap(wchar_t* text)
 	drawer.DrawString(text, -1, &myFont, stringSize, &strFormat, &whiteBrush);
 	prepareUpload();
 }
+*/

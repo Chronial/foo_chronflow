@@ -12,6 +12,8 @@ DECLARE_COMPONENT_VERSION( "Coverflow pannel", VERSION,
 AsynchTexLoader* gTexLoader = 0;
 AlbumCollection* gCollection = 0;
 
+extern cfg_int sessionSelectedCover;
+
 class Chronflow : public ui_extension::window {
 private:
 	ui_extension::window_host_ptr currentHost;
@@ -36,7 +38,7 @@ public:
 	};
 
 	unsigned get_type() const {
-		return ui_extension::window_type_t::type_panel;
+		return ui_extension::type_panel;
 	};
 
 	bool is_available(const ui_extension::window_host_ptr & p_host) const {
@@ -77,7 +79,7 @@ public:
 private:
 	bool isShown;
 	bool setupDone;
-	bool disabled;
+	//bool disabled;
 	Renderer* renderer;
 	DisplayPosition* displayPos;
 	MouseFlicker* mouseFlicker;
@@ -91,15 +93,9 @@ public:
 		currentHost = 0;
 		setupDone = false;
 		isShown = false;
+		renderer = 0;
 	}
 	void init(){
-	}
-	void quit(){
-	}
-	void show(HWND parent){
-		Gdiplus::GdiplusStartupInput gdiplusStartupInput;
-		Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
-
 		if (!Helpers::isPerformanceCounterSupported()){
 			TIMECAPS tc;
 			UINT     wTimerRes;
@@ -108,19 +104,24 @@ public:
 				timeBeginPeriod(wTimerRes); 
 			}
 		}
-		
+	}
+	void quit(){
+		if (multimediaTimerRes != 0)
+			timeEndPeriod(multimediaTimerRes);
+	}
+	void show(HWND parent){
+		Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+		Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+
 #ifdef _DEBUG
 		Console::create();
 #endif
-		//gCollection = new DirAlbumCollection();
-		//gCollection = new BrowseAlbumCollection();
-		disabled = false;
-		gCollection = new DbAlbumCollection();
-		if (gCollection->getCount() == 0)
-			disabled = true;
-		gTexLoader = new AsynchTexLoader(gCollection);
 		createWindow(parent);
-		displayPos = new DisplayPosition(gCollection, CollectionPos(gCollection,0), hWnd);
+		gCollection = new DbAlbumCollection();
+		//if (gCollection->getCount() == 0)
+		//	disabled = true;
+		gTexLoader = new AsynchTexLoader(gCollection);
+		displayPos = new DisplayPosition(gCollection, CollectionPos(gCollection,sessionSelectedCover), hWnd);
 		renderer = new Renderer(displayPos);
 		mouseFlicker = new MouseFlicker(displayPos);
 
@@ -128,28 +129,35 @@ public:
 			return;
 		gTexLoader->setNotifyWindow(hWnd);
 		setupDone = true;
+		gCollection->reloadAsynchStart(hWnd, true);
 	}
 	void hide(){
+		sessionSelectedCover = displayPos->getCenteredPos().toIndex();
 		setupDone = false;
 		delete mouseFlicker;
-		renderer->destroyGlWindow();
+		if (hWnd)
+			DestroyWindow(hWnd);
+		UnregisterClass(L"Chronflow",core_api::get_my_instance());
 		delete renderer;
+		renderer = 0;
 		delete displayPos;
-		destroyWindow();
 		delete gTexLoader;
 		delete gCollection;
 
-		if (multimediaTimerRes != 0)
-			timeEndPeriod(multimediaTimerRes);
-
 		Gdiplus::GdiplusShutdown(gdiplusToken);
+	}
+	HWND getHWnd(){
+		return hWnd;
 	}
 private:
 	LRESULT MessageHandler (HWND	hWnd,			// Handle For This Window
 							UINT	uMsg,			// Message For This Window
 							WPARAM	wParam,			// Additional Message Information
 							LPARAM	lParam){
-		if (disabled && uMsg != WM_CLOSE &&
+		if(renderer)
+			renderer->setRenderingContext();
+
+		/*if (disabled && uMsg != WM_CLOSE &&
 						uMsg != WM_SIZE &&
 						uMsg != WM_CREATE &&
 						uMsg != WM_DEVMODECHANGE){
@@ -161,10 +169,17 @@ private:
 			} else {
 				return DefWindowProc(hWnd,uMsg,wParam,lParam);
 			}
-		}
+		}*/
 		switch (uMsg){
-			case WM_CLOSE:
-				PostQuitMessage(0);
+			case WM_COLLECTION_REFRESHED:
+				gCollection->reloadAsynchFinish(lParam, displayPos);
+				return 0;
+			case WM_DESTROY:
+				if (renderer)
+					renderer->destroyGlWindow();
+				return 0;
+			case WM_NCDESTROY:
+				this->hWnd = 0;
 				return 0;
 			case WM_SIZE:
 				if (setupDone)
@@ -192,12 +207,23 @@ private:
 				displayPos->setTarget(displayPos->getTarget() + m);
 				return 0;
 			}
-			case WM_LBUTTONDOWN:
-			case WM_LBUTTONDBLCLK:
+			case WM_MBUTTONDOWN:
 			{
 				CollectionPos newTarget = displayPos->getCenteredPos();
-				if (renderer->positionOnPoint(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam),&newTarget)){
+				if (renderer->positionOnPoint(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), newTarget)){
 					displayPos->setTarget(newTarget);
+					executeAction(cfgMiddleClick, newTarget);
+				}
+				return 0;
+			}
+			case WM_LBUTTONDBLCLK:
+			case WM_LBUTTONDOWN:
+			{
+				CollectionPos newTarget = displayPos->getCenteredPos();
+				if (renderer->positionOnPoint(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), newTarget)){
+					displayPos->setTarget(newTarget);
+					if (uMsg == WM_LBUTTONDBLCLK)
+						executeAction(cfgDoubleClick, newTarget);
 				} else {
 					mouseFlicker->mouseDown(hWnd, GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
 				}
@@ -214,21 +240,41 @@ private:
 				return 0;
 			case WM_KEYDOWN:
 			{
-				int move = 0;
-				if (wParam == VK_RIGHT){
-					move = +1;
-				} else if (wParam == VK_LEFT){
-					move = -1;
-				} else if (wParam == VK_NEXT){
-					move = +10;
-				} else if (wParam == VK_PRIOR){
-					move = -10;
+				if (wParam == VK_RETURN){
+					executeAction(cfgEnterKey, displayPos->getTarget());
+					return 0;
+				} else if (wParam == VK_F5){
+					bool hardRefresh = (GetKeyState(VK_SHIFT) != 0);
+					gCollection->reloadAsynchStart(hWnd, hardRefresh);
+					return 0;
+				} else if (wParam == VK_F6){
+					static_api_ptr_t<playback_control_v2> pc;
+					metadb_handle_ptr nowPlaying;
+					if (pc->get_now_playing(nowPlaying)){
+						CollectionPos target = displayPos->getTarget();
+						if (gCollection->getAlbumForTrack(nowPlaying, target)){
+							displayPos->setTarget(target);
+						}
+					}
+					return 0;
+				} else {
+					int move = 0;
+					if (wParam == VK_RIGHT){
+						move = +1;
+					} else if (wParam == VK_LEFT){
+						move = -1;
+					} else if (wParam == VK_NEXT){
+						move = +10;
+					} else if (wParam == VK_PRIOR){
+						move = -10;
+					}
+					if (move){
+						move *= LOWORD(lParam);
+						displayPos->setTarget(displayPos->getTarget() + move);
+						return 0;
+					}
 				}
-				if (move){
-					move *= LOWORD(lParam);
-					displayPos->setTarget(displayPos->getTarget() + move);
-				}
-				return 0;
+				break;;
 			}
 			case WM_PAINT:
 			{
@@ -264,16 +310,18 @@ private:
 
 		return chronflow->MessageHandler(hWnd, uMsg, wParam, lParam);
 	}
-	void destroyWindow(){
-		if (hWnd && !DestroyWindow(hWnd))					// Are We Able To Destroy The Window?
-		{
-			MessageBox(NULL,L"Could Not Release hWnd.",L"SHUTDOWN ERROR",MB_OK | MB_ICONINFORMATION);
-			hWnd=NULL;										// Set hWnd To NULL
+	void executeAction(const char * action, CollectionPos forCover){
+		metadb_handle_list tracks = gCollection->getTracks(forCover);
+		const char * albumTitle = gCollection->getTitle(forCover);
+		for (int i=0; i < tabsize(g_customActions); i++){
+			if (stricmp_utf8(action, g_customActions[i]->actionName) == 0){
+				g_customActions[i]->run(tracks, albumTitle);
+				return;
+			}
 		}
-
-		if (!UnregisterClass(L"Chronflow",core_api::get_my_instance()))			// Are We Able To Unregister Class
-		{
-			MessageBox(NULL,L"Could Not Unregister Class.",L"SHUTDOWN ERROR",MB_OK | MB_ICONINFORMATION);
+		GUID commandGuid;
+		if (menu_helpers::find_command_by_name(action, commandGuid)){
+			menu_helpers::run_command_context(commandGuid, pfc::guid_null, tracks);
 		}
 	}
 	bool createWindow(HWND parent){
@@ -315,12 +363,11 @@ private:
 									WS_CLIPCHILDREN,					// Required Window Style
 									CW_USEDEFAULT, CW_USEDEFAULT,		// Window Position
 									CW_USEDEFAULT, CW_USEDEFAULT,		// Window Dimensions
-									/**NULL*/ parent,								// No Parent Window
+									parent,								// No Parent Window
 									NULL,								// No Menu
-									/**hInstance*/ core_api::get_my_instance(),							// Instance
+									core_api::get_my_instance(),							// Instance
 									(void*)this)))								// Dont Pass Anything To WM_CREATE
 		{
-			destroyWindow();								// Reset The Display
 			MessageBox(NULL,L"Window Creation Error.",L"ERROR",MB_OK|MB_ICONEXCLAMATION);
 			return FALSE;								// Return FALSE
 		}
@@ -329,6 +376,10 @@ private:
 };
 
 static ui_extension::window_factory_single< Chronflow > x_chronflow;
+
+HWND gGetMainWindow(){
+	return x_chronflow.get_static_instance().getHWnd();
+}
 
 class MyInitQuit : public initquit
 {
@@ -343,3 +394,4 @@ class MyInitQuit : public initquit
    }
 };
 static initquit_factory_t<MyInitQuit> x_myInitQuit;
+

@@ -23,6 +23,10 @@ public:
 public:
 	float getCenteredOffset(void); // return in range [0;1)  (eg. display on pos 2.59 -- returns 0.59)
 
+public:
+	void hardSetTarget(CollectionPos pos);
+	void hardSetCenteredPos(CollectionPos pos);
+
 private:
 	AlbumCollection* collection;
 	CollectionPos targetPos;

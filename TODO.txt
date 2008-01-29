@@ -1,26 +1,54 @@
-Alben nicht nach vorne holen, wenn nur an ihnen vorbeigescannt wird
-? Multisampling deaktivieren, wenn supersampling aktiv ist!!
-Supersampling nur auf den oberen Teil anwenden
-Supersamling nicht auf den Text
-Nur cover rendern, die auch wirklich auf dem Bildschirm sind. (aber sicherstellen, dass wir nicht mehr als texBuffersize covers gleichzeitig anzeigen)
-Coverposition per titleformat: einstellbare Intervalle vorausberechnen, dazwischen interpolieren
-Covername anzeigen
-Blending und Alphatest nur bei texturen mit alpha
-Cover image overlay (so we can overlay "shine" effects or something like that)
-MouseFlicker: - Bildschirmauflösung beachten bei win2pos (bewegung relativ zur Bildschirmbreite)
-zooming
-motion blur
-anti aliasing
-3d models
-Nach bewegungsende max. 7 Bilder hochladen, und noch einen frame rendern, wenn noch mehr in der Queue sind
-Cover nach vorne holen
-Fullscreen support
 
+== BUGS ==
+copyDataToCollection braucht zu lange (warten wir auch lange auf den WorkerThread?)
+zuletzt ausgewähltes Bild wird nicht gespeichert
+Löschen list und map auch wirklich alle Elemente bei remove/destruction???
+
+wglShareLists!
+
+== Grafische Verbesserungen ==
+Supersampling implementieren
+		- Multisampling deaktivieren, wenn supersampling aktiv ist!!
+		- Supersampling nur auf den oberen Teil anwenden
+		- Supersamling nicht auf den Text
+motion blur
+3d models
+Cover image overlay (so we can overlay "shine" effects or something like that)
+		
+		
+== Performance ==
+Nur cover rendern, die auch wirklich auf dem Bildschirm sind. (aber sicherstellen, dass wir nicht mehr als texBuffersize covers gleichzeitig anzeigen)
+Option für compressed Textures (loading speed vs cache size)
+Cache Size konfigurieren
+
+== incomplete implementations ==
+MouseFlicker: - Bildschirmauflösung beachten bei win2pos (bewegung relativ zur Bildschirmbreite)
 DbAlbumCollection - Handle illegal chars in titleformat strings (see titleformat_helper in uie_albumart)
-No Cover Image
+
+
+== Features ==
++ Playlist mode (generate album list from playlist, not db)
++ "Album follows playback" - mode (this will especially look cool in DB-Mode)
++ Title display
+Covername anzeigen
+zooming
+Cover nach vorne holen -- nicht nach vorne holen, wenn nur an ihnen vorbeigescannt wird
+Fullscreen support
+Coverposition per titleformat: einstellbare Intervalle vorausberechnen, dazwischen interpolieren
+Drag & Drop
+
+
+
+
 
 Config:
 	- Display String formatting
+
+== High prio: ==
++ Display Settings:
+ costumise cover flow type (this will be hot)
+ bg-color settings etc.
+
 
 == Low Prio ==
 Texturkompression anschauen (geht das schneller, ausschaltbar machen?)

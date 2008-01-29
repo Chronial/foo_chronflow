@@ -12,11 +12,12 @@ public:
 	void destroyGlWindow(void); //clean up all the GL stuff
 	void resizeGlScene(int width, int height);
 public:
-	bool positionOnPoint(int x, int y, CollectionPos* out);
+	bool positionOnPoint(int x, int y, CollectionPos& out);
 public:
 	void drawFrame(void);
 	void drawEmptyFrame();
 	void swapBuffers();
+	void setRenderingContext();
 private:
 	void loadExtensions(void);
 	bool isExtensionSupported(const char *name);

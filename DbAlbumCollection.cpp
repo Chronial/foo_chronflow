@@ -1,91 +1,360 @@
 #include "chronflow.h"
+#include <process.h>
 
+extern cfg_string cfgGroup;
 extern cfg_string cfgFilter;
 extern cfg_string cfgSources;
+extern cfg_string cfgSort;
+extern cfg_string cfgInnerSort;
+extern cfg_bool cfgSortGroup;
 
-DbAlbumCollection::DbAlbumCollection(void)
-{
+extern AsynchTexLoader* gTexLoader;
+
+namespace {
+	struct custom_sort_data	{
+		HANDLE text;
+		t_size index;
+	};
+}
+static int __cdecl custom_sort_compare(const custom_sort_data & elem1, const custom_sort_data & elem2){
+	int ret = uSortStringCompare(elem1.text,elem2.text);
+	if (ret == 0) ret = pfc::sgn_t((t_ssize)elem1.index - (t_ssize)elem2.index);
+	return ret;
+}
+
+
+class DbAlbumCollection::RefreshWorker {
+private:
+	metadb_handle_list library;
+	pfc::list_t<DbAlbumCollection::t_ptrAlbumGroup> ptrGroupMap;
+	pfc::list_t<metadb_handle_ptr> albums;
+
+private:
+	void copyDataToCollection(DbAlbumCollection* collection){
+		collection->albums = albums;
+		collection->ptrGroupMap = ptrGroupMap;
+	}
+private:
+	// call from mainthread!
+	void init(){
+		static_api_ptr_t<library_manager> lm;
+		lm->get_all_items(library);
+	}
+
+
+	void generateData(){
+		//collection->reloadSourceScripts();
+		static_api_ptr_t<titleformat_compiler> compiler;
+
+		static_api_ptr_t<metadb> db;
+		
+		t_size count = library.get_count();
+
+		double preFilter = Helpers::getHighresTimer();
+		if (!cfgFilter.is_empty()){ // filter
+			search_tools::search_filter filter;
+			filter.init(cfgFilter);
+			bit_array_bittable filterMask(count);
+
+			db->database_lock();
+			for (t_size i=0; i < count; i++){
+				const metadb_handle_ptr f = library.get_item_ref(i);
+				if (filter.test(f))
+					filterMask.set(i, true);
+			}
+			db->database_unlock();
+
+			library.filter_mask(filterMask);
+			count = library.get_count();
+		}
+		console::printf("Filter %d msec",int((Helpers::getHighresTimer() - preFilter)*1000));
+		
+
+
+
+		service_ptr_t<titleformat_object> groupScript;
+		compiler->compile(groupScript, cfgGroup);
+		double preGroup = Helpers::getHighresTimer();
+		ptrGroupMap.prealloc(count);
+		{ // GroupMap
+			for (t_size i=0; i < count; i++){
+				t_ptrAlbumGroup map;
+				map.ptr = library.get_item(i);
+				map.group = new pfc::string8_fast_aggressive;
+				map.ptr->format_title(0, *map.group, groupScript, 0);
+				ptrGroupMap.add_item(map);
+			}
+		}
+		console::printf("Group %d msec",int((Helpers::getHighresTimer() - preGroup)*1000));
+
+
+		double prePopulate = Helpers::getHighresTimer();
+		albums.prealloc(count);
+		{ // Populate albums
+			ptrGroupMap.sort(ptrGroupMap_compareGroup());
+			t_ptrAlbumGroup* ptrGroupMapPtr = ptrGroupMap.get_ptr();
+			pfc::string8_fastalloc * previousGroup = 0;
+			int albumCount = -1;
+			for (t_size i=0; i < count; i++){
+				t_ptrAlbumGroup* e = ptrGroupMapPtr + i;//ptrGroupMap.get_item(i);
+				if (previousGroup == 0 || stricmp_utf8(e->group->get_ptr(),previousGroup->get_ptr()) != 0){
+					albumCount++;
+					albums.add_item(e->ptr);
+					delete previousGroup;
+					previousGroup = e->group;
+				} else {
+					//belongs to previous Group
+					delete e->group;
+				}
+				e->groupId = albumCount;
+			}
+			delete previousGroup;
+			albumCount++;
+			
+			ptrGroupMap.sort(ptrGroupMap_comparePtr());
+
+			if (!cfgSortGroup){ //Sort albums
+				service_ptr_t<titleformat_object> sortScript;
+				compiler->compile(sortScript, cfgSort);
+				pfc::array_t<t_size> order; order.set_size(albumCount);
+				pfc::array_t<t_size> revOrder; revOrder.set_size(albumCount);
+
+				{ // fill Order with correct permutation
+					pfc::string8_fastalloc sortOut; sortOut.prealloc(512);
+					pfc::array_t<custom_sort_data> sortData; sortData.set_size(albumCount);
+
+					for(int i=0; i < albumCount; i++)
+					{
+						albums.get_item_ref(i)->format_title(0, sortOut, sortScript, 0);
+						sortData[i].index = i;
+						sortData[i].text = uSortStringCreate(sortOut);
+					}
+					pfc::sort_t(sortData, custom_sort_compare, albumCount);
+
+					for(int i=0; i < albumCount; i++){
+						order[i] = sortData[i].index;
+						revOrder[sortData[i].index] = i;
+						uSortStringFree(sortData[i].text);
+					}
+				}
+				albums.reorder(order.get_ptr());
+
+				t_ptrAlbumGroup* ptrGroupMapPtr = ptrGroupMap.get_ptr();
+				for (t_size i = 0; i < count; i++){
+					t_ptrAlbumGroup* map = ptrGroupMapPtr + i;
+					map->groupId = revOrder[map->groupId];
+				}
+			}
+		}
+		console::printf("Populate %d msec",int((Helpers::getHighresTimer() - prePopulate)*1000));
+	}
+
+private:
+	HWND notifyWindow;
+	RefreshWorker(HWND notifyWindow){
+		this->notifyWindow = notifyWindow;
+	}
+private:
+	HANDLE workerThread;
+	bool hardRefresh;
+	void startWorkerThread()
+	{
+		workerThread = (HANDLE)_beginthreadex(0,0,&(this->runWorkerThread),(void*)this,0,0);
+		SetThreadPriority(workerThread, THREAD_PRIORITY_BELOW_NORMAL);
+		SetThreadPriorityBoost(workerThread, true);
+	}
+
+	static unsigned int WINAPI runWorkerThread(void* lpParameter)
+	{
+		((DbAlbumCollection::RefreshWorker*)(lpParameter))->workerThreadProc();
+		return 0;
+	}
+
+	void workerThreadProc(){
+		this->generateData();
+		gTexLoader->stopLoading();
+		PostMessage(notifyWindow, WM_COLLECTION_REFRESHED, 0, (LPARAM)this);
+		// Notify mainWindow to copy data, after copying, refresh AsynchTexloader + start Loading
+	}
+
+public:
+	static void reloadAsynchStart(HWND notifyWindow, bool hardRefresh = false){
+		RefreshWorker* worker = new RefreshWorker(notifyWindow);
+		worker->hardRefresh = hardRefresh;
+		worker->init();
+		worker->startWorkerThread();
+	}
+	void reloadAsynchFinish(DbAlbumCollection* collection, DisplayPosition* dPos){
+		double a[6];
+		a[0] = Helpers::getHighresTimer();
+		gTexLoader->stopLoading();
+		a[1] = Helpers::getHighresTimer();
+		if (hardRefresh){
+			collection->reloadSourceScripts();
+			gTexLoader->clearCache();
+		} else {
+			gTexLoader->resynchCache(staticResynchCallback, (void*)this);
+		}
+
+		a[2] = Helpers::getHighresTimer();
+
+		{ // update DisplayPosition
+			CollectionPos centeredPos = dPos->getCenteredPos();
+			int centeredIdx = centeredPos.toIndex();
+			CollectionPos targetPos = dPos->getTarget();
+			int targetIdx = targetPos.toIndex();
+
+			int newCenteredIdx = resynchCallback(centeredIdx, collection);
+			if (newCenteredIdx >= 0){
+				centeredPos += (newCenteredIdx - centeredIdx);
+				dPos->hardSetCenteredPos(centeredPos);
+				int newTargetIdx = resynchCallback(targetIdx, collection);
+				if (newTargetIdx >= 0){
+					targetPos += (newTargetIdx - targetIdx);
+				} else {
+					targetPos += (newCenteredIdx - centeredIdx);
+				}
+				dPos->hardSetTarget(targetPos);
+				gTexLoader->setQueueCenter(targetPos);
+			}
+		}
+		a[3] = Helpers::getHighresTimer();
+
+		copyDataToCollection(collection);
+		a[4] = Helpers::getHighresTimer();
+		gTexLoader->startLoading();
+		a[5] = Helpers::getHighresTimer();
+		for (int i=0; i < 5; i++){
+			console::printf("Times: a%d - a%d: %dmsec", i, i+1, int((a[i+1] - a[i])*1000));
+		}
+		RedrawWindow(notifyWindow,NULL,NULL,RDW_INVALIDATE);
+		delete this;
+	}
+	static int CALLBACK staticResynchCallback(int oldIdx, void* p_this, AlbumCollection* collection){
+		return reinterpret_cast<RefreshWorker*>(p_this)->resynchCallback(oldIdx, collection);
+	}
+	inline int resynchCallback(int oldIdx, AlbumCollection* collection){
+		DbAlbumCollection* col = dynamic_cast<DbAlbumCollection*>(collection);
+		//t_ptrAlbumGroup oldMap;
+		if (oldIdx+1 > (int)col->albums.get_count())
+			return -1;
+		//oldMap.ptr = col->albums.get_item_ref(oldIdx);
+		metadb_handle_ptr ptr = col->albums.get_item_ref(oldIdx);
+		t_size ptrIdx;
+		//if (ptrGroupMap.bsearch_t(&(ptrGroupMap_comparePtr::bTreeCompare), oldMap, ptrIdx)){
+		if (ptrGroupMap.bsearch_t(&(ptrGroupMap_searchPtr), ptr, ptrIdx)){
+			return(ptrGroupMap.get_item(ptrIdx).groupId);
+		} else {
+			return -1;
+		}
+	}
+};
+
+void DbAlbumCollection::reloadSourceScripts(){
 	static_api_ptr_t<titleformat_compiler> compiler;
-	service_ptr_t<titleformat_object> filterScript;
-	compiler->compile(filterScript, cfgFilter);
-	pfc::list_t<service_ptr_t<titleformat_object>> sourceScripts;
+	EnterCriticalSection(&sourceScriptsCS);
+	sourceScripts.remove_all();
+
 	const char * srcStart = cfgSources.get_ptr();
 	const char * srcP = srcStart;
-	for (;;srcP++){
+	const char * srcEnd;
+	for (;; srcP++){
 		if (*srcP == '\r' || *srcP == '\n' || *srcP == '\0'){
-			if (srcP-1 > srcStart){
+			srcEnd = (srcP-1);
+			while (*(srcEnd) == ' ')
+				srcEnd--;
+			if (srcEnd > srcStart){
 				pfc::string8_fastalloc src;
-				src.set_string(srcStart, srcStart - srcP - 1);
+				src.set_string(srcStart, srcEnd - srcStart + 1);
 				service_ptr_t<titleformat_object> srcScript;
 				compiler->compile(srcScript, src);
 				sourceScripts.add_item(srcScript);
 			}
+			srcStart = srcP+1;
 			if (*srcP == '\0')
 				break;
-			srcStart = srcP+1;
 		}
 	}
+	LeaveCriticalSection(&sourceScriptsCS);
+}
 
-	metadb_handle_list library;
-	static_api_ptr_t<library_manager> lm;
-	lm->get_all_items(library);
-	library.sort_by_format(filterScript, 0);
-	t_size count = library.get_count();
+DbAlbumCollection::DbAlbumCollection(void){
+	InitializeCriticalSectionAndSpinCount(&sourceScriptsCS, 0x80000400);
 
-	bool preHide = true;
-	bool postHide = false;
-	pfc::string8_fastalloc filterOut;
-	pfc::string8_fastalloc previousSrc;
-	pfc::string8_fastalloc sourceOut;
-	filterOut.prealloc(512);
-	previousSrc.prealloc(512);
-	sourceOut.prealloc(512);
-	int sourceCount = sourceScripts.get_count();
+	//reloadSourceScripts();
+	/*double start = Helpers::getHighresTimer();
+	RefreshWorker worker;
+	worker.init();
+	worker.generateData();
+	double mid = Helpers::getHighresTimer();
+	worker.copyDataToCollection(this);
+	double end = Helpers::getHighresTimer();
+	console::printf("Generate %d msec, copy %d msec",int((mid-start)*1000),int((end-mid)*1000));*/
+}
+
+void DbAlbumCollection::reloadAsynchStart(HWND notifyWnd, bool hardRefresh){
+	RefreshWorker::reloadAsynchStart(notifyWnd, hardRefresh);
+}
+
+void DbAlbumCollection::reloadAsynchFinish(LPARAM worker, DisplayPosition* dPos){
+	double synchStart = Helpers::getHighresTimer();
+	reinterpret_cast<RefreshWorker*>(worker)->reloadAsynchFinish(this, dPos);
+	console::printf("Synch: %d msec (in mainthread!)",int((Helpers::getHighresTimer()-synchStart)*1000));
+}
+
+
+bool DbAlbumCollection::getImageForTrack(const metadb_handle_ptr &track, pfc::string_base &out){
+	bool imgFound = false;
 	abort_callback_impl abortCallback;
-	for (t_size i=0; i < count; i++){
-		const metadb_handle_ptr f = library.get_item_ref(i);
-		if (!postHide){
-			f->format_title(0, filterOut, filterScript, 0);
-			if (strcmp(filterOut,"!hide") == 0){
-				if (preHide)
-					preHide = false;
-				continue;
-			} else {
-				if (!preHide)
-					postHide = true;
+
+	EnterCriticalSection(&sourceScriptsCS);
+	int sourceCount = sourceScripts.get_count();
+	for (int j=0; j < sourceCount; j++){
+		track->format_title(0, out, sourceScripts.get_item_ref(j), 0);
+		try {
+			if (filesystem::g_exists(out, abortCallback) /*&&
+				!filesystem::g_is_valid_directory(out, abortCallback) &&
+				!filesystem::g_is_remote_or_unrecognized(out)*/){
+					imgFound = true;
+					break;
 			}
+		} catch (exception_io_no_handler_for_path){
 		}
-		
-		bool imgFound = false;
-		for (int j=0; j < sourceCount; j++){
-			f->format_title(0, sourceOut, sourceScripts.get_item_ref(j), 0);
-			if (stricmp_utf8(sourceOut,previousSrc) == 0){
-				imgFound = true;
-				break;
-			}
-			try {
-				if (filesystem::g_exists(sourceOut, abortCallback) &&
-					!filesystem::g_is_valid_directory(sourceOut, abortCallback) &&
-					!filesystem::g_is_remote_or_unrecognized(sourceOut)){
-						previousSrc = sourceOut;
-						imageList.add_item(sourceOut);
-						imgFound = true;
-				}
-			} catch (exception_io_no_handler_for_path){
-			}
-		}
-		if (!imgFound){
-			// No Cover Image???
-		}
+	}
+	LeaveCriticalSection(&sourceScriptsCS);
+	return imgFound;
+}
+
+metadb_handle_list DbAlbumCollection::getTracks(CollectionPos pos){
+	int trackCount = ptrGroupMap.get_count();
+	int group = pos.toIndex();
+	metadb_handle_list out;
+	for (int i=0; i < trackCount; i++){
+		if (ptrGroupMap.get_item_ref(i).groupId == group)
+			out.add_item(ptrGroupMap.get_item_ref(i).ptr);
+	}
+	out.sort_by_format(cfgInnerSort, 0);
+	return out;
+}
+
+bool DbAlbumCollection::getAlbumForTrack(const metadb_handle_ptr& track, CollectionPos& out){
+	t_size mapIdx;
+	if(ptrGroupMap.bsearch_t(&(ptrGroupMap_searchPtr), track, mapIdx)){
+		out = CollectionPos(this, ptrGroupMap.get_item_ref(mapIdx).groupId);
+		return true;
+	} else {
+		return false;
 	}
 }
+
 
 DbAlbumCollection::~DbAlbumCollection(void)
 {
+	DeleteCriticalSection(&sourceScriptsCS);
 }
 
 int DbAlbumCollection::getCount(){
-	return imageList.get_count();
+	return albums.get_count();
 }
 
 char* DbAlbumCollection::getTitle(CollectionPos pos){
@@ -93,5 +362,11 @@ char* DbAlbumCollection::getTitle(CollectionPos pos){
 }
 
 ImgTexture* DbAlbumCollection::getImgTexture(CollectionPos pos){
-	return new ImgFileTexture(pfc::stringcvt::string_wide_from_utf8(imageList[pos.toIndex()]));
+	pfc::string8_fast_aggressive imgFile;
+	imgFile.prealloc(512);
+	if (getImageForTrack(albums.get_item_ref(pos.toIndex()), imgFile)){
+		return new ImgTexture(imgFile);
+	} else {
+		return 0;
+	}
 }

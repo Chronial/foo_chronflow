@@ -2,10 +2,10 @@
 
 class ImgTexture
 {
-protected:
-	ImgTexture(void);
 public:
-	virtual ~ImgTexture(void);
+	ImgTexture(const char* imageFile);
+public:
+	~ImgTexture(void);
 public:
 	void glBind(void);
 public:
@@ -20,10 +20,12 @@ public:
 public:
 	static void setMaxGlTextureSize(int size);
 
+public:
+	const char* getIdentifier();
 
-protected:
+private:
 	Gdiplus::Bitmap* getErrorBitmap();
-	virtual int getMaxSize();
+	int getMaxSize();
 	float aspect;
 
 	static bool forcePowerOfTwo;
@@ -38,4 +40,7 @@ protected:
 		STATUS_UPLOADED = 2
 	} status;
 	void prepareUpload(void);
+
+	void loadImage(void);
+	pfc::string8 imageFile;
 };
