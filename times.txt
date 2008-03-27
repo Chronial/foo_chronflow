@@ -1,0 +1,4 @@
+non-compressen, non-mipmap: Upload 0.0039 sec (267)
+    compressed, non-mipmap: Upload 0.0341 sec (289)
+non-compressed,     mipmap: Upload 0.1381 sec (241)
+    compressed,     mipmap: Upload 0.2226 sec (187)

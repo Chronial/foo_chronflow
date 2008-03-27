@@ -1,16 +1,12 @@
 #include "chronflow.h"
 #include "config.h"
 
-#define VERSION "0.1.1"
+#define VERSION "0.2.0"
 
 DECLARE_COMPONENT_VERSION( "Coverflow pannel", VERSION, 
    "Renders Album Art in a 3d environment\n"
    "By Christian Fersch\n"
    __DATE__ " - " __TIME__ );
-
-
-AsynchTexLoader* gTexLoader = 0;
-AlbumCollection* gCollection = 0;
 
 extern cfg_int sessionSelectedCover;
 
@@ -50,18 +46,21 @@ public:
 
 	HWND create_or_transfer_window(HWND wnd_parent, const ui_extension::window_host_ptr & p_host, const ui_helpers::window_position_t & p_position = ui_helpers::window_position_null) {
 		if (isShown){
-			ShowWindow(hWnd, SW_HIDE);
-			SetParent(hWnd, wnd_parent);
-			SetWindowPos(hWnd, NULL, p_position.x, p_position.y, p_position.cx, p_position.cy, SWP_NOZORDER);
-			currentHost->relinquish_ownership(hWnd);
+			ShowWindow(appInstance->mainWindow, SW_HIDE);
+			SetParent(appInstance->mainWindow, wnd_parent);
+			SetWindowPos(appInstance->mainWindow, NULL, p_position.x, p_position.y, p_position.cx, p_position.cy, SWP_NOZORDER);
+			currentHost->relinquish_ownership(appInstance->mainWindow);
 		} else {
-			show(wnd_parent);
-			SetWindowPos(hWnd, NULL, p_position.x, p_position.y, p_position.cx, p_position.cy, SWP_NOZORDER);
-			ShowWindow(hWnd, SW_HIDE);
+			if (show(wnd_parent)){
+				SetWindowPos(appInstance->mainWindow, NULL, p_position.x, p_position.y, p_position.cx, p_position.cy, SWP_NOZORDER);
+				ShowWindow(appInstance->mainWindow, SW_HIDE);
+			} else {
+				return 0;
+			}
 		}
 		currentHost = p_host;
 		isShown = true;
-		return hWnd;
+		return appInstance->mainWindow;
 	};
 
 	void destroy_window() {
@@ -73,117 +72,119 @@ public:
 	};
 
 	HWND get_wnd() const {
-		return hWnd;
+		return appInstance->mainWindow;
 	};
 
 private:
-	bool isShown;
-	bool setupDone;
-	//bool disabled;
-	Renderer* renderer;
-	DisplayPosition* displayPos;
-	MouseFlicker* mouseFlicker;
-	HWND hWnd;
+	bool isShown; // part of the single-istance implementation
 	int refreshRate;
 	ULONG_PTR gdiplusToken;
 	UINT multimediaTimerRes;
+	MouseFlicker* mouseFlicker;
+
+	AppInstance* appInstance;
 public:
 	Chronflow(){
 		multimediaTimerRes = 0;
 		currentHost = 0;
-		setupDone = false;
 		isShown = false;
-		renderer = 0;
 	}
 	void init(){
-		if (!Helpers::isPerformanceCounterSupported()){
-			TIMECAPS tc;
-			UINT     wTimerRes;
-			if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) == TIMERR_NOERROR){
-				wTimerRes = min(max(tc.wPeriodMin, 1), tc.wPeriodMax);
-				timeBeginPeriod(wTimerRes); 
-			}
+		TIMECAPS tc;
+		UINT     wTimerRes;
+		if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) == TIMERR_NOERROR){
+			wTimerRes = min(max(tc.wPeriodMin, 1), tc.wPeriodMax);
 		}
+		timeBeginPeriod(wTimerRes); 
 	}
 	void quit(){
-		if (multimediaTimerRes != 0)
-			timeEndPeriod(multimediaTimerRes);
+		timeEndPeriod(multimediaTimerRes);
+		int i = ImgTexture::instanceCount;
+		if (ImgTexture::instanceCount != 0){
+			MessageBoxA(0, pfc::string8("ImgTexture Leak: ") << ImgTexture::instanceCount, "foo_chronflow Error", MB_ICONERROR);
+		}
 	}
-	void show(HWND parent){
+
+	static VOID WINAPI GdiPlusDebug (Gdiplus::DebugEventLevel level, CHAR *message){
+		console::print(message);
+	}
+	bool show(HWND parent){
 		Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+		gdiplusStartupInput.DebugEventCallback = &GdiPlusDebug;
 		Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
 #ifdef _DEBUG
 		Console::create();
 #endif
-		createWindow(parent);
-		gCollection = new DbAlbumCollection();
-		//if (gCollection->getCount() == 0)
-		//	disabled = true;
-		gTexLoader = new AsynchTexLoader(gCollection);
-		displayPos = new DisplayPosition(gCollection, CollectionPos(gCollection,sessionSelectedCover), hWnd);
-		renderer = new Renderer(displayPos);
-		mouseFlicker = new MouseFlicker(displayPos);
-
-		if (!renderer->setupGlWindow(hWnd))
-			return;
-		gTexLoader->setNotifyWindow(hWnd);
-		setupDone = true;
-		gCollection->reloadAsynchStart(hWnd, true);
+		appInstance = new AppInstance();
+		try {
+			appInstance->coverPos = new ScriptedCoverPositions();
+		} catch (...) {
+			hide();
+			return false;
+		}
+		appInstance->mainWindow = createWindow(parent);
+		appInstance->albumCollection = new DbAlbumCollection(appInstance);
+		appInstance->texLoader = new AsynchTexLoader(appInstance);
+		appInstance->displayPos = new DisplayPosition(appInstance, CollectionPos(appInstance->albumCollection,sessionSelectedCover));
+		appInstance->textDisplay = new TextDisplay(appInstance);
+		appInstance->renderer = new Renderer(appInstance);
+		appInstance->playbackTracer = new PlaybackTracer(appInstance);
+		mouseFlicker = new MouseFlicker(appInstance);
+		
+		if (!appInstance->renderer->setupGlWindow()){
+			hide();
+			return false;
+		}
+		appInstance->albumCollection->reloadAsynchStart(true);
+		return true;
 	}
 	void hide(){
-		sessionSelectedCover = displayPos->getCenteredPos().toIndex();
-		setupDone = false;
-		delete mouseFlicker;
-		if (hWnd)
-			DestroyWindow(hWnd);
+		delete pfc::replace_null_t(mouseFlicker);
+		if (appInstance->texLoader)
+			appInstance->texLoader->stopLoading();
+		if (appInstance->mainWindow)
+			DestroyWindow(appInstance->mainWindow);
+		appInstance->mainWindow = 0;
 		UnregisterClass(L"Chronflow",core_api::get_my_instance());
-		delete renderer;
-		renderer = 0;
-		delete displayPos;
-		delete gTexLoader;
-		delete gCollection;
+		delete pfc::replace_null_t(appInstance->texLoader);
+		delete pfc::replace_null_t(appInstance->renderer);
+		delete pfc::replace_null_t(appInstance->displayPos);
+		delete pfc::replace_null_t(appInstance->albumCollection);
+		delete pfc::replace_null_t(appInstance->coverPos);
+		delete pfc::replace_null_t(appInstance->playbackTracer);
+		delete pfc::replace_null_t(appInstance->textDisplay);
+
+		delete pfc::replace_null_t(appInstance);
+
+		if (ImgTexture::instanceCount != 0){
+			IF_DEBUG(MessageBoxA(0, pfc::string8("ImgTexture Leak: ") << ImgTexture::instanceCount, "foo_chronflow Error", MB_ICONERROR));
+		}
 
 		Gdiplus::GdiplusShutdown(gdiplusToken);
-	}
-	HWND getHWnd(){
-		return hWnd;
 	}
 private:
 	LRESULT MessageHandler (HWND	hWnd,			// Handle For This Window
 							UINT	uMsg,			// Message For This Window
 							WPARAM	wParam,			// Additional Message Information
 							LPARAM	lParam){
-		if(renderer)
-			renderer->setRenderingContext();
+		if(appInstance->renderer)
+			appInstance->renderer->setRenderingContext();
 
-		/*if (disabled && uMsg != WM_CLOSE &&
-						uMsg != WM_SIZE &&
-						uMsg != WM_CREATE &&
-						uMsg != WM_DEVMODECHANGE){
-			if (uMsg == WM_PAINT){
-				renderer->drawEmptyFrame();
-				renderer->swapBuffers();
-				ValidateRect(hWnd,NULL);
-				return 0;
-			} else {
-				return DefWindowProc(hWnd,uMsg,wParam,lParam);
-			}
-		}*/
 		switch (uMsg){
 			case WM_COLLECTION_REFRESHED:
-				gCollection->reloadAsynchFinish(lParam, displayPos);
+				appInstance->albumCollection->reloadAsynchFinish(lParam);
 				return 0;
 			case WM_DESTROY:
-				if (renderer)
-					renderer->destroyGlWindow();
+				if (appInstance->renderer)
+					appInstance->renderer->destroyGlWindow();
 				return 0;
 			case WM_NCDESTROY:
-				this->hWnd = 0;
+				appInstance->mainWindow = 0;
 				return 0;
 			case WM_SIZE:
-				if (setupDone)
-					renderer->resizeGlScene(LOWORD(lParam),HIWORD(lParam));
+				if (appInstance->renderer)
+					appInstance->renderer->resizeGlScene(LOWORD(lParam),HIWORD(lParam));
 				return 0;
 			case WM_CREATE:
 			case WM_DEVMODECHANGE:
@@ -204,14 +205,16 @@ private:
 				zDelta -= GET_WHEEL_DELTA_WPARAM(wParam);
 				int m = zDelta / WHEEL_DELTA;
 				zDelta = zDelta % WHEEL_DELTA;
-				displayPos->setTarget(displayPos->getTarget() + m);
+				appInstance->displayPos->setTarget(appInstance->displayPos->getTarget() + m);
+				appInstance->playbackTracer->userStartedMovement();
 				return 0;
 			}
 			case WM_MBUTTONDOWN:
 			{
-				CollectionPos newTarget = displayPos->getCenteredPos();
-				if (renderer->positionOnPoint(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), newTarget)){
-					displayPos->setTarget(newTarget);
+				CollectionPos newTarget = appInstance->displayPos->getCenteredPos();
+				if (appInstance->renderer->positionOnPoint(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), newTarget)){
+					appInstance->displayPos->setTarget(newTarget);
+					appInstance->playbackTracer->userStartedMovement();
 					executeAction(cfgMiddleClick, newTarget);
 				}
 				return 0;
@@ -219,9 +222,10 @@ private:
 			case WM_LBUTTONDBLCLK:
 			case WM_LBUTTONDOWN:
 			{
-				CollectionPos newTarget = displayPos->getCenteredPos();
-				if (renderer->positionOnPoint(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), newTarget)){
-					displayPos->setTarget(newTarget);
+				CollectionPos newTarget = appInstance->displayPos->getCenteredPos();
+				if (appInstance->renderer->positionOnPoint(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), newTarget)){
+					appInstance->displayPos->setTarget(newTarget);
+					appInstance->playbackTracer->userStartedMovement();
 					if (uMsg == WM_LBUTTONDBLCLK)
 						executeAction(cfgDoubleClick, newTarget);
 				} else {
@@ -238,24 +242,21 @@ private:
 			case WM_CAPTURECHANGED:
 				mouseFlicker->lostCapture(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
 				return 0;
+			case WM_TIMER:
+				if (wParam == IDT_PLAYBACK_TRACER)
+					appInstance->playbackTracer->timerHit();
+				return 0;
 			case WM_KEYDOWN:
 			{
 				if (wParam == VK_RETURN){
-					executeAction(cfgEnterKey, displayPos->getTarget());
+					executeAction(cfgEnterKey, appInstance->displayPos->getTarget());
 					return 0;
 				} else if (wParam == VK_F5){
 					bool hardRefresh = (GetKeyState(VK_SHIFT) != 0);
-					gCollection->reloadAsynchStart(hWnd, hardRefresh);
+					appInstance->albumCollection->reloadAsynchStart(hardRefresh);
 					return 0;
 				} else if (wParam == VK_F6){
-					static_api_ptr_t<playback_control_v2> pc;
-					metadb_handle_ptr nowPlaying;
-					if (pc->get_now_playing(nowPlaying)){
-						CollectionPos target = displayPos->getTarget();
-						if (gCollection->getAlbumForTrack(nowPlaying, target)){
-							displayPos->setTarget(target);
-						}
-					}
+					appInstance->playbackTracer->moveToNowPlaying();
 					return 0;
 				} else {
 					int move = 0;
@@ -270,7 +271,8 @@ private:
 					}
 					if (move){
 						move *= LOWORD(lParam);
-						displayPos->setTarget(displayPos->getTarget() + move);
+						appInstance->displayPos->setTarget(appInstance->displayPos->getTarget() + move);
+						appInstance->playbackTracer->userStartedMovement();
 						return 0;
 					}
 				}
@@ -279,23 +281,21 @@ private:
 			case WM_PAINT:
 			{
 				static double lastTime = 0;
-				gTexLoader->runGlDelete();
-				displayPos->update();
-				gTexLoader->setQueueCenter(displayPos->getTarget());
-				renderer->drawFrame();
+				appInstance->texLoader->blockUpload();
+				appInstance->texLoader->runGlDelete();
+				appInstance->displayPos->update();
+				appInstance->texLoader->setQueueCenter(appInstance->displayPos->getTarget());
+				appInstance->renderer->drawFrame();
 				/*double curTime = Helpers::getHighresTimer();
 				int sleepFor = int((1000.0/(refreshRate*1.10)) - (1000*(curTime - lastTime))); //1.05 are tolerance
 				if (sleepFor > 0)
 					SleepEx(sleepFor,false);*/
-				renderer->swapBuffers();
+				appInstance->renderer->swapBuffers();
 				lastTime = Helpers::getHighresTimer();
-#ifdef _DEBUG
-				Helpers::FPS(hWnd,displayPos->getCenteredPos(),displayPos->getCenteredOffset());
-#endif
 				
-				if (!displayPos->isMoving()){
-					if(gTexLoader->runGlUpload(5))
-						ValidateRect(hWnd,NULL);
+				if (!appInstance->displayPos->isMoving()){
+					appInstance->texLoader->allowUpload();
+					ValidateRect(hWnd,NULL);
 				}
 				return 0;
 			}
@@ -303,16 +303,21 @@ private:
 		return DefWindowProc(hWnd,uMsg,wParam,lParam);
 	}
 	static LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
-		static Chronflow* chronflow;
-		if (uMsg == WM_NCCREATE)
-			chronflow = (Chronflow*) ((CREATESTRUCT*)lParam)->lpCreateParams;
-		//Chronflow* chronflow = reinterpret_cast<Chronflow *>(GetWindowLongPtr(hWnd, 0));
-
+		Chronflow* chronflow = 0;
+		if (uMsg == WM_NCCREATE){
+			chronflow = reinterpret_cast<Chronflow*>(((CREATESTRUCT*)lParam)->lpCreateParams);
+			SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)chronflow);
+		} else {
+			chronflow = reinterpret_cast<Chronflow*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+		}
+		if (chronflow == 0)
+			return DefWindowProc(hWnd,uMsg,wParam,lParam);
 		return chronflow->MessageHandler(hWnd, uMsg, wParam, lParam);
 	}
 	void executeAction(const char * action, CollectionPos forCover){
-		metadb_handle_list tracks = gCollection->getTracks(forCover);
-		const char * albumTitle = gCollection->getTitle(forCover);
+		metadb_handle_list tracks = appInstance->albumCollection->getTracks(forCover);
+		pfc::string8 albumTitle;
+		appInstance->albumCollection->getTitle(forCover, albumTitle);
 		for (int i=0; i < tabsize(g_customActions); i++){
 			if (stricmp_utf8(action, g_customActions[i]->actionName) == 0){
 				g_customActions[i]->run(tracks, albumTitle);
@@ -324,10 +329,11 @@ private:
 			menu_helpers::run_command_context(commandGuid, pfc::guid_null, tracks);
 		}
 	}
-	bool createWindow(HWND parent){
-		WNDCLASS	wc;						// Windows Class Structure
+	HWND createWindow(HWND parent){
+		WNDCLASS	wc = {0};						// Windows Class Structure
 		DWORD		dwExStyle;				// Window Extended Style
 		DWORD		dwStyle;				// Window Style
+		HWND		hWnd;
 
 		//hInstance			= GetModuleHandle(NULL);				// Grab An Instance For Our Window
 		wc.style			= CS_HREDRAW | CS_VREDRAW | CS_OWNDC| CS_DBLCLKS ;	// Redraw On Size, And Own DC For Window. -- recieve dblclicks (risky)
@@ -346,7 +352,7 @@ private:
 		if (!RegisterClass(&wc))									// Attempt To Register The Window Class
 		{
 			MessageBox(NULL,L"Failed To Register The Window Class.",L"ERROR",MB_OK|MB_ICONEXCLAMATION);
-			return FALSE;											// Return FALSE
+			return 0;											// Return FALSE
 		}
 
 		//dwExStyle=WS_EX_APPWINDOW | WS_EX_WINDOWEDGE;			// Window Extended Style
@@ -369,16 +375,18 @@ private:
 									(void*)this)))								// Dont Pass Anything To WM_CREATE
 		{
 			MessageBox(NULL,L"Window Creation Error.",L"ERROR",MB_OK|MB_ICONEXCLAMATION);
-			return FALSE;								// Return FALSE
+			return 0;								// Return FALSE
 		}
-		return TRUE;
+		return hWnd;
 	}
+	friend AppInstance* gGetSingleInstance();
 };
 
 static ui_extension::window_factory_single< Chronflow > x_chronflow;
 
-HWND gGetMainWindow(){
-	return x_chronflow.get_static_instance().getHWnd();
+// this links the ConfigWindow to the Single Instance
+AppInstance* gGetSingleInstance(){
+	return x_chronflow.get_static_instance().appInstance;
 }
 
 class MyInitQuit : public initquit

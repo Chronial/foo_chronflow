@@ -24,9 +24,14 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				Description="COVER_CONFIG_DEF_CONTENT.h wird erstellt..."
+				CommandLine="php &quot;$(ProjectDir)CoverPositionsCompile.php&quot;"
+				ExcludedFromBuild="false"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				CommandLine=""
+				Outputs=""
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -40,14 +45,17 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				FavorSizeOrSpeed="0"
 				WholeProgramOptimization="false"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;"
 				StringPooling="false"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
+				UsePrecompiledHeader="0"
+				PrecompiledHeaderThrough="chronflow.h"
 				WarningLevel="3"
-				DebugInformationFormat="4"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -62,7 +70,9 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="Winmm.lib gdiplus.lib opengl32.lib glu32.lib glaux.lib odbc32.lib odbccp32.lib"
 				GenerateDebugInformation="true"
+				AssemblyDebug="1"
 				SubSystem="2"
+				LinkTimeCodeGeneration="0"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -87,6 +97,8 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				Description="COVER_CONFIG_DEF_CONTENT.h wird gelöscht..."
+				CommandLine="del $(ProjectDir)\COVER_CONFIG_DEF_CONTENT.h&#x0D;&#x0A;del $(ProjectDir)\DEF_CFG_COVERCONFIGS.h"
 			/>
 		</Configuration>
 		<Configuration
@@ -100,9 +112,13 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				CommandLine="php &quot;$(ProjectDir)CoverPositionsCompile.php&quot;"
+				ExcludedFromBuild="false"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				CommandLine=""
+				Outputs=""
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -162,6 +178,8 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				Description="Cleanup"
+				CommandLine="del $(ProjectDir)\COVER_CONFIG_DEF_CONTENT.h"
 			/>
 		</Configuration>
 	</Configurations>
@@ -187,6 +205,10 @@
 			</File>
 			<File
 				RelativePath=".\Console.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CPScriptCompiler.cpp"
 				>
 			</File>
 			<File
@@ -218,11 +240,23 @@
 				>
 			</File>
 			<File
+				RelativePath=".\PlaybackTracer.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Renderer.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\TextTexture.cpp"
+				RelativePath=".\SafeArrayHelper.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\ScriptObject.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\TextDisplay.cpp"
 				>
 			</File>
 		</Filter>
@@ -236,7 +270,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\AppInstance.h"
+				>
+			</File>
+			<File
 				RelativePath=".\AsynchTexLoader.h"
+				>
+			</File>
+			<File
+				RelativePath=".\cfg_coverConfigs.h"
 				>
 			</File>
 			<File
@@ -280,6 +322,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\PlaybackTracer.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Renderer.h"
 				>
 			</File>
@@ -288,7 +334,19 @@
 				>
 			</File>
 			<File
-				RelativePath=".\TextTexture.h"
+				RelativePath=".\SafeArrayHelper.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ScriptedCoverPositions.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ScriptObject.h"
+				>
+			</File>
+			<File
+				RelativePath=".\TextDisplay.h"
 				>
 			</File>
 		</Filter>

@@ -1,6 +1,8 @@
+
+/*********************************************** Album Source tab *******************************************************/
 // {8426005A-98F3-42fe-A335-C0929C7DBC69}
 static const GUID guid_cfgFilter = { 0x8426005a, 0x98f3, 0x42fe, { 0xa3, 0x35, 0xc0, 0x92, 0x9c, 0x7d, 0xbc, 0x69 } };
-cfg_string cfgFilter(guid_cfgFilter, "");
+cfg_string cfgFilter(guid_cfgFilter, "1");
 
 // {34E7B6A7-50FF-4e89-8A3E-CE55E05E02EB}
 static const GUID guid_cfgGroup = { 0x34e7b6a7, 0x50ff, 0x4e89, { 0x8a, 0x3e, 0xce, 0x55, 0xe0, 0x5e, 0x2, 0xeb } };
@@ -34,18 +36,73 @@ cfg_string cfgImgNoCover(guid_cfgImgNoCover, ".\\components\\no-cover.png");
 static const GUID guid_cfgImgLoading = { 0x7fa5e2cc, 0x4eb, 0x4585, { 0x92, 0x9, 0xd1, 0x88, 0xcd, 0x82, 0x4c, 0x79 } };
 cfg_string cfgImgLoading(guid_cfgImgLoading, ".\\components\\loading.png");
 
-
+/*********************************************** Behaviour tab **********************************************************/
 // {C34448FB-11B2-4f6f-87BB-D0E31CE77C45}
 static const GUID guid_cfgDoubleClick = { 0xc34448fb, 0x11b2, 0x4f6f, { 0x87, 0xbb, 0xd0, 0xe3, 0x1c, 0xe7, 0x7c, 0x45 } };
-cfg_string cfgDoubleClick(guid_cfgDoubleClick, "");
+cfg_string cfgDoubleClick(guid_cfgDoubleClick, "Replace Playlist ");
 
 // {1E6177E9-1C29-41dc-BCB9-047EC5FD1816}
 static const GUID guid_cfgMiddleClick = { 0x1e6177e9, 0x1c29, 0x41dc, { 0xbc, 0xb9, 0x4, 0x7e, 0xc5, 0xfd, 0x18, 0x16 } };
-cfg_string cfgMiddleClick(guid_cfgMiddleClick, "");
+cfg_string cfgMiddleClick(guid_cfgMiddleClick, "Add to new Playlist ");
 
 // {30AFB194-E81A-4130-91A9-1BCA1F4E3715}
 static const GUID guid_cfgEnterKey = { 0x30afb194, 0xe81a, 0x4130, { 0x91, 0xa9, 0x1b, 0xca, 0x1f, 0x4e, 0x37, 0x15 } };
-cfg_string cfgEnterKey(guid_cfgEnterKey, "");
+cfg_string cfgEnterKey(guid_cfgEnterKey, "Replace Playlist ");
+
+
+// {5B915FEB-5FED-4edc-98D7-26F5BC991B3D}
+static const GUID guid_cfgCoverFollowsPlayback = { 0x5b915feb, 0x5fed, 0x4edc, { 0x98, 0xd7, 0x26, 0xf5, 0xbc, 0x99, 0x1b, 0x3d } };
+cfg_bool cfgCoverFollowsPlayback(guid_cfgCoverFollowsPlayback, true);
+
+// {7AA69C60-1528-4ce3-86ED-D413A8A93CE1}
+static const GUID guid_cfgCoverFollowDelay = { 0x7aa69c60, 0x1528, 0x4ce3, { 0x86, 0xed, 0xd4, 0x13, 0xa8, 0xa9, 0x3c, 0xe1 } };
+cfg_int cfgCoverFollowDelay(guid_cfgCoverFollowDelay, 10);
+
+/*********************************************** Display tab ************************************************************/
+// {85C3038A-EC62-416f-9D76-2B86D0F7493C}
+static const GUID guid_cfgAlbumTitle = { 0x85c3038a, 0xec62, 0x416f, { 0x9d, 0x76, 0x2b, 0x86, 0xd0, 0xf7, 0x49, 0x3c } };
+cfg_string cfgAlbumTitle(guid_cfgAlbumTitle, "%album artist% - %album%");
+service_ptr_t<titleformat_object> cfgAlbumTitleScript;
+
+// {6B35F73F-C754-40ab-A8EB-3BA86CB43AF5}
+static const GUID guid_cfgTitlePosH = { 0x6b35f73f, 0xc754, 0x40ab, { 0xa8, 0xeb, 0x3b, 0xa8, 0x6c, 0xb4, 0x3a, 0xf5 } };
+cfg_struct_t<double> cfgTitlePosH(guid_cfgTitlePosH, 0.5);
+
+// {8441C311-7EF1-47d0-BCBF-D7B6CEF5392C}
+static const GUID guid_cfgTitlePosV = { 0x8441c311, 0x7ef1, 0x47d0, { 0xbc, 0xbf, 0xd7, 0xb6, 0xce, 0xf5, 0x39, 0x2c } };
+cfg_struct_t<double> cfgTitlePosV(guid_cfgTitlePosV, 0.92);
+
+// {10820ADB-EAC6-403f-89B3-A33E2F800DD7}
+static const GUID guid_cfgTitleColor = { 0x10820adb, 0xeac6, 0x403f, { 0x89, 0xb3, 0xa3, 0x3e, 0x2f, 0x80, 0xd, 0xd7 } };
+cfg_int cfgTitleColor(guid_cfgTitleColor, RGB(0, 0, 0));
+
+// {3BBA50BD-207E-43b2-95F1-44B67B898C26}
+static const GUID guid_cfgTitleFont = { 0x3bba50bd, 0x207e, 0x43b2, { 0x95, 0xf1, 0x44, 0xb6, 0x7b, 0x89, 0x8c, 0x26 } };
+static inline LOGFONT def_cfgTitleFont(){
+	LOGFONT out;
+	ZeroMemory(&out, sizeof(out));
+	wcscpy_s(out.lfFaceName,L"Verdana");
+	out.lfHeight = -21;
+	out.lfWeight = 700;
+	return out;
+}
+cfg_struct_t<LOGFONT> cfgTitleFont(guid_cfgTitleFont, def_cfgTitleFont());
+
+// {8AC48B7A-E38E-40fb-B6BE-1A0CD0D81D30}
+static const GUID guid_cfgPanelBg = { 0x8ac48b7a, 0xe38e, 0x40fb, { 0xb6, 0xbe, 0x1a, 0xc, 0xd0, 0xd8, 0x1d, 0x30 } };
+cfg_int cfgPanelBg(guid_cfgPanelBg, RGB(255, 255, 255));
+
+
+/********************************************* Cover Display tab *********************************************************/
+// {7C3CFFF9-A881-476e-ACE7-503512F75C14}
+static const GUID guid_cfgCoverConfigs = { 0x7c3cfff9, 0xa881, 0x476e, { 0xac, 0xe7, 0x50, 0x35, 0x12, 0xf7, 0x5c, 0x14 } };
+//static const char* def_cfg_coverConfigs[] = {"TestConfig2", "ConfigInhalt", "DefaultCOnfig", "mehr configinhalt\nlalala", ""};
+#include "DEF_CFG_COVERCONFIGS.h"
+cfg_coverConfigs cfgCoverConfigs(guid_cfgCoverConfigs, def_cfg_coverConfigs);
+
+// {A6F566E7-9800-4de8-BF72-22FAA4ADBB6B}
+static const GUID guid_cfgCoverConfigSel = { 0xa6f566e7, 0x9800, 0x4de8, { 0xbf, 0x72, 0x22, 0xfa, 0xa4, 0xad, 0xbb, 0x6b } };
+cfg_string cfgCoverConfigSel(guid_cfgCoverConfigSel, "Standart Coverflow");
 
 
 
@@ -55,3 +112,7 @@ cfg_string cfgEnterKey(guid_cfgEnterKey, "");
 // {53209101-8AAE-4256-90A4-F67417F4F75C}
 static const GUID guid_sessionSelectedCover = { 0x53209101, 0x8aae, 0x4256, { 0x90, 0xa4, 0xf6, 0x74, 0x17, 0xf4, 0xf7, 0x5c } };
 cfg_int sessionSelectedCover(guid_sessionSelectedCover, 0);
+
+// {6DDC4C81-7525-46d0-B9B8-0E8DE36957A8}
+static const GUID guid_sessionCompiledCPInfo = { 0x6ddc4c81, 0x7525, 0x46d0, { 0xb9, 0xb8, 0xe, 0x8d, 0xe3, 0x69, 0x57, 0xa8 } };
+cfg_compiledCPInfoPtr sessionCompiledCPInfo(guid_sessionCompiledCPInfo, 0);

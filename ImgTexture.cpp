@@ -1,5 +1,4 @@
 #include "chronflow.h"
-#include "ImgTexture.h"
 
 using namespace Gdiplus;
 
@@ -12,10 +11,14 @@ ImgTexture::ImgTexture(const char * imageFile)
 	bitmap = 0;
 	bitmapData = 0;
 	glTexture = 0;
+	InitializeCriticalSectionAndSpinCount(&uploadCS, 0x80000400);
 
 	this->imageFile = imageFile;
 	loadImage();
+	instanceCount++;
 }
+
+int ImgTexture::instanceCount = 0;
 
 ImgTexture::~ImgTexture(void)
 {
@@ -26,6 +29,8 @@ ImgTexture::~ImgTexture(void)
 	if (glTexture){
 		MessageBoxW(NULL,L"Destructed ImgTexture with existing glTexture\nMemory Leak!",L"Chronflow Error",MB_OK |MB_ICONINFORMATION);
 	}
+	DeleteCriticalSection(&uploadCS);
+	instanceCount--;
 }
 
 const char* ImgTexture::getIdentifier(){
@@ -38,9 +43,7 @@ void ImgTexture::glBind(void)
 		case STATUS_NONE:
 			return;
 		case STATUS_IMG_LOCKED:
-#ifdef _DEBUG
-			Console::println(L"                              forced");
-#endif
+			IF_DEBUG(Console::println(L"------------------------------forced UPLOAD"));
 			glUpload();
 	}
 	glBindTexture(GL_TEXTURE_2D,glTexture[0]);
@@ -57,7 +60,7 @@ Bitmap* ImgTexture::getErrorBitmap(){
 	drawer.DrawLine(&redPen,40,256-40,256-40,40);
 	
 	SolidBrush whiteBrush(Color(255,255,255));
-	Font font(L"Verdana",15.0);
+	Gdiplus::Font font(L"Verdana",15.0);
 	StringFormat format;
 	format.SetAlignment(StringAlignmentCenter);
 	format.SetLineAlignment(StringAlignmentCenter);
@@ -67,28 +70,40 @@ Bitmap* ImgTexture::getErrorBitmap(){
 
 void ImgTexture::glUpload(void)
 {
+	EnterCriticalSection(&uploadCS);
 	if ((status == STATUS_IMG_LOCKED) && bitmap && bitmapData){
-#ifdef _DEBUG
-			Console::println(L"                                   Upload");
-#endif
 		glTexture = new GLuint[1];
 		glGenTextures(1,glTexture);
 		glBindTexture(GL_TEXTURE_2D,glTexture[0]);
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
 
+		/*glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D,GL_GENERATE_MIPMAP,GL_TRUE);*/
+
+
+
 		int width = bitmap->GetWidth();
 		int height = bitmap->GetHeight();
 		void* data = bitmapData->Scan0;
 
+#ifdef COVER_ALPHA
 		GLint glInternalFormat;
-		PixelFormat pxFmt = bitmap->GetPixelFormat();
-
-		if (IsAlphaPixelFormat(pxFmt) || IsIndexedPixelFormat(pxFmt))
+		if (bitmapDataFormat == GL_BGRA_EXT){
 			glInternalFormat = GL_COMPRESSED_RGBA;
-		else
+		} else if (bitmapDataFormat == GL_BGR_EXT) {
 			glInternalFormat = GL_COMPRESSED_RGB;
-		glTexImage2D(GL_TEXTURE_2D,0,glInternalFormat,width,height,0,GL_BGRA_EXT, GL_UNSIGNED_BYTE,data);
+		} else {
+			PFC_ASSERT(false);
+		}
+#else
+		static const GLint glInternalFormat = GL_RGB;
+#endif
+
+		IF_DEBUG(Console::println(L"                                     UPLOAD"));
+
+		glTexImage2D(GL_TEXTURE_2D, 0, glInternalFormat, width, height, 0, bitmapDataFormat, GL_UNSIGNED_BYTE, data);
 		bitmap->UnlockBits(bitmapData);
 		delete bitmapData;
 		bitmapData = 0;
@@ -96,13 +111,17 @@ void ImgTexture::glUpload(void)
 		bitmap = 0;
 		status = STATUS_UPLOADED;
 	}
+	LeaveCriticalSection(&uploadCS);
 }
 
 void ImgTexture::glDelete(void)
 {
 	if (glTexture){
+		IF_DEBUG(Console::println(L"                                              DELETE"));
 		glDeleteTextures(1,glTexture);
 		delete[] glTexture;
+	} else {
+		IF_DEBUG(Console::println(L"                                        EMPTY DELETE"));
 	}
 	glTexture = 0;
 }
@@ -183,8 +202,24 @@ void ImgTexture::prepareUpload(void)
 		resizer.Flush();
 		delete oldBitmap;
 	}
+
+#ifdef COVER_ALPHA
+	PixelForamt texFmt;
+	PixelFormat imgFmt = bitmap->GetPixelFormat();
+	if (IsAlphaPixelFormat(imgFmt) || IsIndexedPixelFormat(imgFmt)) {
+		bitmapDataFormat = GL_BGRA_EXT;
+		texFmt = PixelFormat32bppARGB;
+	} else {
+		bitmapDataFormat = GL_BGR_EXT;
+		texFmt = PixelFormat24bppRGB;
+	}
+#else
+	static const PixelFormat texFmt = PixelFormat24bppRGB;
+	bitmapDataFormat = GL_BGR_EXT;
+#endif
+
 	Rect rc(0,0,bitmap->GetWidth(),bitmap->GetHeight());
 	bitmapData = new BitmapData();
-	bitmap->LockBits(&rc,ImageLockModeRead,PixelFormat32bppARGB,bitmapData);
+	bitmap->LockBits(&rc, ImageLockModeRead, texFmt, bitmapData);
 	status = STATUS_IMG_LOCKED;
 }

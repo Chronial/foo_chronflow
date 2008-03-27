@@ -6,24 +6,26 @@ class DbAlbumCollection :
 {
 	class RefreshWorker;
 	friend class RefreshWorker;
+	bool isRefreshing; // unsures that only one RefreshWorker is running at a time
+	AppInstance* appInstance;
 public:
-	DbAlbumCollection();
+	DbAlbumCollection(AppInstance* instance);
 	~DbAlbumCollection(void);
-	int getCount(void);
+	inline int getCount() { return albums.get_count();	};
 	ImgTexture* getImgTexture(CollectionPos pos);
-	char* getTitle(CollectionPos pos);
+	void getTitle(CollectionPos pos, pfc::string_base& out);
 
 	metadb_handle_list getTracks(CollectionPos pos);
 
 	bool getAlbumForTrack(const metadb_handle_ptr& track, CollectionPos& out);
-	void reloadAsynchStart(HWND notifyWnd, bool hardRefresh = false);
-	void reloadAsynchFinish(LPARAM worker, DisplayPosition* dPos);
+	void reloadAsynchStart(bool hardRefresh = false);
+	void reloadAsynchFinish(LPARAM worker);
 	void reloadSourceScripts();
 
 private:
 	bool getImageForTrack(const metadb_handle_ptr &track, pfc::string_base &out);
 
-	pfc::list_t<service_ptr_t<titleformat_object>> sourceScripts;
+	pfc::list_t< service_ptr_t<titleformat_object> > sourceScripts;
 	CRITICAL_SECTION sourceScriptsCS;
 
 	/*typedef struct {

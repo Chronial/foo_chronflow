@@ -7,8 +7,9 @@ extern cfg_string cfgSources;
 extern cfg_string cfgSort;
 extern cfg_string cfgInnerSort;
 extern cfg_bool cfgSortGroup;
+extern cfg_string cfgAlbumTitle;
+extern service_ptr_t<titleformat_object> cfgAlbumTitleScript;
 
-extern AsynchTexLoader* gTexLoader;
 
 namespace {
 	struct custom_sort_data	{
@@ -150,9 +151,9 @@ private:
 	}
 
 private:
-	HWND notifyWindow;
-	RefreshWorker(HWND notifyWindow){
-		this->notifyWindow = notifyWindow;
+	AppInstance* appInstance;
+	RefreshWorker(AppInstance* instance){
+		this->appInstance = instance;
 	}
 private:
 	HANDLE workerThread;
@@ -172,62 +173,62 @@ private:
 
 	void workerThreadProc(){
 		this->generateData();
-		gTexLoader->stopLoading();
-		PostMessage(notifyWindow, WM_COLLECTION_REFRESHED, 0, (LPARAM)this);
+		appInstance->texLoader->stopLoading();
+		PostMessage(appInstance->mainWindow, WM_COLLECTION_REFRESHED, 0, (LPARAM)this);
 		// Notify mainWindow to copy data, after copying, refresh AsynchTexloader + start Loading
 	}
 
 public:
-	static void reloadAsynchStart(HWND notifyWindow, bool hardRefresh = false){
-		RefreshWorker* worker = new RefreshWorker(notifyWindow);
+	static void reloadAsynchStart(AppInstance* instance, bool hardRefresh = false){
+		RefreshWorker* worker = new RefreshWorker(instance);
 		worker->hardRefresh = hardRefresh;
 		worker->init();
 		worker->startWorkerThread();
 	}
-	void reloadAsynchFinish(DbAlbumCollection* collection, DisplayPosition* dPos){
+	void reloadAsynchFinish(DbAlbumCollection* collection){
 		double a[6];
 		a[0] = Helpers::getHighresTimer();
-		gTexLoader->stopLoading();
+		appInstance->texLoader->stopLoading();
 		a[1] = Helpers::getHighresTimer();
 		if (hardRefresh){
 			collection->reloadSourceScripts();
-			gTexLoader->clearCache();
+			appInstance->texLoader->clearCache();
 		} else {
-			gTexLoader->resynchCache(staticResynchCallback, (void*)this);
+			appInstance->texLoader->resynchCache(staticResynchCallback, (void*)this);
 		}
 
 		a[2] = Helpers::getHighresTimer();
 
 		{ // update DisplayPosition
-			CollectionPos centeredPos = dPos->getCenteredPos();
+			CollectionPos centeredPos = appInstance->displayPos->getCenteredPos();
 			int centeredIdx = centeredPos.toIndex();
-			CollectionPos targetPos = dPos->getTarget();
+			CollectionPos targetPos = appInstance->displayPos->getTarget();
 			int targetIdx = targetPos.toIndex();
 
 			int newCenteredIdx = resynchCallback(centeredIdx, collection);
 			if (newCenteredIdx >= 0){
 				centeredPos += (newCenteredIdx - centeredIdx);
-				dPos->hardSetCenteredPos(centeredPos);
+				appInstance->displayPos->hardSetCenteredPos(centeredPos);
 				int newTargetIdx = resynchCallback(targetIdx, collection);
 				if (newTargetIdx >= 0){
 					targetPos += (newTargetIdx - targetIdx);
 				} else {
 					targetPos += (newCenteredIdx - centeredIdx);
 				}
-				dPos->hardSetTarget(targetPos);
-				gTexLoader->setQueueCenter(targetPos);
+				appInstance->displayPos->hardSetTarget(targetPos);
+				appInstance->texLoader->setQueueCenter(targetPos);
 			}
 		}
 		a[3] = Helpers::getHighresTimer();
 
 		copyDataToCollection(collection);
 		a[4] = Helpers::getHighresTimer();
-		gTexLoader->startLoading();
+		appInstance->texLoader->startLoading();
 		a[5] = Helpers::getHighresTimer();
 		for (int i=0; i < 5; i++){
 			console::printf("Times: a%d - a%d: %dmsec", i, i+1, int((a[i+1] - a[i])*1000));
 		}
-		RedrawWindow(notifyWindow,NULL,NULL,RDW_INVALIDATE);
+		RedrawWindow(appInstance->mainWindow,NULL,NULL,RDW_INVALIDATE);
 		delete this;
 	}
 	static int CALLBACK staticResynchCallback(int oldIdx, void* p_this, AlbumCollection* collection){
@@ -278,8 +279,13 @@ void DbAlbumCollection::reloadSourceScripts(){
 	LeaveCriticalSection(&sourceScriptsCS);
 }
 
-DbAlbumCollection::DbAlbumCollection(void){
+DbAlbumCollection::DbAlbumCollection(AppInstance* instance){
+	this->appInstance = instance;
 	InitializeCriticalSectionAndSpinCount(&sourceScriptsCS, 0x80000400);
+	isRefreshing = false;
+
+	static_api_ptr_t<titleformat_compiler> compiler;
+	compiler->compile(cfgAlbumTitleScript, cfgAlbumTitle);
 
 	//reloadSourceScripts();
 	/*double start = Helpers::getHighresTimer();
@@ -292,14 +298,19 @@ DbAlbumCollection::DbAlbumCollection(void){
 	console::printf("Generate %d msec, copy %d msec",int((mid-start)*1000),int((end-mid)*1000));*/
 }
 
-void DbAlbumCollection::reloadAsynchStart(HWND notifyWnd, bool hardRefresh){
-	RefreshWorker::reloadAsynchStart(notifyWnd, hardRefresh);
+void DbAlbumCollection::reloadAsynchStart(bool hardRefresh){
+	isRefreshing = true;
+	RefreshWorker::reloadAsynchStart(appInstance, hardRefresh);
+	if (hardRefresh){
+		appInstance->texLoader->loadSpecialTextures();
+	}
 }
 
-void DbAlbumCollection::reloadAsynchFinish(LPARAM worker, DisplayPosition* dPos){
+void DbAlbumCollection::reloadAsynchFinish(LPARAM worker){
 	double synchStart = Helpers::getHighresTimer();
-	reinterpret_cast<RefreshWorker*>(worker)->reloadAsynchFinish(this, dPos);
+	reinterpret_cast<RefreshWorker*>(worker)->reloadAsynchFinish(this);
 	console::printf("Synch: %d msec (in mainthread!)",int((Helpers::getHighresTimer()-synchStart)*1000));
+	isRefreshing = false;
 }
 
 
@@ -353,15 +364,17 @@ DbAlbumCollection::~DbAlbumCollection(void)
 	DeleteCriticalSection(&sourceScriptsCS);
 }
 
-int DbAlbumCollection::getCount(){
-	return albums.get_count();
-}
-
-char* DbAlbumCollection::getTitle(CollectionPos pos){
-	return "Titles not implemented";
+void DbAlbumCollection::getTitle(CollectionPos pos, pfc::string_base& out){
+	if (albums.get_count() > 0)
+		albums.get_item_ref(pos.toIndex())->format_title(0, out, cfgAlbumTitleScript, 0);
+	else
+		out = "No Covers Loaded";
 }
 
 ImgTexture* DbAlbumCollection::getImgTexture(CollectionPos pos){
+	if (albums.get_count() < 1)
+		return 0;
+
 	pfc::string8_fast_aggressive imgFile;
 	imgFile.prealloc(512);
 	if (getImageForTrack(albums.get_item_ref(pos.toIndex()), imgFile)){

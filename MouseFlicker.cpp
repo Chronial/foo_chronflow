@@ -1,13 +1,14 @@
 #include "chronflow.h"
 
-MouseFlicker::MouseFlicker(DisplayPosition* output)
+MouseFlicker::MouseFlicker(AppInstance* instance) :
+appInstance(instance),
+isMouseDown(false)
 {
-	dPos = output;
-	isMouseDown = false;
 }
 
 MouseFlicker::~MouseFlicker(void)
 {
+	ReleaseCapture();
 }
 
 void MouseFlicker::mouseDown(HWND hWnd, int x, int y)
@@ -18,15 +19,16 @@ void MouseFlicker::mouseDown(HWND hWnd, int x, int y)
 	dX = 0;
 	dTime = 1;
 	SetCapture(hWnd);
+	appInstance->playbackTracer->userStartedMovement(); // maybe we should implement a PlaybackTracer::MouseFlickerDown
 }
 
 void MouseFlicker::mouseUp(int x, int y)
 {
 	if (isMouseDown){
 		double pD = win2pos(dX);
-		float dist = dPos->moveDist2targetDist(float(pD / dTime));
-		dist += dPos->getCenteredOffset();
-		dPos->setTarget(dPos->getCenteredPos() + (int)floor(dist+0.5));
+		float dist = appInstance->displayPos->moveDist2targetDist(float(pD / dTime));
+		dist += appInstance->displayPos->getCenteredOffset();
+		appInstance->displayPos->setTarget(appInstance->displayPos->getCenteredPos() + (int)floor(dist+0.5));
 		isMouseDown = false;
 	}
 	ReleaseCapture();
@@ -58,5 +60,8 @@ double MouseFlicker::win2pos(int x)
 
 void MouseFlicker::lostCapture(int x, int y)
 {
+	if (isMouseDown){
+		appInstance->playbackTracer->movementEnded(); // Hack, but we shouldn't loose capture after all
+	}
 	isMouseDown = false;
 }

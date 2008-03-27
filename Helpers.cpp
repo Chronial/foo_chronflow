@@ -36,7 +36,7 @@ bool Helpers::isPerformanceCounterSupported(){
 		return true;
 }
 
-void Helpers::FPS(HWND hWnd, CollectionPos pos, float offset)					// This function calculates FPS
+/*void Helpers::FPS(HWND hWnd, CollectionPos pos, float offset)					// This function calculates FPS
 {
 	static int fps           = 0;	
 	static const int maxFPS  = 60;
@@ -101,4 +101,4 @@ void Helpers::FPS(HWND hWnd, CollectionPos pos, float offset)					// This functi
 	previousTime = currentTime;
 	sprintf_s(strFPS, 256, "Pos: %3d, Offset: %1.5f, (%3d x %3d) FPS: %5.2lf, lowFps: %.5lf  -|%s|-", pos.toIndex(), offset, w, h, lastFps, double(1/highDur), strCount);
 	SetWindowTextA(hWnd, strFPS);
-}
+}*/

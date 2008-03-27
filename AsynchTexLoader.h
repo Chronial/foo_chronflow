@@ -5,21 +5,25 @@ typedef int (CALLBACK* t_resynchCallback)(int, void*, AlbumCollection*);
 
 class AsynchTexLoader
 {
+	AppInstance* appInstance;
 public:
-	AsynchTexLoader(AlbumCollection* collection);
+	AsynchTexLoader(AppInstance* instance);
 public:
 	~AsynchTexLoader(void);
 public:
 	void setQueueCenter(CollectionPos center);
-	void setNotifyWindow(HWND hWnd);
 public:
+	// If you wan't to call this before any hardrefresh,
+	// you'll have to call loadSpecialTextures() in the constructor
 	ImgTexture* getLoadedImgTexture(CollectionPos pos);
 public:
 	void runGlDelete();
-	bool runGlUpload(unsigned int limit = INFINITE); //returns true if the end of the queue was reached
 public:
 	void startLoading();
 	void stopLoading();
+
+public:
+	void loadSpecialTextures();
 
 public:
 	 //may only be called from Main Thread, while worker is stopped
@@ -30,10 +34,20 @@ public:
 private:
 	static void resynchCacheEnumerator(int idx, ImgTexture* tex);
 
+public:
+	void allowUpload();
+	void blockUpload();
 
 private:
-	AlbumCollection* collection;
+	bool initGlContext();
+	void destroyGlContext();
+	HWND glWindow;
+	HDC glDC;
+	HGLRC glRC;
 
+	HANDLE lockMainthreadRC;
+
+private:
 	ImgTexture* noCoverTexture;
 	ImgTexture* loadingTexture;
 private:
@@ -41,14 +55,12 @@ private:
 	static unsigned int WINAPI runWorkerThread(void* lpParameter);
 	void stopWorkerThread();
 
-	void queueGlUpload(int coverTexMapIdx);
 	void queueGlDelete(ImgTexture* tex);
-	HWND notifyWindow;
 
 	CollectionPos queueCenter;
 
 	void workerThreadProc();
-	void loadTexImage(CollectionPos pos);
+	void loadTexImage(CollectionPos pos, bool doUpload);
 	HANDLE workerThread;
 	HANDLE workerThreadHasWork;
 	int workerThreadPrio;
@@ -63,18 +75,19 @@ private:
 	int deleteBufferOut;
 	HANDLE deleteBufferFreed;
 
-	static const int UPLOAD_QUEUE_SIZE = 128;
-	int uploadQueue[UPLOAD_QUEUE_SIZE]; // Indexes of coverTexMap (so we do not upload deleted textures)
-	int uploadQueueIn;
-	int uploadQueueOut;
+	struct UploadQueueElem {
+		int texIdx;
+		UploadQueueElem* next;
+	};
+	UploadQueueElem* uploadQueueHead;
+	UploadQueueElem* uploadQueueTail;
+	HANDLE mayUpload;
+	void doUploadQueue();
 
 	CRITICAL_SECTION textureCacheCS;
 	typedef pfc::map_t<int, ImgTexture*> t_textureCache;
 	t_textureCache textureCache;
-	//int* coverTexMap;
 	int textureCacheSize;
-	//ImgTexture** textures;
-	//CollectionPos** texturePos;
 	static void textureCacheDeleteEnumerator(int idx, ImgTexture* tex);
 
 public:

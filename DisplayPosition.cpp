@@ -1,11 +1,12 @@
 #include "chronflow.h"
 
-DisplayPosition::DisplayPosition(AlbumCollection* collection, CollectionPos startingPos, HWND redrawTarget)
+extern cfg_int sessionSelectedCover;
+
+DisplayPosition::DisplayPosition(AppInstance* instance, CollectionPos startingPos)
 	: centeredOffset(0.0f),
-	  collection(collection),
+	  appInstance(instance),
 	  centeredPos(startingPos),
 	  targetPos(startingPos),
-	  redrawTarget(redrawTarget),
 	  lastSpeed(0.0f)
 {
 }
@@ -19,9 +20,10 @@ void DisplayPosition::setTarget(CollectionPos pos)
 {
 	if (!isMoving()){
 		lastMovement = Helpers::getHighresTimer();
-		RedrawWindow(redrawTarget,NULL,NULL,RDW_INVALIDATE);
+		RedrawWindow(appInstance->mainWindow,NULL,NULL,RDW_INVALIDATE);
 	}
 	targetPos = pos;
+	sessionSelectedCover = pos.toIndex();
 }
 
 void DisplayPosition::update(void)
@@ -57,6 +59,9 @@ void DisplayPosition::update(void)
 			}
 			centeredPos += moveDistInt;
 		}
+	}
+	if (!isMoving()){
+		appInstance->playbackTracer->movementEnded();
 	}
 	lastMovement = currentTime;
 }

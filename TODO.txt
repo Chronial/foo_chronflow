@@ -1,59 +1,57 @@
 
 == BUGS ==
-copyDataToCollection braucht zu lange (warten wir auch lange auf den WorkerThread?)
-zuletzt ausgewähltes Bild wird nicht gespeichert
-Löschen list und map auch wirklich alle Elemente bei remove/destruction???
+texLoader->startLoading() braucht zu lange (startWorkerThread braucht zu lange -> implement a pauseWorkerThread + resumeWorkerThread)
+Keyboard focus funktioniert nicht immer (vieleicht SetFocus bei WM_CLICK/WM_MOUSEACTIVATE  aufrufen?)
 
-wglShareLists!
+
 
 == Grafische Verbesserungen ==
 Supersampling implementieren
 		- Multisampling deaktivieren, wenn supersampling aktiv ist!!
 		- Supersampling nur auf den oberen Teil anwenden
 		- Supersamling nicht auf den Text
-motion blur
+motion blur (generate a texture that contains the blur vector as (r,g) and use that to blur the scene via shader
 3d models
 Cover image overlay (so we can overlay "shine" effects or something like that)
-		
+Mipmaps: Mipmaps per FBO (und shader?) rendern.
+
 		
 == Performance ==
-Nur cover rendern, die auch wirklich auf dem Bildschirm sind. (aber sicherstellen, dass wir nicht mehr als texBuffersize covers gleichzeitig anzeigen)
+Nur cover rendern, die auch wirklich auf dem Bildschirm sind. <http://www.opengl.org/resources/faq/technical/viewcull.c>
 Option für compressed Textures (loading speed vs cache size)
 Cache Size konfigurieren
+optionen für den vblank synch ins UI
+Tripple Buffering implementieren: Mainthread rendert in einen pBuffer, der via Multimedia Timer geswappt wird.
 
 == incomplete implementations ==
 MouseFlicker: - Bildschirmauflösung beachten bei win2pos (bewegung relativ zur Bildschirmbreite)
 DbAlbumCollection - Handle illegal chars in titleformat strings (see titleformat_helper in uie_albumart)
-
+Custom Positions: Hillfelink zu JScript docu? Oder alles über wiki machen?
+                  Check that upVector is not linear to view-vector
 
 == Features ==
++ FPS Anzeige
 + Playlist mode (generate album list from playlist, not db)
-+ "Album follows playback" - mode (this will especially look cool in DB-Mode)
-+ Title display
-Covername anzeigen
+Scrollbar
 zooming
 Cover nach vorne holen -- nicht nach vorne holen, wenn nur an ihnen vorbeigescannt wird
 Fullscreen support
-Coverposition per titleformat: einstellbare Intervalle vorausberechnen, dazwischen interpolieren
 Drag & Drop
 
-
-
-
-
-Config:
-	- Display String formatting
-
-== High prio: ==
-+ Display Settings:
- costumise cover flow type (this will be hot)
- bg-color settings etc.
-
-
-== Low Prio ==
-Texturkompression anschauen (geht das schneller, ausschaltbar machen?)
 
 Transparente png covers (von hinten nach vorne rendern! -> alpha test aus)
                         -- border clamp ändern (1-pixel ramen am Rand)
                         -- ausschaltbar (spart texturspeicher)
 						-- Transparenz-support entfernen?
+
+
+
+== High prio: ==
++ Display Settings:
+ costumise cover flow type (this will be hot)
+
+
+== Low Prio ==
+Texturkompression anschauen (geht das schneller, ausschaltbar machen?) (times.txt)
+
+

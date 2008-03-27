@@ -3,7 +3,7 @@
 class MouseFlicker
 {
 public:
-	MouseFlicker(DisplayPosition* output);
+	MouseFlicker(AppInstance* instance);
 public:
 	~MouseFlicker(void);
 public:
@@ -20,7 +20,7 @@ private:
 	double win2pos(int x); // translates window pixel-difference to colPos difference
 
 private:
-	DisplayPosition* dPos;
+	AppInstance* appInstance;
 	bool isMouseDown;
 	int lastX;
 	double lastTime;

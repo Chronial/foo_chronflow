@@ -1,7 +1,13 @@
 #pragma once
 
+class TextDisplay;
+
 class ImgTexture
 {
+public:
+	static int instanceCount;
+
+	friend TextDisplay; // needs to access forcePowerOfTwo - this is a hack!
 public:
 	ImgTexture(const char* imageFile);
 public:
@@ -33,12 +39,14 @@ private:
 	Gdiplus::Bitmap* bitmap;
 	GLuint* glTexture;
 	Gdiplus::BitmapData* bitmapData;
+	GLenum bitmapDataFormat; 
 
 	enum  {
 		STATUS_NONE = 0,
 		STATUS_IMG_LOCKED = 1,
 		STATUS_UPLOADED = 2
 	} status;
+	CRITICAL_SECTION uploadCS;
 	void prepareUpload(void);
 
 	void loadImage(void);

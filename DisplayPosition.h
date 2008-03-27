@@ -2,8 +2,9 @@
 
 class DisplayPosition
 {
+	AppInstance* appInstance;
 public:
-	DisplayPosition(AlbumCollection* collection, CollectionPos startingPos, HWND redrawTarget);
+	DisplayPosition(AppInstance* instance, CollectionPos startingPos);
 public:
 	~DisplayPosition(void);
 public:
@@ -28,11 +29,9 @@ public:
 	void hardSetCenteredPos(CollectionPos pos);
 
 private:
-	AlbumCollection* collection;
 	CollectionPos targetPos;
 	CollectionPos centeredPos;
 	float centeredOffset;
-	HWND redrawTarget;
 	float lastSpeed;
 private:
 	double lastMovement;

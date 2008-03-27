@@ -17,6 +17,22 @@ extern cfg_string cfgDoubleClick;
 extern cfg_string cfgMiddleClick;
 extern cfg_string cfgEnterKey;
 
+extern cfg_bool cfgCoverFollowsPlayback;
+extern cfg_int cfgCoverFollowDelay;
+
+
+extern cfg_string cfgAlbumTitle;
+extern service_ptr_t<titleformat_object> cfgAlbumTitleScript;
+extern cfg_struct_t<double> cfgTitlePosH;
+extern cfg_struct_t<double> cfgTitlePosV;
+extern cfg_int cfgTitleColor;
+extern cfg_struct_t<LOGFONT> cfgTitleFont;
+extern cfg_int cfgPanelBg;
+
+extern cfg_coverConfigs cfgCoverConfigs;
+extern cfg_string cfgCoverConfigSel;
+
+
 static struct {
    int id;
    cfg_string *var;
@@ -29,6 +45,7 @@ static struct {
 	{ IDC_INNER_SORT, &cfgInnerSort },
 	{ IDC_IMG_NO_COVER, &cfgImgNoCover },
 	{ IDC_IMG_LOADING, &cfgImgLoading },
+	{ IDC_ALBUM_FORMAT, &cfgAlbumTitle },
 };
 
 static struct {
@@ -39,6 +56,7 @@ static struct {
 	{ IDC_DOUBLE_CLICK, &cfgDoubleClick },
 	{ IDC_MIDDLE_CLICK, &cfgMiddleClick },
 	{ IDC_ENTER_KEY, &cfgEnterKey },
+	{ IDC_SAVED_SELECT, &cfgCoverConfigSel },
 };
 
 
@@ -49,6 +67,7 @@ static struct {
 {
 	{ IDC_SORT_GROUP, &cfgSortGroup },
 	{ IDC_PL_SORT_PL, &cfgPlSortPl },
+	{ IDC_FOLLOW_PLAYBACK, &cfgCoverFollowsPlayback },
 };
 
 class ConfigTab {
@@ -64,6 +83,7 @@ public:
 		this->id = id;
 		this->parent = parent;
 	}
+	virtual ~ConfigTab() {}
 	void init (int idx){
 		HWND hWndTab = uGetDlgItem(parent, IDC_TABS);
 		uTCITEM tabItem = {0};
@@ -78,10 +98,10 @@ public:
 		ConfigTab* configTab = 0;
 		if (uMsg == WM_INITDIALOG){
 			configTab = (ConfigTab*)lParam;
-			uSetWindowLong(hWnd, GWL_USERDATA, (LPARAM)configTab);
+			SetWindowLongPtr (hWnd, GWLP_USERDATA, (LONG_PTR)configTab);
 			configTab->hWnd = hWnd;
 		} else {
-			configTab = reinterpret_cast<ConfigTab*>(uGetWindowLong(hWnd,GWL_USERDATA));
+			configTab = reinterpret_cast<ConfigTab*>(GetWindowLongPtr(hWnd,GWLP_USERDATA));
 		}
 		if (configTab == 0)
 			return FALSE;
@@ -133,9 +153,10 @@ public:
 		   if (listVarMap[i].id == id){
 			   int s = uSendDlgItemMessage(hWnd, id, CB_GETCURSEL, 0, 0);
 			   if (s != CB_ERR){
-				   wchar_t tmpBuffer[2048];
-				   uSendDlgItemMessage(hWnd, id, CB_GETLBTEXT, s, (LPARAM)tmpBuffer);
-				   (*listVarMap[i].var).set_string(pfc::stringcvt::string_utf8_from_wide(tmpBuffer));
+				   //wchar_t tmpBuffer[2048];
+				   uComboBox_GetText(uGetDlgItem(hWnd, id), s, *(listVarMap[i].var));
+				   //uSendDlgItemMessage(hWnd, id, CB_GETLBTEXT, s, (LPARAM)tmpBuffer);
+				   //(*listVarMap[i].var).set_string(pfc::stringcvt::string_utf8_from_wide(tmpBuffer));
 			   }
 			   break;
 		   }
@@ -146,6 +167,14 @@ public:
 			fitInto.left, fitInto.top,
 			fitInto.right - fitInto.left, fitInto.bottom - fitInto.top,
 			SWP_NOZORDER | SWP_NOACTIVATE);
+	}
+
+protected:
+	void redrawMainWin(){
+		AppInstance * mainInstance = gGetSingleInstance();
+		if (mainInstance) {
+			RedrawWindow(mainInstance->mainWindow,NULL,NULL,RDW_INVALIDATE);
+		}
 	}
 };
 
@@ -161,9 +190,11 @@ public:
 		{
 		case WM_INITDIALOG:
 			loadConfig();
-			if (!cfgPlSortPl)
-				uButton_SetCheck(hWnd, IDC_PL_SORT_DB, true);
-			uEnableWindow(uGetDlgItem(hWnd, IDC_SORT), !cfgSortGroup);
+			{
+				if (!cfgPlSortPl)
+					uButton_SetCheck(hWnd, IDC_PL_SORT_DB, true);
+				uEnableWindow(uGetDlgItem(hWnd, IDC_SORT), !cfgSortGroup);
+			}
 			break;
 
 		case WM_COMMAND:
@@ -175,9 +206,9 @@ public:
 				{
 				case IDC_BTN_REFRESH:
 					{
-						HWND mainWin = gGetMainWindow();
-						if (mainWin) {
-							gCollection->reloadAsynchStart(mainWin, true);
+						AppInstance * mainInstance = gGetSingleInstance();
+						if (mainInstance) {
+							mainInstance->albumCollection->reloadAsynchStart(true);
 						}
 					}
 					break;
@@ -237,13 +268,32 @@ public:
 			loadActionList(IDC_DOUBLE_CLICK, cfgDoubleClick);
 			loadActionList(IDC_MIDDLE_CLICK, cfgMiddleClick);
 			loadActionList(IDC_ENTER_KEY, cfgEnterKey);
+			SendDlgItemMessage(hWnd, IDC_FOLLOW_DELAY_SPINNER, UDM_SETRANGE, 0, MAKELONG(short(999),short(1)));
+			uSetDlgItemText(hWnd, IDC_FOLLOW_DELAY, pfc::string_fixed_t<16>() << cfgCoverFollowDelay);
+			uEnableWindow(uGetDlgItem(hWnd, IDC_FOLLOW_DELAY), cfgCoverFollowsPlayback);
 			break;
 
 		case WM_COMMAND:
 			if (HIWORD(wParam) == EN_CHANGE){
 				textChanged(LOWORD(wParam));
+				if (LOWORD(wParam) == IDC_FOLLOW_DELAY){
+					pfc::string_fixed_t<16> coverFollowDelay;
+					uGetDlgItemText(hWnd, IDC_FOLLOW_DELAY, coverFollowDelay);
+					cfgCoverFollowDelay = max(1, min(999, atoi(coverFollowDelay)));
+					AppInstance * mainInstance = gGetSingleInstance();
+					if (mainInstance) {
+						mainInstance->playbackTracer->followSettingsChanged();
+					}
+				}
 			} else if (HIWORD(wParam) == BN_CLICKED) {
 				buttonClicked(LOWORD(wParam));
+				if (LOWORD(wParam) == IDC_FOLLOW_PLAYBACK){
+					uEnableWindow(uGetDlgItem(hWnd, IDC_FOLLOW_DELAY), cfgCoverFollowsPlayback);
+					AppInstance * mainInstance = gGetSingleInstance();
+					if (mainInstance) {
+						mainInstance->playbackTracer->followSettingsChanged();
+					}
+				}
 			} else if (HIWORD(wParam) == CBN_SELCHANGE){
 				listSelChanged(LOWORD(wParam));
 			}
@@ -276,18 +326,341 @@ public:
 	}
 };
 
+class DisplayTab : public ConfigTab {
+public:
+	static const int idx = 2;
+
+	DisplayTab(HWND parent) : ConfigTab("Display", IDD_DISPLAY_TAB, parent){
+		init(idx);
+	}
+	BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
+		switch (uMsg)
+		{
+		case WM_INITDIALOG:
+			loadConfig();
+			{
+				int titlePosH = (int)floor(cfgTitlePosH*100 + 0.5);
+				int titlePosV = (int)floor(cfgTitlePosV*100 + 0.5);
+				uSendDlgItemMessage(hWnd, IDC_TPOS_H, TBM_SETRANGE, FALSE, MAKELONG(0, 100));
+				uSendDlgItemMessage(hWnd, IDC_TPOS_H, TBM_SETTIC, 0, 50);
+				uSendDlgItemMessage(hWnd, IDC_TPOS_H, TBM_SETPOS, TRUE, titlePosH);
+				uSendDlgItemMessageText(hWnd, IDC_TPOS_H_P, WM_SETTEXT, 0, pfc::string_fixed_t<16>() << titlePosH);
+
+				uSendDlgItemMessage(hWnd, IDC_TPOS_V, TBM_SETRANGE, TRUE, MAKELONG(0, 100));
+				uSendDlgItemMessage(hWnd, IDC_TPOS_V, TBM_SETTIC, 0, 50);
+				uSendDlgItemMessage(hWnd, IDC_TPOS_V, TBM_SETPOS, TRUE, titlePosV);
+				uSendDlgItemMessageText(hWnd, IDC_TPOS_V_P, WM_SETTEXT, 0, pfc::string_fixed_t<16>() << titlePosV);
+
+				uSendDlgItemMessage(hWnd, IDC_FONT_PREV, WM_SETTEXT, 0, (LPARAM)cfgTitleFont.get_value().lfFaceName);
+			}
+			break;
+		case WM_HSCROLL:
+			{
+				int titlePosH = uSendDlgItemMessage(hWnd, IDC_TPOS_H, TBM_GETPOS, 0, 0);
+				int titlePosV = uSendDlgItemMessage(hWnd, IDC_TPOS_V, TBM_GETPOS, 0, 0);
+				cfgTitlePosH = 0.01 * titlePosH;
+				cfgTitlePosV = 0.01 * titlePosV;
+				uSendDlgItemMessageText(hWnd, IDC_TPOS_H_P, WM_SETTEXT, 0, pfc::string_fixed_t<16>() << titlePosH);
+				uSendDlgItemMessageText(hWnd, IDC_TPOS_V_P, WM_SETTEXT, 0, pfc::string_fixed_t<16>() << titlePosV);
+
+				redrawMainWin();
+			}
+			break;
+		case WM_DRAWITEM:
+			{
+				DRAWITEMSTRUCT * drawStruct = reinterpret_cast<DRAWITEMSTRUCT*>(lParam);
+				HBRUSH brush;
+				switch (wParam){
+				case IDC_TEXTCOLOR_PREV:
+					brush = CreateSolidBrush(cfgTitleColor);
+					break;
+
+				case IDC_BG_COLOR_PREV:
+					brush = CreateSolidBrush(cfgPanelBg);
+					break;
+				}
+				FillRect(drawStruct->hDC, &drawStruct->rcItem, brush);
+			}
+			break;
+
+		case WM_COMMAND:
+			if (HIWORD(wParam) == EN_CHANGE){
+				textChanged(LOWORD(wParam));
+				switch (LOWORD(wParam))
+				{
+				case IDC_ALBUM_FORMAT:
+					{
+						static_api_ptr_t<titleformat_compiler> compiler;
+						static_api_ptr_t<metadb> db;
+						compiler->compile(cfgAlbumTitleScript, cfgAlbumTitle);
+						pfc::string8 preview;
+						metadb_handle_ptr aTrack;
+						if (db->g_get_random_handle(aTrack)){
+							aTrack->format_title(0, preview, cfgAlbumTitleScript, 0);
+							uSendDlgItemMessageText(hWnd, IDC_TITLE_PREVIEW, WM_SETTEXT, 0, preview);
+						}
+						redrawMainWin();
+					}
+					break;
+				}
+			} else if (HIWORD(wParam) == BN_CLICKED) {
+				buttonClicked(LOWORD(wParam));
+				switch (LOWORD(wParam))
+				{
+				case IDC_BG_COLOR:
+					{
+						COLORREF panelBg = cfgPanelBg;
+						if (selectColor(panelBg)){
+							cfgPanelBg = panelBg;
+							InvalidateRect(uGetDlgItem(hWnd, IDC_BG_COLOR_PREV), NULL, TRUE);
+						}
+					}
+					break;
+				case IDC_TEXTCOLOR:
+					{
+						COLORREF titleColor = cfgTitleColor;
+						if (selectColor(titleColor)){
+							cfgTitleColor = titleColor;
+							InvalidateRect(uGetDlgItem(hWnd, IDC_TEXTCOLOR_PREV), NULL, TRUE);
+						}
+					}
+					break;
+				case IDC_FONT:
+					{
+						LOGFONT titleFont = cfgTitleFont;
+						if (selectFont(titleFont)){
+							cfgTitleFont = titleFont;
+							uSendDlgItemMessage(hWnd, IDC_FONT_PREV, WM_SETTEXT, 0, (LPARAM)cfgTitleFont.get_value().lfFaceName);
+							AppInstance * mainInstance = gGetSingleInstance();
+							if (mainInstance) {
+								mainInstance->textDisplay->clearCache();
+							}
+						}
+					}
+				}
+				redrawMainWin();
+			}
+			break;
+		}
+		return FALSE;
+	}
+private:
+	bool selectColor(COLORREF& color){
+		static DWORD costumColors[16] = {0};
+		COLORREF tColor = color;
+		if (uChooseColor(&tColor, hWnd, costumColors)){
+			color = tColor;
+			return true;
+		} else {
+			return false;
+		}
+	}
+	bool selectFont(LOGFONT& font){
+		LOGFONT tFont = font;
+
+		CHOOSEFONT cf = {0};
+		cf.lStructSize = sizeof(cf);
+		cf.hwndOwner = hWnd;
+		cf.lpLogFont = &tFont;
+		cf.Flags = CF_SCREENFONTS | CF_FORCEFONTEXIST | CF_INITTOLOGFONTSTRUCT;
+		if (ChooseFont(&cf)){
+			font = tFont;
+			return true;
+		} else {
+			return false;
+		}
+	}
+};
+
+class ConfigNameDialog : private dialog_helper::dialog_modal {
+	BOOL on_message(UINT uMsg, WPARAM wParam, LPARAM lParam){
+		switch (uMsg){
+			case WM_INITDIALOG:
+				if (value){
+					uSetDlgItemText(get_wnd(), IDC_CONFIG_NAME, value);
+				}
+				SetFocus(uGetDlgItem(get_wnd(), IDC_CONFIG_NAME));
+				return 0;
+			case WM_COMMAND:
+				if (HIWORD(wParam) == BN_CLICKED){
+					if (LOWORD(wParam) == IDOK)
+						end_dialog(1);
+					else if (LOWORD(wParam) == IDCANCEL)
+						end_dialog(0);
+				} else if (HIWORD(wParam) == EN_CHANGE){
+					uGetDlgItemText(get_wnd(), IDC_CONFIG_NAME, value);
+				}
+				return 0;
+		}
+		return 0;
+	}
+public:
+	int query(HWND parent, const char * defValue = 0){
+		value = defValue;
+		return run (IDD_CONFIG_NAME, parent);
+	}
+	pfc::string8 value;
+};
+
+class CoverTab : public ConfigTab {
+	HFONT editBoxFont;
+public:
+	static const int idx = 3;
+
+	CoverTab (HWND parent) : ConfigTab("Cover Display", IDD_COVER_DISPLAY_TAB, parent){
+		editBoxFont = CreateFont(-12, 0, 0, 0, 0, FALSE, 0, 0, 0, 0, 0, 0, 0, L"Courier New");
+		init(idx);
+	}
+	~CoverTab (){
+		DeleteObject(editBoxFont);
+	}
+	BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
+		switch (uMsg)
+		{
+		case WM_INITDIALOG:
+			loadConfig();
+			loadConfigList();
+			configSelectionChanged();
+			setUpEditBox();
+			break;
+
+		case WM_COMMAND:
+			if (HIWORD(wParam) == EN_CHANGE){
+				textChanged(LOWORD(wParam));
+				if (LOWORD(wParam) == IDC_DISPLAY_CONFIG){
+					CoverConfig* config = cfgCoverConfigs.getPtrByName(cfgCoverConfigSel);
+					uGetDlgItemText(hWnd, IDC_DISPLAY_CONFIG, config->script);
+					uSetDlgItemText(hWnd, IDC_COMPILE_STATUS, "");
+				}
+			} else if (HIWORD(wParam) == BN_CLICKED) {
+				buttonClicked(LOWORD(wParam));
+				if (LOWORD(wParam) == IDC_SAVED_ADD)
+					addConfig();
+				else if (LOWORD(wParam) == IDC_SAVED_RENAME)
+					renameConfig();
+				else if (LOWORD(wParam) == IDC_SAVED_REMOVE)
+					removeConfig();
+				else if (LOWORD(wParam) == IDC_COMPILE)
+					compileConfig();
+			} else if (HIWORD(wParam) == CBN_SELCHANGE){
+				listSelChanged(LOWORD(wParam));
+				if (LOWORD(wParam) == IDC_SAVED_SELECT){
+					configSelectionChanged();
+				}
+			}
+			break;
+		}
+		return FALSE;
+	}
+	void compileConfig(){
+		pfc::string8 script;
+		uGetDlgItemText(hWnd, IDC_DISPLAY_CONFIG, script);
+
+		pfc::string8 message;
+		ScriptedCoverPositions* covPos;
+		bool killCovPos;
+		AppInstance * mainInstance = gGetSingleInstance();
+		if (mainInstance) {
+			covPos = mainInstance->coverPos;
+			killCovPos = false;
+		} else {
+			covPos = new ScriptedCoverPositions();
+			killCovPos = true;
+		}
+
+		if (covPos->setScript(script, message))
+			message = "Sucess!";
+		uSetDlgItemText(hWnd, IDC_COMPILE_STATUS, message);
+		if (mainInstance)
+			mainInstance->renderer->resetViewport();
+		redrawMainWin();
+		if (killCovPos)
+			delete covPos;
+	}
+	void setUpEditBox(){
+		int tabstops[1] = {14};
+		SendDlgItemMessage(hWnd, IDC_DISPLAY_CONFIG, EM_SETTABSTOPS, 1, (LPARAM)tabstops);
+		SendDlgItemMessage(hWnd, IDC_DISPLAY_CONFIG, WM_SETFONT, (WPARAM)editBoxFont, TRUE);
+	}
+	void removeConfig(){
+		if (cfgCoverConfigs.get_count() > 1){
+			cfgCoverConfigs.removeItemByName(cfgCoverConfigSel);
+			cfgCoverConfigSel = cfgCoverConfigs.get_item_ref(0).name;
+			loadConfigList();
+			configSelectionChanged();
+		}
+	}
+	void addConfig(){
+		ConfigNameDialog dialog;
+		if (dialog.query(hWnd)){
+			dialog.value.skip_trailing_char(' ');
+			if (dialog.value.get_length()){
+				if (!cfgCoverConfigs.getPtrByName(dialog.value)){
+					CoverConfig config;
+					config.name = dialog.value;
+					config.script = COVER_CONFIG_DEF_CONTENT;
+					cfgCoverConfigs.add_item(config);
+					cfgCoverConfigSel = dialog.value;
+					loadConfigList();
+					configSelectionChanged();
+				}
+			}
+		}
+	}
+	void renameConfig(){
+		CoverConfig* config = cfgCoverConfigs.getPtrByName(cfgCoverConfigSel);
+		if (config){
+			ConfigNameDialog dialog;
+			if (dialog.query(hWnd, config->name)){
+				dialog.value.skip_trailing_char(' ');
+				if (dialog.value.get_length()){
+					CoverConfig* nameCollision = cfgCoverConfigs.getPtrByName(dialog.value);
+					if (!nameCollision || nameCollision == config){
+						config->name = dialog.value;
+						cfgCoverConfigSel = dialog.value;
+						loadConfigList();
+						configSelectionChanged();
+					}
+				}
+			}
+		}
+	}
+	void loadConfigList(){
+		uSendDlgItemMessage(hWnd, IDC_SAVED_SELECT, CB_RESETCONTENT, 0, 0);
+
+		t_size n, m = cfgCoverConfigs.get_count();
+		for (n=0; n < m; n++){
+			uSendDlgItemMessageText(hWnd, IDC_SAVED_SELECT, CB_ADDSTRING, 0, cfgCoverConfigs.get_item_ref(n).name);
+		}
+
+		uSendDlgItemMessageText(hWnd, IDC_SAVED_SELECT, CB_SELECTSTRING, -1, cfgCoverConfigSel);
+	}
+	void configSelectionChanged(){
+		const CoverConfig* config = cfgCoverConfigs.getPtrByName(cfgCoverConfigSel);
+		if (config)
+			uSetDlgItemText(hWnd, IDC_DISPLAY_CONFIG, config->script);
+		uSetDlgItemText(hWnd, IDC_COMPILE_STATUS, "");
+	}
+};
+
+
 class ConfigWindow :
 	public preferences_page
 {
 private:
 	SourcesTab* sourcesTab;
 	BehaviourTab* behaviourTab;
+	DisplayTab* displayTab;
+	CoverTab* coverTab;
 	ConfigTab* currentTab;
 public:
 	ConfigWindow(){
 		sourcesTab = 0;
 		currentTab = 0;
+		displayTab = 0;
+		coverTab = 0;
 	}
+
 	BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 		switch (uMsg)
 		{
@@ -295,6 +668,8 @@ public:
 			{
 				sourcesTab = new SourcesTab(hWnd);
 				behaviourTab = new BehaviourTab(hWnd);
+				displayTab = new DisplayTab(hWnd);
+				coverTab = new CoverTab(hWnd);
 
 				HWND hWndTab = uGetDlgItem(hWnd, IDC_TABS);
 
@@ -304,6 +679,8 @@ public:
 
 				sourcesTab->setPos(rcTab);
 				behaviourTab->setPos(rcTab);
+				displayTab->setPos(rcTab);
+				coverTab->setPos(rcTab);
 
 				uSendMessage(hWndTab, TCM_SETCURSEL, BehaviourTab::idx, 0);
 				currentTab = behaviourTab;
@@ -315,6 +692,9 @@ public:
 			{
 				currentTab = 0;
 				delete sourcesTab;
+				delete behaviourTab;
+				delete displayTab;
+				delete coverTab;
 			}
 			break;
 
@@ -329,6 +709,10 @@ public:
 						currentTab = sourcesTab;
 					} else if (currentIdx == BehaviourTab::idx){
 						currentTab = behaviourTab;
+					} else if (currentIdx == DisplayTab::idx){
+						currentTab = displayTab;
+					} else if (currentIdx == CoverTab::idx){
+						currentTab = coverTab;
 					}
 					if (currentTab != 0)
 						currentTab->show();
@@ -340,9 +724,17 @@ public:
 	}
 
 	static BOOL CALLBACK dialogProxy(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
-		static ConfigWindow* configWindow;
-		if (uMsg == WM_INITDIALOG)
+		/*if (uMsg == WM_INITDIALOG)
+			configWindow = (ConfigWindow*)lParam;*/
+		//return configWindow->dialogProc(hWnd, uMsg, wParam, lParam);
+
+		ConfigWindow* configWindow = 0;
+		if (uMsg == WM_INITDIALOG){
 			configWindow = (ConfigWindow*)lParam;
+			SetWindowLongPtr (hWnd, GWLP_USERDATA, (LONG_PTR)configWindow);
+		} else {
+			configWindow = reinterpret_cast<ConfigWindow*>(GetWindowLongPtr(hWnd,GWLP_USERDATA));
+		}
 		return configWindow->dialogProc(hWnd, uMsg, wParam, lParam);
 	}
 
