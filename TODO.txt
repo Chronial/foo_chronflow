@@ -1,8 +1,20 @@
+// Perfomance Options:
+Samplingirgendwas:
+	Supersampling OR
+	   Multisampling? (+desired level?)
+	   Mipmaps?
+	   Anisotropic filtering <http://steinsoft.net/index.php?site=Programming/Code%20Snippets/OpenGL/anisotropicfiltering>
+Texturkompression? (1/6 der Größe)
+Cache Size
+Optionen für Vsynch (no vsynch, only sleeping | vsynch + try to hit with sleeping | only vsynch)
+Maximale Texturegröße
+Display FPS
+
+
 
 == BUGS ==
 texLoader->startLoading() braucht zu lange (startWorkerThread braucht zu lange -> implement a pauseWorkerThread + resumeWorkerThread)
-Keyboard focus funktioniert nicht immer (vieleicht SetFocus bei WM_CLICK/WM_MOUSEACTIVATE  aufrufen?)
-
+Der Filter funktioniert überhaupt nicht richtig :(
 
 
 == Grafische Verbesserungen ==
@@ -17,26 +29,36 @@ Mipmaps: Mipmaps per FBO (und shader?) rendern.
 
 		
 == Performance ==
-Nur cover rendern, die auch wirklich auf dem Bildschirm sind. <http://www.opengl.org/resources/faq/technical/viewcull.c>
-Option für compressed Textures (loading speed vs cache size)
-Cache Size konfigurieren
-optionen für den vblank synch ins UI
+Nur cover rendern, die auch wirklich auf dem Bildschirm sind. <http://www.opengl.org/resources/faq/technical/viewcull.c> //Wenn das implementiert ist, hinweis dazu in die JS docu??
 Tripple Buffering implementieren: Mainthread rendert in einen pBuffer, der via Multimedia Timer geswappt wird.
+Sorted rendering implementieren
+	->draw all opaque surfaces, preferably in front to back order
+	->turn off writing to the depth buffer but don't turn off depth testing
+	->draw all transparent surfaces, preferably in back to front order
+Andere Parts per WM_TIMER erlauben, zu rendern
 
 == incomplete implementations ==
 MouseFlicker: - Bildschirmauflösung beachten bei win2pos (bewegung relativ zur Bildschirmbreite)
 DbAlbumCollection - Handle illegal chars in titleformat strings (see titleformat_helper in uie_albumart)
 Custom Positions: Hillfelink zu JScript docu? Oder alles über wiki machen?
                   Check that upVector is not linear to view-vector
+Do not use Foobar Filesystem functions! (done?)
+Make a multiple-instance panel (sollte settings vereinfachen (wenn die settings offen sind, existiert auch eine instanz...) -- (achtung! alle static vars überprüfen!)
 
 == Features ==
-+ FPS Anzeige
 + Playlist mode (generate album list from playlist, not db)
-Scrollbar
++ Custom Action: Load into specific playlist
++ Scrollbar
++ Find as you type
 zooming
 Cover nach vorne holen -- nicht nach vorne holen, wenn nur an ihnen vorbeigescannt wird
 Fullscreen support
 Drag & Drop
+Cover follows cursor
+Beim Klick auf "Add...", checken ob eine config in der Zwischenablage ist, und wenn ja - diese verwenden
+Title display: Add checkbox to UI "overwrite flow-config settings", and add function "titlePosition" (returns array([0-1],[0-1]) for position -- if it returns -1, titles are hidden)
+Add a function coverBrightness(coverId)
+Add a function coverBlending(coverId) -- add a not that rendering of non-blended covers is much faster!
 
 
 Transparente png covers (von hinten nach vorne rendern! -> alpha test aus)
@@ -46,12 +68,11 @@ Transparente png covers (von hinten nach vorne rendern! -> alpha test aus)
 
 
 
-== High prio: ==
-+ Display Settings:
- costumise cover flow type (this will be hot)
-
 
 == Low Prio ==
 Texturkompression anschauen (geht das schneller, ausschaltbar machen?) (times.txt)
 
 
+
+
+Windows Script Control: http://www.microsoft.com/downloads/details.aspx?FamilyId=D7E31492-2595-49E6-8C02-1426FEC693AC&displaylang=en

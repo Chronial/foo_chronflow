@@ -269,6 +269,13 @@ public:
 	}
 };
 
+struct CPScriptFuncInfos {
+	static const t_size funcCount = 12;
+	static const wchar_t* knownFunctions[funcCount];
+
+	static const bit_array_range neededFunctions;
+	static const bit_array_range mirrorFunctions;
+} ;
 
 class CPScriptCompiler {
 public:
@@ -291,19 +298,22 @@ private:
 	CompiledCPInfo * data;
 protected:
 	void get_data_raw(stream_writer * p_stream,abort_callback & p_abort) {
+
 		if (data){
 			p_stream->write_lendian_t(true, p_abort);
 			data->serialize(p_stream, p_abort);
+		} else {
+			p_stream->write_lendian_t(false, p_abort);
 		}
 	}
 	void set_data_raw(stream_reader * p_stream,t_size p_sizehint,abort_callback & p_abort) {
-		bool configEmpty;
-		p_stream->read_lendian_t(configEmpty, p_abort);
-		if (configEmpty){
-			data = 0;
-		} else {
+		bool configNotEmpty;
+		p_stream->read_lendian_t(configNotEmpty, p_abort);
+		if (configNotEmpty){
 			data = new CompiledCPInfo;
 			CompiledCPInfo::unserialize(*data, p_stream, p_abort);
+		} else {
+			data = 0;
 		}
 	}
 public:
@@ -351,22 +361,29 @@ public:
 
 	bool setScript(const char* script, pfc::string_base& errorMsg){
 		CompiledCPInfo* compiled = new CompiledCPInfo;
-		CPScriptCompiler compiler;
-		if (compiler.compileScript(script, *compiled, errorMsg)){
-			CompiledCPInfo* oldInfo = cInfo;
-			cInfo = compiled;
+		try {
+			CPScriptCompiler compiler;
+			if (compiler.compileScript(script, *compiled, errorMsg)){
+				CompiledCPInfo* oldInfo = cInfo;
+				cInfo = compiled;
 
-			CompiledCPInfo* oldSessInfo = sessionCompiledCPInfo;
-			sessionCompiledCPInfo = compiled;
-			if (oldInfo == oldSessInfo){
-				delete oldInfo;
+				CompiledCPInfo* oldSessInfo = sessionCompiledCPInfo;
+				sessionCompiledCPInfo = compiled;
+				if (oldInfo == oldSessInfo){
+					delete oldInfo;
+				} else {
+					delete oldInfo;
+					delete oldSessInfo;
+				}
+				return true;
 			} else {
-				delete oldInfo;
-				delete oldSessInfo;
+				delete compiled;
+				return false;
 			}
-			return true;
-		} else {
+		}  catch (_com_error){
 			delete compiled;
+
+			errorMsg = "Windows Script Control not installed. Download it from <http://www.microsoft.com/downloads/details.aspx?FamilyId=D7E31492-2595-49E6-8C02-1426FEC693AC>.";
 			return false;
 		}
 	}

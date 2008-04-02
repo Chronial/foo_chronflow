@@ -36,6 +36,63 @@ bool Helpers::isPerformanceCounterSupported(){
 		return true;
 }
 
+
+// adjusts a given path for certain discrepancies between how foobar2000
+// and GDI+ handle paths, and other oddities
+//
+// Currently fixes:
+//   - User might use a forward-slash instead of a
+//     backslash for the directory separator
+//   - GDI+ ignores trailing periods '.' in directory names
+//   - GDI+ and FindFirstFile ignore double-backslashes
+//   - makes relative paths absolute to core_api::get_profile_path()
+// Copied from  foo_uie_albumart
+void Helpers::fixPath(pfc::string_base & path)
+{
+    if (path.get_length() == 0)
+        return;
+
+	pfc::string8 temp;
+	titleformat_compiler::remove_forbidden_chars_string(temp, path, ~0, "*?<>|" "\"");
+
+
+	// fix directory separators
+    temp.replace_char('/', '\\');
+
+	bool is_unc = (pfc::strcmp_partial(temp, "\\\\") == 0);
+	if ((temp[1] != ':') && (!is_unc)){
+		pfc::string8 profilePath;
+		filesystem::g_get_display_path(core_api::get_profile_path(), profilePath);
+		profilePath.add_byte('\\');
+		
+		temp.insert_chars(0, profilePath);
+	}
+
+
+    // fix double-backslashes and trailing periods in directory names
+    t_size temp_len = temp.get_length();
+    path.reset();
+    path.add_byte(temp[0]);
+    for (t_size n = 1; n < temp_len-1; n++)
+    {
+        if (temp[n] == '\\')
+        {
+            if (temp[n+1] == '\\')
+                continue;
+        }
+        else if (temp[n] == '.')
+        {
+            if ((temp[n-1] != '.' && temp[n-1] != '\\') &&
+                temp[n+1] == '\\')
+                continue;
+        }
+        path.add_byte(temp[n]);
+    }
+    if (temp_len > 1)
+        path.add_byte(temp[temp_len-1]);
+}
+
+
 /*void Helpers::FPS(HWND hWnd, CollectionPos pos, float offset)					// This function calculates FPS
 {
 	static int fps           = 0;	
@@ -102,3 +159,24 @@ bool Helpers::isPerformanceCounterSupported(){
 	sprintf_s(strFPS, 256, "Pos: %3d, Offset: %1.5f, (%3d x %3d) FPS: %5.2lf, lowFps: %.5lf  -|%s|-", pos.toIndex(), offset, w, h, lastFps, double(1/highDur), strCount);
 	SetWindowTextA(hWnd, strFPS);
 }*/
+
+
+
+
+void SwapBufferTimer::onTimer(){
+	EnterCriticalSection(&syncCS);
+	ScopeRCLock scopeLock(appInstance->lockedRC);
+	appInstance->renderer->drawMirrorOverlay();
+	appInstance->textDisplay->displayBitmapText("TEST", 300, 20);
+	glFinish();
+	Sleep(1);
+	lockedRC->swapBuffers();
+	lastSwap = Helpers::getHighresTimer();
+	timeEndPeriod(multimediaTimerRes);
+	swapQueued = false;
+	if (redrawQueued){
+		RedrawWindow(redrawWindow,NULL,NULL,RDW_INVALIDATE);
+		redrawQueued = false;
+	}
+	LeaveCriticalSection(&syncCS);
+}

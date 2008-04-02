@@ -56,7 +56,7 @@ cfg_bool cfgCoverFollowsPlayback(guid_cfgCoverFollowsPlayback, true);
 
 // {7AA69C60-1528-4ce3-86ED-D413A8A93CE1}
 static const GUID guid_cfgCoverFollowDelay = { 0x7aa69c60, 0x1528, 0x4ce3, { 0x86, 0xed, 0xd4, 0x13, 0xa8, 0xa9, 0x3c, 0xe1 } };
-cfg_int cfgCoverFollowDelay(guid_cfgCoverFollowDelay, 10);
+cfg_int cfgCoverFollowDelay(guid_cfgCoverFollowDelay, 60);
 
 /*********************************************** Display tab ************************************************************/
 // {85C3038A-EC62-416f-9D76-2B86D0F7493C}
@@ -92,6 +92,10 @@ cfg_struct_t<LOGFONT> cfgTitleFont(guid_cfgTitleFont, def_cfgTitleFont());
 static const GUID guid_cfgPanelBg = { 0x8ac48b7a, 0xe38e, 0x40fb, { 0xb6, 0xbe, 0x1a, 0xc, 0xd0, 0xd8, 0x1d, 0x30 } };
 cfg_int cfgPanelBg(guid_cfgPanelBg, RGB(255, 255, 255));
 
+
+// {495F43F9-C6A9-4289-AA1A-C871B50C5F62}
+static const GUID guid_cfgHighlightWidth = { 0x495f43f9, 0xc6a9, 0x4289, { 0xaa, 0x1a, 0xc8, 0x71, 0xb5, 0xc, 0x5f, 0x62 } };
+cfg_int cfgHighlightWidth(guid_cfgHighlightWidth, 2);
 
 /********************************************* Cover Display tab *********************************************************/
 // {7C3CFFF9-A881-476e-ACE7-503512F75C14}

@@ -15,7 +15,7 @@ public:
 	ImgTexture* getImgTexture(CollectionPos pos);
 	void getTitle(CollectionPos pos, pfc::string_base& out);
 
-	metadb_handle_list getTracks(CollectionPos pos);
+	int getTracks(CollectionPos pos, metadb_handle_list& out);
 
 	bool getAlbumForTrack(const metadb_handle_ptr& track, CollectionPos& out);
 	void reloadAsynchStart(bool hardRefresh = false);

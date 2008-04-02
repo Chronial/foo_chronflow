@@ -313,39 +313,46 @@ void DbAlbumCollection::reloadAsynchFinish(LPARAM worker){
 	isRefreshing = false;
 }
 
-
 bool DbAlbumCollection::getImageForTrack(const metadb_handle_ptr &track, pfc::string_base &out){
 	bool imgFound = false;
-	abort_callback_impl abortCallback;
+	//abort_callback_impl abortCallback;
 
 	EnterCriticalSection(&sourceScriptsCS);
 	int sourceCount = sourceScripts.get_count();
 	for (int j=0; j < sourceCount; j++){
 		track->format_title(0, out, sourceScripts.get_item_ref(j), 0);
-		try {
-			if (filesystem::g_exists(out, abortCallback) /*&&
+		Helpers::fixPath(out);
+		if (uFileExists(out)){
+			imgFound = true;
+			break;
+		}
+		/*try {
+			if (filesystem::g_exists(out, abortCallback) &&
 				!filesystem::g_is_valid_directory(out, abortCallback) &&
-				!filesystem::g_is_remote_or_unrecognized(out)*/){
+				!filesystem::g_is_remote_or_unrecognized(out)){
 					imgFound = true;
 					break;
 			}
 		} catch (exception_io_no_handler_for_path){
-		}
+		}*/
 	}
 	LeaveCriticalSection(&sourceScriptsCS);
 	return imgFound;
 }
 
-metadb_handle_list DbAlbumCollection::getTracks(CollectionPos pos){
+int DbAlbumCollection::getTracks(CollectionPos pos, metadb_handle_list& out){
 	int trackCount = ptrGroupMap.get_count();
 	int group = pos.toIndex();
-	metadb_handle_list out;
+	out.remove_all();
+	int c = 0;
 	for (int i=0; i < trackCount; i++){
-		if (ptrGroupMap.get_item_ref(i).groupId == group)
+		if (ptrGroupMap.get_item_ref(i).groupId == group){
 			out.add_item(ptrGroupMap.get_item_ref(i).ptr);
+			c++;
+		}
 	}
 	out.sort_by_format(cfgInnerSort, 0);
-	return out;
+	return c;
 }
 
 bool DbAlbumCollection::getAlbumForTrack(const metadb_handle_ptr& track, CollectionPos& out){

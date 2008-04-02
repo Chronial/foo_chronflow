@@ -13,8 +13,14 @@ public:
 
 	void userStartedMovement()
 	{
-		status = inUserMovement;
+		if (!inMovement){
+			inMovement = true;
+			lock();
+		}
 	}
+	void lock();
+	void unlock();
+
 
 	void movementEnded();
 	void timerHit();
@@ -23,12 +29,10 @@ public:
 	void moveToNowPlaying();
 
 private:
-	enum {
-		ready,
-		inUserMovement,
-		afterUserMovement
-	} status;
+	bool inMovement;
+	bool waitingForTimer;
 	bool callbackRegistered;
+	int lockCount;
 
 
 public:
@@ -44,4 +48,17 @@ public:
 	void on_playback_dynamic_info_track(const file_info & p_info){};
 	void on_playback_time(double p_time){};
 	void on_volume_change(float p_new_val){};
+};
+
+class PlaybackTracerScopeLock {
+public:
+	PlaybackTracerScopeLock(PlaybackTracer* tracer)
+		: t(tracer){
+			t->lock();
+	}
+	~PlaybackTracerScopeLock(){
+		t->unlock();
+	}
+private:
+	PlaybackTracer* t;
 };

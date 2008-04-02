@@ -21,6 +21,12 @@ public:
 public:
 	void displayText(const char* text, int x, int y, HAlignment hAlign, VAlignment vAlign);
 	void clearCache();
+	void displayBitmapText(const char* text, int x, int y);
+
+private:
+	GLuint bitmapDisplayList;
+	bool bitmapFontInitialized;
+	void buildDisplayFont();
 
 private:
 	struct DisplayTexture {

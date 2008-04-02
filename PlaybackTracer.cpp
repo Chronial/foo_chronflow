@@ -6,7 +6,9 @@ extern cfg_int cfgCoverFollowDelay;
 PlaybackTracer::PlaybackTracer(AppInstance* appInstance) :
 appInstance(appInstance),
 callbackRegistered(false),
-status(ready)
+inMovement(false),
+waitingForTimer(false),
+lockCount(0)
 {
 	followSettingsChanged();
 }
@@ -22,19 +24,33 @@ PlaybackTracer::~PlaybackTracer() {
 
 void PlaybackTracer::movementEnded()
 {
-	if (cfgCoverFollowsPlayback && (status == inUserMovement)){
+	if (inMovement){
+		inMovement = false;
+		unlock();
+	}
+}
+void PlaybackTracer::lock()
+{
+	lockCount++;
+}
+
+void PlaybackTracer::unlock()
+{
+	lockCount--;
+	IF_DEBUG(PFC_ASSERT(lockCount >= 0));
+	if (lockCount == 0 && cfgCoverFollowsPlayback){
 		SetTimer(appInstance->mainWindow, IDT_PLAYBACK_TRACER, (cfgCoverFollowDelay * 1000), NULL);
-		status = afterUserMovement;
+		waitingForTimer = true;
 	}
 }
 
 void PlaybackTracer::timerHit()
 {
-	if (status == afterUserMovement){
+	if (lockCount == 0 && cfgCoverFollowsPlayback){
 		moveToNowPlaying();
-		KillTimer(appInstance->mainWindow, IDT_PLAYBACK_TRACER);
-		status = ready;
 	}
+	waitingForTimer = false;
+	KillTimer(appInstance->mainWindow, IDT_PLAYBACK_TRACER);
 }
 
 void PlaybackTracer::moveToNowPlaying()
@@ -57,10 +73,10 @@ void PlaybackTracer::followSettingsChanged()
 			pcm->register_callback(this, flag_on_playback_new_track, true);
 			callbackRegistered = true;
 		}
-		moveToNowPlaying();
+		if (lockCount == 0)
+			moveToNowPlaying();
 	} else {
 		KillTimer(appInstance->mainWindow, IDT_PLAYBACK_TRACER);
-		status = ready;
 		if (callbackRegistered){
 			static_api_ptr_t<play_callback_manager> pcm;
 			pcm->unregister_callback(this);
@@ -71,7 +87,7 @@ void PlaybackTracer::followSettingsChanged()
 
 void PlaybackTracer::on_playback_new_track(metadb_handle_ptr p_track)
 {
-	if (status == ready){
+	if (lockCount == 0 && !waitingForTimer){
 		moveToNowPlaying();
 	}
 }

@@ -27,8 +27,10 @@ void MouseFlicker::mouseUp(int x, int y)
 	if (isMouseDown){
 		double pD = win2pos(dX);
 		float dist = appInstance->displayPos->moveDist2targetDist(float(pD / dTime));
-		dist += appInstance->displayPos->getCenteredOffset();
-		appInstance->displayPos->setTarget(appInstance->displayPos->getCenteredPos() + (int)floor(dist+0.5));
+		if (abs(dist) > 0.5){
+			dist += appInstance->displayPos->getCenteredOffset();
+			appInstance->displayPos->setTarget(appInstance->displayPos->getCenteredPos() + (int)floor(dist+0.5));
+		}
 		isMouseDown = false;
 	}
 	ReleaseCapture();

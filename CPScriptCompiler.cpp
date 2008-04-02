@@ -51,203 +51,212 @@ static inline bool GetIDispatchProperty (const LPDISPATCH _lpDispatch, LPWSTR _N
    return Ret;
 };
 
+const wchar_t* CPScriptFuncInfos::knownFunctions[CPScriptFuncInfos::funcCount]= {L"eyePos", L"lookAt", L"upVector", L"coverPosition", L"coverRotation",
+		L"coverAlign", L"coverSizeLimits", L"drawCovers",
+		L"aspectBehaviour",
+		L"showMirrorPlane", L"mirrorPoint", L"mirrorNormal"};
+
+const bit_array_range CPScriptFuncInfos::neededFunctions(0, 10);
+const bit_array_range CPScriptFuncInfos::mirrorFunctions(10, 2);
 
 bool CPScriptCompiler::compileScript(const char * script, CompiledCPInfo& out, pfc::string_base& message){
-	scriptObj.Reset();
-	if (!scriptObj.AddScript(pfc::stringcvt::string_wide_from_utf8(script))){
-		message = pfc::stringcvt::string_utf8_from_wide(scriptObj.GetErrorString());
-		return false;
-	}
-	static const t_size funcCount = 12;
-	static const wchar_t* knownFunctions[funcCount] = 
-		{L"eyePos", L"lookAt", L"upVector", L"coverPosition", L"coverRotation",
-		 L"coverAlign", L"coverSizeLimits", L"drawCovers",
-		 L"aspectBehaviour",
-		 L"showMirrorPlane", L"mirrorPoint", L"mirrorNormal"};
-	bit_array_bittable foundFunctions(funcCount);
-	bit_array_not notFoundFunctions(foundFunctions);
-	bit_array_range neededFunctions(0, 10);
-	bit_array_range mirrorFunctions(10, 2);
-	int mCount = scriptObj.GetMethodsCount();
-	for (int i = 0; i < mCount; i++){
-		const wchar_t* mName = scriptObj.GetNameAt(i);
-		for (int j = 0; j < funcCount; j++){
-			if (!wcscmp(mName, knownFunctions[j])){
-				foundFunctions.set(j, true);
-				break;
+	try {
+		scriptObj.Reset();
+		if (!scriptObj.AddScript(pfc::stringcvt::string_wide_from_utf8(script))){
+			message = pfc::stringcvt::string_utf8_from_wide(scriptObj.GetErrorString());
+			return false;
+		}
+
+		bit_array_bittable foundFunctions(CPScriptFuncInfos::funcCount);
+		bit_array_not notFoundFunctions(foundFunctions);
+		int mCount = scriptObj.GetMethodsCount();
+		for (int i = 0; i < mCount; i++){
+			const wchar_t* mName = scriptObj.GetNameAt(i);
+			for (int j = 0; j < CPScriptFuncInfos::funcCount; j++){
+				if (!wcscmp(mName, CPScriptFuncInfos::knownFunctions[j])){
+					foundFunctions.set(j, true);
+					break;
+				}
 			}
 		}
-	}
-	bit_array_and missingFunctions(neededFunctions, notFoundFunctions);
-	t_size missing = missingFunctions.find(true, 0, funcCount);
-	if (missing == funcCount){
-		if (!scShowMirrorPlane(out.showMirrorPlane, message))
+		bit_array_and missingFunctions(CPScriptFuncInfos::neededFunctions, notFoundFunctions);
+		t_size missing = missingFunctions.find(true, 0, CPScriptFuncInfos::funcCount);
+		if (missing == CPScriptFuncInfos::funcCount){
+			if (!scShowMirrorPlane(out.showMirrorPlane, message))
+				return false;
+			if (out.showMirrorPlane){
+				bit_array_and missingMirrors(CPScriptFuncInfos::mirrorFunctions, notFoundFunctions);
+				missing = missingMirrors.find(true, 0, CPScriptFuncInfos::funcCount);
+			}
+		}
+		if (missing < CPScriptFuncInfos::funcCount){
+			message = "Error: Required Function \"";
+			message << pfc::stringcvt::string_utf8_from_wide(CPScriptFuncInfos::knownFunctions[missing]);
+			message << "\" is not defined.";
 			return false;
+		}
+		
+		pfc::list_t<double> ret;
+		if (scCallDArrayFunction(L"eyePos", ret, message)){
+			if (ret.get_count() != 3){
+				message = "Error: eyePos() did not return an Array with 3 elements";
+				return false;
+			} else {
+				out.cameraPos.x = ret.get_item(0);
+				out.cameraPos.y = ret.get_item(1);
+				out.cameraPos.z = ret.get_item(2);
+			}
+		} else {
+			return false;
+		}
+
+		if (scCallDArrayFunction(L"lookAt", ret, message)){
+			if (ret.get_count() != 3){
+				message = "Error: lookAt() did not return an Array with 3 elements";
+				return false;
+			} else {
+				out.lookAt.x = ret.get_item(0);
+				out.lookAt.y = ret.get_item(1);
+				out.lookAt.z = ret.get_item(2);
+			}
+		} else {
+			return false;
+		}
+
+		if (scCallDArrayFunction(L"upVector", ret, message)){
+			if (ret.get_count() != 3){
+				message = "Error: upVector() did not return an Array with 3 elements";
+				return false;
+			} else {
+				out.upVector.x = ret.get_item(0);
+				out.upVector.y = ret.get_item(1);
+				out.upVector.z = ret.get_item(2);
+			}
+		} else {
+			return false;
+		}
+
+		if (scCallDArrayFunction(L"aspectBehaviour", ret, message)){
+			if (ret.get_count() != 2){
+				message = "Error: aspectBehaviour() did not return an Array with 2 elements";
+				return false;
+			} else {
+				out.aspectBehaviour.x = (float)ret.get_item(0);
+				out.aspectBehaviour.y = (float)ret.get_item(1);
+				out.aspectBehaviour.x /= out.aspectBehaviour.x + out.aspectBehaviour.y;
+				out.aspectBehaviour.y /= out.aspectBehaviour.x + out.aspectBehaviour.y;
+			}
+		} else {
+			return false;
+		}
+
+
 		if (out.showMirrorPlane){
-			bit_array_and missingMirrors(mirrorFunctions, notFoundFunctions);
-			missing = missingMirrors.find(true, 0, funcCount);
-		}
-	}
-	if (missing < funcCount){
-		message = "Error: Required Function \"";
-		message << pfc::stringcvt::string_utf8_from_wide(knownFunctions[missing]);
-		message << "\" is not defined.";
-		return false;
-	}
-	
-	pfc::list_t<double> ret;
-	if (scCallDArrayFunction(L"eyePos", ret, message)){
-		if (ret.get_count() != 3){
-			message = "Error: eyePos() did not return an Array with 3 elements";
-			return false;
-		} else {
-			out.cameraPos.x = ret.get_item(0);
-			out.cameraPos.y = ret.get_item(1);
-			out.cameraPos.z = ret.get_item(2);
-		}
-	} else {
-		return false;
-	}
-
-	if (scCallDArrayFunction(L"lookAt", ret, message)){
-		if (ret.get_count() != 3){
-			message = "Error: lookAt() did not return an Array with 3 elements";
-			return false;
-		} else {
-			out.lookAt.x = ret.get_item(0);
-			out.lookAt.y = ret.get_item(1);
-			out.lookAt.z = ret.get_item(2);
-		}
-	} else {
-		return false;
-	}
-
-	if (scCallDArrayFunction(L"upVector", ret, message)){
-		if (ret.get_count() != 3){
-			message = "Error: upVector() did not return an Array with 3 elements";
-			return false;
-		} else {
-			out.upVector.x = ret.get_item(0);
-			out.upVector.y = ret.get_item(1);
-			out.upVector.z = ret.get_item(2);
-		}
-	} else {
-		return false;
-	}
-
-	if (scCallDArrayFunction(L"aspectBehaviour", ret, message)){
-		if (ret.get_count() != 2){
-			message = "Error: aspectBehaviour() did not return an Array with 2 elements";
-			return false;
-		} else {
-			out.aspectBehaviour.x = (float)ret.get_item(0);
-			out.aspectBehaviour.y = (float)ret.get_item(1);
-			out.aspectBehaviour.x /= out.aspectBehaviour.x + out.aspectBehaviour.y;
-			out.aspectBehaviour.y /= out.aspectBehaviour.x + out.aspectBehaviour.y;
-		}
-	} else {
-		return false;
-	}
-
-
-	if (out.showMirrorPlane){
-		if (scCallDArrayFunction(L"mirrorPoint", ret, message)){
-			if (ret.get_count() != 3){
-				message = "Error: mirrorPoint() did not return an Array with 3 elements";
-				return false;
+			if (scCallDArrayFunction(L"mirrorPoint", ret, message)){
+				if (ret.get_count() != 3){
+					message = "Error: mirrorPoint() did not return an Array with 3 elements";
+					return false;
+				} else {
+					out.mirrorCenter.x = ret.get_item(0);
+					out.mirrorCenter.y = ret.get_item(1);
+					out.mirrorCenter.z = ret.get_item(2);
+				}
 			} else {
-				out.mirrorCenter.x = ret.get_item(0);
-				out.mirrorCenter.y = ret.get_item(1);
-				out.mirrorCenter.z = ret.get_item(2);
-			}
-		} else {
-			return false;
-		}
-		if (scCallDArrayFunction(L"mirrorNormal", ret, message)){
-			if (ret.get_count() != 3){
-				message = "Error: mirrorNormal() did not return an Array with 3 elements";
 				return false;
-			} else {
-				out.mirrorNormal.x = ret.get_item(0);
-				out.mirrorNormal.y = ret.get_item(1);
-				out.mirrorNormal.z = ret.get_item(2);
-				out.mirrorNormal = out.mirrorNormal.normalize();
 			}
-		} else {
-			return false;
+			if (scCallDArrayFunction(L"mirrorNormal", ret, message)){
+				if (ret.get_count() != 3){
+					message = "Error: mirrorNormal() did not return an Array with 3 elements";
+					return false;
+				} else {
+					out.mirrorNormal.x = ret.get_item(0);
+					out.mirrorNormal.y = ret.get_item(1);
+					out.mirrorNormal.z = ret.get_item(2);
+					out.mirrorNormal = out.mirrorNormal.normalize();
+				}
+			} else {
+				return false;
+			}
 		}
-	}
 
-	if (scCallDArrayFunction(L"drawCovers", ret, message)){
-		if (ret.get_count() != 2){
-			message = "Error: drawCovers() did not return an Array with 2 elements";
-			return false;
-		} else {
-			out.firstCover = static_cast<int>(ret.get_item(0));
-			out.lastCover  = static_cast<int>(ret.get_item(1));
-		}
-	} else {
-		return false;
-	}
-	
-	int coverCount = out.lastCover - out.firstCover + 1;
-	if (coverCount < 2){
-		message = "Error: drawCovers() did return an interval that contained less than 2 elements";
-		return false;
-	}
-	int tableSize = coverCount * out.tableRes + 1;
-	out.coverPosInfos.set_size(tableSize);
-	for (int i = 0; i < tableSize; i++){
-		double coverId = static_cast<double>(i) / out.tableRes + out.firstCover;
-		if (scCallDArrayFunction(L"coverPosition", ret, message, coverId)){
-			if (ret.get_count() != 3){
-				message = "Error: coverPosition() did not return an Array with 3 elements";
-				return false;
-			} else {
-				out.coverPosInfos[i].position.x = (float)ret.get_item(0);
-				out.coverPosInfos[i].position.y = (float)ret.get_item(1);
-				out.coverPosInfos[i].position.z = (float)ret.get_item(2);
-			}
-		} else {
-			return false;
-		}
-		if (scCallDArrayFunction(L"coverRotation", ret, message, coverId)){
-			if (ret.get_count() != 4){
-				message = "Error: coverRotation() did not return an Array with 4 elements";
-				return false;
-			} else {
-				out.coverPosInfos[i].rotation.a = (float)deg2rad(ret.get_item(0));
-				out.coverPosInfos[i].rotation.axis.x = (float)ret.get_item(1);
-				out.coverPosInfos[i].rotation.axis.y = (float)ret.get_item(2);
-				out.coverPosInfos[i].rotation.axis.z = (float)ret.get_item(3);
-			}
-		} else {
-			return false;
-		}
-		if (scCallDArrayFunction(L"coverAlign", ret, message, coverId)){
+		if (scCallDArrayFunction(L"drawCovers", ret, message)){
 			if (ret.get_count() != 2){
-				message = "Error: coverAlign() did not return an Array with 4 elements";
+				message = "Error: drawCovers() did not return an Array with 2 elements";
 				return false;
 			} else {
-				out.coverPosInfos[i].alignment.x = (float)ret.get_item(0);
-				out.coverPosInfos[i].alignment.y = (float)ret.get_item(1);
+				out.firstCover = static_cast<int>(ret.get_item(0));
+				out.lastCover  = static_cast<int>(ret.get_item(1));
 			}
 		} else {
 			return false;
 		}
-		if (scCallDArrayFunction(L"coverSizeLimits", ret, message, coverId)){
-			if (ret.get_count() != 2){
-				message = "Error: coverSizeLimits() did not return an Array with 4 elements";
-				return false;
-			} else {
-				out.coverPosInfos[i].sizeLim.w = (float)ret.get_item(0);
-				out.coverPosInfos[i].sizeLim.h = (float)ret.get_item(1);
-			}
-		} else {
+		
+		int coverCount = out.lastCover - out.firstCover + 1;
+		if (coverCount < 2){
+			message = "Error: drawCovers() did return an interval that contained less than 2 elements";
 			return false;
 		}
+		int tableSize = coverCount * out.tableRes + 1;
+		out.coverPosInfos.set_size(tableSize);
+		for (int i = 0; i < tableSize; i++){
+			double coverId = static_cast<double>(i) / out.tableRes + out.firstCover;
+			if (scCallDArrayFunction(L"coverPosition", ret, message, coverId)){
+				if (ret.get_count() != 3){
+					message = "Error: coverPosition() did not return an Array with 3 elements";
+					return false;
+				} else {
+					out.coverPosInfos[i].position.x = (float)ret.get_item(0);
+					out.coverPosInfos[i].position.y = (float)ret.get_item(1);
+					out.coverPosInfos[i].position.z = (float)ret.get_item(2);
+				}
+			} else {
+				return false;
+			}
+			if (scCallDArrayFunction(L"coverRotation", ret, message, coverId)){
+				if (ret.get_count() != 4){
+					message = "Error: coverRotation() did not return an Array with 4 elements";
+					return false;
+				} else {
+					out.coverPosInfos[i].rotation.a = (float)deg2rad(ret.get_item(0));
+					out.coverPosInfos[i].rotation.axis.x = (float)ret.get_item(1);
+					out.coverPosInfos[i].rotation.axis.y = (float)ret.get_item(2);
+					out.coverPosInfos[i].rotation.axis.z = (float)ret.get_item(3);
+				}
+			} else {
+				return false;
+			}
+			if (scCallDArrayFunction(L"coverAlign", ret, message, coverId)){
+				if (ret.get_count() != 2){
+					message = "Error: coverAlign() did not return an Array with 4 elements";
+					return false;
+				} else {
+					out.coverPosInfos[i].alignment.x = (float)ret.get_item(0);
+					out.coverPosInfos[i].alignment.y = (float)ret.get_item(1);
+				}
+			} else {
+				return false;
+			}
+			if (scCallDArrayFunction(L"coverSizeLimits", ret, message, coverId)){
+				if (ret.get_count() != 2){
+					message = "Error: coverSizeLimits() did not return an Array with 4 elements";
+					return false;
+				} else {
+					out.coverPosInfos[i].sizeLim.w = (float)ret.get_item(0);
+					out.coverPosInfos[i].sizeLim.h = (float)ret.get_item(1);
+				}
+			} else {
+				return false;
+			}
+		}
+		return true;
+	} catch (_com_error& e){
+		message = "Com Exception: ";
+		message << pfc::stringcvt::string_utf8_from_wide(e.ErrorMessage());
+		return false;
+	} catch (...) {
+		message = "Unknown exception during compiling";
+		return false;
 	}
-	return true;
 }
 
 bool CPScriptCompiler::scCallDArrayFunction(const wchar_t* func, pfc::list_t<double>& res, pfc::string_base& message){

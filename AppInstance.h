@@ -6,6 +6,8 @@ class Renderer;
 class DisplayPosition;
 class PlaybackTracer;
 class ScriptedCoverPositions;
+class TextDisplay;
+class LockedRenderingContext;
 
 class AppInstance
 {
@@ -22,4 +24,6 @@ public:
 	PlaybackTracer* playbackTracer;
 	ScriptedCoverPositions* coverPos;
 	HWND mainWindow;
+	FpsCounter fpsCounter;
+	LockedRenderingContext lockedRC;
 };

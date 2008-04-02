@@ -1,12 +1,13 @@
 #pragma once
 
 #include "AlbumCollection.h"
+#include "DbAlbumCollection.h"
 
 
 struct CollectionPos
 {
 public:
-	CollectionPos(AlbumCollection* collection, int p)
+	CollectionPos(DbAlbumCollection* collection, int p)
 	{
 		this->collection = collection;
 		this->p = p;
@@ -95,5 +96,5 @@ public:
 	};
 private:
 	int p;
-	AlbumCollection* collection;
+	DbAlbumCollection* collection;
 };

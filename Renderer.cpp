@@ -4,6 +4,7 @@ extern cfg_struct_t<double> cfgTitlePosH;
 extern cfg_struct_t<double> cfgTitlePosV;
 extern cfg_int cfgPanelBg;
 extern cfg_int cfgTitleColor;
+extern cfg_int cfgHighlightWidth;
 
 // Extensions
 PFNGLFOGCOORDFPROC glFogCoordf = NULL;
@@ -15,195 +16,285 @@ PFNGLBLENDCOLORPROC glBlendColor = NULL;
 #define SELECTION_MIRROR 2
 
 Renderer::Renderer(AppInstance* instance)
+: appInstance(instance),
+  multisampleEnabled(false)
 {
-	this->appInstance = instance;
-	hRC = 0;
-	hDC = 0;
 }
 
 Renderer::~Renderer(void)
 {
 }
 
-
-bool Renderer::setRenderingContext(){
-	return 0 != wglMakeCurrent(hDC,hRC);
+int Renderer::getPixelFormat() {
+	return pixelFormat;
 }
 
-bool Renderer::releaseRenderingContext(){
-	return 0 != wglMakeCurrent(NULL,NULL);
-}
+const PIXELFORMATDESCRIPTOR Renderer::pixelFormatDescriptor = {
+			sizeof(PIXELFORMATDESCRIPTOR),				// Size Of This Pixel Format Descriptor
+			1,											// Version Number
+			PFD_DRAW_TO_WINDOW |						// Format Must Support Window
+			PFD_SUPPORT_OPENGL |						// Format Must Support OpenGL
+			PFD_DOUBLEBUFFER |							// Must Support Double Buffering
+			PFD_SWAP_EXCHANGE,							// Format should swap the buffers (faster)
+			PFD_TYPE_RGBA,								// Request An RGBA Format
+			24,										    // Select Our Color Depth
+			0, 0, 0, 0, 0, 0,							// Color Bits Ignored
+			0,											// No Alpha Buffer
+			0,											// Shift Bit Ignored
+			4,											// Accumulation Buffer
+			0, 0, 0, 0,									// Accumulation Bits Ignored
+			16,											// 16Bit Z-Buffer (Depth Buffer)  
+			0,											// No Stencil Buffer
+			0,											// No Auxiliary Buffer
+			PFD_MAIN_PLANE,								// Main Drawing Layer
+			0,											// Reserved
+			0, 0, 0										// Layer Masks Ignored
+		};
 
-PIXELFORMATDESCRIPTOR Renderer::getPixelFormat() {
-	static	PIXELFORMATDESCRIPTOR pfd=				// pfd Tells Windows How We Want Things To Be
-	{
-		sizeof(PIXELFORMATDESCRIPTOR),				// Size Of This Pixel Format Descriptor
-		1,											// Version Number
-		PFD_DRAW_TO_WINDOW |						// Format Must Support Window
-		PFD_SUPPORT_OPENGL |						// Format Must Support OpenGL
-		PFD_DOUBLEBUFFER |							// Must Support Double Buffering
-		PFD_SWAP_EXCHANGE,							// Format should swap the buffers (faster)
-		PFD_TYPE_RGBA,								// Request An RGBA Format
-		16,										    // Select Our Color Depth
-		0, 0, 0, 0, 0, 0,							// Color Bits Ignored
-		0,											// No Alpha Buffer
-		0,											// Shift Bit Ignored
-		4,											// Accumulation Buffer
-		0, 0, 0, 0,									// Accumulation Bits Ignored
-		16,											// 16Bit Z-Buffer (Depth Buffer)  
-		0,											// No Stencil Buffer
-		0,											// No Auxiliary Buffer
-		PFD_MAIN_PLANE,								// Main Drawing Layer
-		0,											// Reserved
-		0, 0, 0										// Layer Masks Ignored
-	};
-	return pfd;
-}
-
-bool Renderer::setupGlWindow()
+bool Renderer::attachGlWindow()
 {
-	{ // Window Creation
-		GLuint		PixelFormat;			// Holds The Results After Searching For A Match
-		PIXELFORMATDESCRIPTOR pfd = getPixelFormat();
-		
-		if (!(hDC=GetDC(appInstance->mainWindow)))							// Did We Get A Device Context?
-		{
-			destroyGlWindow();								// Reset The Display
-			MessageBox(NULL,L"Can't Create A GL Device Context.",L"ERROR",MB_OK|MB_ICONEXCLAMATION);
-			return FALSE;								// Return FALSE
-		}
-
-		if (!(PixelFormat=ChoosePixelFormat(hDC,&pfd)))	// Did Windows Find A Matching Pixel Format?
-		{
-			destroyGlWindow();								// Reset The Display
-			MessageBox(NULL,L"Can't Find A Suitable PixelFormat.",L"ERROR",MB_OK|MB_ICONEXCLAMATION);
-			return FALSE;								// Return FALSE
-		}
-
-		if(!SetPixelFormat(hDC,PixelFormat,&pfd))		// Are We Able To Set The Pixel Format?
-		{
-			destroyGlWindow();								// Reset The Display
-			MessageBox(NULL,L"Can't Set The PixelFormat.",L"ERROR",MB_OK|MB_ICONEXCLAMATION);
-			return FALSE;								// Return FALSE
-		}
-
-		if (!(hRC=wglCreateContext(hDC)))				// Are We Able To Get A Rendering Context?
-		{
-			destroyGlWindow();								// Reset The Display
-			MessageBox(NULL,L"Can't Create A GL Rendering Context.",L"ERROR",MB_OK|MB_ICONEXCLAMATION);
-			return FALSE;								// Return FALSE
-		}
-
-		if(!setRenderingContext())					// Try To Activate The Rendering Context
-		{
-			destroyGlWindow();								// Reset The Display
-			MessageBox(NULL,L"Can't Activate The GL Rendering Context.",L"ERROR",MB_OK|MB_ICONEXCLAMATION);
-			return FALSE;								// Return FALSE
-		}
-
-		//ShowWindow(appInstance->hWnd,SW_SHOW);		// Show The Window -- not allow in collumns UI!
-		//SetForegroundWindow(hWnd);						// Slightly Higher Priority
-		//SetFocus(hWnd);									// Sets Keyboard Focus To The Window
-		//ReSizeGLScene(width, height);					// Set Up Our Perspective GL Screen
+	HDC hDC;
+	HGLRC hRC;
+	if (!(hDC=GetDC(appInstance->mainWindow)))							// Did We Get A Device Context?
+	{
+		destroyGlWindow();								// Reset The Display
+		MessageBox(NULL,L"Can't Create A GL Device Context.",L"Foo_chronflow Error",MB_OK|MB_ICONERROR);
+		return FALSE;								// Return FALSE
 	}
-	
+
+	if (!multisampleEnabled){
+		if (!(pixelFormat=ChoosePixelFormat(hDC,&pixelFormatDescriptor)))	// Did Windows Find A Matching Pixel Format?
+		{
+			destroyGlWindow();								// Reset The Display
+			MessageBox(NULL,L"Can't Find A Suitable PixelFormat.",L"Foo_chronflow Error",MB_OK|MB_ICONERROR);
+			return FALSE;								// Return FALSE
+		}
+
+		{
+			PIXELFORMATDESCRIPTOR  pfd; 
+
+			DescribePixelFormat(hDC, pixelFormat,  
+				sizeof(PIXELFORMATDESCRIPTOR), &pfd); 
+			if ((pfd.dwFlags & PFD_GENERIC_FORMAT) && !(pfd.dwFlags & PFD_GENERIC_ACCELERATED)){
+				MessageBox(appInstance->mainWindow, L"Rendering in Software mode. Expect slow display.",L"Foo_chronflow Error",MB_ICONINFORMATION);
+			} else if ((pfd.dwFlags & PFD_GENERIC_FORMAT) || (pfd.dwFlags & PFD_GENERIC_ACCELERATED)){
+				pfc::string8 message("Foo_chronflow Problem: Rendering is not fully hardware accelerated. Details: ");
+				if (pfd.dwFlags & PFD_GENERIC_FORMAT)
+					message << "PFD_GENERIC_FORMAT ";
+				if (pfd.dwFlags & PFD_GENERIC_ACCELERATED)
+					message << "PFD_GENERIC_ACCELERATED";
+				console::print(message);
+			}
+		}
+	}
+
+	if(!SetPixelFormat(hDC,pixelFormat,&pixelFormatDescriptor))		// Are We Able To Set The Pixel Format?
+	{
+		destroyGlWindow();								// Reset The Display
+		MessageBox(NULL,L"Can't Set The PixelFormat.",L"ERROR",MB_OK|MB_ICONERROR);
+		return FALSE;								// Return FALSE
+	}
+
+	if (!(hRC=wglCreateContext(hDC)))				// Are We Able To Get A Rendering Context?
+	{
+		destroyGlWindow();								// Reset The Display
+		MessageBox(NULL,L"Can't Create A GL Rendering Context.",L"Foo_chronflow Error",MB_OK|MB_ICONERROR);
+		return FALSE;								// Return FALSE
+	}
+
+	if(!wglMakeCurrent(hDC, hRC))					// Try To Activate The Rendering Context
+	{
+		destroyGlWindow();								// Reset The Display
+		MessageBox(NULL,L"Can't Activate The GL Rendering Context.",L"Foo_chronflow Error",MB_OK|MB_ICONERROR);
+		return FALSE;								// Return FALSE
+	}
+	appInstance->lockedRC.setRC(hDC, hRC);
+	return true;
+}
+
+
+void Renderer::initGlState()
+{
+	ScopeRCLock scopeLock(appInstance->lockedRC);
+
+	// move this to an extra function - otherwice it's called twice due to mulitsampling
 	loadExtensions();
 
-	{ // Setup OpenGL
-		glShadeModel(GL_SMOOTH);							// Enable Smooth Shading
-		//glClearColor(0.0f, 0.0f, 0.0f, 0.0f);				// Black Background
-		glClearDepth(1.0f);									// Depth Buffer Setup
-		glEnable(GL_DEPTH_TEST);							// Enables Depth Testing
-		glDepthFunc(GL_LEQUAL);								// The Type Of Depth Testing To Do
-		glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);	// Really Nice Perspective Calculations
-		glHint(GL_TEXTURE_COMPRESSION_HINT,GL_FASTEST);
-		glEnable(GL_TEXTURE_2D);
+	glShadeModel(GL_SMOOTH);							// Enable Smooth Shading
+	//glClearColor(0.0f, 0.0f, 0.0f, 0.0f);				// Black Background
+	glClearDepth(1.0f);									// Depth Buffer Setup
+	glEnable(GL_DEPTH_TEST);							// Enables Depth Testing
+	glDepthFunc(GL_LEQUAL);								// The Type Of Depth Testing To Do
+	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);	// Really Nice Perspective Calculations
+	glHint(GL_TEXTURE_COMPRESSION_HINT,GL_FASTEST);
+	glEnable(GL_TEXTURE_2D);
 
-		//glEnable(GL_CULL_FACE);
-		glCullFace(GL_BACK);
-		glFrontFace(GL_CW);
+	if (!isExtensionSupported("GL_ARB_texture_non_power_of_two"))
+		ImgTexture::setForcePowerOfTwo();
+	GLint maxTexSize;
+	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
+	ImgTexture::setMaxGlTextureSize(maxTexSize);
+	if (isWglExtensionSupported("WGL_EXT_swap_control"))
+		wglSwapIntervalEXT(1);						    // Activate Vsynch
+	
+	if (multisampleEnabled)
+		glEnable(GL_MULTISAMPLE_ARB);
 
-		if (!isExtensionSupported("GL_ARB_texture_non_power_of_two"))
-			ImgTexture::setForcePowerOfTwo();
-		GLint maxTexSize;
-		glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
-		ImgTexture::setMaxGlTextureSize(maxTexSize);
-		if (isExtensionSupported("WGL_EXT_swap_control"))
-			wglSwapIntervalEXT(1);						    // Activate Vsynch
-
-		if (isExtensionSupported("GL_EXT_fog_coord")){
-			glFogi(GL_FOG_MODE, GL_EXP);
-			glFogf(GL_FOG_DENSITY, 5);
-			GLfloat	fogColor[4] = {0.0f, 0.0f, 0.0f, 1.0f};     // Fog Color - should be BG color
-			glFogfv(GL_FOG_COLOR, fogColor);					// Set The Fog Color
-			glHint(GL_FOG_HINT, GL_NICEST);						// Per-Pixel Fog Calculation
-			glFogi(GL_FOG_COORD_SRC, GL_FOG_COORD);		// Set Fog Based On Vertice Coordinates
-			showFog = true;
-		} else {
-			showFog = false;
-		}
+	if (isExtensionSupported("GL_EXT_fog_coord")){
+		glFogi(GL_FOG_MODE, GL_EXP);
+		glFogf(GL_FOG_DENSITY, 5);
+		GLfloat	fogColor[4] = {0.0f, 0.0f, 0.0f, 1.0f};     // Fog Color - should be BG color
+		glFogfv(GL_FOG_COLOR, fogColor);					// Set The Fog Color
+		glHint(GL_FOG_HINT, GL_NICEST);						// Per-Pixel Fog Calculation
+		glFogi(GL_FOG_COORD_SRC, GL_FOG_COORD);		// Set Fog Based On Vertice Coordinates
+		showFog = true;
+	} else {
+		showFog = false;
 	}
-	return true;
+}
+
+bool Renderer::initMultisampling(){
+	ScopeRCLock scopeLock(appInstance->lockedRC);
+
+	// See If The String Exists In WGL!
+	if (!isWglExtensionSupported("WGL_ARB_multisample")){
+		multisampleEnabled = false;
+		return false;
+	}
+
+	// Get Our Pixel Format
+	PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)wglGetProcAddress("wglChoosePixelFormatARB");	
+	if (!wglChoosePixelFormatARB){
+		multisampleEnabled = false;
+		return false;
+	}
+
+	int		valid;
+	UINT	numFormats;
+	float	fAttributes[] = {0,0};
+
+	// These Attributes Are The Bits We Want To Test For In Our Sample
+	// Everything Is Pretty Standard, The Only One We Want To 
+	// Really Focus On Is The SAMPLE BUFFERS ARB And WGL SAMPLES
+	// These Two Are Going To Do The Main Testing For Whether Or Not
+	// We Support Multisampling On This Hardware.
+	int iAttributes[] =
+	{
+		WGL_DRAW_TO_WINDOW_ARB,GL_TRUE,
+		WGL_SUPPORT_OPENGL_ARB,GL_TRUE,
+		WGL_ACCELERATION_ARB,WGL_FULL_ACCELERATION_ARB,
+		WGL_COLOR_BITS_ARB,24,
+		WGL_ALPHA_BITS_ARB,8,
+		WGL_DEPTH_BITS_ARB,16,
+		WGL_STENCIL_BITS_ARB,0,
+		WGL_DOUBLE_BUFFER_ARB,GL_TRUE,
+		WGL_SAMPLE_BUFFERS_ARB,GL_TRUE,
+		WGL_SAMPLES_ARB,4,
+		0,0
+	};
+
+	// First We Check To See If We Can Get A Pixel Format For 4 Samples
+	valid = wglChoosePixelFormatARB(appInstance->lockedRC.getHDC(),iAttributes,fAttributes,1,&pixelFormat,&numFormats);
+ 
+	// If We Returned True, And Our Format Count Is Greater Than 1
+	/*if (valid && numFormats >= 1)
+	{
+		multisampleEnabled = true;
+		return true;
+	}*/
+
+	// Our Pixel Format With 4 Samples Failed, Test For 2 Samples
+	iAttributes[19] = 2;
+	valid = wglChoosePixelFormatARB(appInstance->lockedRC.getHDC(),iAttributes,fAttributes,1,&pixelFormat,&numFormats);
+	if (valid && numFormats >= 1)
+	{
+		multisampleEnabled = true;
+		return true;
+	}
+
+	return false;
 }
 
 void Renderer::loadExtensions(){
 	if(isExtensionSupported("GL_EXT_fog_coord"))
 		glFogCoordf = (PFNGLFOGCOORDFPROC) wglGetProcAddress("glFogCoordf");
-	if(isExtensionSupported("WGL_EXT_swap_control"))
+	if(isWglExtensionSupported("WGL_EXT_swap_control"))
 		wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
 	if(isExtensionSupported("GL_EXT_blend_color"))
 		glBlendColor = (PFNGLBLENDCOLORPROC)wglGetProcAddress("glBlendColor");
 }
 
-bool Renderer::isExtensionSupported(const char *name){
-	static const GLubyte *extensions = glGetString(GL_EXTENSIONS);
-	const GLubyte *start;
+bool Renderer::isWglExtensionSupported(const char *name){
+	static const char* extensions = NULL;
+	if (extensions == NULL){
+		// Try To Use wglGetExtensionStringARB On Current DC, If Possible
+		PFNWGLGETEXTENSIONSSTRINGARBPROC wglGetExtString = (PFNWGLGETEXTENSIONSSTRINGARBPROC)wglGetProcAddress("wglGetExtensionsStringARB");
 
-	GLubyte *pos, *terminator;
-	pos = (GLubyte *) strchr(name, ' ');
-	if (pos || *name == '\0')
-		return 0;
-	start = extensions;
-	for (;;){
-		pos = (GLubyte *) strstr((const char *) start, name);
-		if (!pos)
-			break;
-		terminator = pos + strlen(name);
-		if (pos == start || *(pos - 1) == ' '){
-			if (*terminator == ' ' || *terminator == '\0')
-			{
-				return true;
-			}
-		}
-		start = terminator;
+		if (wglGetExtString)
+			extensions = wglGetExtString(wglGetCurrentDC());
+
+		// If That Failed, Try Standard Opengl Extensions String
+		if (extensions == NULL)
+			extensions = (char*)glGetString(GL_EXTENSIONS);
+
+		if (extensions == NULL)
+			return false;
+	}
+
+	const size_t extlen = strlen(name);
+	for (const char* p = extensions; ; p++)
+	{
+		p = strstr(p, name);
+		if (p == NULL)
+			return false;						// No Match
+		if ((p==extensions || p[-1]==' ') && (p[extlen]=='\0' || p[extlen]==' '))
+			return true;						// Match
+	}
+	return false;
+}
+
+bool Renderer::isExtensionSupported(const char *name){
+	static const char* extensions = (char*)glGetString(GL_EXTENSIONS);
+
+	const size_t extlen = strlen(name);
+	for (const char* p = extensions; ; p++)
+	{
+		p = strstr(p, name);
+		if (p == NULL)
+			return false;						// No Match
+		if ((p==extensions || p[-1]==' ') && (p[extlen]=='\0' || p[extlen]==' '))
+			return true;						// Match
 	}
 	return false;
 }
 
 void Renderer::destroyGlWindow(void)
 {
+	ScopeRCLock scopeLock(appInstance->lockedRC);
+	HGLRC hRC = appInstance->lockedRC.getHRC();
 	if (hRC)											// Do We Have A Rendering Context?
 	{
-		if (!releaseRenderingContext())					// Are We Able To Release The DC And RC Contexts?
+		if (!wglMakeCurrent(0, 0))					// Are We Able To Release The DC And RC Contexts?
 		{
-			MessageBox(NULL,L"Release Of RC Failed.",L"SHUTDOWN ERROR",MB_OK | MB_ICONINFORMATION);
+			console::print(pfc::string8("Foo_chronflow Error: Release Of RC Failed. (mainWin) Details:") << format_win32_error(GetLastError()));
 		}
 
 		if (!wglDeleteContext(hRC))						// Are We Able To Delete The RC?
 		{
-			MessageBox(NULL,L"Release Rendering Context Failed.",L"SHUTDOWN ERROR",MB_OK | MB_ICONINFORMATION);
+			MessageBox(NULL,L"Release Rendering Context Failed.",L"Foo_chronflow Error",MB_OK | MB_ICONINFORMATION);
 		}
-		hRC=NULL;										// Set RC To NULL
 	}
-
+	HDC hDC = appInstance->lockedRC.getHDC();	
 	if (hDC && !ReleaseDC(appInstance->mainWindow,hDC))					// Are We Able To Release The DC
 	{
-		MessageBox(NULL,L"Release Device Context Failed.",L"SHUTDOWN ERROR",MB_OK | MB_ICONINFORMATION);
-		hDC=NULL;										// Set DC To NULL
+		MessageBox(NULL,L"Release Device Context Failed.",L"Foo_chronflow Error",MB_OK | MB_ICONINFORMATION);
 	}
+	appInstance->lockedRC.setRC(0, 0);
 }
 
 void Renderer::resizeGlScene(int width, int height){
+	ScopeRCLock scopeLock(appInstance->lockedRC);
+
 	if (height == 0)
 		height = 1;
 	winWidth = width;
@@ -247,23 +338,27 @@ void Renderer::glPushOrthoMatrix(){
 	glLoadIdentity();
 	glOrtho(0, winWidth, 0, winHeight, -1, 1);
 	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
 }
 
 void Renderer::glPopOrthoMatrix(){
 	glMatrixMode(GL_PROJECTION);
 	glPopMatrix();
 	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
 	glEnable(GL_DEPTH_TEST);
 }
 
 bool Renderer::positionOnPoint(int x, int y, CollectionPos& out) 
 {
+	ScopeRCLock scopeLock(appInstance->lockedRC);
 	GLuint buf[256];
 	glSelectBuffer(256, buf);
 	glRenderMode(GL_SELECT);
 	setProjectionMatrix(true, x, y);
 	glInitNames();
-	drawFrame();
+	drawFrame(true);
 	GLint hits = glRenderMode(GL_RENDER);
 	setProjectionMatrix();
 	GLuint *p = buf;
@@ -285,11 +380,6 @@ bool Renderer::positionOnPoint(int x, int y, CollectionPos& out)
 		return false;
 	}
 }
-void Renderer::drawEmptyFrame(void)
-{
-	glClear(GL_COLOR_BUFFER_BIT);
-	glFlush();
-}
 
 void Renderer::drawMirrorPass(){
 	glVectord mirrorNormal = appInstance->coverPos->getMirrorNormal();
@@ -304,22 +394,22 @@ void Renderer::drawMirrorPass(){
 	double rotAngle = rad2deg(scaleAxis.intersectAng(mirrorNormal));
 	rotAngle = -2*rotAngle;
 
-
-	GLfloat	fogColor[4] = {GetRValue(cfgPanelBg)/255.0f, GetGValue(cfgPanelBg)/255.0f, GetBValue(cfgPanelBg)/255.0f, 1.0f};
-	glFogfv(GL_FOG_COLOR, fogColor);
-	glEnable(GL_FOG);
+	if (showFog){
+		GLfloat	fogColor[4] = {GetRValue(cfgPanelBg)/255.0f, GetGValue(cfgPanelBg)/255.0f, GetBValue(cfgPanelBg)/255.0f, 1.0f};
+		glFogfv(GL_FOG_COLOR, fogColor);
+		glEnable(GL_FOG);
+	}
 
 	glPushMatrix();
 		glTranslated(2 * mirrorPos.x, 2 * mirrorPos.y, 2 * mirrorPos.z);
 		glScalef(-1.0f, 1.0f, 1.0f);
 		glRotated(rotAngle, rotAxis.x, rotAxis.y, rotAxis.z);
 
-		glPushName(SELECTION_MIRROR);
-			drawCovers();
-		glPopName();
+		drawCovers();
 	glPopMatrix();
-
-	glDisable(GL_FOG);
+	
+	if (showFog)
+		glDisable(GL_FOG);
 }
 
 void Renderer::drawMirrorOverlay(){
@@ -348,14 +438,15 @@ void Renderer::drawMirrorOverlay(){
 	glEnable(GL_DEPTH_TEST);
 }
 
-pfc::array_staticsize_t<double> Renderer::getMirrorClipPlane(){
+pfc::array_t<double> Renderer::getMirrorClipPlane(){
 	glVectord mirrorNormal = appInstance->coverPos->getMirrorNormal();
 	glVectord mirrorCenter = appInstance->coverPos->getMirrorCenter();
 	glVectord eye2mCent = (mirrorCenter - appInstance->coverPos->getCameraPos());
 
 	// Angle at which the mirror normal stands to the eyePos
 	double mirrorNormalAngle = rad2deg(eye2mCent.intersectAng(mirrorNormal));
-	pfc::array_staticsize_t<double> clipEq(4);
+	pfc::array_t<double> clipEq;
+	clipEq.set_size(4);
 	if (mirrorNormalAngle > 90){
 		clipEq[0] = -mirrorNormal.x;
 		clipEq[1] = -mirrorNormal.y;
@@ -370,9 +461,10 @@ pfc::array_staticsize_t<double> Renderer::getMirrorClipPlane(){
 	return clipEq;
 }
 
-void Renderer::drawFrame(void)
+void Renderer::drawFrame(bool selectionPass)
 {
-	glClearColor(GetRValue(cfgPanelBg), GetGValue(cfgPanelBg), GetBValue(cfgPanelBg), 0);
+	ScopeRCLock scopeLock(appInstance->lockedRC);
+	glClearColor(GetRValue(cfgPanelBg)/255.0f, GetGValue(cfgPanelBg)/255.0f, GetBValue(cfgPanelBg)/255.0f, 0);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
@@ -381,15 +473,19 @@ void Renderer::drawFrame(void)
 		appInstance->coverPos->getLookAt().x,    appInstance->coverPos->getLookAt().y,    appInstance->coverPos->getLookAt().z, 
 		appInstance->coverPos->getUpVector().x,  appInstance->coverPos->getUpVector().y,  appInstance->coverPos->getUpVector().z);
 	
-	pfc::array_staticsize_t<double> clipEq(4);
+	pfc::array_t<double> clipEq;
 
 	if (appInstance->coverPos->isMirrorPlaneEnabled()){
 		clipEq = getMirrorClipPlane();
-		glClipPlane(GL_CLIP_PLANE0, clipEq.get_ptr());
-		glEnable(GL_CLIP_PLANE0);
-			drawMirrorPass();
-		glDisable(GL_CLIP_PLANE0);
-		drawMirrorOverlay();
+		if (!selectionPass){
+			glClipPlane(GL_CLIP_PLANE0, clipEq.get_ptr());
+			glEnable(GL_CLIP_PLANE0);
+			glPushName(SELECTION_MIRROR);
+				drawMirrorPass();
+			glPopName();
+			glDisable(GL_CLIP_PLANE0);
+			drawMirrorOverlay();
+		}
 
 		// invert the clip equation
 		for (int i=0; i < 4; i++){
@@ -400,6 +496,8 @@ void Renderer::drawFrame(void)
 		glEnable(GL_CLIP_PLANE0);
 	}
 	
+	ImgTexture* ptr = 0;
+
 	glPushName(SELECTION_COVERS);
 		drawCovers(true);
 	glPopName();
@@ -408,19 +506,30 @@ void Renderer::drawFrame(void)
 		glDisable(GL_CLIP_PLANE0);
 	}
 	
-	pfc::string8 albumTitle;
-	appInstance->albumCollection->getTitle(appInstance->displayPos->getTarget(), albumTitle);
-	appInstance->textDisplay->displayText(albumTitle, int(winWidth*cfgTitlePosH), int(winHeight*(1-cfgTitlePosV)), TextDisplay::center, TextDisplay::middle);
+	if (!selectionPass){
+		pfc::string8 albumTitle;
+		appInstance->albumCollection->getTitle(appInstance->displayPos->getTarget(), albumTitle);
+		if (albumTitle.length() > 0)
+			appInstance->textDisplay->displayText(albumTitle, int(winWidth*cfgTitlePosH), int(winHeight*(1-cfgTitlePosV)), TextDisplay::center, TextDisplay::middle);
 
-	glFlush();
-}
 
-void Renderer::swapBuffers(){
-	SwapBuffers(hDC);
+		double fps, msPerFrame, longestFrame;
+		appInstance->fpsCounter.getFPS(fps, msPerFrame, longestFrame);
+		pfc::string8 dispString;
+		dispString << "FPS: " << pfc::format_float(fps, 4, 1);
+		dispString << "  ms/f: " << pfc::format_float(msPerFrame, 5, 2);
+		dispString << "  max: " << pfc::format_float(msPerFrame, 5, 2);
+		// pfc::string8("FPS: ") << int(fps) << " ms/f: " << int(msPerFrame) << " max: " << int(longestFrame)
+
+		appInstance->textDisplay->displayBitmapText(dispString, winWidth - 300, winHeight - 20);
+	}
 }
 
 bool Renderer::shareLists(HGLRC shareWith){
-	return 0 != wglShareLists(hRC, shareWith);
+	appInstance->lockedRC.lock();
+	bool ret = 0 != wglShareLists(appInstance->lockedRC.getHRC(), shareWith);
+	appInstance->lockedRC.unlock();
+	return ret;
 }
 
 void Renderer::drawCovers(bool showTarget){
@@ -430,6 +539,9 @@ void Renderer::drawCovers(bool showTarget){
 	glEnable(GL_ALPHA_TEST);
 	glAlphaFunc(GL_GREATER,0.1f);
 #endif
+	
+	if (cfgHighlightWidth == 0)
+		showTarget = false;
 
 	int firstCover = appInstance->coverPos->getFirstCover()+1;
 	int lastCover  = appInstance->coverPos->getLastCover();
@@ -437,19 +549,6 @@ void Renderer::drawCovers(bool showTarget){
 	CollectionPos p = appInstance->displayPos->getCenteredPos() + firstCover;
 	for (int o = firstCover; o <= lastCover; ++o, ++p){
 		float co = -centerOffset + o;
-
-		/*zPos = frontZ - co*co*0.3;
-		zRot = rad2deg(atan(zPos*co));
-		xPos = co*0.7;*/
-		/*float radius = 3;
-		float factor = co * 1.95f/radius;
-		zPos = -8 - radius + cos(factor)*radius;
-		xPos = sin(factor)*radius;
-		zRot = float(rad2deg(factor));
-		yPos = co*0.4f-1.6f;
-
-		glTranslatef(xPos, yPos, zPos);
-		glRotatef(zRot, 0, 1.0f, 0);*/
 
 		ImgTexture* tex = appInstance->texLoader->getLoadedImgTexture(p);
 		tex->glBind();
@@ -491,17 +590,32 @@ void Renderer::drawCovers(bool showTarget){
 
 		if (showTarget){
 			if (p == appInstance->displayPos->getTarget()){
-				showTarget = false;
+				bool clipPlane = false;
+				if (glIsEnabled(GL_CLIP_PLANE0)){
+					glDisable(GL_CLIP_PLANE0);
+					clipPlane = true;
+				}
 
+				showTarget = false;
+				
 				glColor3f(GetRValue(cfgTitleColor) / 255.0f, GetGValue(cfgTitleColor) / 255.0f, GetBValue(cfgTitleColor) / 255.0f);
 
 				glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
 				glBindTexture(GL_TEXTURE_2D,0);
-				glLineWidth(4);
+
+				glLineWidth((GLfloat)cfgHighlightWidth);
+				glPolygonOffset(-1.0f, -1.0f);
+				glEnable(GL_POLYGON_OFFSET_LINE);
 
 				glEnable(GL_VERTEX_ARRAY);
 				glVertexPointer(3, GL_FLOAT, 0, (void*) &coverQuad);
 				glDrawArrays(GL_QUADS, 0, 4);
+
+
+				glDisable(GL_POLYGON_OFFSET_LINE);
+
+				if (clipPlane)
+					glEnable(GL_CLIP_PLANE0);
 			}
 		}
 	}

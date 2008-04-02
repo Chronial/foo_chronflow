@@ -98,7 +98,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="COVER_CONFIG_DEF_CONTENT.h wird gelöscht..."
-				CommandLine="del $(ProjectDir)\COVER_CONFIG_DEF_CONTENT.h&#x0D;&#x0A;del $(ProjectDir)\DEF_CFG_COVERCONFIGS.h"
+				CommandLine="del $(ProjectDir)\COVER_CONFIG_DEF_CONTENT.h&#x0D;&#x0A;del $(ProjectDir)\DEF_CFG_COVERCONFIGS.h&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
@@ -137,7 +137,7 @@
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
 				PreprocessorDefinitions="WIN32;_WINDOWS;"
-				StringPooling="false"
+				StringPooling="true"
 				WarningLevel="3"
 			/>
 			<Tool
@@ -193,10 +193,6 @@
 			>
 			<File
 				RelativePath=".\AsynchTexLoader.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CollectionPos.cpp"
 				>
 			</File>
 			<File

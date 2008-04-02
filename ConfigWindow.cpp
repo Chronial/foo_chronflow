@@ -28,6 +28,7 @@ extern cfg_struct_t<double> cfgTitlePosV;
 extern cfg_int cfgTitleColor;
 extern cfg_struct_t<LOGFONT> cfgTitleFont;
 extern cfg_int cfgPanelBg;
+extern cfg_int cfgHighlightWidth;
 
 extern cfg_coverConfigs cfgCoverConfigs;
 extern cfg_string cfgCoverConfigSel;
@@ -268,7 +269,7 @@ public:
 			loadActionList(IDC_DOUBLE_CLICK, cfgDoubleClick);
 			loadActionList(IDC_MIDDLE_CLICK, cfgMiddleClick);
 			loadActionList(IDC_ENTER_KEY, cfgEnterKey);
-			SendDlgItemMessage(hWnd, IDC_FOLLOW_DELAY_SPINNER, UDM_SETRANGE, 0, MAKELONG(short(999),short(1)));
+			SendDlgItemMessage(hWnd, IDC_FOLLOW_DELAY_SPINNER, UDM_SETRANGE, 0, MAKELONG(short(999),short(0)));
 			uSetDlgItemText(hWnd, IDC_FOLLOW_DELAY, pfc::string_fixed_t<16>() << cfgCoverFollowDelay);
 			uEnableWindow(uGetDlgItem(hWnd, IDC_FOLLOW_DELAY), cfgCoverFollowsPlayback);
 			break;
@@ -279,7 +280,7 @@ public:
 				if (LOWORD(wParam) == IDC_FOLLOW_DELAY){
 					pfc::string_fixed_t<16> coverFollowDelay;
 					uGetDlgItemText(hWnd, IDC_FOLLOW_DELAY, coverFollowDelay);
-					cfgCoverFollowDelay = max(1, min(999, atoi(coverFollowDelay)));
+					cfgCoverFollowDelay = max(0, min(999, atoi(coverFollowDelay)));
 					AppInstance * mainInstance = gGetSingleInstance();
 					if (mainInstance) {
 						mainInstance->playbackTracer->followSettingsChanged();
@@ -315,6 +316,9 @@ public:
 				menu->get_item_name(i, menuName);
 				if (!menuPath.is_empty())
 					menuPath.add_string("/");
+				if (strcmp(menuPath, "Play") == 0){
+					continue;
+				}
 				menuPath.add_string(menuName);
 				uSendDlgItemMessageText(hWnd, id, CB_ADDSTRING, 0, menuPath);
 			}
@@ -352,6 +356,9 @@ public:
 				uSendDlgItemMessageText(hWnd, IDC_TPOS_V_P, WM_SETTEXT, 0, pfc::string_fixed_t<16>() << titlePosV);
 
 				uSendDlgItemMessage(hWnd, IDC_FONT_PREV, WM_SETTEXT, 0, (LPARAM)cfgTitleFont.get_value().lfFaceName);
+
+				uSendDlgItemMessage(hWnd, IDC_FRAME_WIDTH_SPIN, UDM_SETRANGE, 0, MAKELONG(short(30),short(0)));
+				uSetDlgItemText(hWnd, IDC_FRAME_WIDTH, pfc::string_fixed_t<16>() << cfgHighlightWidth);
 			}
 			break;
 		case WM_HSCROLL:
@@ -386,6 +393,7 @@ public:
 		case WM_COMMAND:
 			if (HIWORD(wParam) == EN_CHANGE){
 				textChanged(LOWORD(wParam));
+
 				switch (LOWORD(wParam))
 				{
 				case IDC_ALBUM_FORMAT:
@@ -399,6 +407,14 @@ public:
 							aTrack->format_title(0, preview, cfgAlbumTitleScript, 0);
 							uSendDlgItemMessageText(hWnd, IDC_TITLE_PREVIEW, WM_SETTEXT, 0, preview);
 						}
+						redrawMainWin();
+					}
+					break;
+				case IDC_FRAME_WIDTH:
+					{
+						pfc::string_fixed_t<16> highlightWidth;
+						uGetDlgItemText(hWnd, IDC_FRAME_WIDTH, highlightWidth);
+						cfgHighlightWidth = max(0, min(30, atoi(highlightWidth)));
 						redrawMainWin();
 					}
 					break;
@@ -462,7 +478,7 @@ private:
 		cf.lStructSize = sizeof(cf);
 		cf.hwndOwner = hWnd;
 		cf.lpLogFont = &tFont;
-		cf.Flags = CF_SCREENFONTS | CF_FORCEFONTEXIST | CF_INITTOLOGFONTSTRUCT;
+		cf.Flags = CF_TTONLY | CF_SCREENFONTS | CF_FORCEFONTEXIST | CF_INITTOLOGFONTSTRUCT;
 		if (ChooseFont(&cf)){
 			font = tFont;
 			return true;
@@ -504,9 +520,10 @@ public:
 
 class CoverTab : public ConfigTab {
 	HFONT editBoxFont;
+
 public:
 	static const int idx = 3;
-
+	WNDPROC origEditboxProc;
 	CoverTab (HWND parent) : ConfigTab("Cover Display", IDD_COVER_DISPLAY_TAB, parent){
 		editBoxFont = CreateFont(-12, 0, 0, 0, 0, FALSE, 0, 0, 0, 0, 0, 0, 0, L"Courier New");
 		init(idx);
@@ -522,8 +539,8 @@ public:
 			loadConfigList();
 			configSelectionChanged();
 			setUpEditBox();
-			break;
-
+			return TRUE;
+		
 		case WM_COMMAND:
 			if (HIWORD(wParam) == EN_CHANGE){
 				textChanged(LOWORD(wParam));
@@ -555,7 +572,7 @@ public:
 	void compileConfig(){
 		pfc::string8 script;
 		uGetDlgItemText(hWnd, IDC_DISPLAY_CONFIG, script);
-
+		
 		pfc::string8 message;
 		ScriptedCoverPositions* covPos;
 		bool killCovPos;
@@ -564,10 +581,15 @@ public:
 			covPos = mainInstance->coverPos;
 			killCovPos = false;
 		} else {
-			covPos = new ScriptedCoverPositions();
+			try {
+				covPos = new ScriptedCoverPositions();
+			} catch (pfc::exception& e){
+				message = e.what();
+				uSetDlgItemText(hWnd, IDC_COMPILE_STATUS, message);
+				return;
+			}
 			killCovPos = true;
 		}
-
 		if (covPos->setScript(script, message))
 			message = "Sucess!";
 		uSetDlgItemText(hWnd, IDC_COMPILE_STATUS, message);
@@ -581,6 +603,124 @@ public:
 		int tabstops[1] = {14};
 		SendDlgItemMessage(hWnd, IDC_DISPLAY_CONFIG, EM_SETTABSTOPS, 1, (LPARAM)tabstops);
 		SendDlgItemMessage(hWnd, IDC_DISPLAY_CONFIG, WM_SETFONT, (WPARAM)editBoxFont, TRUE);
+		origEditboxProc = (WNDPROC) SetWindowLong(GetDlgItem(hWnd, IDC_DISPLAY_CONFIG), GWL_WNDPROC, (LONG)editboxProxy);
+		SetProp(GetDlgItem(hWnd, IDC_DISPLAY_CONFIG), L"tab", (HANDLE)this);
+		 //
+	}
+	static BOOL CALLBACK editboxProxy(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
+		CoverTab* coverTab = reinterpret_cast<CoverTab*>(GetProp(hWnd, L"tab"));
+		return coverTab->editboxProc(hWnd, uMsg, wParam, lParam);
+	}
+	BOOL editboxProc(HWND eWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
+		if (uMsg == WM_KEYDOWN){
+			if (wParam == 'A' && (GetKeyState(VK_CONTROL) & 0x8000)){
+				SendMessage(eWnd, EM_SETSEL, 0, -1);
+				return false;
+			} else if (wParam == VK_TAB){
+				DWORD selFirst;
+				DWORD selLast;
+				SendMessage(eWnd, EM_GETSEL, (WPARAM)&selFirst, (LPARAM)&selLast);
+				if (selFirst == selLast){
+					uSendMessageText(eWnd, EM_REPLACESEL, TRUE, "\t");
+				} else {
+					bool intend = !(GetKeyState(VK_SHIFT) & 0x8000);
+					pfc::string8 boxText;
+					uGetWindowText(eWnd, boxText);
+					PFC_ASSERT(selLast <= boxText.length());
+					const char * pStart = boxText.get_ptr();
+					const char * selEnd = pStart + selLast;
+					const char * p = pStart + selFirst;
+					while ((p > pStart) && (p[-1] != '\n'))
+						p--;
+					unsigned int repFirst = p - pStart;
+					if (intend){
+						selFirst++;
+					} else {
+						if (*p == '\t') {
+							selFirst--;
+						} else if ((p+2 < selEnd) && p[0] == ' ' && p[1] == ' ' && p[2] == ' ') {
+							selFirst -= 3;
+						}
+						if (selFirst < repFirst)
+							selFirst = repFirst;
+					}
+					pfc::string8 outText;
+					outText.prealloc(selEnd - p);
+					const char * lStart = p;
+					p++;
+					while (p <= selEnd){
+						while(p[-1] != '\n' && p < selEnd)
+							p++;
+						if (intend){
+							outText.add_char('\t');
+						} else {
+							if (*lStart == '\t') {
+								lStart++;
+							} else if ((lStart+3 < p) && lStart[0] == ' ' && lStart[1] == ' ' && lStart[2] == ' ') {
+								lStart += 3;
+							}
+						}
+						outText.add_string(lStart, p - lStart);
+						lStart = p;
+						p++;
+					}
+					SendMessage(eWnd, EM_SETSEL, repFirst, selLast);
+					uSendMessageText(eWnd, EM_REPLACESEL, TRUE, outText);
+					SendMessage(eWnd, EM_SETSEL, selFirst, repFirst+outText.length());
+				}
+				return false;
+			} else if (wParam == VK_RETURN) {
+				DWORD selFirst;
+				DWORD selLast;
+				SendMessage(eWnd, EM_GETSEL, (WPARAM)&selFirst, (LPARAM)&selLast);
+				pfc::string8 boxText;
+				uGetWindowText(eWnd, boxText);
+				const char * pStart = boxText.get_ptr();
+				const char * selEnd = pStart + selLast;
+				const char * p = pStart + selFirst;
+				int tabCount = 0;
+				if (p > pStart && p[-1] == '{')
+					tabCount++;
+				while ((p > pStart) && (p[-1] != '\n'))
+					p--;
+				while (*p == '\t' || ((p+2 < selEnd) && *p == ' ' && *(++p) == ' ' && *(++p) == ' ')){
+					p++;
+					tabCount++;
+				}
+				pfc::string8 intend("\r\n");
+				intend.add_chars('\t', tabCount);
+				uSendMessageText(eWnd, EM_REPLACESEL, TRUE, intend);
+				return false;
+			}
+		} else if (uMsg == WM_CHAR) {
+			if (wParam == 1){
+				return false;
+			} else if (wParam == VK_RETURN) {
+				return false;
+			} else if (wParam == '}'){
+				wchar_t line[3];
+				line[0] = 3;
+				DWORD selFirst;
+				SendMessage(eWnd, EM_GETSEL, (WPARAM)&selFirst, 0);
+				int lineNumber = SendMessage(eWnd, EM_LINEFROMCHAR, selFirst, 0);
+				int lineLength = SendMessage(eWnd, EM_LINELENGTH, selFirst, 0);
+				int lineIdx = SendMessage(eWnd, EM_LINEINDEX, lineNumber, 0);
+				SendMessage(eWnd, EM_GETLINE, lineNumber, (LPARAM)&line);
+				uSendMessageText(eWnd, EM_REPLACESEL, TRUE, "}");
+				int deleteChars = 0;
+				if (lineLength > 0 && line[0] == '\t')
+					deleteChars = 1;
+				else if (lineLength > 2 && line[0] == ' ' && line[1] == ' ' && line[2] == ' ')
+					deleteChars = 3;
+				if (deleteChars > 0){
+					SendMessage(eWnd, EM_SETSEL, (WPARAM)lineIdx, (LPARAM)(lineIdx + deleteChars));
+					uSendMessageText(eWnd, EM_REPLACESEL, TRUE, "");
+					SendMessage(eWnd, EM_SETSEL, selFirst-deleteChars+1, selFirst-deleteChars+1);
+				}
+				return false;
+			}
+		}
+		return CallWindowProc(origEditboxProc, eWnd, uMsg, wParam, lParam);
 	}
 	void removeConfig(){
 		if (cfgCoverConfigs.get_count() > 1){
@@ -598,7 +738,23 @@ public:
 				if (!cfgCoverConfigs.getPtrByName(dialog.value)){
 					CoverConfig config;
 					config.name = dialog.value;
-					config.script = COVER_CONFIG_DEF_CONTENT;
+					bool useClipboard = false;
+					if (uGetClipboardString(config.script)){
+						bool allFound = true;
+						pfc::stringcvt::string_wide_from_utf8 clipboard_w(config.script);
+						for (int i=0; i < CPScriptFuncInfos::funcCount; i++){
+							if (CPScriptFuncInfos::neededFunctions[i]){
+								if (wcsstr(clipboard_w, CPScriptFuncInfos::knownFunctions[i]) == 0){
+									allFound = false;
+									break;
+								}
+							}
+						}
+						if (allFound)
+							useClipboard = true;
+					}
+					if (!useClipboard)
+						config.script = COVER_CONFIG_DEF_CONTENT;
 					cfgCoverConfigs.add_item(config);
 					cfgCoverConfigSel = dialog.value;
 					loadConfigList();
@@ -747,11 +903,7 @@ public:
 	}
 
 	GUID get_guid(){
-		// {37835416-4578-4aaa-A229-E09AB9E2CB9C}
-		static const GUID guid_preferences = 
-		{ 0x37835416, 0x4578, 0x4aaa, { 0xa2, 0x29, 0xe0, 0x9a, 0xb9, 0xe2, 0xcb, 0x9c } };
-
-		return guid_preferences;
+		return guid_configWindow;
 	}
 
 	GUID get_parent_guid(){

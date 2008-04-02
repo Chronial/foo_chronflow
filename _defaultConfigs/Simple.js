@@ -15,32 +15,22 @@
 // values.
 function coverPosition(coverId){
    var x, y, z;
+   x = coverId*1.1;
    y = 0;
-   if (Math.abs(coverId) <= 1){ // The centered cover
-      z = 1 + 3 * (1 - Math.abs(coverId));
-      x = coverId;
-   } else { // The covers on the side
-      z = 1 - (Math.abs(coverId)-1) * 0.15;
-      x = 1 + 0.5 * (Math.abs(coverId)-1);
-      if (coverId < 0)
-         x *= -1;
-   }
+   z = -Math.abs(coverId);
    return new Array(x, y, z);
 }
 // return array is (angle, x, ,y, z) - this rotates
 // the cover *angle* degrees around the vector (x,y,z)
 // With (0,0,0,0) the cover is parallel to the y-z-Plane
 function coverRotation(coverId){
-   var angle;
-   if (Math.abs(coverId) < 1){ // The centered cover
-      angle = coverId * -70;
-   } else { // The covers on the side
-      if (coverId > 0)
-         angle = -70;
-      else
-         angle = 70;
+   var angle = 0;
+   if (Math.abs(coverId) >= 2){
+       angle = 53.8 * (Math.abs(coverId) - 2);
+       if (coverId < 0)
+           angle *= -1;
    }
-   return new Array(angle, 0, 1, 0);
+   return new Array(angle,0,1,0);
 }
 
 // Sets which point of the cover coverPosition() defines
@@ -48,21 +38,14 @@ function coverRotation(coverId){
 // (1,1) means top right, (0, -1) means bottom center etc.
 // The cover is also rotated around this point.
 function coverAlign(coverId){
-   return new Array(0, -1);
+   return new Array(0, 0);
 }
 
 // Defines the the size boundaries for the cover.
 // Aspect ratio is preserved.
 // Return Array is (widht, height)
 function coverSizeLimits(coverId){
-   if (Math.abs(coverId) < 1){ // The centered cover
-      var w, h;
-      w = 1;
-      h = 1.2 + Math.abs(coverId) * 0.8;
-      return new Array(w, h);
-   } else { // The covers on the side
-      return new Array(1, 2);
-   }
+   return new Array(1, 1);
 }
 
 // Defines the range of covers to draw.
@@ -70,7 +53,7 @@ function coverSizeLimits(coverId){
 // This interval shouldn't be larger than 80
 // The center cover is 0.
 function drawCovers(){
-   return new Array(-20, 20);
+   return new Array(-3, 3);
 }
 
 
@@ -82,17 +65,17 @@ function drawCovers(){
 // The values determine how important it is for this
 // dimension to stay fixed.
 function aspectBehaviour(){
-   return new Array(0,1);
+   return new Array(0, 1);
 }
 
 /************************** CAMMERA SETUP ****************/
 // Position of the viewport
 function eyePos(){
-	return new Array(0, 0.5, 6);
+	return new Array(0, 0, 1.5);
 }
 // Defines the point for the eye to look at
 function lookAt(){
-   return new Array(0, 0.5, 0);
+   return new Array(0, 0, 0);
 }
 // Used to rotate the view.
 // The returned Vector points upwards in the viewport.
@@ -104,13 +87,5 @@ function upVector(){
 
 /************************** MIRROR SETUP *****************/
 function showMirrorPlane(){
-   return true; // return false to hide the mirror
-}
-// Any Point on the Mirror Plane
-function mirrorPoint (){
-   return new Array(0, 0, 0);
-}
-// Normal of the Mirror Plane
-function mirrorNormal (){
-   return new Array(0, 1, 0);
+   return false;
 }

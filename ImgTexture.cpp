@@ -64,7 +64,8 @@ Bitmap* ImgTexture::getErrorBitmap(){
 	StringFormat format;
 	format.SetAlignment(StringAlignmentCenter);
 	format.SetLineAlignment(StringAlignmentCenter);
-	drawer.DrawString(L"Couldn't load Image",-1,&font,RectF(0,0,256,256),&format,&whiteBrush);
+	//drawer.DrawString(L"Couldn't load Image",-1,&font,RectF(0,0,256,256),&format,&whiteBrush);
+	drawer.DrawString(pfc::stringcvt::string_wide_from_utf8(imageFile),-1,&font,RectF(0,0,256,256),&format,&whiteBrush);
 	return bitmap;
 }
 
@@ -83,6 +84,7 @@ void ImgTexture::glUpload(void)
 		glTexParameteri(GL_TEXTURE_2D,GL_GENERATE_MIPMAP,GL_TRUE);*/
 
 
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16);
 
 		int width = bitmap->GetWidth();
 		int height = bitmap->GetHeight();

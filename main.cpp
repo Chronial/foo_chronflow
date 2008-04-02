@@ -1,7 +1,7 @@
 #include "chronflow.h"
 #include "config.h"
 
-#define VERSION "0.2.0"
+#define VERSION "0.2.1debug"
 
 DECLARE_COMPONENT_VERSION( "Coverflow pannel", VERSION, 
    "Renders Album Art in a 3d environment\n"
@@ -9,6 +9,8 @@ DECLARE_COMPONENT_VERSION( "Coverflow pannel", VERSION,
    __DATE__ " - " __TIME__ );
 
 extern cfg_int sessionSelectedCover;
+
+
 
 class Chronflow : public ui_extension::window {
 private:
@@ -72,45 +74,33 @@ public:
 	};
 
 	HWND get_wnd() const {
-		return appInstance->mainWindow;
+		if (appInstance)
+			return appInstance->mainWindow;
+		else
+			return 0;
 	};
 
 private:
 	bool isShown; // part of the single-istance implementation
-	int refreshRate;
 	ULONG_PTR gdiplusToken;
-	UINT multimediaTimerRes;
 	MouseFlicker* mouseFlicker;
+	SwapBufferTimer* swapBufferTimer;
 
 	AppInstance* appInstance;
 public:
 	Chronflow(){
-		multimediaTimerRes = 0;
+		swapBufferTimer = 0;
 		currentHost = 0;
 		isShown = false;
+		mouseFlicker = 0;
 	}
 	void init(){
-		TIMECAPS tc;
-		UINT     wTimerRes;
-		if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) == TIMERR_NOERROR){
-			wTimerRes = min(max(tc.wPeriodMin, 1), tc.wPeriodMax);
-		}
-		timeBeginPeriod(wTimerRes); 
 	}
 	void quit(){
-		timeEndPeriod(multimediaTimerRes);
-		int i = ImgTexture::instanceCount;
-		if (ImgTexture::instanceCount != 0){
-			MessageBoxA(0, pfc::string8("ImgTexture Leak: ") << ImgTexture::instanceCount, "foo_chronflow Error", MB_ICONERROR);
-		}
 	}
 
-	static VOID WINAPI GdiPlusDebug (Gdiplus::DebugEventLevel level, CHAR *message){
-		console::print(message);
-	}
 	bool show(HWND parent){
 		Gdiplus::GdiplusStartupInput gdiplusStartupInput;
-		gdiplusStartupInput.DebugEventCallback = &GdiPlusDebug;
 		Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
 #ifdef _DEBUG
@@ -123,23 +113,46 @@ public:
 			hide();
 			return false;
 		}
+		if (!registerWindowClass()){
+			hide();
+			return false;
+		}
 		appInstance->mainWindow = createWindow(parent);
+		if (appInstance->mainWindow == NULL){
+			hide();
+			return false;
+		}
+		appInstance->renderer = new Renderer(appInstance);
+		if (!appInstance->renderer->attachGlWindow()){
+			hide();
+			return false;
+		}
+		if (appInstance->renderer->initMultisampling()){
+			DestroyWindow(appInstance->mainWindow);
+			appInstance->mainWindow = createWindow(parent);
+			if (appInstance->mainWindow == NULL){
+				hide();
+				return false;
+			}
+			if (!appInstance->renderer->attachGlWindow()){
+				hide();
+				return false;
+			}
+		}
+		appInstance->renderer->initGlState();
+		swapBufferTimer = new SwapBufferTimer(appInstance, appInstance->mainWindow, &appInstance->lockedRC);
 		appInstance->albumCollection = new DbAlbumCollection(appInstance);
 		appInstance->texLoader = new AsynchTexLoader(appInstance);
 		appInstance->displayPos = new DisplayPosition(appInstance, CollectionPos(appInstance->albumCollection,sessionSelectedCover));
 		appInstance->textDisplay = new TextDisplay(appInstance);
-		appInstance->renderer = new Renderer(appInstance);
 		appInstance->playbackTracer = new PlaybackTracer(appInstance);
 		mouseFlicker = new MouseFlicker(appInstance);
 		
-		if (!appInstance->renderer->setupGlWindow()){
-			hide();
-			return false;
-		}
 		appInstance->albumCollection->reloadAsynchStart(true);
 		return true;
 	}
 	void hide(){
+		delete pfc::replace_null_t(swapBufferTimer); // important to do this here - otherwise it may trigger an swap during deinitalization
 		delete pfc::replace_null_t(mouseFlicker);
 		if (appInstance->texLoader)
 			appInstance->texLoader->stopLoading();
@@ -158,45 +171,39 @@ public:
 		delete pfc::replace_null_t(appInstance);
 
 		if (ImgTexture::instanceCount != 0){
-			IF_DEBUG(MessageBoxA(0, pfc::string8("ImgTexture Leak: ") << ImgTexture::instanceCount, "foo_chronflow Error", MB_ICONERROR));
+			MessageBoxA(0, pfc::string8("ImgTexture Leak: ") << ImgTexture::instanceCount, "foo_chronflow Error", MB_ICONERROR);
 		}
 
 		Gdiplus::GdiplusShutdown(gdiplusToken);
 	}
+
 private:
 	LRESULT MessageHandler (HWND	hWnd,			// Handle For This Window
 							UINT	uMsg,			// Message For This Window
 							WPARAM	wParam,			// Additional Message Information
 							LPARAM	lParam){
-		if(appInstance->renderer)
-			appInstance->renderer->setRenderingContext();
-
 		switch (uMsg){
 			case WM_COLLECTION_REFRESHED:
 				appInstance->albumCollection->reloadAsynchFinish(lParam);
 				return 0;
 			case WM_DESTROY:
-				if (appInstance->renderer)
+				if (appInstance->renderer){
+					delete pfc::replace_null_t(swapBufferTimer);
 					appInstance->renderer->destroyGlWindow();
+				}
 				return 0;
 			case WM_NCDESTROY:
 				appInstance->mainWindow = 0;
 				return 0;
 			case WM_SIZE:
-				if (appInstance->renderer)
+				if (appInstance->renderer){
 					appInstance->renderer->resizeGlScene(LOWORD(lParam),HIWORD(lParam));
+				}
 				return 0;
-			case WM_CREATE:
 			case WM_DEVMODECHANGE:
 			{
-				refreshRate = 60;
-				DEVMODE dispSettings;
-				memset(&dispSettings,0,sizeof(dispSettings));
-				dispSettings.dmSize=sizeof(dispSettings);
-
-				if (EnumDisplaySettings(NULL,ENUM_CURRENT_SETTINGS,&dispSettings)){
-					refreshRate = dispSettings.dmDisplayFrequency;
-				}
+				if (swapBufferTimer)
+					swapBufferTimer->reloadRefreshRate();
 				return 0;
 			}
 			case WM_MOUSEWHEEL:
@@ -222,6 +229,7 @@ private:
 			case WM_LBUTTONDBLCLK:
 			case WM_LBUTTONDOWN:
 			{
+				SetFocus(hWnd);
 				CollectionPos newTarget = appInstance->displayPos->getCenteredPos();
 				if (appInstance->renderer->positionOnPoint(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), newTarget)){
 					appInstance->displayPos->setTarget(newTarget);
@@ -236,6 +244,9 @@ private:
 			case WM_LBUTTONUP:
 				mouseFlicker->mouseUp(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
 				return 0;
+			case WM_CONTEXTMENU:
+				onContextMenu(hWnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+				return 0;
 			case WM_MOUSEMOVE:
 				mouseFlicker->mouseMove(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
 				return 0;
@@ -247,18 +258,19 @@ private:
 					appInstance->playbackTracer->timerHit();
 				return 0;
 			case WM_KEYDOWN:
+			case WM_SYSKEYDOWN:
 			{
 				if (wParam == VK_RETURN){
 					executeAction(cfgEnterKey, appInstance->displayPos->getTarget());
 					return 0;
 				} else if (wParam == VK_F5){
-					bool hardRefresh = (GetKeyState(VK_SHIFT) != 0);
+					bool hardRefresh = (GetKeyState(VK_SHIFT) & 0x8000) > 0;
 					appInstance->albumCollection->reloadAsynchStart(hardRefresh);
 					return 0;
 				} else if (wParam == VK_F6){
 					appInstance->playbackTracer->moveToNowPlaying();
 					return 0;
-				} else {
+				} else if (wParam == VK_RIGHT || wParam == VK_LEFT || wParam == VK_NEXT || wParam == VK_PRIOR) {
 					int move = 0;
 					if (wParam == VK_RIGHT){
 						move = +1;
@@ -275,12 +287,25 @@ private:
 						appInstance->playbackTracer->userStartedMovement();
 						return 0;
 					}
+				} else {
+					static_api_ptr_t<keyboard_shortcut_manager> ksm;
+					if (ksm->on_keydown(ksm->TYPE_MAIN,wParam)){
+						return 0;
+					} else {
+						metadb_handle_list tracks;
+						if (appInstance->albumCollection->getTracks(appInstance->displayPos->getTarget(), tracks)){
+							if (ksm->on_keydown_context(tracks, wParam, contextmenu_item::caller_undefined))
+								return 0;
+						}
+					}
 				}
-				break;;
+				break;
 			}
 			case WM_PAINT:
 			{
-				static double lastTime = 0;
+				ScopeRCLock scopeLock(appInstance->lockedRC);
+				double frameStart = Helpers::getHighresTimer();
+
 				appInstance->texLoader->blockUpload();
 				appInstance->texLoader->runGlDelete();
 				appInstance->displayPos->update();
@@ -290,13 +315,17 @@ private:
 				int sleepFor = int((1000.0/(refreshRate*1.10)) - (1000*(curTime - lastTime))); //1.05 are tolerance
 				if (sleepFor > 0)
 					SleepEx(sleepFor,false);*/
-				appInstance->renderer->swapBuffers();
-				lastTime = Helpers::getHighresTimer();
 				
+				double frameEnd = Helpers::getHighresTimer();
+				appInstance->fpsCounter.recordFrame(frameStart, frameEnd);
+
+
 				if (!appInstance->displayPos->isMoving()){
 					appInstance->texLoader->allowUpload();
 					ValidateRect(hWnd,NULL);
 				}
+				//swapBufferTimer->queueSwap(multipleFrames);
+				appInstance->lockedRC.swapBuffers();
 				return 0;
 			}
 		}
@@ -314,8 +343,12 @@ private:
 			return DefWindowProc(hWnd,uMsg,wParam,lParam);
 		return chronflow->MessageHandler(hWnd, uMsg, wParam, lParam);
 	}
-	void executeAction(const char * action, CollectionPos forCover){
-		metadb_handle_list tracks = appInstance->albumCollection->getTracks(forCover);
+	inline void executeAction(const char * action, CollectionPos forCover){
+		metadb_handle_list tracks;
+		appInstance->albumCollection->getTracks(forCover, tracks);
+		executeAction(action, forCover, tracks);
+	}
+	void executeAction(const char * action, CollectionPos forCover, const metadb_handle_list& tracks){
 		pfc::string8 albumTitle;
 		appInstance->albumCollection->getTitle(forCover, albumTitle);
 		for (int i=0; i < tabsize(g_customActions); i++){
@@ -329,13 +362,76 @@ private:
 			menu_helpers::run_command_context(commandGuid, pfc::guid_null, tracks);
 		}
 	}
-	HWND createWindow(HWND parent){
-		WNDCLASS	wc = {0};						// Windows Class Structure
-		DWORD		dwExStyle;				// Window Extended Style
-		DWORD		dwStyle;				// Window Style
-		HWND		hWnd;
+	void onContextMenu (HWND hWnd, const int x, const int y){
+		PlaybackTracerScopeLock lock(appInstance->playbackTracer);
+		POINT pt;
+		metadb_handle_list tracks;
+		CollectionPos target = appInstance->displayPos->getTarget();
+		if (x == -1){
+			pt.x = 0;
+			pt.y = 0;
+			ClientToScreen(hWnd, &pt);
+		} else {
+			pt.x = x;
+			pt.y = y;
+			POINT clientPt = pt;
+			ScreenToClient(hWnd, &clientPt);
+			CollectionPos clickedOn = target;
+			if(appInstance->renderer->positionOnPoint(clientPt.x, clientPt.y, clickedOn)){
+				target = clickedOn;
+			}
+		}
+		appInstance->albumCollection->getTracks(target, tracks);
 
-		//hInstance			= GetModuleHandle(NULL);				// Grab An Instance For Our Window
+		enum {
+			ID_ENTER = 1,
+			ID_ENTER2,
+			ID_DOUBLECLICK,
+			ID_MIDDLECLICK,
+			ID_PREFERENCES,
+			ID_CONTEXT_FIRST,
+			ID_CONTEXT_LAST = ID_CONTEXT_FIRST + 1000,
+		};
+
+		HMENU hMenu = CreatePopupMenu();
+		if ((cfgEnterKey.length() > 0) && (strcmp(cfgEnterKey, cfgDoubleClick) != 0))
+			uAppendMenu(hMenu, MF_STRING, ID_ENTER, pfc::string8(cfgEnterKey) << "\tEnter");
+		if (cfgDoubleClick.length() > 0)
+			uAppendMenu(hMenu, MF_STRING, ID_DOUBLECLICK, pfc::string8(cfgDoubleClick) << "\tDouble Click");
+		if ((cfgMiddleClick.length() > 0) && (strcmp(cfgMiddleClick, cfgDoubleClick) != 0) && (strcmp(cfgMiddleClick, cfgEnterKey) != 0))
+			uAppendMenu(hMenu, MF_STRING, ID_MIDDLECLICK, pfc::string8(cfgMiddleClick) << "\tMiddle Click");
+
+		service_ptr_t<contextmenu_manager> cmm;
+		contextmenu_manager::g_create(cmm);
+		cmm->init_context(tracks, contextmenu_manager::FLAG_SHOW_SHORTCUTS);
+		if (cmm->get_root()){
+			if (GetMenuItemCount(hMenu) > 0)
+				uAppendMenu(hMenu, MF_SEPARATOR, 0, 0);
+			cmm->win32_build_menu(hMenu, ID_CONTEXT_FIRST, ID_CONTEXT_LAST);
+			uAppendMenu(hMenu, MF_SEPARATOR, 0, 0);
+		}
+		uAppendMenu(hMenu, MF_STRING, ID_PREFERENCES, "Chronflow Preferences...");
+
+		menu_helpers::win32_auto_mnemonics(hMenu);
+		int cmd = TrackPopupMenu(hMenu, TPM_NONOTIFY | TPM_RETURNCMD | TPM_RIGHTBUTTON | TPM_NOANIMATION, 
+			pt.x, pt.y, 0, hWnd, 0);
+		DestroyMenu(hMenu);
+		if (cmd == ID_PREFERENCES){
+			static_api_ptr_t<ui_control>()->show_preferences(guid_configWindow);
+		} else if (cmd == ID_ENTER){
+			executeAction(cfgEnterKey, target, tracks);
+		} else if (cmd == ID_DOUBLECLICK){
+			executeAction(cfgDoubleClick, target, tracks);
+		} else if (cmd == ID_MIDDLECLICK){
+			executeAction(cfgMiddleClick, target, tracks);
+		} else if (cmd >= ID_CONTEXT_FIRST && cmd <= ID_CONTEXT_LAST){
+			cmm->execute_by_id(cmd - ID_CONTEXT_FIRST);
+		}
+		//contextmenu_manager::win32_run_menu_context(hWnd, tracks, &pt);
+	}
+	bool registerWindowClass(){
+		WNDCLASS	wc = {0};						// Windows Class Structure
+
 		wc.style			= CS_HREDRAW | CS_VREDRAW | CS_OWNDC| CS_DBLCLKS ;	// Redraw On Size, And Own DC For Window. -- recieve dblclicks (risky)
 		wc.lpfnWndProc		= (WNDPROC) this->WndProc;					// WndProc Handles Messages
 		wc.cbClsExtra		= 0;									// No Extra Window Data
@@ -351,13 +447,16 @@ private:
 
 		if (!RegisterClass(&wc))									// Attempt To Register The Window Class
 		{
-			MessageBox(NULL,L"Failed To Register The Window Class.",L"ERROR",MB_OK|MB_ICONEXCLAMATION);
-			return 0;											// Return FALSE
+			MessageBox(NULL,L"Failed To Register The Window Class.",L"Foo_chronflow Error",MB_OK|MB_ICONERROR);
+			return false;											// Return FALSE
 		}
-
-		//dwExStyle=WS_EX_APPWINDOW | WS_EX_WINDOWEDGE;			// Window Extended Style
+		return true;
+	}
+	HWND createWindow(HWND parent){
+		DWORD		dwExStyle;				// Window Extended Style
+		DWORD		dwStyle;				// Window Style
+		HWND		hWnd;
 		dwExStyle = 0;
-		//dwStyle=WS_OVERLAPPEDWINDOW;							// Windows Style
 		dwStyle = WS_CHILD;
 
 		// Create The Window
@@ -372,9 +471,9 @@ private:
 									parent,								// No Parent Window
 									NULL,								// No Menu
 									core_api::get_my_instance(),							// Instance
-									(void*)this)))								// Dont Pass Anything To WM_CREATE
+									(void*)this)))	
 		{
-			MessageBox(NULL,L"Window Creation Error.",L"ERROR",MB_OK|MB_ICONEXCLAMATION);
+			MessageBox(NULL,L"Window Creation Error.",L"Foo_chronflow Error",MB_OK|MB_ICONERROR);
 			return 0;								// Return FALSE
 		}
 		return hWnd;
