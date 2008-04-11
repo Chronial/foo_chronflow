@@ -10,6 +10,7 @@
 #define IDD_COVER_DISPLAY_TAB           107
 #define IDD_CONFIG_NAME                 108
 #define IDD_PERF_TAB                    109
+#define IDB_BAR                         111
 #define IDC_SOURCES                     1003
 #define IDC_FILTER                      1004
 #define IDC_BTN_REFRESH                 1016
@@ -53,31 +54,31 @@
 #define IDC_COMPILE                     1087
 #define IDC_FRAME_WIDTH_SPIN            1089
 #define IDC_FRAME_WIDTH                 1090
-#define IDC_CHECK1                      1091
-#define IDC_COMBO1                      1092
-#define IDC_CHECK2                      1093
-#define IDC_COMBO2                      1094
-#define IDC_CHECK3                      1095
-#define IDC_EDIT1                       1096
-#define IDC_SPIN1                       1097
-#define IDC_CHECK4                      1098
-#define IDC_EDIT2                       1099
-#define IDC_SPIN2                       1100
-#define IDC_RADIO1                      1101
-#define IDC_RADIO2                      1102
-#define IDC_RADIO3                      1103
-#define IDC_COMBO3                      1104
-#define IDC_CHECK5                      1106
-#define IDC_COMBO4                      1107
-#define IDC_COMBO5                      1109
+#define IDC_SUPER_SAMPLING              1091
+#define IDC_SUPER_SAMPLING_PASSES       1092
+#define IDC_MULTI_SAMPLING_PASSES       1094
+#define IDC_MULTI_SAMPLING              1095
+#define IDC_CACHE_SIZE                  1096
+#define IDC_CACHE_SIZE_SPIN             1097
+#define IDC_TEXTURE_COMPRESSION         1098
+#define IDC_TEXTURE_SIZE                1099
+#define IDC_TEXTURE_SIZE_SPIN           1100
+#define IDC_VSYNC_OFF                   1101
+#define IDC_VSYNC_SLEEP                 1102
+#define IDC_VSYNC_ONLY                  1103
+#define IDC_SHOW_FPS                    1106
+#define IDC_TEXLOADER_PRIO              1107
+#define IDC_EMPTY_ON_MINIMIZE           1110
+#define IDC_ALBUM_TITLE                 1111
+#define IDC_FIND_AS_YOU_TYPE            1112
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        111
+#define _APS_NEXT_RESOURCE_VALUE        112
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1110
+#define _APS_NEXT_CONTROL_VALUE         1115
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

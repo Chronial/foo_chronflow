@@ -52,8 +52,8 @@
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
-				UsePrecompiledHeader="0"
-				PrecompiledHeaderThrough="chronflow.h"
+				UsePrecompiledHeader="2"
+				PrecompiledHeaderThrough="externHeaders.h"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>
@@ -138,6 +138,8 @@
 				WholeProgramOptimization="true"
 				PreprocessorDefinitions="WIN32;_WINDOWS;"
 				StringPooling="true"
+				EnableFunctionLevelLinking="true"
+				FloatingPointModel="2"
 				WarningLevel="3"
 			/>
 			<Tool
@@ -153,7 +155,10 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="Winmm.lib gdiplus.lib opengl32.lib glu32.lib glaux.lib odbc32.lib odbccp32.lib"
 				SubSystem="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
 				LinkTimeCodeGeneration="1"
+				FixedBaseAddress="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -244,6 +249,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\RenderThread.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\SafeArrayHelper.cpp"
 				>
 			</File>
@@ -302,6 +311,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\externHeaders.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Helpers.h"
 				>
 			</File>
@@ -323,6 +336,10 @@
 			</File>
 			<File
 				RelativePath=".\Renderer.h"
+				>
+			</File>
+			<File
+				RelativePath=".\RenderThread.h"
 				>
 			</File>
 			<File
@@ -351,6 +368,10 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
+			<File
+				RelativePath=".\_images\ConfigWindow-bar.bmp"
+				>
+			</File>
 			<File
 				RelativePath=".\resource.rc"
 				>

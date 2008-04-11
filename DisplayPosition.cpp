@@ -1,3 +1,4 @@
+#include "externHeaders.h"
 #include "chronflow.h"
 
 extern cfg_int sessionSelectedCover;
@@ -18,9 +19,11 @@ DisplayPosition::~DisplayPosition(void)
 
 void DisplayPosition::setTarget(CollectionPos pos)
 {
+	ScopeCS scopeLock(accessCS);
 	if (!isMoving()){
 		lastMovement = Helpers::getHighresTimer();
-		RedrawWindow(appInstance->mainWindow,NULL,NULL,RDW_INVALIDATE);
+		if (targetPos != pos)
+			appInstance->redrawMainWin();
 	}
 	targetPos = pos;
 	sessionSelectedCover = pos.toIndex();
@@ -28,6 +31,7 @@ void DisplayPosition::setTarget(CollectionPos pos)
 
 void DisplayPosition::update(void)
 {
+	CS_ASSERT(accessCS);
 	double currentTime = Helpers::getHighresTimer();
 	if (isMoving()){
 		float dist = (targetPos - centeredPos) - centeredOffset;
@@ -49,14 +53,17 @@ void DisplayPosition::update(void)
 		} else {
 			lastSpeed = speed;
 			int moveDistInt = (int)floor(moveDist);
-			centeredOffset += (moveDist - moveDistInt);
-			if (centeredOffset >= 1.0f){
-				centeredOffset -= 1.0f;
+
+			float newOffset = centeredOffset; // minimize MT risk
+			newOffset += (moveDist - moveDistInt);
+			if (newOffset >= 1.0f){
+				newOffset -= 1.0f;
 				moveDistInt += 1;
-			} else if (centeredOffset < 0.0f){
-				centeredOffset += 1.0f;
+			} else if (newOffset < 0.0f){
+				newOffset += 1.0f;
 				moveDistInt -= 1;
 			}
+			centeredOffset = newOffset;
 			centeredPos += moveDistInt;
 		}
 	}
@@ -87,27 +94,29 @@ bool DisplayPosition::isMoving(void)
 	return !((centeredPos == targetPos) && (centeredOffset == 0));
 }
 
-CollectionPos DisplayPosition::getTarget(void)
+CollectionPos DisplayPosition::getTarget(void) const
 {
 	return targetPos;
 }
 
-CollectionPos DisplayPosition::getCenteredPos(void)
+CollectionPos DisplayPosition::getCenteredPos(void) const
 {
 	return centeredPos;
 }
 
-float DisplayPosition::getCenteredOffset(void)
+float DisplayPosition::getCenteredOffset(void) const
 {
 	return centeredOffset;
 }
 
 void DisplayPosition::hardSetCenteredPos(CollectionPos pos)
 {
+	CS_ASSERT(accessCS);
 	centeredPos = pos;
 }
 
 void DisplayPosition::hardSetTarget(CollectionPos pos)
 {
+	CS_ASSERT(accessCS);
 	targetPos = pos;
 }

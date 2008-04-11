@@ -1,9 +1,14 @@
+#include "externHeaders.h"
 #include "chronflow.h"
 
 using namespace Gdiplus;
 
+extern cfg_int cfgMaxTextureSize;
+extern cfg_bool cfgTextureCompression;
+
 bool ImgTexture::forcePowerOfTwo = false;
-int  ImgTexture::maxGlTextureSize = 128;
+int  ImgTexture::maxGlTextureSize = 512;
+
 
 ImgTexture::ImgTexture(const char * imageFile)
 {
@@ -100,11 +105,15 @@ void ImgTexture::glUpload(void)
 			PFC_ASSERT(false);
 		}
 #else
-		static const GLint glInternalFormat = GL_RGB;
+		GLint glInternalFormat;
+		if (cfgTextureCompression)
+			glInternalFormat = GL_COMPRESSED_RGB;
+		else
+			glInternalFormat = GL_RGB;
 #endif
 
 		IF_DEBUG(Console::println(L"                                     UPLOAD"));
-
+		
 		glTexImage2D(GL_TEXTURE_2D, 0, glInternalFormat, width, height, 0, bitmapDataFormat, GL_UNSIGNED_BYTE, data);
 		bitmap->UnlockBits(bitmapData);
 		delete bitmapData;
@@ -145,7 +154,7 @@ void ImgTexture::setMaxGlTextureSize(int size)
 
 
 int ImgTexture::getMaxSize(){
-	return min(512, maxGlTextureSize);
+	return min(cfgMaxTextureSize, maxGlTextureSize);
 }
 
 void ImgTexture::loadImage()

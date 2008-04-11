@@ -1,5 +1,17 @@
 #pragma once
 
+
+#define TEST_BIT_PTR(BITSET_PTR, BIT) _bittest(BITSET_PTR, BIT)
+#ifdef _DEBUG
+#define ASSUME(X) PFC_ASSERT(X)
+#else
+#define ASSUME(X) __assume(X)
+#endif
+
+#define RESTRICT_PTR __restrict
+#define RESTRICT_FUNC __declspec(restrict)
+#define NO_ALIAS __declspec(noalias)
+
 class Helpers
 {
 public:
@@ -25,113 +37,118 @@ public:
 
 	void recordFrame(double start, double end){
 		double thisFrame = end - start;
-		frameTimes[frameTimesP] = Helpers::getHighresTimer();
+		frameTimes[frameTimesP] = end;
 		frameDur[frameTimesP] = thisFrame;
 		if (++frameTimesP == 60)
 			frameTimesP = 0;
 	}
 	
-	void getFPS(double& fps, double& msPerFrame, double& longestFrame){
+	void getFPS(double& fps, double& msPerFrame, double& longestFrame, double& minFps){
 		double frameDurSum = 0;
 		double frameTimesSum = 0;
 		longestFrame = -1;
-		int frameTimesT = frameTimesP;
+		double longestFrameTime = -1;
+		double thisFrameTime;
+		int frameTimesT = frameTimesP-1;
+		if (frameTimesT < 0)
+			frameTimesT = 59;
+
 		double lastTime = frameTimes[frameTimesT];
-		for (int i=0; i < 30; i++){
-			frameTimesT--;
+		double endTime = lastTime;
+		for (int i=0; i < 30; i++, frameTimesT--){
 			if (frameTimesT < 0)
 				frameTimesT = 59;
+
 			frameDurSum += frameDur[frameTimesT];
 			if (frameDur[frameTimesT] > longestFrame)
 				longestFrame = frameDur[frameTimesT];
-			frameTimesSum += frameTimes[frameTimesT] - lastTime;
+
+			thisFrameTime = lastTime - frameTimes[frameTimesT];
+			if (thisFrameTime > longestFrameTime)
+				longestFrameTime = thisFrameTime;
 			lastTime = frameTimes[frameTimesT];
 		}
-		fps = 1/(frameTimesSum / 30);
+
+		fps = 1/((endTime-lastTime) / 29);
 		msPerFrame = frameDurSum * 1000 / 30;
 		longestFrame *= 1000;
+		minFps = 1 / longestFrameTime;
 	}
 };
 
 class AppInstance;
 
-class SwapBufferTimer {
-	HANDLE timerQueue;
-	HANDLE timer;
-	bool swapQueued;
-	HWND redrawWindow;
-	bool redrawQueued;
-	double lastSwap;
-	LockedRenderingContext* lockedRC;
-	int refreshRate;
-	UINT multimediaTimerRes;
-	CRITICAL_SECTION syncCS;
-	AppInstance* appInstance;
-public:
-	SwapBufferTimer(AppInstance* instance, HWND redrawWnd, LockedRenderingContext* swapRC)
-		: redrawWindow(redrawWnd), lockedRC(swapRC), multimediaTimerRes(1), refreshRate(100),
-		  swapQueued(false), lastSwap(0), appInstance(instance) {
-			timerQueue = CreateTimerQueue();
-			TIMECAPS tc;
-			if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) == TIMERR_NOERROR){
-				multimediaTimerRes = min(max(tc.wPeriodMin, 1), tc.wPeriodMax);
-			}
-			InitializeCriticalSectionAndSpinCount(&syncCS, 0x80000400);
-			reloadRefreshRate();
-	}
-	~SwapBufferTimer(){
-		HANDLE deleteTimerQueueEvent = CreateEvent(NULL, false, false, NULL);
-		DeleteTimerQueueEx(timerQueue, deleteTimerQueueEvent);
-		WaitForSingleObject(deleteTimerQueueEvent, INFINITE);
-		CloseHandle(deleteTimerQueueEvent);
-		DeleteCriticalSection(&syncCS);
-	}
-	void reloadRefreshRate(){
-		DEVMODE dispSettings;
-		memset(&dispSettings,0,sizeof(dispSettings));
-		dispSettings.dmSize=sizeof(dispSettings);
 
-		if (EnumDisplaySettings(NULL,ENUM_CURRENT_SETTINGS,&dispSettings)){
-			refreshRate = dispSettings.dmDisplayFrequency;
-		}
-	}
-
-	bool requestBeginDraw(){
-		EnterCriticalSection(&syncCS);
-		bool ret = true;
-		if (swapQueued){
-			redrawQueued = true;
-			ValidateRect(redrawWindow,NULL);
-			ret = false;
-		}
-		LeaveCriticalSection(&syncCS);
-		return ret;
-	}
-	void queueSwap(bool redrawAfterwards){
-		EnterCriticalSection(&syncCS);
-		redrawQueued = redrawAfterwards;
-		if (swapQueued)
-			return;
-		swapQueued = true;
-		double frameTime = 1.0/refreshRate;
-		double timeleft  = frameTime - (Helpers::getHighresTimer() - lastSwap);
-		int waitFor = int(timeleft*1000) - 2;
-		if (waitFor < (int)multimediaTimerRes)
-			waitFor = multimediaTimerRes;
-		timeBeginPeriod(multimediaTimerRes);
-		bool res = 0 != CreateTimerQueueTimer(&timer, timerQueue, timerCallback, (void*)this, waitFor, 0, 0/*WT_EXECUTEINTIMERTHREAD*/);
-		if (!res){
-			pfc::string8 temp;
-			temp << format_win32_error(GetLastError());
-
-		}
-		LeaveCriticalSection(&syncCS);
-	}
-
-// Stuff down here is called from some Timer Thread
+class CriticalSection {
 private:
-	static VOID CALLBACK timerCallback(PVOID lpParameter, BOOLEAN TimerOrWaitFired){
-		reinterpret_cast<SwapBufferTimer*>(lpParameter)->onTimer();
+	CRITICAL_SECTION sec;
+	IF_DEBUG(DWORD holdingThread);
+public:
+	void enter() throw() {
+		EnterCriticalSection(&sec);
+		IF_DEBUG(holdingThread = GetCurrentThreadId());
 	}
-	void onTimer();
+	void leave() throw() {
+		IF_DEBUG(holdingThread = 0);
+		LeaveCriticalSection(&sec);
+	}
+#ifdef _DEBUG
+	void assertOwnage() {
+		PFC_ASSERT(holdingThread == GetCurrentThreadId());
+	}
+#endif
+	CriticalSection() {InitializeCriticalSectionAndSpinCount(&sec, 0x80000400);}
+	~CriticalSection() {DeleteCriticalSection(&sec);}
+};
+
+
+#ifdef _DEBUG
+#define CS_ASSERT(X) X.assertOwnage()
+#else
+#define CS_ASSERT(X)
+#endif
+
+
+volatile class ScopeCS {
+	CriticalSection* criticalSection;
+public:
+	ScopeCS(CriticalSection& CS) {
+		criticalSection = &CS;
+		criticalSection->enter();
+	}
+	ScopeCS(CriticalSection* CS) {
+		criticalSection = CS;
+		criticalSection->enter();
+	}
+	~ScopeCS(){
+		criticalSection->leave();
+	}
+};
+
+class Event {
+	HANDLE e;
+public:
+	Event(bool initialState = false, bool manualReset = false){
+		e = CreateEvent(NULL,initialState,manualReset,NULL);
+	}
+	~Event(){
+		CloseHandle(e);
+	}
+	inline bool waitForSignal(DWORD milliseconds = INFINITE){
+		if (WAIT_OBJECT_0 == WaitForSingleObject(e, milliseconds)){
+			return true;
+		} else {
+			return false;
+		}
+	}
+	void setSignal(){
+		SetEvent(e);
+	}
+	void resetSignal(){
+		ResetEvent(e);
+	}
+	int waitForTwo(Event& other, bool waitForAll, DWORD milliseconds = INFINITE){
+		HANDLE handles[2] = {this->e, other.e};
+		return WaitForMultipleObjects(2, handles, waitForAll, milliseconds);
+	}
 };

@@ -1,7 +1,5 @@
 #pragma once
 
-#define IDT_PLAYBACK_TRACER 666
-
 class PlaybackTracer : public play_callback
 {
 private:
@@ -21,6 +19,11 @@ public:
 	void lock();
 	void unlock();
 
+	void userAction()
+	{
+		lock();
+		unlock();
+	}
 
 	void movementEnded();
 	void timerHit();

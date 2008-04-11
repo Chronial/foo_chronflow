@@ -1,3 +1,4 @@
+#include "externHeaders.h"
 #include "chronflow.h"
 
 extern cfg_int cfgTitleColor;
@@ -6,9 +7,9 @@ extern cfg_struct_t<LOGFONT> cfgTitleFont;
 using namespace Gdiplus;
 
 
-TextDisplay::TextDisplay(AppInstance* appInstance)
+TextDisplay::TextDisplay(Renderer* renderer)
 : bitmapFontInitialized(false),
-  appInstance(appInstance)
+  renderer(renderer)
 {
 }
 
@@ -19,12 +20,7 @@ TextDisplay::~TextDisplay(){
 }
 
 void TextDisplay::buildDisplayFont(){
-	HFONT	font;										// Windows Font ID
-	HFONT	oldfont;									// Used For Good House Keeping
-
-	bitmapDisplayList = glGenLists(96);								// Storage For 96 Characters
-
-	font = CreateFont(	-14,							// Height Of Font
+	HFONT font = CreateFont(	-14,							// Height Of Font
 						0,								// Width Of Font
 						0,								// Angle Of Escapement
 						0,								// Orientation Angle
@@ -36,12 +32,18 @@ void TextDisplay::buildDisplayFont(){
 						OUT_TT_PRECIS,					// Output Precision
 						CLIP_DEFAULT_PRECIS,			// Clipping Precision
 						ANTIALIASED_QUALITY,			// Output Quality
-						FF_DONTCARE|DEFAULT_PITCH,		// Family And Pitch
+						FF_SCRIPT|DEFAULT_PITCH,		// Family And Pitch
 						L"Courier New");					// Font Name
-	HDC hDC = GetDC(appInstance->mainWindow);
-	oldfont = (HFONT)SelectObject(hDC, font);           // Selects The Font We Want
+
+	Gdiplus::Bitmap dcBitmap(5, 5, PixelFormat32bppARGB);
+	Gdiplus::Graphics dcGraphics(&dcBitmap);
+
+	HDC hDC = dcGraphics.GetHDC();
+	SelectObject(hDC, font);           // Selects The Font We Want
+	bitmapDisplayList = glGenLists(96);
 	wglUseFontBitmaps(hDC, 32, 96, bitmapDisplayList);				// Builds 96 Characters Starting At Character 32
-	SelectObject(hDC, oldfont);							// Selects The Font We Want
+	dcGraphics.ReleaseHDC(hDC);
+
 	DeleteObject(font);									// Delete The Font
 	bitmapFontInitialized = true;
 }
@@ -49,7 +51,7 @@ void TextDisplay::buildDisplayFont(){
 void TextDisplay::displayBitmapText(const char* text, int x, int y){
 	if (!bitmapFontInitialized)
 		buildDisplayFont();
-	appInstance->renderer->glPushOrthoMatrix();
+	renderer->glPushOrthoMatrix();
 	glDisable(GL_TEXTURE_2D);
 	glColor3f(GetRValue(cfgTitleColor)/255.0f, GetGValue(cfgTitleColor)/255.0f, GetBValue(cfgTitleColor)/255.0f);
 	glRasterPos2i(x, y);
@@ -58,7 +60,7 @@ void TextDisplay::displayBitmapText(const char* text, int x, int y){
 	glCallLists(strlen(text), GL_UNSIGNED_BYTE, text);	// Draws The Display List Text
 	glPopAttrib();								        // Pops The Display List Bits
 	glEnable(GL_TEXTURE_2D);
-	appInstance->renderer->glPopOrthoMatrix();
+	renderer->glPopOrthoMatrix();
 }
 
 void TextDisplay::clearCache()
@@ -75,6 +77,9 @@ void TextDisplay::clearCache()
 
 void TextDisplay::displayText(const char* text, int x, int y, HAlignment hAlign, VAlignment vAlign)
 {
+	if (text == 0 || text[0] == '\0')
+		return;
+	
 	DisplayTexture* dTex = 0;
 	int oldestElem = 0;
 	unsigned int maxAge = 0;
@@ -103,7 +108,7 @@ void TextDisplay::displayText(const char* text, int x, int y, HAlignment hAlign,
 		dTex = &texCache[oldestElem];
 	}
 
-	appInstance->renderer->glPushOrthoMatrix();
+	renderer->glPushOrthoMatrix();
 	if (hAlign == right)
 		x -= dTex->textWidth;
 	else if (hAlign == center)
@@ -132,7 +137,7 @@ void TextDisplay::displayText(const char* text, int x, int y, HAlignment hAlign,
 	}
 	glEnd();
 	glDisable(GL_BLEND);
-	appInstance->renderer->glPopOrthoMatrix();
+	renderer->glPopOrthoMatrix();
 }
 
 TextDisplay::DisplayTexture TextDisplay::createTexture(const char* text)

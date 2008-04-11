@@ -25,6 +25,7 @@
 //	1.0	- Initial release.
 //	1.1 - Bug fixes for VC7 and Unicode
 ///////////////////////////////////////////////////////////////////////////////
+#include "externHeaders.h"
 #include "chronflow.h"
 #include <comutil.h>
 #include "ScriptObject.h"

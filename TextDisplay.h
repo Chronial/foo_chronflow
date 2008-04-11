@@ -1,10 +1,12 @@
 #pragma once
 
+class Renderer;
+
 class TextDisplay
 {
-	AppInstance* appInstance;
+	Renderer* renderer;
 public:
-	TextDisplay(AppInstance* appInstance);
+	TextDisplay(Renderer* renderer);
 	~TextDisplay();
 public:
 	enum HAlignment {

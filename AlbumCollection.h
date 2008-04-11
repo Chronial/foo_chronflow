@@ -1,7 +1,5 @@
 #pragma once
 
-#define WM_COLLECTION_REFRESHED (WM_USER+1)
-
 class DisplayPosition;
 struct CollectionPos;
 class ImgTexture;

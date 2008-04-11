@@ -1,3 +1,4 @@
+#include "externHeaders.h"
 #include "chronflow.h"
 
 extern cfg_bool cfgCoverFollowsPlayback;
@@ -37,7 +38,7 @@ void PlaybackTracer::lock()
 void PlaybackTracer::unlock()
 {
 	lockCount--;
-	IF_DEBUG(PFC_ASSERT(lockCount >= 0));
+	PFC_ASSERT(lockCount >= 0);
 	if (lockCount == 0 && cfgCoverFollowsPlayback){
 		SetTimer(appInstance->mainWindow, IDT_PLAYBACK_TRACER, (cfgCoverFollowDelay * 1000), NULL);
 		waitingForTimer = true;
@@ -58,7 +59,7 @@ void PlaybackTracer::moveToNowPlaying()
 	static_api_ptr_t<playback_control_v2> pc;
 	metadb_handle_ptr nowPlaying;
 	if (pc->get_now_playing(nowPlaying)){
-		CollectionPos target = appInstance->displayPos->getTarget();
+		CollectionPos target;
 		if (appInstance->albumCollection->getAlbumForTrack(nowPlaying, target)){
 			appInstance->displayPos->setTarget(target);
 		}

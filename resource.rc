@@ -46,6 +46,13 @@ END
 
 #endif    // APSTUDIO_INVOKED
 
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_BAR                 BITMAP                  "_images\\ConfigWindow-bar.bmp"
 #endif    // Deutsch (Deutschland) resources
 /////////////////////////////////////////////////////////////////////////////
 
@@ -86,9 +93,9 @@ BEGIN
     EDITTEXT        IDC_SORT,7,86,294,14,ES_AUTOHSCROLL
     LTEXT           "Sources (Enter one source per line)",IDC_STATIC,7,171,114,8
     EDITTEXT        IDC_SOURCES,7,181,294,29,ES_MULTILINE | ES_AUTOHSCROLL | ES_WANTRETURN | WS_VSCROLL
-    GROUPBOX        "Sorting in Playlist Mode",IDC_STATIC,7,104,294,36
-    CONTROL         "Use the settings above",IDC_PL_SORT_DB,"Button",BS_AUTORADIOBUTTON,10,115,90,10
-    CONTROL         "Sort according to Playlist Order",IDC_PL_SORT_PL,"Button",BS_AUTORADIOBUTTON,10,127,115,10
+    GROUPBOX        "Sorting in Playlist Mode",IDC_STATIC,7,104,294,36,NOT WS_VISIBLE
+    CONTROL         "Use the settings above",IDC_PL_SORT_DB,"Button",BS_AUTORADIOBUTTON | NOT WS_VISIBLE,10,115,90,10
+    CONTROL         "Sort according to Playlist Order",IDC_PL_SORT_PL,"Button",BS_AUTORADIOBUTTON | NOT WS_VISIBLE,10,127,115,10
     EDITTEXT        IDC_IMG_LOADING,92,234,162,14,ES_AUTOHSCROLL
     LTEXT           "No Cover Image:",IDC_STATIC,35,216,57,8
     LTEXT           """Cover is loading"" Image:",IDC_STATIC,10,235,82,8
@@ -105,33 +112,35 @@ STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 EXSTYLE WS_EX_CONTROLPARENT
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    GROUPBOX        "Album Title",IDC_STATIC,7,7,294,113
-    EDITTEXT        IDC_ALBUM_FORMAT,11,17,284,14,ES_AUTOHSCROLL
-    CONTROL         "",IDC_TPOS_V,"msctls_trackbar32",WS_TABSTOP,52,62,69,12
-    LTEXT           "Vertical",IDC_STATIC,15,64,24,8
-    CONTROL         "",IDC_TPOS_H,"msctls_trackbar32",WS_TABSTOP,52,77,68,12
-    LTEXT           "Horizontal",IDC_STATIC,15,79,33,8
+    GROUPBOX        "Album Title",IDC_STATIC,7,7,294,127
+    EDITTEXT        IDC_ALBUM_FORMAT,11,30,284,14,ES_AUTOHSCROLL
+    CONTROL         "",IDC_TPOS_V,"msctls_trackbar32",WS_TABSTOP,52,75,69,12
+    LTEXT           "Vertical",IDC_STATIC,15,77,24,8
+    CONTROL         "",IDC_TPOS_H,"msctls_trackbar32",WS_TABSTOP,52,90,68,12
+    LTEXT           "Horizontal",IDC_STATIC,15,92,33,8
     GROUPBOX        "Panel Display",IDC_STATIC,7,203,294,46
-    GROUPBOX        "Position",IDC_STATIC,11,52,148,46
-    EDITTEXT        IDC_TPOS_V_P,123,61,21,14,ES_RIGHT | ES_AUTOHSCROLL | ES_READONLY | ES_NUMBER,WS_EX_RIGHT
-    LTEXT           "%",IDC_STATIC,145,64,8,8
-    EDITTEXT        IDC_TPOS_H_P,123,76,21,14,ES_RIGHT | ES_AUTOHSCROLL | ES_READONLY | ES_NUMBER,WS_EX_RIGHT
-    LTEXT           "%",IDC_STATIC,145,79,8,8
-    GROUPBOX        "Color",IDC_STATIC,163,52,132,30
-    PUSHBUTTON      "Change...",IDC_TEXTCOLOR,168,62,44,14
-    GROUPBOX        "Font",IDC_STATIC,163,85,132,30
-    PUSHBUTTON      "Change...",IDC_FONT,167,95,44,14
-    CONTROL         "Verdanaliciouuus, bold, 9px",IDC_FONT_PREV,"Static",SS_LEFTNOWORDWRAP | SS_WORDELLIPSIS | WS_GROUP,218,98,72,8
+    GROUPBOX        "Position",IDC_STATIC,11,65,148,46
+    EDITTEXT        IDC_TPOS_V_P,123,74,21,14,ES_RIGHT | ES_AUTOHSCROLL | ES_READONLY | ES_NUMBER,WS_EX_RIGHT
+    LTEXT           "%",IDC_STATIC,145,77,8,8
+    EDITTEXT        IDC_TPOS_H_P,123,89,21,14,ES_RIGHT | ES_AUTOHSCROLL | ES_READONLY | ES_NUMBER,WS_EX_RIGHT
+    LTEXT           "%",IDC_STATIC,145,92,8,8
+    GROUPBOX        "Color",IDC_STATIC,163,65,132,30
+    PUSHBUTTON      "Change...",IDC_TEXTCOLOR,168,75,44,14
+    GROUPBOX        "Font",IDC_STATIC,163,98,132,30
+    PUSHBUTTON      "Change...",IDC_FONT,167,108,44,14
+    CONTROL         "Verdanaliciouuus, bold, 9px",IDC_FONT_PREV,"Static",SS_LEFTNOWORDWRAP | SS_WORDELLIPSIS | WS_GROUP,218,111,72,8
     GROUPBOX        "Background Color",IDC_STATIC,163,214,132,31
     PUSHBUTTON      "Change...",IDC_BG_COLOR,168,226,44,14
-    LTEXT           "Preview:",IDC_STATIC,11,37,29,8
-    EDITTEXT        IDC_TITLE_PREVIEW,46,35,249,14,ES_AUTOHSCROLL | ES_READONLY
-    CONTROL         "",IDC_TEXTCOLOR_PREV,"Static",SS_OWNERDRAW | SS_SUNKEN,218,62,44,14
+    LTEXT           "Preview:",IDC_STATIC,11,50,29,8
+    EDITTEXT        IDC_TITLE_PREVIEW,46,48,249,14,ES_AUTOHSCROLL | ES_READONLY
+    CONTROL         "",IDC_TEXTCOLOR_PREV,"Static",SS_OWNERDRAW | SS_SUNKEN,218,75,44,14
     CONTROL         "",IDC_BG_COLOR_PREV,"Static",SS_OWNERDRAW | SS_SUNKEN,218,226,44,14
     GROUPBOX        "Highlight Frame",IDC_STATIC,11,214,148,31
     LTEXT           "Frame Width:",IDC_STATIC,15,228,44,8
     EDITTEXT        IDC_FRAME_WIDTH,61,225,28,14,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
     CONTROL         "",IDC_FRAME_WIDTH_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,93,225,11,14
+    CONTROL         "Show Album Title",IDC_ALBUM_TITLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,18,70,10
+    RTEXT           "Note: This format string is also used for Find As You Type",IDC_STATIC,111,19,184,8
 END
 
 IDD_BEHAVIOUR_TAB DIALOGEX 0, 0, 308, 255
@@ -146,11 +155,13 @@ BEGIN
     COMBOBOX        IDC_DOUBLE_CLICK,59,201,236,65,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
     COMBOBOX        IDC_MIDDLE_CLICK,59,216,236,64,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
     COMBOBOX        IDC_ENTER_KEY,59,231,236,61,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
-    GROUPBOX        "General Behaviour",IDC_STATIC,7,7,294,28
+    GROUPBOX        "General Behaviour",IDC_STATIC,7,7,294,40
     CONTROL         "Displayed cover follows playing track, after seconds of inactivity:",IDC_FOLLOW_PLAYBACK,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,19,224,10
-    EDITTEXT        IDC_FOLLOW_DELAY,237,17,30,14,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER,WS_EX_RIGHT
-    CONTROL         "",IDC_FOLLOW_DELAY_SPINNER,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,285,17,10,14
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,29,224,10
+    EDITTEXT        IDC_FOLLOW_DELAY,237,27,30,14,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER,WS_EX_RIGHT
+    CONTROL         "",IDC_FOLLOW_DELAY_SPINNER,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,285,27,10,14
+    CONTROL         "Enable Find As You Type (disables alphanumeric hotkeys in chronflow pannel)",IDC_FIND_AS_YOU_TYPE,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,17,263,10
 END
 
 IDD_COVER_DISPLAY_TAB DIALOGEX 0, 0, 308, 255
@@ -184,39 +195,39 @@ STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 EXSTYLE WS_EX_CONTROLPARENT
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    GROUPBOX        "Rendering Quality",IDC_STATIC,7,7,294,59
-    CONTROL         "Supersampling: ",IDC_CHECK1,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,19,62,10
-    COMBOBOX        IDC_COMBO1,78,18,26,57,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "Rendering Quality",IDC_STATIC,7,7,210,45
+    COMBOBOX        IDC_SUPER_SAMPLING_PASSES,78,18,26,57,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Passes",IDC_STATIC,107,20,23,8
-    CONTROL         "Multisampling:",IDC_CHECK2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,34,61,10
-    COMBOBOX        IDC_COMBO2,78,33,26,57,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_MULTI_SAMPLING_PASSES,78,33,26,57,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Passes",IDC_STATIC,107,35,23,8
-    CONTROL         "Generate Mipmaps, max anisotropic filtering: ",IDC_CHECK3,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,49,161,10
-    GROUPBOX        "Texture Cache",IDC_STATIC,7,71,294,72
-    LTEXT           "Cache Size:",IDC_STATIC,11,83,38,8
-    EDITTEXT        IDC_EDIT1,55,81,33,12,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
-    CONTROL         "",IDC_SPIN1,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,110,80,10,14
-    CONTROL         "Enable Texture Compression",IDC_CHECK4,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,110,107,10
-    LTEXT           "Maximum Texture Size (sidelength):",IDC_STATIC,11,97,115,8
-    EDITTEXT        IDC_EDIT2,130,95,38,12,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
-    CONTROL         "",IDC_SPIN2,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,183,94,11,14
-    GROUPBOX        "VSync",IDC_STATIC,7,148,294,61
-    CONTROL         "No VSync + try to hit VBlank with Sleep() [lowest cpu usage, but may cause tearing]",IDC_RADIO1,
-                    "Button",BS_AUTORADIOBUTTON,11,172,284,10
-    CONTROL         "VSync + try to hit VBlank with Sleep() [low cpu usage, but may loose fps]",IDC_RADIO2,
-                    "Button",BS_AUTORADIOBUTTON,11,183,249,10
-    CONTROL         "VSync only [GPU dependant CPU usage, good fps]",IDC_RADIO3,
-                    "Button",BS_AUTORADIOBUTTON,11,194,177,10
-    LTEXT           "Render every",IDC_STATIC,11,160,45,8
-    LTEXT           "display refreshs",IDC_STATIC,88,160,52,8
-    COMBOBOX        IDC_COMBO3,60,158,24,32,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "Texture Cache",IDC_STATIC,7,56,294,81
+    LTEXT           "Cache Size:",IDC_STATIC,11,68,38,8
+    EDITTEXT        IDC_CACHE_SIZE,55,66,33,12,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "",IDC_CACHE_SIZE_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,110,65,10,14
+    CONTROL         "Enable Texture Compression",IDC_TEXTURE_COMPRESSION,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,95,107,10
+    LTEXT           "Maximum Texture Size (sidelength):",IDC_STATIC,11,82,115,8
+    EDITTEXT        IDC_TEXTURE_SIZE,130,80,38,12,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "",IDC_TEXTURE_SIZE_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,183,79,11,14
+    GROUPBOX        "VSync",IDC_STATIC,7,142,294,49
+    CONTROL         "No VSync + try to hit VBlank with Sleep() [lowest cpu usage, but may cause tearing]",IDC_VSYNC_OFF,
+                    "Button",BS_AUTORADIOBUTTON,11,154,284,10
+    CONTROL         "VSync + try to hit VBlank with Sleep() [low cpu usage, but may loose fps]",IDC_VSYNC_SLEEP,
+                    "Button",BS_AUTORADIOBUTTON,11,165,249,10
+    CONTROL         "VSync only [GPU dependant CPU usage, good fps]",IDC_VSYNC_ONLY,
+                    "Button",BS_AUTORADIOBUTTON,11,176,177,10
     GROUPBOX        "Benchmarking",IDC_STATIC,7,220,294,28
-    CONTROL         "Display speed information (fps, ms per frame)",IDC_CHECK5,
+    CONTROL         "Display speed information (fps, ms per frame)",IDC_SHOW_FPS,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,232,162,10
-    LTEXT           "Texture Loading Thread Priority:",IDC_STATIC,11,124,105,8
-    COMBOBOX        IDC_COMBO4,120,122,69,35,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_COMBO5,170,47,38,79,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Texture Loading Thread Priority:",IDC_STATIC,11,109,105,8
+    COMBOBOX        IDC_TEXLOADER_PRIO,120,107,69,35,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Empty cache when window is minimized (recommended for games etc.)",IDC_EMPTY_ON_MINIMIZE,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,122,241,10
+    LTEXT           "Do not change any settings on this page without having read the help pages.",IDC_STATIC,227,15,68,38
+    GROUPBOX        "Warning",IDC_STATIC,221,7,80,45
+    CONTROL         "Multisampling:",IDC_MULTI_SAMPLING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,34,61,10
+    CONTROL         "Supersampling: ",IDC_SUPER_SAMPLING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,19,62,10
+    CONTROL         111,IDC_STATIC,"Static",SS_BITMAP | SS_REALSIZEIMAGE,15,29,1,4
 END
 
 
@@ -296,7 +307,6 @@ BEGIN
         VERTGUIDE, 15
         VERTGUIDE, 163
         VERTGUIDE, 168
-        VERTGUIDE, 218
         VERTGUIDE, 295
         TOPMARGIN, 7
         BOTTOMMARGIN, 248
@@ -312,36 +322,22 @@ END
 
 IDD_PERF_TAB DLGINIT
 BEGIN
-    IDC_COMBO1, 0x403, 2, 0
+    IDC_SUPER_SAMPLING_PASSES, 0x403, 2, 0
 0x0032, 
-    IDC_COMBO1, 0x403, 2, 0
+    IDC_SUPER_SAMPLING_PASSES, 0x403, 2, 0
 0x0034, 
-    IDC_COMBO2, 0x403, 4, 0
+    IDC_MULTI_SAMPLING_PASSES, 0x403, 4, 0
 0x2020, 0x0032, 
-    IDC_COMBO2, 0x403, 4, 0
+    IDC_MULTI_SAMPLING_PASSES, 0x403, 4, 0
 0x2020, 0x0034, 
-    IDC_COMBO2, 0x403, 4, 0
+    IDC_MULTI_SAMPLING_PASSES, 0x403, 4, 0
 0x2020, 0x0038, 
-    IDC_COMBO2, 0x403, 3, 0
+    IDC_MULTI_SAMPLING_PASSES, 0x403, 3, 0
 0x3631, "\000" 
-    IDC_COMBO3, 0x403, 2, 0
-0x0031, 
-    IDC_COMBO3, 0x403, 2, 0
-0x0032, 
-    IDC_COMBO4, 0x403, 13, 0
+    IDC_TEXLOADER_PRIO, 0x403, 13, 0
 0x6542, 0x6f6c, 0x2077, 0x6f4e, 0x6d72, 0x6c61, "\000" 
-    IDC_COMBO4, 0x403, 5, 0
+    IDC_TEXLOADER_PRIO, 0x403, 5, 0
 0x6449, 0x656c, "\000" 
-    IDC_COMBO5, 0x403, 8, 0
-0x2031, 0x6f28, 0x6666, 0x0029, 
-    IDC_COMBO5, 0x403, 2, 0
-0x0032, 
-    IDC_COMBO5, 0x403, 2, 0
-0x0034, 
-    IDC_COMBO5, 0x403, 2, 0
-0x0038, 
-    IDC_COMBO5, 0x403, 3, 0
-0x3631, "\000" 
     0
 END
 

@@ -37,6 +37,18 @@ static const GUID guid_cfgImgLoading = { 0x7fa5e2cc, 0x4eb, 0x4585, { 0x92, 0x9,
 cfg_string cfgImgLoading(guid_cfgImgLoading, ".\\components\\loading.png");
 
 /*********************************************** Behaviour tab **********************************************************/
+// {5B915FEB-5FED-4edc-98D7-26F5BC991B3D}
+static const GUID guid_cfgCoverFollowsPlayback = { 0x5b915feb, 0x5fed, 0x4edc, { 0x98, 0xd7, 0x26, 0xf5, 0xbc, 0x99, 0x1b, 0x3d } };
+cfg_bool cfgCoverFollowsPlayback(guid_cfgCoverFollowsPlayback, true);
+
+// {7AA69C60-1528-4ce3-86ED-D413A8A93CE1}
+static const GUID guid_cfgCoverFollowDelay = { 0x7aa69c60, 0x1528, 0x4ce3, { 0x86, 0xed, 0xd4, 0x13, 0xa8, 0xa9, 0x3c, 0xe1 } };
+cfg_int cfgCoverFollowDelay(guid_cfgCoverFollowDelay, 60);
+
+// {53BF0A95-12E2-440a-B2FB-F75BE90764E2}
+static const GUID guid_cfgFindAsYouType = { 0x53bf0a95, 0x12e2, 0x440a, { 0xb2, 0xfb, 0xf7, 0x5b, 0xe9, 0x7, 0x64, 0xe2 } };
+cfg_bool cfgFindAsYouType(guid_cfgFindAsYouType, true);
+
 // {C34448FB-11B2-4f6f-87BB-D0E31CE77C45}
 static const GUID guid_cfgDoubleClick = { 0xc34448fb, 0x11b2, 0x4f6f, { 0x87, 0xbb, 0xd0, 0xe3, 0x1c, 0xe7, 0x7c, 0x45 } };
 cfg_string cfgDoubleClick(guid_cfgDoubleClick, "Replace Playlist ");
@@ -50,15 +62,11 @@ static const GUID guid_cfgEnterKey = { 0x30afb194, 0xe81a, 0x4130, { 0x91, 0xa9,
 cfg_string cfgEnterKey(guid_cfgEnterKey, "Replace Playlist ");
 
 
-// {5B915FEB-5FED-4edc-98D7-26F5BC991B3D}
-static const GUID guid_cfgCoverFollowsPlayback = { 0x5b915feb, 0x5fed, 0x4edc, { 0x98, 0xd7, 0x26, 0xf5, 0xbc, 0x99, 0x1b, 0x3d } };
-cfg_bool cfgCoverFollowsPlayback(guid_cfgCoverFollowsPlayback, true);
-
-// {7AA69C60-1528-4ce3-86ED-D413A8A93CE1}
-static const GUID guid_cfgCoverFollowDelay = { 0x7aa69c60, 0x1528, 0x4ce3, { 0x86, 0xed, 0xd4, 0x13, 0xa8, 0xa9, 0x3c, 0xe1 } };
-cfg_int cfgCoverFollowDelay(guid_cfgCoverFollowDelay, 60);
-
 /*********************************************** Display tab ************************************************************/
+// {3CA53569-36E3-4f55-98E9-5FDD27C6D041}
+static const GUID guid_cfgShowAlbumTitle = { 0x3ca53569, 0x36e3, 0x4f55, { 0x98, 0xe9, 0x5f, 0xdd, 0x27, 0xc6, 0xd0, 0x41 } };
+cfg_bool cfgShowAlbumTitle(guid_cfgShowAlbumTitle, true);
+
 // {85C3038A-EC62-416f-9D76-2B86D0F7493C}
 static const GUID guid_cfgAlbumTitle = { 0x85c3038a, 0xec62, 0x416f, { 0x9d, 0x76, 0x2b, 0x86, 0xd0, 0xf7, 0x49, 0x3c } };
 cfg_string cfgAlbumTitle(guid_cfgAlbumTitle, "%album artist% - %album%");
@@ -111,6 +119,55 @@ cfg_string cfgCoverConfigSel(guid_cfgCoverConfigSel, "Standart Coverflow");
 
 
 
+/*********************************************** Performance tab *********************************************************/
+
+// {11053387-12C8-4f16-8BD0-7C6FF1523252}
+static const GUID guid_cfgMultisampling = { 0x11053387, 0x12c8, 0x4f16, { 0x8b, 0xd0, 0x7c, 0x6f, 0xf1, 0x52, 0x32, 0x52 } };
+cfg_bool cfgMultisampling(guid_cfgMultisampling, false);
+
+// {B5280C57-CC06-4ee9-A8A3-4F05E6925A62}
+static const GUID guid_cfgMultisamplingPasses = { 0xb5280c57, 0xcc06, 0x4ee9, { 0xa8, 0xa3, 0x4f, 0x5, 0xe6, 0x92, 0x5a, 0x62 } };
+cfg_int cfgMultisamplingPasses(guid_cfgMultisamplingPasses, 4);
+
+// {B98E61C9-534B-4957-B8B6-5C15D847C384}
+static const GUID guid_cfgSupersampling = { 0xb98e61c9, 0x534b, 0x4957, { 0xb8, 0xb6, 0x5c, 0x15, 0xd8, 0x47, 0xc3, 0x84 } };
+cfg_bool cfgSupersampling(guid_cfgSupersampling, true);
+
+// {B176CDF9-576E-4296-8A68-03FBC19A0330}
+static const GUID guid_cfgSupersamplingPasses = { 0xb176cdf9, 0x576e, 0x4296, { 0x8a, 0x68, 0x3, 0xfb, 0xc1, 0x9a, 0x3, 0x30 } };
+cfg_int cfgSupersamplingPasses(guid_cfgSupersamplingPasses, 2);
+
+
+// {036F84C3-B3F7-4aee-873C-DC0EFC46B0D3}
+static const GUID guid_cfgTextureCacheSize = { 0x36f84c3, 0xb3f7, 0x4aee, { 0x87, 0x3c, 0xdc, 0xe, 0xfc, 0x46, 0xb0, 0xd3 } };
+cfg_int cfgTextureCacheSize(guid_cfgTextureCacheSize, 30);
+
+// {87491567-6F1C-4339-BF05-FAFE9AF73820}
+static const GUID guid_cfgMaxTextureSize = { 0x87491567, 0x6f1c, 0x4339, { 0xbf, 0x5, 0xfa, 0xfe, 0x9a, 0xf7, 0x38, 0x20 } };
+cfg_int cfgMaxTextureSize(guid_cfgMaxTextureSize, 512);
+
+// {B3177E9B-7188-4cd1-91AD-0896E5D23292}
+static const GUID guid_cfgTextureCompression = { 0xb3177e9b, 0x7188, 0x4cd1, { 0x91, 0xad, 0x8, 0x96, 0xe5, 0xd2, 0x32, 0x92 } };
+cfg_bool cfgTextureCompression(guid_cfgTextureCompression, false);
+
+// {174B15FB-777B-48a8-A047-900AEAAC77CC}
+static const GUID guid_cfgTexLoaderPrio = { 0x174b15fb, 0x777b, 0x48a8, { 0xa0, 0x47, 0x90, 0xa, 0xea, 0xac, 0x77, 0xcc } };
+cfg_int cfgTexLoaderPrio(guid_cfgTexLoaderPrio, THREAD_PRIORITY_BELOW_NORMAL);
+
+// {427CE6B2-DF59-4253-BBC0-157C7A91F226}
+static const GUID guid_cfgEmptyCacheOnMinimize = { 0x427ce6b2, 0xdf59, 0x4253, { 0xbb, 0xc0, 0x15, 0x7c, 0x7a, 0x91, 0xf2, 0x26 } };
+cfg_bool cfgEmptyCacheOnMinimize(guid_cfgEmptyCacheOnMinimize, true);
+
+
+// {7EFEB474-EEDC-4242-AFA7-6A8AA4C08FF9}
+static const GUID guid_cfgVSyncMode = { 0x7efeb474, 0xeedc, 0x4242, { 0xaf, 0xa7, 0x6a, 0x8a, 0xa4, 0xc0, 0x8f, 0xf9 } };
+cfg_int cfgVSyncMode(guid_cfgVSyncMode, VSYNC_AND_SLEEP);
+
+// {34AEE526-264B-4c82-B336-81D398536871}
+static const GUID guid_cfgShowFps = { 0x34aee526, 0x264b, 0x4c82, { 0xb3, 0x36, 0x81, 0xd3, 0x98, 0x53, 0x68, 0x71 } };
+cfg_bool cfgShowFps(guid_cfgShowFps, false);
+
+
 
 // Non-config vars
 // {53209101-8AAE-4256-90A4-F67417F4F75C}
@@ -120,3 +177,7 @@ cfg_int sessionSelectedCover(guid_sessionSelectedCover, 0);
 // {6DDC4C81-7525-46d0-B9B8-0E8DE36957A8}
 static const GUID guid_sessionCompiledCPInfo = { 0x6ddc4c81, 0x7525, 0x46d0, { 0xb9, 0xb8, 0xe, 0x8d, 0xe3, 0x69, 0x57, 0xa8 } };
 cfg_compiledCPInfoPtr sessionCompiledCPInfo(guid_sessionCompiledCPInfo, 0);
+
+// {85744FC7-38A3-47e7-8080-3744431211E6}
+static const GUID guid_sessionSelectedConfigTab = { 0x85744fc7, 0x38a3, 0x47e7, { 0x80, 0x80, 0x37, 0x44, 0x43, 0x12, 0x11, 0xe6 } };
+cfg_int sessionSelectedConfigTab(guid_sessionSelectedConfigTab, 0);

@@ -18,18 +18,19 @@ public:
 	ImgTexture* getLoadedImgTexture(CollectionPos pos);
 public:
 	void runGlDelete();
+
 public:
-	void startLoading();
-	void stopLoading();
+	void pauseLoading();
+	void resumeLoading();
 
 public:
 	void loadSpecialTextures();
 
 public:
-	 //may only be called from Main Thread, while worker is stopped
+	 //may only be called from Main Thread, while worker is paused
 	void clearCache();
 
-	// may only be called from Main Thread, while worker is stopped
+	// may only be called from Main Thread, while worker is paused
 	void resynchCache(t_resynchCallback callback, void* param);
 private:
 	static void resynchCacheEnumerator(int idx, ImgTexture* tex);
@@ -39,13 +40,12 @@ public:
 	void blockUpload();
 
 private:
+	void createLoaderWindow();
+	void destroyLoaderWindow();
 	bool initGlContext();
-	void destroyGlContext();
 	HWND glWindow;
 	HDC glDC;
 	HGLRC glRC;
-
-	HANDLE lockMainthreadRC;
 
 private:
 	ImgTexture* noCoverTexture;
@@ -62,18 +62,21 @@ private:
 	void workerThreadProc();
 	void loadTexImage(CollectionPos pos, bool doUpload);
 	HANDLE workerThread;
-	HANDLE workerThreadHasWork;
+	Event workerThreadHasWork;
+	CriticalSection workerThreadInLoop;
 	int workerThreadPrio;
 	void setWorkerThreadPrio(int nPrio, bool force = false);
 	bool closeWorkerThread;
 	int loadDistance;
 	CollectionPos loadCenter;
 
+	Event workerThreadMayRun;
+
 	static const int DELETE_BUFFER_SIZE = 256;
 	ImgTexture* deleteBuffer[DELETE_BUFFER_SIZE];
 	int deleteBufferIn;
 	int deleteBufferOut;
-	HANDLE deleteBufferFreed;
+	Event deleteBufferFreed;
 
 	struct UploadQueueElem {
 		int texIdx;
@@ -81,13 +84,12 @@ private:
 	};
 	UploadQueueElem* uploadQueueHead;
 	UploadQueueElem* uploadQueueTail;
-	HANDLE mayUpload;
+	Event mayUpload;
 	void doUploadQueue();
 
-	CRITICAL_SECTION textureCacheCS;
+	CriticalSection textureCacheCS;
 	typedef pfc::map_t<int, ImgTexture*> t_textureCache;
 	t_textureCache textureCache;
-	int textureCacheSize;
 	static void textureCacheDeleteEnumerator(int idx, ImgTexture* tex);
 
 public:

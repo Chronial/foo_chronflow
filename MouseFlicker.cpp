@@ -1,3 +1,4 @@
+#include "externHeaders.h"
 #include "chronflow.h"
 
 MouseFlicker::MouseFlicker(AppInstance* instance) :
@@ -25,6 +26,7 @@ void MouseFlicker::mouseDown(HWND hWnd, int x, int y)
 void MouseFlicker::mouseUp(int x, int y)
 {
 	if (isMouseDown){
+		ScopeCS scopeLock(appInstance->displayPos->accessCS);
 		double pD = win2pos(dX);
 		float dist = appInstance->displayPos->moveDist2targetDist(float(pD / dTime));
 		if (abs(dist) > 0.5){

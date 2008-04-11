@@ -338,6 +338,7 @@ extern cfg_string cfgCoverConfigSel;
 
 class ScriptedCoverPositions
 {
+	CriticalSection accessCS;
 public:
 	ScriptedCoverPositions(){
 		if (!sessionCompiledCPInfo.isEmpty()){
@@ -360,6 +361,7 @@ public:
 	}
 
 	bool setScript(const char* script, pfc::string_base& errorMsg){
+		ScopeCS scopeLock(accessCS);
 		CompiledCPInfo* compiled = new CompiledCPInfo;
 		try {
 			CPScriptCompiler compiler;
@@ -389,7 +391,17 @@ public:
 	}
 	inline const fovAspectBehaviour& getAspectBehaviour()
 	{
+		ScopeCS scopeLock(accessCS);
 		return cInfo->aspectBehaviour;
+	}
+
+	inline void lock()
+	{
+		accessCS.enter();
+	}
+	inline void unlock()
+	{
+		accessCS.leave();
 	}
 
 	inline const glVectord& getLookAt()

@@ -22,7 +22,7 @@ function coverPosition(coverId){
 }
 // return array is (angle, x, ,y, z) - this rotates
 // the cover *angle* degrees around the vector (x,y,z)
-// With (0,0,0,0) the cover is parallel to the y-z-Plane
+// With (0,0,0,0) the cover is parallel to the x-y-Plane
 function coverRotation(coverId){
    var angle = 0;
    if (Math.abs(coverId) >= 2){

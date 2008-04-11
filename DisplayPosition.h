@@ -18,21 +18,26 @@ private:
 public:
 	bool isMoving(void);
 public:
-	CollectionPos getTarget(void);
+	CollectionPos getTarget(void) const;
 public:
-	CollectionPos getCenteredPos(void); //Position centered or left of center (eg. display between 2. and 3. cover -> CenteredPos = 2. cover
+	CollectionPos getCenteredPos(void) const; //Position centered or left of center (eg. display between 2. and 3. cover -> CenteredPos = 2. cover
 public:
-	float getCenteredOffset(void); // return in range [0;1)  (eg. display on pos 2.59 -- returns 0.59)
+	float getCenteredOffset(void) const; // return in range [0;1)  (eg. display on pos 2.59 -- returns 0.59)
 
 public:
 	void hardSetTarget(CollectionPos pos);
 	void hardSetCenteredPos(CollectionPos pos);
 
+
+	CriticalSection accessCS;
+
+
 private:
 	CollectionPos targetPos;
 	CollectionPos centeredPos;
-	float centeredOffset;
+	volatile float centeredOffset;
 	float lastSpeed;
+
 private:
 	double lastMovement;
 };

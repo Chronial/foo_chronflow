@@ -1,44 +1,13 @@
+#include "externHeaders.h"
 #include "chronflow.h"
-
-extern cfg_string cfgFilter;
-extern cfg_string cfgSources;
-extern cfg_string cfgGroup;
-extern cfg_string cfgSort;
-extern cfg_string cfgInnerSort;
-
-extern cfg_string cfgImgLoading;
-extern cfg_string cfgImgNoCover;
-
-extern cfg_bool cfgSortGroup;
-extern cfg_bool cfgPlSortPl;
-
-
-extern cfg_string cfgDoubleClick;
-extern cfg_string cfgMiddleClick;
-extern cfg_string cfgEnterKey;
-
-extern cfg_bool cfgCoverFollowsPlayback;
-extern cfg_int cfgCoverFollowDelay;
-
-
-extern cfg_string cfgAlbumTitle;
-extern service_ptr_t<titleformat_object> cfgAlbumTitleScript;
-extern cfg_struct_t<double> cfgTitlePosH;
-extern cfg_struct_t<double> cfgTitlePosV;
-extern cfg_int cfgTitleColor;
-extern cfg_struct_t<LOGFONT> cfgTitleFont;
-extern cfg_int cfgPanelBg;
-extern cfg_int cfgHighlightWidth;
-
-extern cfg_coverConfigs cfgCoverConfigs;
-extern cfg_string cfgCoverConfigSel;
-
+#include "config.h"
 
 static struct {
    int id;
    cfg_string *var;
 } stringVarMap[] = 
 {
+	// Sources
 	{ IDC_SOURCES, &cfgSources },
 	{ IDC_FILTER, &cfgFilter },
 	{ IDC_GROUP, &cfgGroup },
@@ -46,17 +15,22 @@ static struct {
 	{ IDC_INNER_SORT, &cfgInnerSort },
 	{ IDC_IMG_NO_COVER, &cfgImgNoCover },
 	{ IDC_IMG_LOADING, &cfgImgLoading },
+
+	// Display
 	{ IDC_ALBUM_FORMAT, &cfgAlbumTitle },
 };
 
 static struct {
    int id;
    cfg_string *var;
-} listVarMap[] = 
+} textListVarMap[] = 
 {
+	// Behaviour
 	{ IDC_DOUBLE_CLICK, &cfgDoubleClick },
 	{ IDC_MIDDLE_CLICK, &cfgMiddleClick },
 	{ IDC_ENTER_KEY, &cfgEnterKey },
+
+	// Cover Display
 	{ IDC_SAVED_SELECT, &cfgCoverConfigSel },
 };
 
@@ -66,10 +40,43 @@ static struct {
 	cfg_bool *var;
 } boolVarMap[] =
 {
+	// Sources
 	{ IDC_SORT_GROUP, &cfgSortGroup },
 	{ IDC_PL_SORT_PL, &cfgPlSortPl },
+
+	// Behaviour
 	{ IDC_FOLLOW_PLAYBACK, &cfgCoverFollowsPlayback },
+	{ IDC_FIND_AS_YOU_TYPE, &cfgFindAsYouType },
+
+	// Display
+	{ IDC_ALBUM_TITLE, &cfgShowAlbumTitle },
+
+	// Performance
+	{ IDC_MULTI_SAMPLING, &cfgMultisampling },
+	{ IDC_SUPER_SAMPLING, &cfgSupersampling },
+	{ IDC_TEXTURE_COMPRESSION, &cfgTextureCompression },
+	{ IDC_EMPTY_ON_MINIMIZE, &cfgEmptyCacheOnMinimize },
+	{ IDC_SHOW_FPS, &cfgShowFps },
 };
+
+static struct {
+	int checkboxId;
+	int itemToDisable;
+} disableMap[] =
+{
+	// Sources
+	{ IDC_SORT_GROUP, IDC_SORT },
+
+	// Behaviour
+	{ IDC_FOLLOW_PLAYBACK, IDC_FOLLOW_DELAY },
+
+	// Performance
+	{ IDC_SUPER_SAMPLING, IDC_SUPER_SAMPLING_PASSES },
+	{ IDC_SUPER_SAMPLING, -IDC_MULTI_SAMPLING },
+	{ IDC_MULTI_SAMPLING, IDC_MULTI_SAMPLING_PASSES },
+	{ IDC_MULTI_SAMPLING, -IDC_SUPER_SAMPLING },
+};
+
 
 class ConfigTab {
 protected:
@@ -78,14 +85,20 @@ protected:
 	char * title;
 	bool initializing;
 public:
+	const int idx;
 	HWND hWnd;
-	ConfigTab(char * title, UINT id, HWND parent){
+	ConfigTab(char * title, UINT id, HWND parent, int& i)
+		: idx(i)
+	{
+		i++;
 		this->title = title;
 		this->id = id;
 		this->parent = parent;
 	}
-	virtual ~ConfigTab() {}
-	void init (int idx){
+	virtual ~ConfigTab() {
+		DestroyWindow(hWnd);
+	}
+	void createDialog (){
 		HWND hWndTab = uGetDlgItem(parent, IDC_TABS);
 		uTCITEM tabItem = {0};
 		tabItem.mask = TCIF_TEXT;
@@ -120,9 +133,17 @@ public:
 		for (int i = 0; i < n; i++){
 			uSetDlgItemText(hWnd, stringVarMap[i].id, stringVarMap[i].var->get_ptr());
 		}
-		int m = tabsize(boolVarMap);
-		for (int i = 0; i < m; i++){
+		n = tabsize(boolVarMap);
+		for (int i = 0; i < n; i++){
 			uButton_SetCheck(hWnd, boolVarMap[i].id, boolVarMap[i].var->get_value());
+		}
+		n = tabsize(disableMap);
+		for (int i = 0; i < n; i++){
+			bool enabled = uButton_GetCheck(hWnd, disableMap[i].checkboxId);
+			if (disableMap[i].itemToDisable < 0)
+				uEnableWindow(uGetDlgItem(hWnd, -disableMap[i].itemToDisable), !enabled);
+			else
+				uEnableWindow(uGetDlgItem(hWnd, disableMap[i].itemToDisable), enabled);
 		}
 		initializing = false;
 	}
@@ -147,17 +168,24 @@ public:
 				break;
 			}
 		}
+		n = tabsize(disableMap);
+		for (int i = 0; i < n; i++){
+			if (disableMap[i].checkboxId == id){
+				bool enabled = uButton_GetCheck(hWnd, disableMap[i].checkboxId);
+				if (disableMap[i].itemToDisable < 0)
+					uEnableWindow(uGetDlgItem(hWnd, -disableMap[i].itemToDisable), !enabled);
+				else
+					uEnableWindow(uGetDlgItem(hWnd, disableMap[i].itemToDisable), enabled);
+			}
+		}
 	}
 	void listSelChanged(UINT id){
-		int n = tabsize(listVarMap);
+		int n = tabsize(textListVarMap);
 		for (int i = 0; i < n; i++){
-		   if (listVarMap[i].id == id){
+		   if (textListVarMap[i].id == id){
 			   int s = uSendDlgItemMessage(hWnd, id, CB_GETCURSEL, 0, 0);
 			   if (s != CB_ERR){
-				   //wchar_t tmpBuffer[2048];
-				   uComboBox_GetText(uGetDlgItem(hWnd, id), s, *(listVarMap[i].var));
-				   //uSendDlgItemMessage(hWnd, id, CB_GETLBTEXT, s, (LPARAM)tmpBuffer);
-				   //(*listVarMap[i].var).set_string(pfc::stringcvt::string_utf8_from_wide(tmpBuffer));
+				   uComboBox_GetText(uGetDlgItem(hWnd, id), s, *(textListVarMap[i].var));
 			   }
 			   break;
 		   }
@@ -174,18 +202,43 @@ protected:
 	void redrawMainWin(){
 		AppInstance * mainInstance = gGetSingleInstance();
 		if (mainInstance) {
-			RedrawWindow(mainInstance->mainWindow,NULL,NULL,RDW_INVALIDATE);
+			mainInstance->redrawMainWin();
 		}
 	}
 };
 
+#define CONFIG_TAB(CLASS, TITLE, IDD) CLASS(HWND parent, int& i) : ConfigTab(TITLE, IDD, parent, i){ createDialog(); }
+
+#if 0
+// minimal Tab setup
+class SomeTab : public ConfigTab {
+public:
+	CONFIG_TAB(SomeTab, TITLE, IDD);
+	BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
+		switch (uMsg)
+		{
+		case WM_INITDIALOG:
+			loadConfig();
+			break;
+
+		case WM_COMMAND:
+			if (HIWORD(wParam) == EN_CHANGE){
+				textChanged(LOWORD(wParam));
+			} else if (HIWORD(wParam) == BN_CLICKED) {
+				buttonClicked(LOWORD(wParam));
+			}
+			break;
+		}
+		return FALSE;
+	}
+};
+#endif
+
+
 class SourcesTab : public ConfigTab {
 public:
-	static const int idx = 1;
+	CONFIG_TAB(SourcesTab, "Album Source", IDD_SOURCE_TAB);
 
-	SourcesTab(HWND parent) : ConfigTab("Album Source", IDD_SOURCE_TAB, parent){
-		init(idx);
-	}
 	BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 		switch (uMsg)
 		{
@@ -194,7 +247,6 @@ public:
 			{
 				if (!cfgPlSortPl)
 					uButton_SetCheck(hWnd, IDC_PL_SORT_DB, true);
-				uEnableWindow(uGetDlgItem(hWnd, IDC_SORT), !cfgSortGroup);
 			}
 			break;
 
@@ -215,9 +267,6 @@ public:
 					break;
 				case IDC_PL_SORT_DB:
 					buttonClicked(IDC_PL_SORT_PL);
-					break;
-				case IDC_SORT_GROUP:
-					uEnableWindow(uGetDlgItem(hWnd, IDC_SORT), !cfgSortGroup);
 					break;
 				case IDC_IMG_NO_COVER_BROWSE:
 					if(browseForImage(cfgImgNoCover, cfgImgNoCover))
@@ -256,11 +305,7 @@ public:
 
 class BehaviourTab : public ConfigTab {
 public:
-	static const int idx = 0;
-
-	BehaviourTab (HWND parent) : ConfigTab("Behaviour", IDD_BEHAVIOUR_TAB, parent){
-		init(idx);
-	}
+	CONFIG_TAB(BehaviourTab, "Behaviour", IDD_BEHAVIOUR_TAB);
 	BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 		switch (uMsg)
 		{
@@ -269,18 +314,15 @@ public:
 			loadActionList(IDC_DOUBLE_CLICK, cfgDoubleClick);
 			loadActionList(IDC_MIDDLE_CLICK, cfgMiddleClick);
 			loadActionList(IDC_ENTER_KEY, cfgEnterKey);
-			SendDlgItemMessage(hWnd, IDC_FOLLOW_DELAY_SPINNER, UDM_SETRANGE, 0, MAKELONG(short(999),short(0)));
-			uSetDlgItemText(hWnd, IDC_FOLLOW_DELAY, pfc::string_fixed_t<16>() << cfgCoverFollowDelay);
-			uEnableWindow(uGetDlgItem(hWnd, IDC_FOLLOW_DELAY), cfgCoverFollowsPlayback);
+			SendDlgItemMessage(hWnd, IDC_FOLLOW_DELAY_SPINNER, UDM_SETRANGE32, 1, 999);
+			SetDlgItemInt(hWnd, IDC_FOLLOW_DELAY, cfgCoverFollowDelay, true);
 			break;
 
 		case WM_COMMAND:
 			if (HIWORD(wParam) == EN_CHANGE){
 				textChanged(LOWORD(wParam));
 				if (LOWORD(wParam) == IDC_FOLLOW_DELAY){
-					pfc::string_fixed_t<16> coverFollowDelay;
-					uGetDlgItemText(hWnd, IDC_FOLLOW_DELAY, coverFollowDelay);
-					cfgCoverFollowDelay = max(0, min(999, atoi(coverFollowDelay)));
+					cfgCoverFollowDelay = max(1, min(999, int(uGetDlgItemInt(hWnd, IDC_FOLLOW_DELAY, 0, 1))));
 					AppInstance * mainInstance = gGetSingleInstance();
 					if (mainInstance) {
 						mainInstance->playbackTracer->followSettingsChanged();
@@ -289,7 +331,6 @@ public:
 			} else if (HIWORD(wParam) == BN_CLICKED) {
 				buttonClicked(LOWORD(wParam));
 				if (LOWORD(wParam) == IDC_FOLLOW_PLAYBACK){
-					uEnableWindow(uGetDlgItem(hWnd, IDC_FOLLOW_DELAY), cfgCoverFollowsPlayback);
 					AppInstance * mainInstance = gGetSingleInstance();
 					if (mainInstance) {
 						mainInstance->playbackTracer->followSettingsChanged();
@@ -332,11 +373,8 @@ public:
 
 class DisplayTab : public ConfigTab {
 public:
-	static const int idx = 2;
+	CONFIG_TAB(DisplayTab, "Display", IDD_DISPLAY_TAB);
 
-	DisplayTab(HWND parent) : ConfigTab("Display", IDD_DISPLAY_TAB, parent){
-		init(idx);
-	}
 	BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 		switch (uMsg)
 		{
@@ -449,7 +487,7 @@ public:
 							uSendDlgItemMessage(hWnd, IDC_FONT_PREV, WM_SETTEXT, 0, (LPARAM)cfgTitleFont.get_value().lfFaceName);
 							AppInstance * mainInstance = gGetSingleInstance();
 							if (mainInstance) {
-								mainInstance->textDisplay->clearCache();
+								mainInstance->renderer->onTextFormatChanged();
 							}
 						}
 					}
@@ -520,26 +558,25 @@ public:
 
 class CoverTab : public ConfigTab {
 	HFONT editBoxFont;
+	WNDPROC origEditboxProc;
 
 public:
-	static const int idx = 3;
-	WNDPROC origEditboxProc;
-	CoverTab (HWND parent) : ConfigTab("Cover Display", IDD_COVER_DISPLAY_TAB, parent){
-		editBoxFont = CreateFont(-12, 0, 0, 0, 0, FALSE, 0, 0, 0, 0, 0, 0, 0, L"Courier New");
-		init(idx);
-	}
-	~CoverTab (){
-		DeleteObject(editBoxFont);
-	}
+	CONFIG_TAB(CoverTab, "Cover Display", IDD_COVER_DISPLAY_TAB);
+
 	BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 		switch (uMsg)
 		{
 		case WM_INITDIALOG:
+			editBoxFont = CreateFont(-12, 0, 0, 0, 0, FALSE, 0, 0, 0, 0, 0, 0, 0, L"Courier New");
 			loadConfig();
 			loadConfigList();
 			configSelectionChanged();
 			setUpEditBox();
 			return TRUE;
+		
+		case WM_DESTROY:
+			DeleteObject(editBoxFont);
+
 		
 		case WM_COMMAND:
 			if (HIWORD(wParam) == EN_CHANGE){
@@ -594,7 +631,7 @@ public:
 			message = "Sucess!";
 		uSetDlgItemText(hWnd, IDC_COMPILE_STATUS, message);
 		if (mainInstance)
-			mainInstance->renderer->resetViewport();
+			mainInstance->renderer->onViewportChange();
 		redrawMainWin();
 		if (killCovPos)
 			delete covPos;
@@ -605,7 +642,6 @@ public:
 		SendDlgItemMessage(hWnd, IDC_DISPLAY_CONFIG, WM_SETFONT, (WPARAM)editBoxFont, TRUE);
 		origEditboxProc = (WNDPROC) SetWindowLong(GetDlgItem(hWnd, IDC_DISPLAY_CONFIG), GWL_WNDPROC, (LONG)editboxProxy);
 		SetProp(GetDlgItem(hWnd, IDC_DISPLAY_CONFIG), L"tab", (HANDLE)this);
-		 //
 	}
 	static BOOL CALLBACK editboxProxy(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 		CoverTab* coverTab = reinterpret_cast<CoverTab*>(GetProp(hWnd, L"tab"));
@@ -799,22 +835,147 @@ public:
 	}
 };
 
+namespace {
+	struct ListMap {
+		int val;
+		const char * text;
+	};
+	static ListMap multisamplingMap[] =
+	{
+		{ 2, "  2"},
+		{ 4, "  4"},
+		{ 8, "  8"},
+		{16,  "16"},
+	};
+	static ListMap supersamplingMap[] =
+	{
+		{ 2, "  2"},
+		{ 3, "  3"},
+		{ 4, "  4"},
+		{ 5, "  5"},
+		{ 6, "  6"},
+		{ 8, "  8"},
+		{16,  "16"},
+	};
+	static ListMap loaderPrioMap[] = 
+	{
+		{THREAD_PRIORITY_BELOW_NORMAL, "Below Normal"},
+		{THREAD_PRIORITY_IDLE, "Idle"},
+	};
+};
+static struct {
+	int id;
+	cfg_int* var;
+	ListMap* map;
+	t_size mapSize;
+} mappedListVarMap[] =
+{
+	{IDC_MULTI_SAMPLING_PASSES, &cfgMultisamplingPasses, multisamplingMap, tabsize(multisamplingMap)},
+	{IDC_SUPER_SAMPLING_PASSES, &cfgSupersamplingPasses, supersamplingMap, tabsize(supersamplingMap)},
+	{IDC_TEXLOADER_PRIO, &cfgTexLoaderPrio, loaderPrioMap, tabsize(loaderPrioMap)},
+};
+
+
+
+
+
+class PerformanceTab : public ConfigTab {
+public:
+	CONFIG_TAB(PerformanceTab, "Performance", IDD_PERF_TAB);
+	BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
+		switch (uMsg)
+		{
+		case WM_INITDIALOG:
+			loadConfig();
+			fillComboBoxes();
+
+			SendDlgItemMessage(hWnd, IDC_CACHE_SIZE_SPIN, UDM_SETRANGE32, 2, 999);
+			SetDlgItemInt(hWnd, IDC_CACHE_SIZE, cfgTextureCacheSize, true);
+
+			SendDlgItemMessage(hWnd, IDC_TEXTURE_SIZE_SPIN, UDM_SETRANGE32, 4, 2024);
+			SetDlgItemInt(hWnd, IDC_TEXTURE_SIZE, cfgMaxTextureSize, true);
+			
+			switch (cfgVSyncMode){
+				case VSYNC_SLEEP_ONLY:
+					uButton_SetCheck(hWnd, IDC_VSYNC_OFF, true); break;
+				case VSYNC_ONLY:
+					uButton_SetCheck(hWnd, IDC_VSYNC_ONLY, true); break;
+				case VSYNC_AND_SLEEP:
+					uButton_SetCheck(hWnd, IDC_VSYNC_SLEEP, true); break;
+			}
+			break;
+
+		case WM_COMMAND:
+			if (HIWORD(wParam) == EN_CHANGE){
+				textChanged(LOWORD(wParam));
+
+				if (LOWORD(wParam) == IDC_CACHE_SIZE){
+					cfgTextureCacheSize = max(2, min(999, int(uGetDlgItemInt(hWnd, IDC_CACHE_SIZE, 0, 1))));
+				} else if (LOWORD(wParam) == IDC_TEXTURE_SIZE){
+					cfgMaxTextureSize = max(4, min(2024, int(uGetDlgItemInt(hWnd, IDC_TEXTURE_SIZE, 0, 1))));
+				}
+			} else if (HIWORD(wParam) == BN_CLICKED) {
+				buttonClicked(LOWORD(wParam));
+				switch (LOWORD(wParam)){
+					case IDC_VSYNC_OFF:
+					case IDC_VSYNC_ONLY:
+					case IDC_VSYNC_SLEEP:
+						if (uButton_GetCheck(hWnd, IDC_VSYNC_OFF)) cfgVSyncMode = VSYNC_SLEEP_ONLY;
+						else if (uButton_GetCheck(hWnd, IDC_VSYNC_ONLY)) cfgVSyncMode = VSYNC_ONLY;
+						else if (uButton_GetCheck(hWnd, IDC_VSYNC_SLEEP)) cfgVSyncMode = VSYNC_AND_SLEEP;
+				}
+				redrawMainWin();
+			} else if (HIWORD(wParam) == CBN_SELCHANGE){
+				comboBoxChanged(LOWORD(wParam));
+				redrawMainWin();
+			}
+			break;
+			
+		}
+		return FALSE;
+	}
+	void fillComboBoxes(){
+		for (int i=0; i < tabsize(mappedListVarMap); i++){
+			uSendDlgItemMessage(hWnd, mappedListVarMap[i].id, CB_RESETCONTENT, 0, 0);
+			for (t_size n=0; n < mappedListVarMap[i].mapSize; n++){
+				uSendDlgItemMessageText(hWnd, mappedListVarMap[i].id, CB_ADDSTRING, 0, mappedListVarMap[i].map[n].text);
+				if (mappedListVarMap[i].map[n].val == *(mappedListVarMap[i].var))
+					uSendDlgItemMessageText(hWnd, mappedListVarMap[i].id, CB_SELECTSTRING, -1, mappedListVarMap[i].map[n].text);
+			}
+		}
+	}
+	void comboBoxChanged(int comboBox){
+		pfc::string8 selected;
+		int s = uSendDlgItemMessage(hWnd, comboBox, CB_GETCURSEL, 0, 0);
+		if (s != CB_ERR){
+			uComboBox_GetText(uGetDlgItem(hWnd, comboBox), s, selected);
+		} else {
+			return;
+		}
+		for (int i=0; i < tabsize(mappedListVarMap); i++){
+			if (comboBox == mappedListVarMap[i].id){
+				for (t_size n=0; n < mappedListVarMap[i].mapSize; n++){
+					if (0 == strcmp(selected, mappedListVarMap[i].map[n].text)){
+						*(mappedListVarMap[i].var) = mappedListVarMap[i].map[n].val;
+						break;
+					}
+				}
+			}
+		}
+	}
+};
+
 
 class ConfigWindow :
 	public preferences_page
 {
 private:
-	SourcesTab* sourcesTab;
-	BehaviourTab* behaviourTab;
-	DisplayTab* displayTab;
-	CoverTab* coverTab;
-	ConfigTab* currentTab;
+	pfc::list_t<ConfigTab*> tabs;
+	t_size currentTab;
 public:
-	ConfigWindow(){
-		sourcesTab = 0;
-		currentTab = 0;
-		displayTab = 0;
-		coverTab = 0;
+	ConfigWindow()
+		: currentTab(~0)
+	{
 	}
 
 	BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
@@ -822,10 +983,12 @@ public:
 		{
 		case WM_INITDIALOG:
 			{
-				sourcesTab = new SourcesTab(hWnd);
-				behaviourTab = new BehaviourTab(hWnd);
-				displayTab = new DisplayTab(hWnd);
-				coverTab = new CoverTab(hWnd);
+				int j = 0;
+				tabs.add_item(new BehaviourTab(hWnd, j));
+				tabs.add_item(new SourcesTab(hWnd, j));
+				tabs.add_item(new DisplayTab(hWnd, j));
+				tabs.add_item(new CoverTab(hWnd, j));
+				tabs.add_item(new PerformanceTab(hWnd, j));
 
 				HWND hWndTab = uGetDlgItem(hWnd, IDC_TABS);
 
@@ -833,45 +996,40 @@ public:
 				GetChildRect(hWnd, IDC_TABS, &rcTab);
 				uSendMessage(hWndTab, TCM_ADJUSTRECT, FALSE, (LPARAM)&rcTab);
 
-				sourcesTab->setPos(rcTab);
-				behaviourTab->setPos(rcTab);
-				displayTab->setPos(rcTab);
-				coverTab->setPos(rcTab);
-
-				uSendMessage(hWndTab, TCM_SETCURSEL, BehaviourTab::idx, 0);
-				currentTab = behaviourTab;
-				currentTab->show();
+				for (t_size i=0; i < tabs.get_count(); i++){
+					tabs[i]->setPos(rcTab);
+				}
+				currentTab = sessionSelectedConfigTab;
+				uSendMessage(hWndTab, TCM_SETCURSEL, tabs[currentTab]->idx, 0);
+				tabs[currentTab]->show();
 			}
 			break;
 
 		case WM_NCDESTROY:
 			{
-				currentTab = 0;
-				delete sourcesTab;
-				delete behaviourTab;
-				delete displayTab;
-				delete coverTab;
+				sessionSelectedConfigTab = currentTab;
+				for (t_size i=0; i < tabs.get_count(); i++){
+					delete tabs[i];
+				}
+				tabs.remove_all();
 			}
 			break;
 
 		case WM_NOTIFY:
 			if (((LPNMHDR)lParam)->idFrom == IDC_TABS){
 				if (((LPNMHDR)lParam)->code == TCN_SELCHANGE){
-					if (currentTab != 0)
-						currentTab->hide();
-					currentTab = 0;
+					if (currentTab < tabs.get_count())
+						tabs[currentTab]->hide();
+					currentTab = ~0;
 					UINT32 currentIdx = SendDlgItemMessage(hWnd, IDC_TABS, TCM_GETCURSEL, 0, 0);
-					if (currentIdx == SourcesTab::idx){
-						currentTab = sourcesTab;
-					} else if (currentIdx == BehaviourTab::idx){
-						currentTab = behaviourTab;
-					} else if (currentIdx == DisplayTab::idx){
-						currentTab = displayTab;
-					} else if (currentIdx == CoverTab::idx){
-						currentTab = coverTab;
+					for (t_size i=0; i < tabs.get_count(); i++){
+						if(currentIdx == tabs[i]->idx){
+							currentTab = i;
+							break;
+						}
 					}
-					if (currentTab != 0)
-						currentTab->show();
+					if (currentTab != ~0)
+						tabs[currentTab]->show();
 				}
 			}
 			break;
@@ -880,10 +1038,6 @@ public:
 	}
 
 	static BOOL CALLBACK dialogProxy(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
-		/*if (uMsg == WM_INITDIALOG)
-			configWindow = (ConfigWindow*)lParam;*/
-		//return configWindow->dialogProc(hWnd, uMsg, wParam, lParam);
-
 		ConfigWindow* configWindow = 0;
 		if (uMsg == WM_INITDIALOG){
 			configWindow = (ConfigWindow*)lParam;

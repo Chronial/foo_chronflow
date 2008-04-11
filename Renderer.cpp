@@ -1,15 +1,26 @@
+#include "externHeaders.h"
 #include "chronflow.h"
 
+extern cfg_bool cfgShowFps;
+extern cfg_bool cfgShowAlbumTitle;
 extern cfg_struct_t<double> cfgTitlePosH;
 extern cfg_struct_t<double> cfgTitlePosV;
 extern cfg_int cfgPanelBg;
 extern cfg_int cfgTitleColor;
 extern cfg_int cfgHighlightWidth;
 
+extern cfg_bool cfgSupersampling;
+extern cfg_int cfgSupersamplingPasses;
+
+extern cfg_bool cfgMultisampling;
+extern cfg_int cfgMultisamplingPasses;
+
+
 // Extensions
 PFNGLFOGCOORDFPROC glFogCoordf = NULL;
 PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = NULL;
 PFNGLBLENDCOLORPROC glBlendColor = NULL;
+
 
 #define SELECTION_CENTER INT_MAX //Selection is an unsigned int, so this is center
 #define SELECTION_COVERS 1
@@ -17,7 +28,9 @@ PFNGLBLENDCOLORPROC glBlendColor = NULL;
 
 Renderer::Renderer(AppInstance* instance)
 : appInstance(instance),
-  multisampleEnabled(false)
+  multisampleEnabled(false),
+  textDisplay(this),
+  hDC(0), hRC(0)
 {
 }
 
@@ -37,11 +50,11 @@ const PIXELFORMATDESCRIPTOR Renderer::pixelFormatDescriptor = {
 			PFD_DOUBLEBUFFER |							// Must Support Double Buffering
 			PFD_SWAP_EXCHANGE,							// Format should swap the buffers (faster)
 			PFD_TYPE_RGBA,								// Request An RGBA Format
-			24,										    // Select Our Color Depth
+			16,										    // Select Our Color Depth
 			0, 0, 0, 0, 0, 0,							// Color Bits Ignored
 			0,											// No Alpha Buffer
 			0,											// Shift Bit Ignored
-			4,											// Accumulation Buffer
+			16,											// Accumulation Buffer
 			0, 0, 0, 0,									// Accumulation Bits Ignored
 			16,											// 16Bit Z-Buffer (Depth Buffer)  
 			0,											// No Stencil Buffer
@@ -53,8 +66,6 @@ const PIXELFORMATDESCRIPTOR Renderer::pixelFormatDescriptor = {
 
 bool Renderer::attachGlWindow()
 {
-	HDC hDC;
-	HGLRC hRC;
 	if (!(hDC=GetDC(appInstance->mainWindow)))							// Did We Get A Device Context?
 	{
 		destroyGlWindow();								// Reset The Display
@@ -76,7 +87,8 @@ bool Renderer::attachGlWindow()
 			DescribePixelFormat(hDC, pixelFormat,  
 				sizeof(PIXELFORMATDESCRIPTOR), &pfd); 
 			if ((pfd.dwFlags & PFD_GENERIC_FORMAT) && !(pfd.dwFlags & PFD_GENERIC_ACCELERATED)){
-				MessageBox(appInstance->mainWindow, L"Rendering in Software mode. Expect slow display.",L"Foo_chronflow Error",MB_ICONINFORMATION);
+				MessageBox(NULL, L"Couldn't get a hardware accelerated PixelFormat.",L"Foo_chronflow Error",MB_ICONINFORMATION);
+				return false;
 			} else if ((pfd.dwFlags & PFD_GENERIC_FORMAT) || (pfd.dwFlags & PFD_GENERIC_ACCELERATED)){
 				pfc::string8 message("Foo_chronflow Problem: Rendering is not fully hardware accelerated. Details: ");
 				if (pfd.dwFlags & PFD_GENERIC_FORMAT)
@@ -108,20 +120,18 @@ bool Renderer::attachGlWindow()
 		MessageBox(NULL,L"Can't Activate The GL Rendering Context.",L"Foo_chronflow Error",MB_OK|MB_ICONERROR);
 		return FALSE;								// Return FALSE
 	}
-	appInstance->lockedRC.setRC(hDC, hRC);
+
+	vSyncEnabled = false;
 	return true;
 }
 
 
 void Renderer::initGlState()
 {
-	ScopeRCLock scopeLock(appInstance->lockedRC);
-
 	// move this to an extra function - otherwice it's called twice due to mulitsampling
 	loadExtensions();
 
 	glShadeModel(GL_SMOOTH);							// Enable Smooth Shading
-	//glClearColor(0.0f, 0.0f, 0.0f, 0.0f);				// Black Background
 	glClearDepth(1.0f);									// Depth Buffer Setup
 	glEnable(GL_DEPTH_TEST);							// Enables Depth Testing
 	glDepthFunc(GL_LEQUAL);								// The Type Of Depth Testing To Do
@@ -134,8 +144,6 @@ void Renderer::initGlState()
 	GLint maxTexSize;
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
 	ImgTexture::setMaxGlTextureSize(maxTexSize);
-	if (isWglExtensionSupported("WGL_EXT_swap_control"))
-		wglSwapIntervalEXT(1);						    // Activate Vsynch
 	
 	if (multisampleEnabled)
 		glEnable(GL_MULTISAMPLE_ARB);
@@ -147,15 +155,17 @@ void Renderer::initGlState()
 		glFogfv(GL_FOG_COLOR, fogColor);					// Set The Fog Color
 		glHint(GL_FOG_HINT, GL_NICEST);						// Per-Pixel Fog Calculation
 		glFogi(GL_FOG_COORD_SRC, GL_FOG_COORD);		// Set Fog Based On Vertice Coordinates
-		showFog = true;
-	} else {
-		showFog = false;
+	}
+}
+
+void Renderer::ensureVSync(bool enableVSync){
+	if (vSyncEnabled != enableVSync && wglSwapIntervalEXT){
+		vSyncEnabled = enableVSync;
+		wglSwapIntervalEXT(enableVSync ? 1 : 0);
 	}
 }
 
 bool Renderer::initMultisampling(){
-	ScopeRCLock scopeLock(appInstance->lockedRC);
-
 	// See If The String Exists In WGL!
 	if (!isWglExtensionSupported("WGL_ARB_multisample")){
 		multisampleEnabled = false;
@@ -180,6 +190,7 @@ bool Renderer::initMultisampling(){
 	// We Support Multisampling On This Hardware.
 	int iAttributes[] =
 	{
+		WGL_SAMPLES_ARB,0 /*must have index 1*/,
 		WGL_DRAW_TO_WINDOW_ARB,GL_TRUE,
 		WGL_SUPPORT_OPENGL_ARB,GL_TRUE,
 		WGL_ACCELERATION_ARB,WGL_FULL_ACCELERATION_ARB,
@@ -189,39 +200,40 @@ bool Renderer::initMultisampling(){
 		WGL_STENCIL_BITS_ARB,0,
 		WGL_DOUBLE_BUFFER_ARB,GL_TRUE,
 		WGL_SAMPLE_BUFFERS_ARB,GL_TRUE,
-		WGL_SAMPLES_ARB,4,
+		WGL_ACCUM_BITS_ARB,0,
 		0,0
 	};
 
-	// First We Check To See If We Can Get A Pixel Format For 4 Samples
-	valid = wglChoosePixelFormatARB(appInstance->lockedRC.getHDC(),iAttributes,fAttributes,1,&pixelFormat,&numFormats);
- 
-	// If We Returned True, And Our Format Count Is Greater Than 1
-	/*if (valid && numFormats >= 1)
-	{
-		multisampleEnabled = true;
-		return true;
-	}*/
 
-	// Our Pixel Format With 4 Samples Failed, Test For 2 Samples
-	iAttributes[19] = 2;
-	valid = wglChoosePixelFormatARB(appInstance->lockedRC.getHDC(),iAttributes,fAttributes,1,&pixelFormat,&numFormats);
-	if (valid && numFormats >= 1)
-	{
-		multisampleEnabled = true;
-		return true;
+	int samples = cfgMultisamplingPasses;
+	while (samples > 1){
+		iAttributes[1] = samples;
+		valid = wglChoosePixelFormatARB(hDC,iAttributes,fAttributes,1,&pixelFormat,&numFormats);
+	 
+		if (valid && numFormats >= 1){
+			multisampleEnabled = true;
+			return true;
+		}
+		samples = samples >> 1;
 	}
-
 	return false;
 }
 
 void Renderer::loadExtensions(){
 	if(isExtensionSupported("GL_EXT_fog_coord"))
 		glFogCoordf = (PFNGLFOGCOORDFPROC) wglGetProcAddress("glFogCoordf");
+	else
+		glFogCoordf = 0;
+
 	if(isWglExtensionSupported("WGL_EXT_swap_control"))
 		wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
+	else
+		wglSwapIntervalEXT = 0;
+
 	if(isExtensionSupported("GL_EXT_blend_color"))
 		glBlendColor = (PFNGLBLENDCOLORPROC)wglGetProcAddress("glBlendColor");
+	else
+		glBlendColor = 0;
 }
 
 bool Renderer::isWglExtensionSupported(const char *name){
@@ -270,8 +282,6 @@ bool Renderer::isExtensionSupported(const char *name){
 
 void Renderer::destroyGlWindow(void)
 {
-	ScopeRCLock scopeLock(appInstance->lockedRC);
-	HGLRC hRC = appInstance->lockedRC.getHRC();
 	if (hRC)											// Do We Have A Rendering Context?
 	{
 		if (!wglMakeCurrent(0, 0))					// Are We Able To Release The DC And RC Contexts?
@@ -283,18 +293,16 @@ void Renderer::destroyGlWindow(void)
 		{
 			MessageBox(NULL,L"Release Rendering Context Failed.",L"Foo_chronflow Error",MB_OK | MB_ICONINFORMATION);
 		}
+		hRC = 0;
 	}
-	HDC hDC = appInstance->lockedRC.getHDC();	
 	if (hDC && !ReleaseDC(appInstance->mainWindow,hDC))					// Are We Able To Release The DC
 	{
 		MessageBox(NULL,L"Release Device Context Failed.",L"Foo_chronflow Error",MB_OK | MB_ICONINFORMATION);
+		hDC = 0;
 	}
-	appInstance->lockedRC.setRC(0, 0);
 }
 
 void Renderer::resizeGlScene(int width, int height){
-	ScopeRCLock scopeLock(appInstance->lockedRC);
-
 	if (height == 0)
 		height = 1;
 	winWidth = width;
@@ -304,8 +312,16 @@ void Renderer::resizeGlScene(int width, int height){
 	setProjectionMatrix();
 }
 
-void Renderer::resetViewport(){
-	setProjectionMatrix();
+void Renderer::getFrustrumSize(double &right, double &top, double &zNear, double &zFar) {
+	zNear = 0.1;
+	zFar  = 500;
+	// Calculate The Aspect Ratio Of The Window
+	static const double fov = 45;
+	static const double squareLength = tan(deg2rad(fov)/2) * zNear;
+	fovAspectBehaviour weight = appInstance->coverPos->getAspectBehaviour();
+	double aspect = (double)winHeight/winWidth;
+	right = squareLength / pow(aspect, (double)weight.y);
+	top   = squareLength * pow(aspect, (double)weight.x);
 }
 
 void Renderer::setProjectionMatrix(bool pickMatrix, int x, int y){
@@ -317,19 +333,32 @@ void Renderer::setProjectionMatrix(bool pickMatrix, int x, int y){
 		gluPickMatrix ((GLdouble) x, (GLdouble) (viewport[3] - y), 
 					  1.0, 1.0, viewport);
 	}
-
-	// Calculate The Aspect Ratio Of The Window
-	static const double fov = 45;
-	static const double squareLength = tan(deg2rad(fov)/2)*0.1;
-	fovAspectBehaviour weight = appInstance->coverPos->getAspectBehaviour();
-	double aspect = (double)winHeight/winWidth;
-	double width = squareLength / pow(aspect, (double)weight.y);
-	double height = squareLength * pow(aspect, (double)weight.x);
-
-	glFrustum(-width, +width, -height, +height, 0.1f, 1000.0f);
-
+	double right, top, zNear, zFar;
+	getFrustrumSize(right, top, zNear, zFar);
+	glFrustum(-right, +right, -top, +top, zNear, zFar);
 	glMatrixMode(GL_MODELVIEW);
 }
+
+void Renderer::setProjectionMatrixJittered(double xoff, double yoff){
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+
+	double right, top, zNear, zFar;
+	getFrustrumSize(right, top, zNear, zFar);
+
+	double scalex, scaley;
+	scalex = (2*right)/winWidth;
+	scaley = (2*top)/winHeight;
+
+
+	glFrustum(	-right - xoff * scalex,
+				+right - xoff * scalex,
+				-top - yoff * scaley,
+				+top - yoff * scaley,
+				zNear, zFar);
+	glMatrixMode(GL_MODELVIEW);
+}
+
 
 void Renderer::glPushOrthoMatrix(){
 	glDisable(GL_DEPTH_TEST);
@@ -352,13 +381,14 @@ void Renderer::glPopOrthoMatrix(){
 
 bool Renderer::positionOnPoint(int x, int y, CollectionPos& out) 
 {
-	ScopeRCLock scopeLock(appInstance->lockedRC);
 	GLuint buf[256];
 	glSelectBuffer(256, buf);
 	glRenderMode(GL_SELECT);
 	setProjectionMatrix(true, x, y);
 	glInitNames();
-	drawFrame(true);
+	appInstance->coverPos->lock();
+	drawScene(true);
+	appInstance->coverPos->unlock();
 	GLint hits = glRenderMode(GL_RENDER);
 	setProjectionMatrix();
 	GLuint *p = buf;
@@ -394,7 +424,7 @@ void Renderer::drawMirrorPass(){
 	double rotAngle = rad2deg(scaleAxis.intersectAng(mirrorNormal));
 	rotAngle = -2*rotAngle;
 
-	if (showFog){
+	if (glFogCoordf){
 		GLfloat	fogColor[4] = {GetRValue(cfgPanelBg)/255.0f, GetGValue(cfgPanelBg)/255.0f, GetBValue(cfgPanelBg)/255.0f, 1.0f};
 		glFogfv(GL_FOG_COLOR, fogColor);
 		glEnable(GL_FOG);
@@ -408,15 +438,16 @@ void Renderer::drawMirrorPass(){
 		drawCovers();
 	glPopMatrix();
 	
-	if (showFog)
+	if (glFogCoordf)
 		glDisable(GL_FOG);
 }
 
 void Renderer::drawMirrorOverlay(){
-	glBindTexture(GL_TEXTURE_2D, 0);
 	glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
 	glColor4f(GetRValue(cfgPanelBg)/255.0f, GetGValue(cfgPanelBg)/255.0f, GetBValue(cfgPanelBg)/255.0f, 0.60f);
-
+	
+	glShadeModel(GL_FLAT);
+	glDisable(GL_TEXTURE_2D);
 	glDisable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -436,6 +467,8 @@ void Renderer::drawMirrorOverlay(){
 	glPopMatrix();
 	glDisable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_TEXTURE_2D);
+	glShadeModel(GL_SMOOTH);
 }
 
 pfc::array_t<double> Renderer::getMirrorClipPlane(){
@@ -461,12 +494,8 @@ pfc::array_t<double> Renderer::getMirrorClipPlane(){
 	return clipEq;
 }
 
-void Renderer::drawFrame(bool selectionPass)
+void Renderer::drawScene(bool selectionPass)
 {
-	ScopeRCLock scopeLock(appInstance->lockedRC);
-	glClearColor(GetRValue(cfgPanelBg)/255.0f, GetGValue(cfgPanelBg)/255.0f, GetBValue(cfgPanelBg)/255.0f, 0);
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
 	gluLookAt(
 		appInstance->coverPos->getCameraPos().x, appInstance->coverPos->getCameraPos().y, appInstance->coverPos->getCameraPos().z, 
@@ -496,8 +525,6 @@ void Renderer::drawFrame(bool selectionPass)
 		glEnable(GL_CLIP_PLANE0);
 	}
 	
-	ImgTexture* ptr = 0;
-
 	glPushName(SELECTION_COVERS);
 		drawCovers(true);
 	glPopName();
@@ -505,31 +532,152 @@ void Renderer::drawFrame(bool selectionPass)
 	if (appInstance->coverPos->isMirrorPlaneEnabled()){
 		glDisable(GL_CLIP_PLANE0);
 	}
-	
-	if (!selectionPass){
+}
+
+void Renderer::drawGui(){
+	if (cfgShowAlbumTitle || appInstance->albumCollection->getCount() == 0){
 		pfc::string8 albumTitle;
 		appInstance->albumCollection->getTitle(appInstance->displayPos->getTarget(), albumTitle);
-		if (albumTitle.length() > 0)
-			appInstance->textDisplay->displayText(albumTitle, int(winWidth*cfgTitlePosH), int(winHeight*(1-cfgTitlePosV)), TextDisplay::center, TextDisplay::middle);
+		textDisplay.displayText(albumTitle, int(winWidth*cfgTitlePosH), int(winHeight*(1-cfgTitlePosV)), TextDisplay::center, TextDisplay::middle);
+	}
 
-
-		double fps, msPerFrame, longestFrame;
-		appInstance->fpsCounter.getFPS(fps, msPerFrame, longestFrame);
-		pfc::string8 dispString;
-		dispString << "FPS: " << pfc::format_float(fps, 4, 1);
-		dispString << "  ms/f: " << pfc::format_float(msPerFrame, 5, 2);
-		dispString << "  max: " << pfc::format_float(msPerFrame, 5, 2);
-		// pfc::string8("FPS: ") << int(fps) << " ms/f: " << int(msPerFrame) << " max: " << int(longestFrame)
-
-		appInstance->textDisplay->displayBitmapText(dispString, winWidth - 300, winHeight - 20);
+	if (cfgShowFps){
+		double fps, msPerFrame, longestFrame, minFPS;
+		fpsCounter.getFPS(fps, msPerFrame, longestFrame, minFPS);
+		pfc::string8 dispStringA;
+		pfc::string8 dispStringB;
+		dispStringA << "FPS:  " << pfc::format_float(fps, 4, 1);
+		dispStringB << " min: " << pfc::format_float(minFPS, 4, 1);
+		dispStringA << "  cpu-ms/f: " << pfc::format_float(msPerFrame, 5, 2);
+		dispStringB << "   max:     " << pfc::format_float(longestFrame, 5, 2);
+		textDisplay.displayBitmapText(dispStringA, winWidth - 250, winHeight - 20);
+		textDisplay.displayBitmapText(dispStringB, winWidth - 250, winHeight - 35);
 	}
 }
 
+void Renderer::drawBg(){
+	glClearColor(GetRValue(cfgPanelBg)/255.0f, GetGValue(cfgPanelBg)/255.0f, GetBValue(cfgPanelBg)/255.0f, 0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+void Renderer::drawFrame()
+{
+	if (cfgSupersampling && !multisampleEnabled){
+		drawSceneAA();
+	} else {
+		drawBg();
+		drawScene(false);
+	}
+	
+	drawGui();
+}
+
+inline const Renderer::aaJitter* Renderer::getAAJitter (int passes){
+	// Data is from <http://www.opengl.org/resources/code/samples/advanced/advanced97/notes/node63.html>
+	
+	static const aaJitter p2[] = {{0.25f,0.75f}, {0.75f,0.25f}}; // 2-pass
+	static const aaJitter p3[] = {{0.5033922635f,0.8317967229f}, {0.7806016275f,0.2504380877f}, {0.2261828938f, 0.4131553612f}}; //3-pass
+	static const aaJitter p4[] = {{0.375f,0.25f}, {0.125f,0.75f}, {0.875f,0.25f}, {0.625f,0.75f}}; // 4-pass
+	static const aaJitter p5[] = {{0.5f,0.5f}, {0.3f,0.1f}, {0.7f,0.9f}, {0.9f,0.3f}, {0.1f,0.7f}}; // 5-pass
+	static const aaJitter p6[] = {{46/99.f,46/99.f}, {13/99.f,79/99.f}, {53/99.f,86/99.f}, {86/99.f,53/99.f}, {79/99.f,13/99.f}, {20/99.f,20/99.f}}; // 6-pass
+	static const aaJitter p8[] = {{ 9/16.f, 7/16.f}, { 1/16.f,15/16.f}, { 5/16.f,11/16.f}, {11/16.f,13/16.f}, 
+								  {13/16.f, 3/16.f}, {15/16.f, 9/16.f}, { 7/16.f, 1/16.f}, { 3/16.f, 5/16.f}}; // 8-pass
+	static const aaJitter p16[]= {{0.375f,0.4375f}, {0.625f,0.0625f}, {0.875f,0.1875f}, {0.125f,0.0625f}, 
+								  {0.375f,0.6875f}, {0.875f,0.4375f}, {0.625f,0.5625f}, {0.375f,0.9375f}, 
+								  {0.625f,0.3125f}, {0.125f,0.5625f}, {0.125f,0.8125f}, {0.375f,0.1875f}, 
+								  {0.875f,0.9375f}, {0.875f,0.6875f}, {0.125f,0.3125f}, {0.625f,0.8125f}};
+
+	static const aaJitter* table[17] = {0, 0, p2, p3, p4, p5, p6, 0, p8,
+									       0, 0,  0,  0,  0,  0,  0, p16};
+	PFC_ASSERT(table[passes] != 0);
+	return table[passes];
+}
+
+void Renderer::drawSceneAA()
+{
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glMatrixMode(GL_MODELVIEW);
+
+	int passes = cfgSupersamplingPasses;
+	const aaJitter* jitterTable = getAAJitter(passes);
+	bool clearAccumBuffer = true;
+	for (int i = 0; i < passes; i++) {
+		setProjectionMatrixJittered(jitterTable[i].x - 0.5, jitterTable[i].y - 0.5);
+		drawBg();
+		drawScene(false);
+		if (clearAccumBuffer){
+			glAccum(GL_LOAD, 1.f / passes);
+			clearAccumBuffer = false;
+		} else {
+			glAccum(GL_ACCUM, 1.f / passes);
+		}
+	}
+	glAccum(GL_RETURN, 1.f);
+
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+}
+
+
+/*
+Renderer::AAStuf(){
+  float i, j;
+  float min, max;
+  int count;
+  GLfloat invx, invy;
+  GLfloat scale, dx, dy;
+
+  min = 0;
+  max = 2;
+  count = 2;
+  scale = (0.9f / count) * 2;
+
+
+  computescale(&invx, &invy);
+  bool clearAccumBuffer = true;
+
+  count = 2;
+  for (i = min; i < max; i++) {
+	  if (i == 0){
+		  dx = -0.25 * invx;
+		  dy = -0.25 * invy;
+	  } else {
+		  dx = 0.25 * invx;
+		  dy = 0.25 * invy;
+	  }
+	  glMatrixMode(GL_PROJECTION);
+	  glPushMatrix();
+	  glTranslatef(dx, dy, 0);
+	  glMatrixMode(GL_MODELVIEW);
+	  drawFrame();
+	  glMatrixMode(GL_PROJECTION);
+	  glPopMatrix();
+	  glMatrixMode(GL_MODELVIEW);
+	  if (clearAccumBuffer){
+		  glAccum(GL_LOAD, 1.f / count);
+		  clearAccumBuffer = false;
+	  } else
+		  glAccum(GL_ACCUM, 1.f / count);
+  }
+  glAccum(GL_RETURN, 1.f);
+}
+*/
 bool Renderer::shareLists(HGLRC shareWith){
-	appInstance->lockedRC.lock();
-	bool ret = 0 != wglShareLists(appInstance->lockedRC.getHRC(), shareWith);
-	appInstance->lockedRC.unlock();
-	return ret;
+	return 0 != wglShareLists(hRC, shareWith);
+}
+
+bool Renderer::takeRC(){
+	return 0 != wglMakeCurrent(hDC, hRC);
+}
+
+void Renderer::freeRC(){
+	wglMakeCurrent(0, 0);
+}
+
+void Renderer::swapBuffers(){
+	SwapBuffers(hDC);
 }
 
 void Renderer::drawCovers(bool showTarget){
@@ -564,25 +712,26 @@ void Renderer::drawCovers(bool showTarget){
 		g= 1;
 		if (g < 0) g = 0;*/
 		glColor3f( g, g, g);
+		glVectord origin(0, 0.5, 0);
 
 		glQuad coverQuad = appInstance->coverPos->getCoverQuad(co, tex->getAspect());
 		
 		glPushName(SELECTION_CENTER + o);
 
 		glBegin(GL_QUADS);
-			if (showFog) glFogCoordf((GLfloat)appInstance->coverPos->distanceToMirror(coverQuad.topLeft));
+			if (glFogCoordf) glFogCoordf((GLfloat)appInstance->coverPos->distanceToMirror(coverQuad.topLeft));
 			glTexCoord2f(0.0f, 1.0f); // top left
 			glVertex3fv((GLfloat*)&(coverQuad.topLeft.x));
 
-			if (showFog) glFogCoordf((GLfloat)appInstance->coverPos->distanceToMirror(coverQuad.topRight));
+			if (glFogCoordf) glFogCoordf((GLfloat)appInstance->coverPos->distanceToMirror(coverQuad.topRight));
 			glTexCoord2f(1.0f, 1.0f); // top right
 			glVertex3fv((GLfloat*)&(coverQuad.topRight.x));
 
-			if (showFog) glFogCoordf((GLfloat)appInstance->coverPos->distanceToMirror(coverQuad.bottomRight));
+			if (glFogCoordf) glFogCoordf((GLfloat)appInstance->coverPos->distanceToMirror(coverQuad.bottomRight));
 			glTexCoord2f(1.0f, 0.0f); // bottom right
 			glVertex3fv((GLfloat*)&(coverQuad.bottomRight.x));
 
-			if (showFog) glFogCoordf((GLfloat)appInstance->coverPos->distanceToMirror(coverQuad.bottomLeft));
+			if (glFogCoordf) glFogCoordf((GLfloat)appInstance->coverPos->distanceToMirror(coverQuad.bottomLeft));
 			glTexCoord2f(0.0f, 0.0f); // bottom left
 			glVertex3fv((GLfloat*)&(coverQuad.bottomLeft.x));
 		glEnd();
@@ -601,7 +750,7 @@ void Renderer::drawCovers(bool showTarget){
 				glColor3f(GetRValue(cfgTitleColor) / 255.0f, GetGValue(cfgTitleColor) / 255.0f, GetBValue(cfgTitleColor) / 255.0f);
 
 				glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
-				glBindTexture(GL_TEXTURE_2D,0);
+				glDisable(GL_TEXTURE_2D);
 
 				glLineWidth((GLfloat)cfgHighlightWidth);
 				glPolygonOffset(-1.0f, -1.0f);
@@ -611,8 +760,10 @@ void Renderer::drawCovers(bool showTarget){
 				glVertexPointer(3, GL_FLOAT, 0, (void*) &coverQuad);
 				glDrawArrays(GL_QUADS, 0, 4);
 
-
 				glDisable(GL_POLYGON_OFFSET_LINE);
+
+				glEnable(GL_TEXTURE_2D);
+
 
 				if (clipPlane)
 					glEnable(GL_CLIP_PLANE0);

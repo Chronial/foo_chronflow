@@ -1,3 +1,4 @@
+#include "externHeaders.h"
 #include "chronflow.h"
 #include <stdio.h>
 
@@ -159,24 +160,3 @@ void Helpers::fixPath(pfc::string_base & path)
 	sprintf_s(strFPS, 256, "Pos: %3d, Offset: %1.5f, (%3d x %3d) FPS: %5.2lf, lowFps: %.5lf  -|%s|-", pos.toIndex(), offset, w, h, lastFps, double(1/highDur), strCount);
 	SetWindowTextA(hWnd, strFPS);
 }*/
-
-
-
-
-void SwapBufferTimer::onTimer(){
-	EnterCriticalSection(&syncCS);
-	ScopeRCLock scopeLock(appInstance->lockedRC);
-	appInstance->renderer->drawMirrorOverlay();
-	appInstance->textDisplay->displayBitmapText("TEST", 300, 20);
-	glFinish();
-	Sleep(1);
-	lockedRC->swapBuffers();
-	lastSwap = Helpers::getHighresTimer();
-	timeEndPeriod(multimediaTimerRes);
-	swapQueued = false;
-	if (redrawQueued){
-		RedrawWindow(redrawWindow,NULL,NULL,RDW_INVALIDATE);
-		redrawQueued = false;
-	}
-	LeaveCriticalSection(&syncCS);
-}

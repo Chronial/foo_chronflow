@@ -1,3 +1,4 @@
+#include "externHeaders.h"
 #include "chronflow.h"
 #include <process.h>
 
@@ -29,11 +30,14 @@ private:
 	metadb_handle_list library;
 	pfc::list_t<DbAlbumCollection::t_ptrAlbumGroup> ptrGroupMap;
 	pfc::list_t<metadb_handle_ptr> albums;
+	pfc::list_t<DbAlbumCollection::t_titleAlbumGroup> titleGroupMap;
 
 private:
 	void copyDataToCollection(DbAlbumCollection* collection){
+		ScopeCS scopeLock(collection->renderThreadCS);
 		collection->albums = albums;
 		collection->ptrGroupMap = ptrGroupMap;
+		collection->titleGroupMap = titleGroupMap;
 	}
 private:
 	// call from mainthread!
@@ -81,7 +85,7 @@ private:
 			for (t_size i=0; i < count; i++){
 				t_ptrAlbumGroup map;
 				map.ptr = library.get_item(i);
-				map.group = new pfc::string8_fast_aggressive;
+				map.group = new pfc::string8;
 				map.ptr->format_title(0, *map.group, groupScript, 0);
 				ptrGroupMap.add_item(map);
 			}
@@ -94,7 +98,7 @@ private:
 		{ // Populate albums
 			ptrGroupMap.sort(ptrGroupMap_compareGroup());
 			t_ptrAlbumGroup* ptrGroupMapPtr = ptrGroupMap.get_ptr();
-			pfc::string8_fastalloc * previousGroup = 0;
+			pfc::string8 * previousGroup = 0;
 			int albumCount = -1;
 			for (t_size i=0; i < count; i++){
 				t_ptrAlbumGroup* e = ptrGroupMapPtr + i;//ptrGroupMap.get_item(i);
@@ -146,6 +150,15 @@ private:
 					map->groupId = revOrder[map->groupId];
 				}
 			}
+
+			{ // Generate Map for Find As You Type
+				titleGroupMap.set_size(albumCount);
+				for (int i=0; i < albumCount; i++){
+					titleGroupMap[i].groupId = i;
+					albums.get_item_ref(i)->format_title(0, titleGroupMap[i].title, cfgAlbumTitleScript, 0);
+				}
+				titleGroupMap.sort(titleGroupMap_compareTitle());
+			}
 		}
 		console::printf("Populate %d msec",int((Helpers::getHighresTimer() - prePopulate)*1000));
 	}
@@ -173,13 +186,13 @@ private:
 
 	void workerThreadProc(){
 		this->generateData();
-		appInstance->texLoader->stopLoading();
 		PostMessage(appInstance->mainWindow, WM_COLLECTION_REFRESHED, 0, (LPARAM)this);
 		// Notify mainWindow to copy data, after copying, refresh AsynchTexloader + start Loading
 	}
 
 public:
 	static void reloadAsynchStart(AppInstance* instance, bool hardRefresh = false){
+		instance->texLoader->pauseLoading();
 		RefreshWorker* worker = new RefreshWorker(instance);
 		worker->hardRefresh = hardRefresh;
 		worker->init();
@@ -188,7 +201,6 @@ public:
 	void reloadAsynchFinish(DbAlbumCollection* collection){
 		double a[6];
 		a[0] = Helpers::getHighresTimer();
-		appInstance->texLoader->stopLoading();
 		a[1] = Helpers::getHighresTimer();
 		if (hardRefresh){
 			collection->reloadSourceScripts();
@@ -200,6 +212,7 @@ public:
 		a[2] = Helpers::getHighresTimer();
 
 		{ // update DisplayPosition
+			ScopeCS scopeLock(appInstance->displayPos->accessCS);
 			CollectionPos centeredPos = appInstance->displayPos->getCenteredPos();
 			int centeredIdx = centeredPos.toIndex();
 			CollectionPos targetPos = appInstance->displayPos->getTarget();
@@ -223,12 +236,12 @@ public:
 
 		copyDataToCollection(collection);
 		a[4] = Helpers::getHighresTimer();
-		appInstance->texLoader->startLoading();
+		appInstance->texLoader->resumeLoading();
 		a[5] = Helpers::getHighresTimer();
 		for (int i=0; i < 5; i++){
 			console::printf("Times: a%d - a%d: %dmsec", i, i+1, int((a[i+1] - a[i])*1000));
 		}
-		RedrawWindow(appInstance->mainWindow,NULL,NULL,RDW_INVALIDATE);
+		appInstance->redrawMainWin();
 		delete this;
 	}
 	static int CALLBACK staticResynchCallback(int oldIdx, void* p_this, AlbumCollection* collection){
@@ -372,6 +385,7 @@ DbAlbumCollection::~DbAlbumCollection(void)
 }
 
 void DbAlbumCollection::getTitle(CollectionPos pos, pfc::string_base& out){
+	ScopeCS scopeLock(renderThreadCS);
 	if (albums.get_count() > 0)
 		albums.get_item_ref(pos.toIndex())->format_title(0, out, cfgAlbumTitleScript, 0);
 	else
@@ -389,4 +403,68 @@ ImgTexture* DbAlbumCollection::getImgTexture(CollectionPos pos){
 	} else {
 		return 0;
 	}
+}
+
+bool DbAlbumCollection::searchAlbumByTitle(const char * title, t_size& o_min, t_size& o_max, CollectionPos& out){
+	bool found = false;
+	t_size max;
+	t_size min;
+	if (o_max > titleGroupMap.get_count()){
+		max = titleGroupMap.get_count();
+	} else {
+		max = o_max;
+	}
+	min = o_min;
+	t_size ptr;
+	while(min<max)
+	{
+		ptr = min + ( (max-min) >> 1);
+		int result = stricmp_utf8_partial(titleGroupMap[ptr].title, title);
+		if (result<0){
+			min = ptr + 1;
+		} else if (result>0) {
+			max = ptr;
+		} else { // find borders of area in which stricmp_utf8_partial matches
+			t_size iPtr;
+			t_size iMin;
+			t_size iMax;
+
+			iMin = min;
+			iMax = ptr;
+			while (iMin < iMax){
+				iPtr = iMin + ( (iMax-iMin) >> 1);
+				int res = stricmp_utf8_partial(titleGroupMap[iPtr].title, title);
+				if (res < 0)
+					iMin = iPtr+1;
+				if (res == 0)
+					iMax = iPtr;
+			}
+			o_min = iMin;
+			iMin = ptr;
+			iMax = max;
+			while (iMin < iMax){
+				iPtr = iMin + ( (iMax-iMin) >> 1);
+				int res = stricmp_utf8_partial(titleGroupMap[iPtr].title, title);
+				if (res == 0)
+					iMin = iPtr+1;
+				if (res > 0)
+					iMax = iPtr;
+			}
+			o_max = iPtr+1;
+
+			found = true;
+			break;
+		}
+	}
+	if (!found)
+		return false;
+	int outIdx = titleGroupMap[o_min].groupId;
+	{ // find the item with the lowest groupId (this is important to select the leftmost album)
+		for(t_size p=o_min; p < o_max; p++){
+			if (titleGroupMap[p].groupId < outIdx)
+				outIdx = titleGroupMap[p].groupId;
+		}
+	}
+	out = CollectionPos(this, outIdx);
+	return true;
 }

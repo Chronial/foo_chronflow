@@ -1,29 +1,13 @@
 #pragma once
 
-class RenderThread {
-	Renderer renderer;
-public:
-	bool attachToMainWindow();
-	bool initMultisampling();
-	void unAttachFromMainWindow();
-
-	bool getPositionOnPoint(int x, int y, CollectionPos& out);
-	void reDraw();
-	void onWindowResize(int newWidth, int newHeight);
-
-	bool shareLists(HGLRC shareWith); // frees RC in RenderThread, shared, retakes RC in RenderThread
-
-private:
-	void startRenderThread();
-	static unsigned int WINAPI runRenderThread(void* lpParameter);
-	void stopRenderThread();
-	void renderThreadProc();
-	HANDLE renderThread;
-}
+enum VSyncMode {
+	VSYNC_SLEEP_ONLY = 1,
+	VSYNC_AND_SLEEP = 2,
+	VSYNC_ONLY = 3,
+};
 
 class Renderer
 {
-	friend class SwapBufferTimer;
 public:
 	Renderer(AppInstance* instance);
 public:
@@ -35,13 +19,17 @@ public:
 public:
 	void destroyGlWindow(void); //clean up all the GL stuff
 	void resizeGlScene(int width, int height);
-	void resetViewport();
 public:
 	bool positionOnPoint(int x, int y, CollectionPos& out);
 public:
-	void drawFrame(bool selectionPass = false);
+	void drawFrame();
 
+	void freeRC();
+	bool takeRC();
 	bool shareLists(HGLRC shareWith);
+	void swapBuffers();
+
+	void ensureVSync(bool enableVSync);
 
 	void glPushOrthoMatrix();
 	void glPopOrthoMatrix();
@@ -49,22 +37,43 @@ public:
 public:
 	bool initMultisampling();
 
+public:
+	FpsCounter fpsCounter;
+	TextDisplay textDisplay;
+
+
 private:
 	void loadExtensions(void);
 	bool isExtensionSupported(const char *name);
 	bool isWglExtensionSupported(const char *name);
 
 	void setProjectionMatrix(bool pickMatrix = false, int x = 0, int y = 0);
+	void getFrustrumSize(double &right, double &top, double &zNear, double &zFar);
+	void setProjectionMatrixJittered(double xoff, double yoff);
 private:
 	static const PIXELFORMATDESCRIPTOR pixelFormatDescriptor;
 
 	AppInstance* appInstance;
 	int winWidth;
 	int winHeight;
-	bool showFog;
 
 	int pixelFormat;
 	bool multisampleEnabled;
+	bool vSyncEnabled;
+
+	HDC hDC;
+	HGLRC hRC;
+
+	void drawBg();
+	void drawGui();
+	void drawScene(bool selectionPass);
+	void drawSceneAA();
+
+	struct aaJitter {
+		float x;
+		float y;
+	};
+	static const aaJitter* getAAJitter (int passes);
 
 
 	pfc::array_t<double> getMirrorClipPlane();
@@ -73,93 +82,3 @@ private:
 	void drawCovers(bool showTarget = false);
 };
 
-
-
-class LockedRenderingContext {
-	CRITICAL_SECTION lockCS;
-	HDC hDC;
-	HGLRC hRC;
-	int lockCount;
-	DWORD lockingThread;
-
-public:
-	LockedRenderingContext()
-		: hDC(0), hRC(0), lockCount(0) {
-		InitializeCriticalSectionAndSpinCount(&lockCS, 0x80000400);
-	}
-	~LockedRenderingContext(){
-		DeleteCriticalSection(&lockCS);
-	}
-	void setRC(HDC hDC, HGLRC hRC){
-		EnterCriticalSection(&lockCS);
-		this->hDC = hDC;
-		this->hRC = hRC;
-		LeaveCriticalSection(&lockCS);
-	}
-
-	HDC getHDC(){
-		PFC_ASSERT(lockingThread == GetCurrentThreadId());
-		return hDC;
-	}
-
-	HGLRC getHRC(){
-		PFC_ASSERT(lockingThread == GetCurrentThreadId());
-		return hRC;
-	}
-	void lock(){
-		EnterCriticalSection(&lockCS);
-		if(lockCount == 0){
-			lockingThread = GetCurrentThreadId();
-		}
-		lockCount++;
-	}
-	void take(){
-		EnterCriticalSection(&lockCS);
-		if(lockCount == 0){
-			lockingThread = GetCurrentThreadId();
-			if (!wglMakeCurrent(hDC, hRC)){
-				pfc::string8 temp;
-				temp << format_win32_error(GetLastError());
-
-			}
-		}
-		lockCount++;
-	}
-	void release(){
-		lockCount--;
-		if(lockCount == 0){
-			lockingThread = 0;
-			wglMakeCurrent(NULL, NULL);
-		}
-		LeaveCriticalSection(&lockCS);
-	}
-	void unlock(){
-		lockCount--;
-		if(lockCount == 0){
-			lockingThread = 0;
-		}
-		LeaveCriticalSection(&lockCS);
-	}
-	BOOL explicitRelease(){
-		PFC_ASSERT(lockCount == 0 || lockingThread != GetCurrentThreadId());
-		return wglMakeCurrent(NULL, NULL);
-	}
-	void swapBuffers(){
-		take();
-		SwapBuffers(hDC);
-		release();
-	}
-};
-
-class ScopeRCLock {
-	LockedRenderingContext* lockedRC;
-
-public:
-	ScopeRCLock(LockedRenderingContext& lockedRC)
-		: lockedRC(&lockedRC){
-			lockedRC.take();
-	}
-	~ScopeRCLock(){
-		lockedRC->release();
-	}
-};
