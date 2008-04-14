@@ -9,30 +9,15 @@ function coverRotation(coverId){
    var angle = coverId * 180;
    return new Array(angle,0,1,0);
 }
-function coverAlign(coverId){
-   return new Array(0, 0);
-}
-function coverSizeLimits(coverId){
-   return new Array(1, 1);
-}
+function coverAlign(coverId){ return new Array(0, 0) }
+function coverSizeLimits(coverId){ return new Array(1, 1) }
 
-function drawCovers(){
-   return new Array(-1, 1);
-}
-function aspectBehaviour(){
-   return new Array(1, 0);
-}
+function drawCovers(){ return new Array(-1, 1) }
+function aspectBehaviour(){ return new Array(1, 0) }
 
-function eyePos(){
-	return new Array(0, 0, 0.5/Math.tan(Math.PI/8));
-}
-function lookAt(){
-   return new Array(0, 0, 0);
-}
-function upVector(){
-   return new Array(0, 1, 0);   
-}
+// the FoV is 45° -> this calculated distance shows us exactly one cover
+function eyePos(){ return new Array(0, 0, 0.5/Math.tan(Math.PI/8)) }
+function lookAt(){ return new Array(0, 0, 0) }
+function upVector(){ return new Array(0, 1, 0) }
 
-function showMirrorPlane(){
-   return false;
-}
+function showMirrorPlane(){ return false }

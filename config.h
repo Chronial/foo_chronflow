@@ -49,9 +49,14 @@ cfg_int cfgCoverFollowDelay(guid_cfgCoverFollowDelay, 60);
 static const GUID guid_cfgFindAsYouType = { 0x53bf0a95, 0x12e2, 0x440a, { 0xb2, 0xfb, 0xf7, 0x5b, 0xe9, 0x7, 0x64, 0xe2 } };
 cfg_bool cfgFindAsYouType(guid_cfgFindAsYouType, true);
 
+// {A5763153-444A-4649-82E4-E5E3D395DD42}
+static const GUID guid_cfgTargetPlaylist = { 0xa5763153, 0x444a, 0x4649, { 0x82, 0xe4, 0xe5, 0xe3, 0xd3, 0x95, 0xdd, 0x42 } };
+cfg_string cfgTargetPlaylist(guid_cfgTargetPlaylist, "#Chronflow");
+
+
 // {C34448FB-11B2-4f6f-87BB-D0E31CE77C45}
 static const GUID guid_cfgDoubleClick = { 0xc34448fb, 0x11b2, 0x4f6f, { 0x87, 0xbb, 0xd0, 0xe3, 0x1c, 0xe7, 0x7c, 0x45 } };
-cfg_string cfgDoubleClick(guid_cfgDoubleClick, "Replace Playlist ");
+cfg_string cfgDoubleClick(guid_cfgDoubleClick, "Replace Default Playlist ");
 
 // {1E6177E9-1C29-41dc-BCB9-047EC5FD1816}
 static const GUID guid_cfgMiddleClick = { 0x1e6177e9, 0x1c29, 0x41dc, { 0xbc, 0xb9, 0x4, 0x7e, 0xc5, 0xfd, 0x18, 0x16 } };
@@ -59,7 +64,7 @@ cfg_string cfgMiddleClick(guid_cfgMiddleClick, "Add to new Playlist ");
 
 // {30AFB194-E81A-4130-91A9-1BCA1F4E3715}
 static const GUID guid_cfgEnterKey = { 0x30afb194, 0xe81a, 0x4130, { 0x91, 0xa9, 0x1b, 0xca, 0x1f, 0x4e, 0x37, 0x15 } };
-cfg_string cfgEnterKey(guid_cfgEnterKey, "Replace Playlist ");
+cfg_string cfgEnterKey(guid_cfgEnterKey, "Replace Default Playlist ");
 
 
 /*********************************************** Display tab ************************************************************/
@@ -108,13 +113,11 @@ cfg_int cfgHighlightWidth(guid_cfgHighlightWidth, 2);
 /********************************************* Cover Display tab *********************************************************/
 // {7C3CFFF9-A881-476e-ACE7-503512F75C14}
 static const GUID guid_cfgCoverConfigs = { 0x7c3cfff9, 0xa881, 0x476e, { 0xac, 0xe7, 0x50, 0x35, 0x12, 0xf7, 0x5c, 0x14 } };
-//static const char* def_cfg_coverConfigs[] = {"TestConfig2", "ConfigInhalt", "DefaultCOnfig", "mehr configinhalt\nlalala", ""};
-#include "DEF_CFG_COVERCONFIGS.h"
-cfg_coverConfigs cfgCoverConfigs(guid_cfgCoverConfigs, def_cfg_coverConfigs);
+cfg_coverConfigs cfgCoverConfigs(guid_cfgCoverConfigs);
 
 // {A6F566E7-9800-4de8-BF72-22FAA4ADBB6B}
 static const GUID guid_cfgCoverConfigSel = { 0xa6f566e7, 0x9800, 0x4de8, { 0xbf, 0x72, 0x22, 0xfa, 0xa4, 0xad, 0xbb, 0x6b } };
-cfg_string cfgCoverConfigSel(guid_cfgCoverConfigSel, "Standart Coverflow");
+cfg_string cfgCoverConfigSel(guid_cfgCoverConfigSel, "Default (build-in)");
 
 
 
@@ -140,7 +143,7 @@ cfg_int cfgSupersamplingPasses(guid_cfgSupersamplingPasses, 2);
 
 // {036F84C3-B3F7-4aee-873C-DC0EFC46B0D3}
 static const GUID guid_cfgTextureCacheSize = { 0x36f84c3, 0xb3f7, 0x4aee, { 0x87, 0x3c, 0xdc, 0xe, 0xfc, 0x46, 0xb0, 0xd3 } };
-cfg_int cfgTextureCacheSize(guid_cfgTextureCacheSize, 30);
+cfg_int cfgTextureCacheSize(guid_cfgTextureCacheSize, 100);
 
 // {87491567-6F1C-4339-BF05-FAFE9AF73820}
 static const GUID guid_cfgMaxTextureSize = { 0x87491567, 0x6f1c, 0x4339, { 0xbf, 0x5, 0xfa, 0xfe, 0x9a, 0xf7, 0x38, 0x20 } };
@@ -148,7 +151,7 @@ cfg_int cfgMaxTextureSize(guid_cfgMaxTextureSize, 512);
 
 // {B3177E9B-7188-4cd1-91AD-0896E5D23292}
 static const GUID guid_cfgTextureCompression = { 0xb3177e9b, 0x7188, 0x4cd1, { 0x91, 0xad, 0x8, 0x96, 0xe5, 0xd2, 0x32, 0x92 } };
-cfg_bool cfgTextureCompression(guid_cfgTextureCompression, false);
+cfg_bool cfgTextureCompression(guid_cfgTextureCompression, true);
 
 // {174B15FB-777B-48a8-A047-900AEAAC77CC}
 static const GUID guid_cfgTexLoaderPrio = { 0x174b15fb, 0x777b, 0x48a8, { 0xa0, 0x47, 0x90, 0xa, 0xea, 0xac, 0x77, 0xcc } };

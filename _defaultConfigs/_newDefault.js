@@ -20,12 +20,19 @@ function coverPosition(coverId){
    z = -Math.abs(coverId);
    return new Array(x, y, z);
 }
-// return array is (angle, x, ,y, z) - this rotates
+
+// return array is (angle, x, y, z) - this rotates
 // the cover *angle* degrees around the vector (x,y,z)
 // With (0,0,0,0) the cover is parallel to the x-y-Plane
 function coverRotation(coverId){
-   var angle = 0;
-   return new Array(angle,0,1,0);
+   return new Array(0, 0, 1, 0);
+}
+
+// Defines the the size boundaries for the cover.
+// Aspect ratio is preserved.
+// Return Array is (widht, height)
+function coverSizeLimits(coverId){
+   return new Array(1, 2);
 }
 
 // Sets which point of the cover coverPosition() defines
@@ -36,13 +43,6 @@ function coverAlign(coverId){
    return new Array(0, -1);
 }
 
-// Defines the the size boundaries for the cover.
-// Aspect ratio is preserved.
-// Return Array is (widht, height)
-function coverSizeLimits(coverId){
-   return new Array(1, 2);
-}
-
 // Defines the range of covers to draw.
 // Return array is (leftmostCover, rightmostCover)
 // This interval shouldn't be larger than 80
@@ -50,7 +50,6 @@ function coverSizeLimits(coverId){
 function drawCovers(){
    return new Array(-10, 10);
 }
-
 
 // In which direction should the fov be expanded/shrinked
 // when the panel is resized?
@@ -68,10 +67,12 @@ function aspectBehaviour(){
 function eyePos(){
 	return new Array(0, 0.5, 6);
 }
+
 // Defines the point for the eye to look at
 function lookAt(){
    return new Array(0, 0.5, 0);
 }
+
 // Used to rotate the view.
 // The returned Vector points upwards in the viewport.
 // This vector must not be parallel to the line of sight from the
@@ -84,11 +85,13 @@ function upVector(){
 function showMirrorPlane(){
    return true; // return false to hide the mirror
 }
+
 // Any Point on the Mirror Plane
-function mirrorPoint (){
+function mirrorPoint(){
    return new Array(0, 0, 0);
 }
+
 // Normal of the Mirror Plane
-function mirrorNormal (){
+function mirrorNormal(){
    return new Array(0, 1, 0);
 }

@@ -1,10 +1,12 @@
 #include "externHeaders.h"
 #include "chronflow.h"
 
+extern cfg_string cfgTargetPlaylist;
+
 namespace {
 	class AddToPlaylist : public CustomAction {
 	public:
-		AddToPlaylist() : CustomAction("Add to Playlist "){}
+		AddToPlaylist() : CustomAction("Add to Active Playlist "){}
 		void run(const pfc::list_base_const_t<metadb_handle_ptr> & tracks, const char * albumTitle){
 			static_api_ptr_t<playlist_manager> pm;
 			pm->activeplaylist_undo_backup();
@@ -17,7 +19,7 @@ namespace {
 	};
 	class ReplacePlaylist : public CustomAction {
 	public:
-		ReplacePlaylist() : CustomAction("Replace Playlist "){}
+		ReplacePlaylist() : CustomAction("Replace Active Playlist "){}
 		void run(const pfc::list_base_const_t<metadb_handle_ptr> & tracks, const char * albumTitle){
 			static_api_ptr_t<playlist_manager> pm;
 			pm->activeplaylist_undo_backup();
@@ -31,7 +33,7 @@ namespace {
 	};
 	class NewPlaylist : public CustomAction {
 	public:
-		NewPlaylist() : CustomAction("Add to new Playlist "){}
+		NewPlaylist() : CustomAction("Add to Album Playlist "){}
 		void run(const pfc::list_base_const_t<metadb_handle_ptr> & tracks, const char * albumTitle){
 			static_api_ptr_t<playlist_manager> pm;
 			t_size playlist = pm->find_playlist(albumTitle,~0);
@@ -48,9 +50,29 @@ namespace {
 			pc->start();
 		}
 	};
+	class TargetPlaylist : public CustomAction {
+	public:
+		TargetPlaylist() : CustomAction("Replace Default Playlist "){}
+		void run(const pfc::list_base_const_t<metadb_handle_ptr> & tracks, const char * albumTitle){
+			static_api_ptr_t<playlist_manager> pm;
+			t_size playlist = pm->find_playlist(cfgTargetPlaylist,~0);
+			if (playlist != ~0){
+				pm->playlist_undo_backup(playlist);
+				pm->playlist_clear(playlist);
+			} else {
+				playlist = pm->create_playlist(cfgTargetPlaylist,~0,~0);
+			}
+			pm->playlist_add_items(playlist,tracks,bit_array_true());
+			pm->set_active_playlist(playlist);
+			pm->set_playing_playlist(playlist);
+			static_api_ptr_t<playback_control> pc;
+			pc->start();
+		}
+	};
 };
 
 
-CustomAction* g_customActions[3] = {new AddToPlaylist,
+CustomAction* g_customActions[4] = {new AddToPlaylist,
 									new ReplacePlaylist,
+									new TargetPlaylist,
 									new NewPlaylist};

@@ -2,7 +2,7 @@
 #include "chronflow.h"
 //#include "config.h"
 
-#define VERSION "0.2.2"
+#define VERSION "0.3.0"
 
 DECLARE_COMPONENT_VERSION( "Chronial's Coverflow", VERSION, 
    "Renders Album Art in a 3d environment\n"
@@ -86,7 +86,7 @@ private:
 		}
 	}
 	bool doSearch(const char* searchFor){
-		console::print(pfc::string_formatter() << "searching for: " << searchFor);
+		//console::print(pfc::string_formatter() << "searching for: " << searchFor);
 		CollectionPos pos;
 		if (appInstance->albumCollection->searchAlbumByTitle(searchFor, matchMin, matchMax, pos)){
 			appInstance->displayPos->setTarget(pos);

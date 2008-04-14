@@ -18,6 +18,9 @@ static struct {
 
 	// Display
 	{ IDC_ALBUM_FORMAT, &cfgAlbumTitle },
+
+	// Behaviour
+	{ IDC_TARGET_PL, &cfgTargetPlaylist },
 };
 
 static struct {
@@ -65,7 +68,7 @@ static struct {
 } disableMap[] =
 {
 	// Sources
-	{ IDC_SORT_GROUP, IDC_SORT },
+	{ IDC_SORT_GROUP, -IDC_SORT },
 
 	// Behaviour
 	{ IDC_FOLLOW_PLAYBACK, IDC_FOLLOW_DELAY },
@@ -648,11 +651,16 @@ public:
 		return coverTab->editboxProc(hWnd, uMsg, wParam, lParam);
 	}
 	BOOL editboxProc(HWND eWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
+		if (uMsg == WM_KEYDOWN && wParam == 'A' && (GetKeyState(VK_CONTROL) & 0x8000)){
+			SendMessage(eWnd, EM_SETSEL, 0, -1);
+			return false;
+		}
+
+		if (GetWindowLong(eWnd, GWL_STYLE) & ES_READONLY)
+			return CallWindowProc(origEditboxProc, eWnd, uMsg, wParam, lParam);
+
 		if (uMsg == WM_KEYDOWN){
-			if (wParam == 'A' && (GetKeyState(VK_CONTROL) & 0x8000)){
-				SendMessage(eWnd, EM_SETSEL, 0, -1);
-				return false;
-			} else if (wParam == VK_TAB){
+			if (wParam == VK_TAB){
 				DWORD selFirst;
 				DWORD selLast;
 				SendMessage(eWnd, EM_GETSEL, (WPARAM)&selFirst, (LPARAM)&selLast);
@@ -760,10 +768,24 @@ public:
 	}
 	void removeConfig(){
 		if (cfgCoverConfigs.get_count() > 1){
-			cfgCoverConfigs.removeItemByName(cfgCoverConfigSel);
-			cfgCoverConfigSel = cfgCoverConfigs.get_item_ref(0).name;
-			loadConfigList();
-			configSelectionChanged();
+			pfc::string8 title;
+			title << "Delete Config \"" << cfgCoverConfigs.getPtrByName(cfgCoverConfigSel)->name <<"\"";
+			if (IDYES == MessageBoxA(hWnd, "Are you sure?", title, MB_APPLMODAL|MB_YESNO|MB_ICONQUESTION)){
+				cfgCoverConfigs.sortByName();
+				t_size configIdx = 0;
+				for (t_size i=0; i < cfgCoverConfigs.get_count(); i++){
+					if (!stricmp_utf8(cfgCoverConfigs[i].name, cfgCoverConfigSel)){
+						configIdx = i;
+					}
+				}
+				cfgCoverConfigs.remove_by_idx(configIdx);
+				if (configIdx == cfgCoverConfigs.get_count()){
+					configIdx--;
+				}
+				cfgCoverConfigSel = cfgCoverConfigs[configIdx].name;
+				loadConfigList();
+				configSelectionChanged();
+			}
 		}
 	}
 	void addConfig(){
@@ -791,6 +813,7 @@ public:
 					}
 					if (!useClipboard)
 						config.script = COVER_CONFIG_DEF_CONTENT;
+					config.buildIn = false;
 					cfgCoverConfigs.add_item(config);
 					cfgCoverConfigSel = dialog.value;
 					loadConfigList();
@@ -829,8 +852,13 @@ public:
 	}
 	void configSelectionChanged(){
 		const CoverConfig* config = cfgCoverConfigs.getPtrByName(cfgCoverConfigSel);
-		if (config)
+		if (config){
 			uSetDlgItemText(hWnd, IDC_DISPLAY_CONFIG, config->script);
+			uSendDlgItemMessage(hWnd, IDC_DISPLAY_CONFIG, EM_SETREADONLY, (int)config->buildIn, 0);
+			//uEnableWindow(uGetDlgItem(hWnd, IDC_DISPLAY_CONFIG), !config->buildIn);
+			uEnableWindow(uGetDlgItem(hWnd, IDC_SAVED_REMOVE), !config->buildIn);
+			uEnableWindow(uGetDlgItem(hWnd, IDC_SAVED_RENAME), !config->buildIn);
+		}
 		uSetDlgItemText(hWnd, IDC_COMPILE_STATUS, "");
 	}
 };

@@ -21,10 +21,11 @@
 			ConfigurationType="2"
 			InheritedPropertySheets="..\Foobar Component.vsprops"
 			CharacterSet="1"
+			ExcludeBuckets="4;15;20"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				Description="COVER_CONFIG_DEF_CONTENT.h wird erstellt..."
+				Description="Compiling default Configs..."
 				CommandLine="php &quot;$(ProjectDir)CoverPositionsCompile.php&quot;"
 				ExcludedFromBuild="false"
 			/>
@@ -97,8 +98,8 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				Description="COVER_CONFIG_DEF_CONTENT.h wird gelöscht..."
-				CommandLine="del $(ProjectDir)\COVER_CONFIG_DEF_CONTENT.h&#x0D;&#x0A;del $(ProjectDir)\DEF_CFG_COVERCONFIGS.h&#x0D;&#x0A;"
+				Description="Cleanup..."
+				CommandLine="del $(ProjectDir)\COVER_CONFIG_DEF_CONTENT.h&#x0D;&#x0A;del $(ProjectDir)\BUILD_IN_COVERCONFIGS.h&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration

@@ -71,14 +71,16 @@
 #define IDC_EMPTY_ON_MINIMIZE           1110
 #define IDC_ALBUM_TITLE                 1111
 #define IDC_FIND_AS_YOU_TYPE            1112
+#define IDC_TARGET_PL                   1115
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        112
-#define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1115
+#define _APS_NO_MFC                     1
+#define _APS_NEXT_RESOURCE_VALUE        115
+#define _APS_NEXT_COMMAND_VALUE         40004
+#define _APS_NEXT_CONTROL_VALUE         1116
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

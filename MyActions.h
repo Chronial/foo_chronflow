@@ -9,4 +9,4 @@ public:
 	virtual void run(const pfc::list_base_const_t<metadb_handle_ptr> & tracks, const char * albumTitle) = 0;
 };
 
-extern CustomAction* g_customActions[3];
+extern CustomAction* g_customActions[4];
