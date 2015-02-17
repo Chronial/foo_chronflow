@@ -1,4 +1,11 @@
 #pragma once
+#include "stdafx.h"
+#include "cfg_coverConfigs.h"
+
+#include "CriticalSection.h"
+#include "Helpers.h"
+#include "ScriptObject.h"
+
 struct glTextureCoords {
 	float u;
 	float v;

@@ -1,5 +1,10 @@
-#include "externHeaders.h"
-#include "chronflow.h"
+#include "stdafx.h"
+
+#include "AppInstance.h"
+#include "DisplayPosition.h"
+#include "Helpers.h"
+#include "MouseFlicker.h"
+#include "PlaybackTracer.h"
 
 MouseFlicker::MouseFlicker(AppInstance* instance) :
 appInstance(instance),

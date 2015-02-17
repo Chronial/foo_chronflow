@@ -1,5 +1,12 @@
-#include "externHeaders.h"
-#include "chronflow.h"
+#include "stdafx.h"
+#include "base.h"
+
+#include "PlaybackTracer.h"
+
+#include "AppInstance.h"
+#include "CollectionPos.h"
+#include "DisplayPosition.h"
+#include "DbAlbumCollection.h"
 
 extern cfg_bool cfgCoverFollowsPlayback;
 extern cfg_int cfgCoverFollowDelay;

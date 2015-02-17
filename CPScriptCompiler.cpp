@@ -1,7 +1,10 @@
-#include "externHeaders.h"
-#include "chronflow.h"
+#include "stdafx.h"
 #include <comutil.h>
 #include <limits>
+
+#include "base.h"
+#include "ScriptedCoverPositions.h"
+#include "SafeArrayHelper.h"
 
 CPScriptCompiler::CPScriptCompiler()
 {

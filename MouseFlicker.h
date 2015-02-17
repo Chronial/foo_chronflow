@@ -1,4 +1,5 @@
 #pragma once
+class AppInstance;
 
 class MouseFlicker
 {

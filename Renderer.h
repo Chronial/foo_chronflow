@@ -1,4 +1,10 @@
 #pragma once
+#include "Helpers.h"
+
+#include "TextDisplay.h"
+
+class AppInstance;
+struct CollectionPos;
 
 enum VSyncMode {
 	VSYNC_SLEEP_ONLY = 1,

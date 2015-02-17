@@ -9,8 +9,7 @@
 //
 //	1.0	- Initial release.
 ///////////////////////////////////////////////////////////////////////////////
-#include "externHeaders.h"
-#include "chronflow.h"
+#include "stdafx.h"
 #include "SafeArrayHelper.h"
 
 

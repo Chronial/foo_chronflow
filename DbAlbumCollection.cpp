@@ -1,5 +1,12 @@
-#include "externHeaders.h"
-#include "chronflow.h"
+#include "stdafx.h"
+
+#include "DbAlbumCollection.h"
+
+#include "AsynchTexLoader.h"
+#include "AppInstance.h"
+#include "DisplayPosition.h"
+#include "ImgTexture.h"
+
 #include <process.h>
 
 extern cfg_string cfgGroup;
@@ -56,6 +63,7 @@ private:
 		t_size count = library.get_count();
 
 		double preFilter = Helpers::getHighresTimer();
+		/* // TODO: Rectivate
 		if (!cfgFilter.is_empty()){ // filter
 			search_tools::search_filter filter;
 			filter.init(cfgFilter);
@@ -72,6 +80,7 @@ private:
 			library.filter_mask(filterMask);
 			count = library.get_count();
 		}
+		*/
 		console::printf("Filter %d msec",int((Helpers::getHighresTimer() - preFilter)*1000));
 		
 

@@ -1,5 +1,11 @@
-#include "externHeaders.h"
-#include "chronflow.h"
+#include "stdafx.h"
+#include "base.h"
+#include "Helpers.h"
+
+#include "AppInstance.h"
+#include "PlaybackTracer.h"
+#include "DisplayPosition.h"
+
 
 extern cfg_int sessionSelectedCover;
 

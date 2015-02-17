@@ -7,10 +7,6 @@
  * \author musicmusic
  */
 
-//#include <windows.h>
-//#include <WindowsX.h>
-//#include <commctrl.h>
-
 #define uT(x) pfc::stringcvt::string_os_from_utf8(x).get_ptr()
 
 typedef HDITEMA uHDITEM;

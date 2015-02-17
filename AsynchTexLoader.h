@@ -1,4 +1,12 @@
 #pragma once
+#include "stdafx.h"
+
+#include "CollectionPos.h"
+#include "Helpers.h"
+
+class AlbumCollection;
+class AppInstance;
+class ImgTexture;
 
 typedef int (CALLBACK* t_resynchCallback)(int, void*, AlbumCollection*);
 

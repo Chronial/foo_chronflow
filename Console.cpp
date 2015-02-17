@@ -1,5 +1,4 @@
-#include "externHeaders.h"
-#include "chronflow.h"
+#include "stdafx.h"
 #include "Console.h"
 
 #include <stdio.h>
@@ -24,7 +23,6 @@ void Console::println(const wchar_t* str)
 }
 void Console::printf(const wchar_t* format, ...)
 {
-	//swprintf_s(path,512, L"\"M:/Alben/%s\"", FindFileData.cFileName);
 	va_list args;
 	va_start(args, format);
 	wchar_t out[1024];

@@ -1,4 +1,9 @@
 #pragma once
+#include "CriticalSection.h"
+#include "Renderer.h"
+
+class AppInstance;
+struct CollectionPos;
 
 class RenderThread {
 	Renderer renderer;

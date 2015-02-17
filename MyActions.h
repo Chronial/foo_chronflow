@@ -1,3 +1,5 @@
+#pragma once
+#include "stdafx.h"
 
 class CustomAction abstract {
 protected:

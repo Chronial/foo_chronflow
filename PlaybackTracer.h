@@ -1,4 +1,7 @@
 #pragma once
+#include "stdafx.h"
+
+class AppInstance;
 
 class PlaybackTracer : public play_callback
 {

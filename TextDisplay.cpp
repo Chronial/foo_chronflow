@@ -1,5 +1,9 @@
-#include "externHeaders.h"
-#include "chronflow.h"
+#include "stdafx.h"
+
+#include "TextDisplay.h"
+
+#include "ImgTexture.h"
+#include "Renderer.h"
 
 extern cfg_int cfgTitleColor;
 extern cfg_struct_t<LOGFONT> cfgTitleFont;

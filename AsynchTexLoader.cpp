@@ -1,6 +1,17 @@
-#include "externHeaders.h"
-#include "chronflow.h"
+#include "stdafx.h"
 #include <process.h>
+
+#include "AsynchTexLoader.h"
+#include "AlbumCollection.h"
+#include "AppInstance.h"
+#include "Console.h"
+#include "ScriptedCoverPositions.h"
+#include "DbAlbumCollection.h"
+#include "ImgTexture.h"
+#include "RenderThread.h"
+
+#include "Helpers.h"
+
 
 extern cfg_string cfgImgNoCover;
 extern cfg_string cfgImgLoading;

@@ -1,6 +1,13 @@
-#include "externHeaders.h"
-#include "chronflow.h"
+#include "stdafx.h"
+#include "base.h"
 #include "config.h"
+
+#include "AppInstance.h"
+#include "DbAlbumCollection.h"
+#include "MyActions.h"
+#include "PlaybackTracer.h"
+#include "RenderThread.h"
+#include "ScriptedCoverPositions.h"
 
 static struct {
    int id;

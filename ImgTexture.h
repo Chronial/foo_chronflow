@@ -1,4 +1,7 @@
 #pragma once
+#include "stdafx.h"
+
+#include "CriticalSection.h"
 
 class TextDisplay;
 

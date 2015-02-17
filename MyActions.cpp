@@ -1,5 +1,6 @@
-#include "externHeaders.h"
-#include "chronflow.h"
+#include "stdafx.h"
+
+#include "MyActions.h"
 
 extern cfg_string cfgTargetPlaylist;
 

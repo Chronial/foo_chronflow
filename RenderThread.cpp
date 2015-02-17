@@ -1,6 +1,13 @@
-#include "externHeaders.h"
-#include "chronflow.h"
+#include "stdafx.h"
 #include <process.h>
+
+#include "RenderThread.h"
+
+#include "AppInstance.h"
+#include "AsynchTexLoader.h"
+#include "ScriptedCoverPositions.h"
+#include "DisplayPosition.h"
+
 
 extern cfg_int cfgVSyncMode;
 

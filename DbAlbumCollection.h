@@ -1,5 +1,8 @@
 #pragma once
+#include "AlbumCollection.h"
+#include "Helpers.h"
 
+class AppInstance;
 
 class DbAlbumCollection :
 	public AlbumCollection
@@ -62,9 +65,6 @@ private:
 		int compare(const t_ptrAlbumGroup &a, const t_ptrAlbumGroup &b){
 			return b.ptr.get_ptr() - a.ptr.get_ptr();
 		}
-		/*static int bTreeCompare(const t_ptrAlbumGroup &a, const t_ptrAlbumGroup &b){
-			return b.ptr.get_ptr() - a.ptr.get_ptr();
-		}*/
 	};
 	static int ptrGroupMap_searchPtr(const t_ptrAlbumGroup& a, const metadb_handle_ptr& ptr){
 		return ptr.get_ptr() - a.ptr.get_ptr();

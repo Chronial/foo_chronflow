@@ -1,5 +1,4 @@
-#ifndef _SAFEARRAYHELPER_H_
-#define _SAFEARRAYHELPER_H_
+#pragma once
 
 class CSafeArrayHelper
 {
@@ -28,5 +27,3 @@ class CSafeArrayHelper
 
 	private:
 };
-
-#endif // _SAFEARRAYHELPER_H_

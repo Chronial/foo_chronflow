@@ -1,3 +1,8 @@
+#include "cfg_coverConfigs.h"
+
+//TODO: These imports are ugly / or is this not actually a header file??
+#include "Renderer.h"
+#include "ScriptedCoverPositions.h"
 
 /*********************************************** Album Source tab *******************************************************/
 // {8426005A-98F3-42fe-A335-C0929C7DBC69}

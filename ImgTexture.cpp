@@ -1,5 +1,9 @@
-#include "externHeaders.h"
-#include "chronflow.h"
+#include "stdafx.h"
+#include "base.h"
+
+#include "ImgTexture.h"
+
+#include "Console.h"
 
 using namespace Gdiplus;
 

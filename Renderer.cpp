@@ -1,5 +1,15 @@
-#include "externHeaders.h"
-#include "chronflow.h"
+#include "stdafx.h"
+
+#include "AsynchTexLoader.h"
+#include "AppInstance.h"
+#include "CollectionPos.h"
+#include "DisplayPosition.h"
+#include "DbAlbumCollection.h"
+#include "Helpers.h"
+#include "ImgTexture.h"
+#include "Renderer.h"
+#include "ScriptedCoverPositions.h"
+
 
 extern cfg_bool cfgShowFps;
 extern cfg_bool cfgShowAlbumTitle;

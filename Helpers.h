@@ -1,5 +1,6 @@
 #pragma once
-
+#include "base.h"
+#include "CriticalSection.h"
 
 #define TEST_BIT_PTR(BITSET_PTR, BIT) _bittest(BITSET_PTR, BIT)
 #ifdef _DEBUG
@@ -77,29 +78,6 @@ public:
 };
 
 class AppInstance;
-
-
-class CriticalSection {
-private:
-	CRITICAL_SECTION sec;
-	IF_DEBUG(DWORD holdingThread);
-public:
-	void enter() throw() {
-		EnterCriticalSection(&sec);
-		IF_DEBUG(holdingThread = GetCurrentThreadId());
-	}
-	void leave() throw() {
-		IF_DEBUG(holdingThread = 0);
-		LeaveCriticalSection(&sec);
-	}
-#ifdef _DEBUG
-	void assertOwnage() {
-		PFC_ASSERT(holdingThread == GetCurrentThreadId());
-	}
-#endif
-	CriticalSection() {InitializeCriticalSectionAndSpinCount(&sec, 0x80000400);}
-	~CriticalSection() {DeleteCriticalSection(&sec);}
-};
 
 
 #ifdef _DEBUG

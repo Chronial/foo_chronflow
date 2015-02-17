@@ -1,4 +1,9 @@
 #pragma once
+#include "CriticalSection.h"
+#include "CollectionPos.h"
+
+class AppInstance;
+//class CriticalSection;
 
 class DisplayPosition
 {
