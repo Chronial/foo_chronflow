@@ -1,6 +1,9 @@
 
 * Add Git commit SHA to version / use git describe?
-
+* Allow multiple Instances
+	* Register Window Classes on Foobar Init
+* Properly destroy windows
+* Fix Filter?
 
 
 
