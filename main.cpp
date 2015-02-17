@@ -2,13 +2,14 @@
 #include "chronflow.h"
 //#include "config.h"
 
-#define VERSION "0.3.0"
+#define VERSION "0.4.0"
 
 DECLARE_COMPONENT_VERSION( "Chronial's Coverflow", VERSION, 
    "Renders Album Art in a 3d environment\n"
    "By Christian Fersch\n"
    __DATE__ " - " __TIME__ );
 
+VALIDATE_COMPONENT_FILENAME("foo_chronflow.dll");
 
 extern cfg_int sessionSelectedCover;
 
@@ -103,68 +104,48 @@ private:
 };
 
 
-class Chronflow : public ui_extension::window {
-private:
-	ui_extension::window_host_ptr currentHost;
-
+class Chronflow : public ui_element_instance {
 public:
-	const bool get_is_single_instance() const {
-		return true;
-	}
-	
-	const GUID & get_extension_guid() const {
+	static GUID g_get_guid() {
 		// {1D56881C-CA24-470c-944A-DED830F9E95D}
 		static const GUID guid_foo_chronflow = { 0x1d56881c, 0xca24, 0x470c, { 0x94, 0x4a, 0xde, 0xd8, 0x30, 0xf9, 0xe9, 0x5d } };
 		return guid_foo_chronflow;
 	}
 
-	void get_name(pfc::string_base & out) const {
-		out = "Chronflow";
-	};
+	static GUID g_get_subclass() { return ui_element_subclass_utility; }
+
+	double get_focus_priority() { return 10000; }
+
+	static void g_get_name(pfc::string_base & out) { out = "Chronflow"; }
+	GUID get_guid() { return Chronflow::g_get_guid(); }
+	GUID get_subclass() { return Chronflow::g_get_subclass(); }
 
 	void get_category(pfc::string_base & out) const {
 		out = "Panels";
 	};
 
-	unsigned get_type() const {
+	static ui_element_config::ptr g_get_default_configuration() { return ui_element_config::g_create_empty(g_get_guid()); }
+	static const char * g_get_description() { return "A coverflow panel"; }
+
+
+	void set_default_focus() { 
+		IF_DEBUG(Console::println(L"Getting Focus");)
+		const HWND thisWnd = this->get_wnd();
+		if (thisWnd != NULL) ::SetFocus(thisWnd);
+	}
+
+	/*unsigned get_type() const {
 		return ui_extension::type_panel;
-	};
-
-	bool is_available(const ui_extension::window_host_ptr & p_host) const {
-		if ((currentHost != 0) && p_host->get_host_guid() == currentHost->get_host_guid())
-			return false;
-		else
-			return true;
-	};
-
-	HWND create_or_transfer_window(HWND wnd_parent, const ui_extension::window_host_ptr & p_host, const ui_helpers::window_position_t & p_position = ui_helpers::window_position_null) {
-		if (isShown){
-			ShowWindow(appInstance->mainWindow, SW_HIDE);
-			SetParent(appInstance->mainWindow, wnd_parent);
-			SetWindowPos(appInstance->mainWindow, NULL, p_position.x, p_position.y, p_position.cx, p_position.cy, SWP_NOZORDER);
-			currentHost->relinquish_ownership(appInstance->mainWindow);
-		} else {
-			if (show(wnd_parent)){
-				SetWindowPos(appInstance->mainWindow, NULL, p_position.x, p_position.y, p_position.cx, p_position.cy, SWP_NOZORDER);
-				ShowWindow(appInstance->mainWindow, SW_HIDE);
-			} else {
-				return 0;
-			}
-		}
-		currentHost = p_host;
-		isShown = true;
-		return appInstance->mainWindow;
-	};
+	};*/
 
 	void destroy_window() {
 		if (isShown){
 			hide();
-			currentHost = 0;
 			isShown = false;
 		}
 	};
 
-	HWND get_wnd() const {
+	HWND get_wnd() {
 		if (appInstance)
 			return appInstance->mainWindow;
 		else
@@ -179,13 +160,22 @@ private:
 
 	AppInstance* appInstance;
 	bool mainWinMinimized;
+	ui_element_config::ptr config;
+protected:
+	// this must be declared as protected for ui_element_impl_withpopup<> to work.
+	const ui_element_instance_callback_ptr callback;
 public:
-	Chronflow(){
-		currentHost = 0;
+	Chronflow(ui_element_config::ptr config, ui_element_instance_callback_ptr p_callback) : callback(p_callback), config(config) {
 		isShown = false;
 		mouseFlicker = 0;
 		findAsYouType = 0;
 		mainWinMinimized = true;
+		appInstance = 0;
+		//show(0);
+		/*if (show(wnd_parent)){
+			//SetWindowPos(appInstance->mainWindow, NULL, p_position.x, p_position.y, p_position.cx, p_position.cy, SWP_NOZORDER);
+			ShowWindow(appInstance->mainWindow, SW_HIDE);
+		}*/
 	}
 	~Chronflow(){
 	}
@@ -195,6 +185,8 @@ public:
 	static void quit(){
 		unRegisterWindowClasses();
 	}
+
+	void initialize_window(HWND parent) { show(parent); }
 
 	bool show(HWND parent){
 		registerWindowClasses();
@@ -269,6 +261,9 @@ public:
 		Gdiplus::GdiplusShutdown(gdiplusToken);
 	}
 
+	void set_configuration(ui_element_config::ptr config) { this->config = config; }
+	ui_element_config::ptr get_configuration() { return config; }
+
 private:
 	LRESULT MessageHandler (HWND	hWnd,			// Handle For This Window
 							UINT	uMsg,			// Message For This Window
@@ -284,7 +279,7 @@ private:
 				}
 				return 0;
 			case WM_NCDESTROY:
-				appInstance->mainWindow = 0;
+				//appInstance->mainWindow = 0;
 				return 0;
 			case WM_SIZE:
 				if (appInstance->renderer){
@@ -324,7 +319,7 @@ private:
 			case WM_LBUTTONDBLCLK:
 			case WM_LBUTTONDOWN:
 			{
-				SetFocus(hWnd);
+				SetFocus(appInstance->mainWindow);
 				CollectionPos newTarget;
 				if (appInstance->renderer->getPositionOnPoint(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), newTarget)){
 					appInstance->displayPos->setTarget(newTarget);
@@ -340,6 +335,9 @@ private:
 				mouseFlicker->mouseUp(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
 				return 0;
 			case WM_CONTEXTMENU:
+				if (callback->is_edit_mode_enabled()){
+					return DefWindowProc(hWnd, uMsg, wParam, lParam);
+				}
 				onContextMenu(hWnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
 				return 0;
 			case WM_MOUSEMOVE:
@@ -361,6 +359,8 @@ private:
 						break;
 				}
 				return 0;
+			case WM_GETDLGCODE:
+				return DLGC_WANTALLKEYS;
 			case WM_KEYDOWN:
 			case WM_SYSKEYDOWN:
 			{
@@ -649,11 +649,31 @@ private:
 };
 bool Chronflow::windowClassesRegistered = false;
 
-static ui_extension::window_factory_single< Chronflow > x_chronflow;
+
+class my_ui_element_impl : public ui_element {
+public:
+	GUID get_guid() { return Chronflow::g_get_guid(); }
+	GUID get_subclass() { return Chronflow::g_get_subclass(); }
+	void get_name(pfc::string_base & out) { Chronflow::g_get_name(out); }
+	ui_element_instance::ptr instantiate(HWND parent, ui_element_config::ptr cfg, ui_element_instance_callback::ptr callback) {
+		PFC_ASSERT(cfg->get_guid() == get_guid());
+		service_nnptr_t<Chronflow> item = new service_impl_t<Chronflow>(cfg, callback);
+		item->initialize_window(parent);
+		return item;
+	}
+	ui_element_config::ptr get_default_configuration() { return Chronflow::g_get_default_configuration(); }
+	ui_element_children_enumerator_ptr enumerate_children(ui_element_config::ptr cfg) { return NULL; }
+	bool get_description(pfc::string_base & out) { out = Chronflow::g_get_description(); return true; }
+};
+
+
+static service_factory_single_t<my_ui_element_impl> x_chronflow;
+
 
 // this links the ConfigWindow to the Single Instance
 AppInstance* gGetSingleInstance(){
-	return x_chronflow.get_static_instance().appInstance;
+	return 0;
+	//return x_chronflow.get_static_instance().appInstance;
 }
 
 class MyInitQuit : public initquit {

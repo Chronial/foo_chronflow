@@ -1,7 +1,9 @@
 <?php
 
 $file = file_get_contents("_defaultConfigs/_newDefault.js");
-$file = str_replace("\r\n",'\r\n',addslashes($file));
+$file = addslashes($file);
+$file = str_replace("\r",'',$file);
+$file = str_replace("\n",'\r\n',$file);
 
 $file = '#define COVER_CONFIG_DEF_CONTENT "'.$file.'"';
 
@@ -20,8 +22,9 @@ while ($f = $d->read()){
    while (ord($file[$i]) > 128) {
       $i++;
    }
-   $content = substr($file, $i);
-   $content = str_replace("\r\n",'\r\n',addslashes($content));
+   $content = addslashes(substr($file, $i));
+   $content = str_replace("\r",'',$content);
+   $content = str_replace("\n",'\r\n',$content);
    $content = str_replace("   ","\t",$content);
    $title = str_replace(".js","",$f).' (build-in)';
    $configs .= '"'.$title.'", "'.$content.'",  '."\\\r\n";

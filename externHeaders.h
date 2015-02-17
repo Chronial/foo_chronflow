@@ -11,9 +11,9 @@
 #define _WIN32_WINDOWS 0x0500
 #endif
 
-#include "../_sdk/foobar2000/SDK/foobar2000.h"
-#include "../_sdk/foobar2000/helpers/helpers.h"
-#include "../_sdk/foobar2000/columns_ui/ui_extension.h"
+#include "../SDK/foobar2000.h"
+#include "../helpers/helpers.h"
+//#include "../sdk/foobar2000/columns_ui/ui_extension.h"
 
 
 #include <windows.h>		// Header File For Windows
@@ -22,6 +22,9 @@
 #include <gl\glu.h>			// Header File For The GLu32 Library
 //#include <gl\glaux.h>		// Header File For The Glaux Library
 #include <gl\glext.h>
-#include <gl\wglext.h>
+#include "opengl\wglext.h"
 #include <cmath>
 #include <GdiPlus.h>
+
+// copied from colums_ui
+#include "win32_helpers.h"

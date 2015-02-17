@@ -1,3 +1,9 @@
+
+* Add Git commit SHA to version / use git describe?
+
+
+
+
 // Changelog
 Added Performance Options
 Added Multi- and Supersampling

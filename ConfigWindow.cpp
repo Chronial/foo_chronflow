@@ -1021,7 +1021,7 @@ public:
 				HWND hWndTab = uGetDlgItem(hWnd, IDC_TABS);
 
 				RECT rcTab;
-				GetChildRect(hWnd, IDC_TABS, &rcTab);
+				GetChildWindowRect(hWnd, IDC_TABS, &rcTab);
 				uSendMessage(hWndTab, TCM_ADJUSTRECT, FALSE, (LPARAM)&rcTab);
 
 				for (t_size i=0; i < tabs.get_count(); i++){

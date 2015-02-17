@@ -3,7 +3,7 @@
 class Console
 {
 private:
-	Console(void) = 0;
+	Console(void);
 public:
 	static void create(void);
 public:
