@@ -115,17 +115,13 @@ public:
 		return guid_foo_chronflow;
 	}
 
-	static GUID g_get_subclass() { return ui_element_subclass_utility; }
+	static GUID g_get_subclass() { return ui_element_subclass_media_library_viewers; }
 
 	double get_focus_priority() { return 10000; }
 
 	static void g_get_name(pfc::string_base & out) { out = "Chronflow"; }
 	GUID get_guid() { return Chronflow::g_get_guid(); }
 	GUID get_subclass() { return Chronflow::g_get_subclass(); }
-
-	void get_category(pfc::string_base & out) const {
-		out = "Panels";
-	};
 
 	static ui_element_config::ptr g_get_default_configuration() { return ui_element_config::g_create_empty(g_get_guid()); }
 	static const char * g_get_description() { return "A coverflow panel"; }
