@@ -552,7 +552,7 @@ class ConfigNameDialog : private dialog_helper::dialog_modal {
 		return 0;
 	}
 public:
-	int query(HWND parent, const char * defValue = 0){
+	int query(HWND parent, const char * defValue = ""){
 		value = defValue;
 		return run (IDD_CONFIG_NAME, parent);
 	}
