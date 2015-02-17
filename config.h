@@ -156,7 +156,7 @@ cfg_int cfgMaxTextureSize(guid_cfgMaxTextureSize, 512);
 
 // {B3177E9B-7188-4cd1-91AD-0896E5D23292}
 static const GUID guid_cfgTextureCompression = { 0xb3177e9b, 0x7188, 0x4cd1, { 0x91, 0xad, 0x8, 0x96, 0xe5, 0xd2, 0x32, 0x92 } };
-cfg_bool cfgTextureCompression(guid_cfgTextureCompression, true);
+cfg_bool cfgTextureCompression(guid_cfgTextureCompression, false);
 
 // {174B15FB-777B-48a8-A047-900AEAAC77CC}
 static const GUID guid_cfgTexLoaderPrio = { 0x174b15fb, 0x777b, 0x48a8, { 0xa0, 0x47, 0x90, 0xa, 0xea, 0xac, 0x77, 0xcc } };
