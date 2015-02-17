@@ -25,6 +25,8 @@ extern cfg_string cfgDoubleClick;
 extern cfg_string cfgMiddleClick;
 extern cfg_string cfgEnterKey;
 
+#define MAINWINDOW_CLASSNAME L"foo_chronflow MainWindow"
+
 #define MINIMIZE_CHECK_TIMEOUT 10000 // milliseconds
 
 class FindAsYouType {
@@ -106,7 +108,6 @@ private:
 	}
 };
 
-
 class Chronflow : public ui_element_instance {
 public:
 	static GUID g_get_guid() {
@@ -116,9 +117,6 @@ public:
 	}
 
 	static GUID g_get_subclass() { return ui_element_subclass_media_library_viewers; }
-
-	double get_focus_priority() { return 10000; }
-
 	static void g_get_name(pfc::string_base & out) { out = "Chronflow"; }
 	GUID get_guid() { return Chronflow::g_get_guid(); }
 	GUID get_subclass() { return Chronflow::g_get_subclass(); }
@@ -126,33 +124,11 @@ public:
 	static ui_element_config::ptr g_get_default_configuration() { return ui_element_config::g_create_empty(g_get_guid()); }
 	static const char * g_get_description() { return "A coverflow panel"; }
 
-
-	void set_default_focus() { 
-		IF_DEBUG(Console::println(L"Getting Focus");)
-		const HWND thisWnd = this->get_wnd();
-		if (thisWnd != NULL) ::SetFocus(thisWnd);
-	}
-
-	/*unsigned get_type() const {
-		return ui_extension::type_panel;
-	};*/
-
-	void destroy_window() {
-		if (isShown){
-			hide();
-			isShown = false;
-		}
-	};
-
 	HWND get_wnd() {
-		if (appInstance)
-			return appInstance->mainWindow;
-		else
-			return 0;
+		return appInstance->mainWindow;
 	};
 
 private:
-	bool isShown; // part of the single-istance implementation
 	ULONG_PTR gdiplusToken;
 	MouseFlicker* mouseFlicker;
 	FindAsYouType* findAsYouType;
@@ -160,84 +136,18 @@ private:
 	AppInstance* appInstance;
 	bool mainWinMinimized;
 	ui_element_config::ptr config;
-protected:
-	// this must be declared as protected for ui_element_impl_withpopup<> to work.
 	const ui_element_instance_callback_ptr callback;
 public:
 	Chronflow(ui_element_config::ptr config, ui_element_instance_callback_ptr p_callback) : callback(p_callback), config(config) {
-		isShown = false;
 		mouseFlicker = 0;
 		findAsYouType = 0;
 		mainWinMinimized = true;
-		appInstance = 0;
-		//show(0);
-		/*if (show(wnd_parent)){
-			//SetWindowPos(appInstance->mainWindow, NULL, p_position.x, p_position.y, p_position.cx, p_position.cy, SWP_NOZORDER);
-			ShowWindow(appInstance->mainWindow, SW_HIDE);
-		}*/
+		appInstance = new AppInstance();;
+		#ifdef _DEBUG
+			Console::create();
+		#endif
 	}
 	~Chronflow(){
-	}
-	static void init(){
-		registerWindowClasses();
-	}
-	static void quit(){
-		unRegisterWindowClasses();
-	}
-
-	void initialize_window(HWND parent) { show(parent); }
-
-	bool show(HWND parent){
-		registerWindowClasses();
-
-		Gdiplus::GdiplusStartupInput gdiplusStartupInput;
-		Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
-
-#ifdef _DEBUG
-		Console::create();
-#endif
-		appInstance = new AppInstance();
-		try {
-			appInstance->coverPos = new ScriptedCoverPositions();
-			appInstance->mainWindow = createWindow(parent);
-			if (appInstance->mainWindow == NULL){
-				hide();
-				return false;
-			}
-			appInstance->renderer = new RenderThread(appInstance);
-			if (!appInstance->renderer->attachToMainWindow()){
-				hide();
-				return false;
-			}
-			if (cfgMultisampling && appInstance->renderer->initMultisampling()){
-				DestroyWindow(appInstance->mainWindow);
-				appInstance->mainWindow = createWindow(parent);
-				if (appInstance->mainWindow == NULL){
-					hide();
-					return false;
-				}
-				if (!appInstance->renderer->attachToMainWindow()){
-					hide();
-					return false;
-				}
-			}
-
-
-			appInstance->albumCollection = new DbAlbumCollection(appInstance);
-			appInstance->texLoader = new AsynchTexLoader(appInstance);
-			appInstance->displayPos = new DisplayPosition(appInstance, CollectionPos(appInstance->albumCollection,sessionSelectedCover));
-			appInstance->playbackTracer = new PlaybackTracer(appInstance);
-			findAsYouType = new FindAsYouType(appInstance);
-			mouseFlicker = new MouseFlicker(appInstance);
-		} catch (...) {
-			hide();
-			return false;
-		}
-		
-		appInstance->albumCollection->reloadAsynchStart(true);
-		return true;
-	}
-	void hide(){
 		delete pfc::replace_null_t(mouseFlicker);
 		delete pfc::replace_null_t(findAsYouType);
 
@@ -253,21 +163,67 @@ public:
 
 		delete pfc::replace_null_t(appInstance);
 
+		Gdiplus::GdiplusShutdown(gdiplusToken);
+
+		// This is not right here
 		if (ImgTexture::instanceCount != 0){
-			MessageBoxA(0, pfc::string8("ImgTexture Leak: ") << ImgTexture::instanceCount, "foo_chronflow Error", MB_ICONERROR);
+			errorPopup(pfc::string8("ImgTexture Leak: ") << ImgTexture::instanceCount);
+		}
+	}
+
+	void initialize_window(HWND parent) {
+		Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+		// TODO: catch errors from this call
+		Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+
+		appInstance->coverPos = new ScriptedCoverPositions();
+		appInstance->mainWindow = createWindow(parent);
+		appInstance->renderer = new RenderThread(appInstance);
+		if (!appInstance->renderer->attachToMainWindow()){
+			throw std::exception("Renderer failed to attach to window");
+		}
+		if (cfgMultisampling && appInstance->renderer->initMultisampling()){
+			DestroyWindow(appInstance->mainWindow);
+			appInstance->mainWindow = createWindow(parent);
+			if (!appInstance->renderer->attachToMainWindow()){
+				throw std::exception("Renderer failed to attach to window for Multisampling");
+			}
 		}
 
-		Gdiplus::GdiplusShutdown(gdiplusToken);
+		appInstance->albumCollection = new DbAlbumCollection(appInstance);
+		appInstance->texLoader = new AsynchTexLoader(appInstance);
+		appInstance->displayPos = new DisplayPosition(appInstance, CollectionPos(appInstance->albumCollection,sessionSelectedCover));
+		appInstance->playbackTracer = new PlaybackTracer(appInstance);
+		findAsYouType = new FindAsYouType(appInstance);
+		mouseFlicker = new MouseFlicker(appInstance);
+		
+		appInstance->albumCollection->reloadAsynchStart(true);
 	}
+
 
 	void set_configuration(ui_element_config::ptr config) { this->config = config; }
 	ui_element_config::ptr get_configuration() { return config; }
 
+	static bool registerWindowClass(){
+		HINSTANCE myInstance = core_api::get_my_instance();
+
+		WNDCLASS wc = { 0 };
+		wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC | CS_DBLCLKS | CS_NOCLOSE;
+		wc.lpfnWndProc = (WNDPROC)Chronflow::WndProc;
+		wc.cbClsExtra = 0;
+		wc.cbWndExtra = sizeof(Chronflow *);
+		wc.hInstance = myInstance;
+		wc.hIcon = LoadIcon(NULL, IDI_HAND);
+		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+		wc.hbrBackground = NULL;
+		wc.lpszMenuName = NULL;
+		wc.lpszClassName = MAINWINDOW_CLASSNAME;
+
+		return RegisterClass(&wc) != 0;
+	}
+
 private:
-	LRESULT MessageHandler (HWND	hWnd,			// Handle For This Window
-							UINT	uMsg,			// Message For This Window
-							WPARAM	wParam,			// Additional Message Information
-							LPARAM	lParam){
+	LRESULT MessageHandler (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 		switch (uMsg){
 			case WM_COLLECTION_REFRESHED:
 				appInstance->albumCollection->reloadAsynchFinish(lParam);
@@ -278,7 +234,7 @@ private:
 				}
 				return 0;
 			case WM_NCDESTROY:
-				//appInstance->mainWindow = 0;
+				appInstance->mainWindow = 0;
 				return 0;
 			case WM_SIZE:
 				if (appInstance->renderer){
@@ -575,78 +531,26 @@ private:
 		}
 		//contextmenu_manager::win32_run_menu_context(hWnd, tracks, &pt);
 	}
-	static bool windowClassesRegistered;
-	static void registerWindowClasses(){
-		if (windowClassesRegistered)
-			return;
-
-		HINSTANCE myInstance = core_api::get_my_instance();
-
-		WNDCLASS	wc = {0};
-		wc.style			= CS_HREDRAW | CS_VREDRAW | CS_OWNDC | CS_DBLCLKS | CS_NOCLOSE;
-		wc.lpfnWndProc		= (WNDPROC)Chronflow::WndProc;
-		wc.cbClsExtra		= 0;
-		wc.cbWndExtra		= sizeof(Chronflow *);
-		wc.hInstance		= myInstance;
-		wc.hIcon			= LoadIcon(NULL, IDI_HAND);
-		wc.hCursor			= LoadCursor(NULL, IDC_ARROW);
-		wc.hbrBackground	= NULL;
-		wc.lpszMenuName		= NULL;
-		wc.lpszClassName	= L"Chronflow RenderWindow";
-
-		if (!RegisterClass(&wc)){
-			popup_message::g_show(pfc::string_formatter() << "Foo_chronflow: Failed to Register Main Window Class - msg: " << format_win32_error(GetLastError()), "Foo_chronflow Error", popup_message::icon_error);
-		}
-
-		ZeroMemory(&wc, sizeof(wc));
-		wc.style			= CS_OWNDC | CS_NOCLOSE;
-		wc.lpfnWndProc		= DefWindowProc;
-		wc.cbClsExtra		= 0;
-		wc.cbWndExtra		= 0;
-		wc.hInstance		= myInstance;
-		wc.hIcon			= LoadIcon(NULL, IDI_APPLICATION);
-		wc.hCursor			= NULL;
-		wc.hbrBackground    = NULL;
-		wc.lpszMenuName		= NULL;
-		wc.lpszClassName	= L"Chronflow LoaderWindow";
-
-		if (!RegisterClass(&wc)){
-			popup_message::g_show(pfc::string_formatter() << "Foo_chronflow: Failed to Register Loader Window Class - msg: " << format_win32_error(GetLastError()), "Foo_chronflow Error", popup_message::icon_error);
-		}
-		windowClassesRegistered = true;
-	}
-	static void unRegisterWindowClasses(){
-		if (!windowClassesRegistered)
-			return;
-		HINSTANCE myInstance = core_api::get_my_instance();
-		UnregisterClass(L"Chronflow RenderWindow", myInstance);
-		UnregisterClass(L"Chronflow LoaderWindow", myInstance);
-		windowClassesRegistered = false;
-	}
 	HWND createWindow(HWND parent){
 		HWND		hWnd;
 
-		if (!(hWnd=CreateWindowEx(	0,							// Extended Style For The Window
-									L"Chronflow RenderWindow",			// Class Name
-									L"ChronFlow MainWin",				// Window Title
-									WS_CHILD |							// Defined Window Style
-									WS_CLIPSIBLINGS |					// Required Window Style
-									WS_CLIPCHILDREN,					// Required Window Style*/
-									CW_USEDEFAULT, CW_USEDEFAULT,		// Window Position
-									CW_USEDEFAULT, CW_USEDEFAULT,		// Window Dimensions
-									parent,								// No Parent Window
-									NULL,								// No Menu
-									core_api::get_my_instance(),							// Instance
-									(void*)this)))	
-		{
-			MessageBoxA(NULL,pfc::string8("Window Creation Error (mainWin):\r\n") << format_win32_error(GetLastError()),"Foo_chronflow Error",MB_OK|MB_ICONERROR);
-			return 0;
-		}
+		WIN32_OP(hWnd = CreateWindowEx(
+			0,									// Extended Style For The Window
+			MAINWINDOW_CLASSNAME,				// Class Name
+			L"ChronFlow MainWin",				// Window Title
+			WS_CHILD |							// Defined Window Style
+			WS_CLIPSIBLINGS |					// Required Window Style
+			WS_CLIPCHILDREN,					// Required Window Style*/
+			CW_USEDEFAULT, CW_USEDEFAULT,		// Window Position
+			CW_USEDEFAULT, CW_USEDEFAULT,		// Window Dimensions
+			parent,								// No Parent Window
+			NULL,								// No Menu
+			core_api::get_my_instance(),		// Instance
+			(void*)this));
+
 		return hWnd;
 	}
-	friend AppInstance* gGetSingleInstance();
 };
-bool Chronflow::windowClassesRegistered = false;
 
 
 class my_ui_element_impl : public ui_element {
@@ -668,15 +572,39 @@ public:
 
 static service_factory_single_t<my_ui_element_impl> x_chronflow;
 
+class InitHandler : public init_stage_callback {
+public:
+	void on_init_stage(t_uint32 stage){
+		if (stage == init_stages::before_ui_init){
+			registerWindowClasses();
+		}
+	}
 
-// this links the ConfigWindow to the Single Instance
-AppInstance* gGetSingleInstance(){
-	return 0;
-	//return x_chronflow.get_static_instance().appInstance;
-}
+private:
+	void registerWindowClasses(){
+		// Note: We do not need to unregister these classes as it happens automatically when foobar quits
+		if (!Chronflow::registerWindowClass()){
+			errorPopupWin32("Failed to register MainWindow class");
+		}
 
-class MyInitQuit : public initquit {
-	void on_init(){Chronflow::init();}
-	void on_quit(){Chronflow::quit();}
+		HINSTANCE myInstance = core_api::get_my_instance();
+
+		WNDCLASS	wc = { 0 };
+		wc.style = CS_OWNDC | CS_NOCLOSE;
+		wc.lpfnWndProc = DefWindowProc;
+		wc.cbClsExtra = 0;
+		wc.cbWndExtra = 0;
+		wc.hInstance = myInstance;
+		wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+		wc.hCursor = NULL;
+		wc.hbrBackground = NULL;
+		wc.lpszMenuName = NULL;
+		wc.lpszClassName = L"Chronflow LoaderWindow";
+
+		if (!RegisterClass(&wc)){
+			errorPopupWin32("Failed to register Loader Window class");
+		}
+	}
 };
-static initquit_factory_t<MyInitQuit> x_myInitQuit;
+
+static service_factory_single_t<InitHandler> initHandler;

@@ -13,6 +13,9 @@
 #define RESTRICT_FUNC __declspec(restrict)
 #define NO_ALIAS __declspec(noalias)
 
+void errorPopup(const char* message);
+void errorPopupWin32(const char* message); // Display the given message and the GetLastError() info
+
 class Helpers
 {
 public:
