@@ -59,28 +59,23 @@ private:
 		static_api_ptr_t<titleformat_compiler> compiler;
 
 		static_api_ptr_t<metadb> db;
+		static_api_ptr_t<search_filter_manager> filter_manager;
 		
 		t_size count = library.get_count();
 
 		double preFilter = Helpers::getHighresTimer();
-		/* // TODO: Rectivate
+
 		if (!cfgFilter.is_empty()){ // filter
-			search_tools::search_filter filter;
-			filter.init(cfgFilter);
-			bit_array_bittable filterMask(count);
-
-			db->database_lock();
-			for (t_size i=0; i < count; i++){
-				const metadb_handle_ptr f = library.get_item_ref(i);
-				if (filter.test(f))
-					filterMask.set(i, true);
+			try {
+				search_filter::ptr filter = filter_manager->create(cfgFilter);
+				pfc::array_t<bool> mask;
+				mask.set_size(library.get_count());
+				filter->test_multi(library, mask.get_ptr());
+				library.filter_mask(mask.get_ptr());
 			}
-			db->database_unlock();
-
-			library.filter_mask(filterMask);
+			catch (pfc::exception const &) {};
 			count = library.get_count();
 		}
-		*/
 		console::printf("Filter %d msec",int((Helpers::getHighresTimer() - preFilter)*1000));
 		
 

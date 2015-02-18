@@ -1,11 +1,5 @@
 
 * Add Git commit SHA to version / use git describe?
-* Allow multiple Instances
-	* Register Window Classes on Foobar Init
-	  NOTE: see init handle for service loop
-	* Convert AppInstance to Service?
-* Properly destroy windows
-* Fix Filter?
 * Find place to check for ImgTexture Leaks
 
 
@@ -13,6 +7,7 @@
 // Future
 * Use built-in cover loader
 * Disable when not shown in DUI
+* Add help button for filter
 
 
 // Changelog
