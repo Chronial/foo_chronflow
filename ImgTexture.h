@@ -8,7 +8,7 @@ class TextDisplay;
 class ImgTexture
 {
 public:
-	static int instanceCount;
+	static long instanceCount;
 
 	friend TextDisplay; // needs to access forcePowerOfTwo - this is a hack!
 public:

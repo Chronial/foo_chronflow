@@ -24,10 +24,10 @@ ImgTexture::ImgTexture(const char * imageFile)
 
 	this->imageFile = imageFile;
 	loadImage();
-	instanceCount++;
+	InterlockedIncrement(&instanceCount);
 }
 
-int ImgTexture::instanceCount = 0;
+long ImgTexture::instanceCount = 0;
 
 ImgTexture::~ImgTexture(void)
 {
@@ -39,7 +39,7 @@ ImgTexture::~ImgTexture(void)
 		MessageBoxW(NULL,L"Destructed ImgTexture with existing glTexture\nMemory Leak!",L"Chronflow Error",MB_OK |MB_ICONINFORMATION);
 	}
 	DeleteCriticalSection(&uploadCS);
-	instanceCount--;
+	InterlockedDecrement(&instanceCount);
 }
 
 const char* ImgTexture::getIdentifier(){
