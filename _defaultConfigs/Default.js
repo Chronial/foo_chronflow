@@ -7,7 +7,7 @@
 // y is bottom to top
 // z is front to back
 
-var coverSpacing = 0.05;
+var coverSpacing = 0.07;
 
 /************************* COVER DISPLAY *****************/
 // These functions define the Display of the single Covers
@@ -20,16 +20,21 @@ function coverPosition(coverId){
    var x, y, z;
    y = 0;
    if (Math.abs(coverId) <= 1){ // The centered cover
-      z = 4 + 0.5 * (1 - Math.abs(coverId));
+      var z_logit =  -0.04 + 0.55 / (1+Math.pow(Math.E,Math.abs(6.5*coverId )-4));
+      var z_root = z = 0.5 * Math.pow(1 - Math.abs(coverId),1.1)
+      var alpha = 0.3;
+      z = 4 + alpha * z_logit + (1-alpha) * z_root;
       x = coverId * 0.875;
    } else { // The covers on the side
-      z = 4 - (Math.abs(coverId)-1) * 0.01;
+      z = 4 - (Math.abs(coverId)-1) * 0.01
+           - Math.pow((Math.abs(coverId)-1)*0.025,2);
       x = 0.875 + coverSpacing * (Math.abs(coverId)-1);
       if (coverId < 0)
          x *= -1;
    }
    return new Array(x, y, z);
 }
+
 
 // return array is (angle, x, y, z) - this rotates
 // the cover *angle* degrees around the vector (x,y,z)
@@ -69,7 +74,7 @@ function coverAlign(coverId){
 // This interval shouldn't be larger than 80
 // The center cover is 0.
 function drawCovers(){
-   return new Array(-30, 30);
+   return new Array(-40, 40);
 }
 
 
