@@ -210,10 +210,7 @@ public:
 
 protected:
 	void redrawMainWin(){
-		AppInstance * mainInstance = gGetSingleInstance();
-		if (mainInstance) {
-			mainInstance->redrawMainWin();
-		}
+		FOR_EACH_INSTANCE(redrawMainWin());
 	}
 };
 
@@ -269,10 +266,7 @@ public:
 				{
 				case IDC_BTN_REFRESH:
 					{
-						AppInstance * mainInstance = gGetSingleInstance();
-						if (mainInstance) {
-							mainInstance->albumCollection->reloadAsynchStart(true);
-						}
+						FOR_EACH_INSTANCE(albumCollection->reloadAsynchStart(true));
 					}
 					break;
 				case IDC_PL_SORT_DB:
@@ -333,18 +327,12 @@ public:
 				textChanged(LOWORD(wParam));
 				if (LOWORD(wParam) == IDC_FOLLOW_DELAY){
 					cfgCoverFollowDelay = max(1, min(999, int(uGetDlgItemInt(hWnd, IDC_FOLLOW_DELAY, 0, 1))));
-					AppInstance * mainInstance = gGetSingleInstance();
-					if (mainInstance) {
-						mainInstance->playbackTracer->followSettingsChanged();
-					}
+					FOR_EACH_INSTANCE(playbackTracer->followSettingsChanged());
 				}
 			} else if (HIWORD(wParam) == BN_CLICKED) {
 				buttonClicked(LOWORD(wParam));
 				if (LOWORD(wParam) == IDC_FOLLOW_PLAYBACK){
-					AppInstance * mainInstance = gGetSingleInstance();
-					if (mainInstance) {
-						mainInstance->playbackTracer->followSettingsChanged();
-					}
+					FOR_EACH_INSTANCE(playbackTracer->followSettingsChanged());
 				}
 			} else if (HIWORD(wParam) == CBN_SELCHANGE){
 				listSelChanged(LOWORD(wParam));
@@ -495,10 +483,7 @@ public:
 						if (selectFont(titleFont)){
 							cfgTitleFont = titleFont;
 							uSendDlgItemMessage(hWnd, IDC_FONT_PREV, WM_SETTEXT, 0, (LPARAM)cfgTitleFont.get_value().lfFaceName);
-							AppInstance * mainInstance = gGetSingleInstance();
-							if (mainInstance) {
-								mainInstance->renderer->onTextFormatChanged();
-							}
+							FOR_EACH_INSTANCE(renderer->onTextFormatChanged());
 						}
 					}
 				}
@@ -617,34 +602,27 @@ public:
 		return FALSE;
 	}
 	void compileConfig(){
+		pfc::string8 message;
 		pfc::string8 script;
 		uGetDlgItemText(hWnd, IDC_DISPLAY_CONFIG, script);
-		
-		pfc::string8 message;
-		ScriptedCoverPositions* covPos;
-		bool killCovPos;
-		AppInstance * mainInstance = gGetSingleInstance();
-		if (mainInstance) {
-			covPos = mainInstance->coverPos;
-			killCovPos = false;
-		} else {
-			try {
-				covPos = new ScriptedCoverPositions();
-			} catch (pfc::exception& e){
-				message = e.what();
+
+		try {
+			ScriptedCoverPositions testCovPos;
+			if (!testCovPos.setScript(script, message)){
 				uSetDlgItemText(hWnd, IDC_COMPILE_STATUS, message);
 				return;
+			} else {
+				uSetDlgItemText(hWnd, IDC_COMPILE_STATUS, "Compilation successfull");
 			}
-			killCovPos = true;
 		}
-		if (covPos->setScript(script, message))
-			message = "Sucess!";
-		uSetDlgItemText(hWnd, IDC_COMPILE_STATUS, message);
-		if (mainInstance)
-			mainInstance->renderer->onViewportChange();
+		catch (pfc::exception& e){
+			message = e.what();
+			uSetDlgItemText(hWnd, IDC_COMPILE_STATUS, message);
+			return;
+		}
+		FOR_EACH_INSTANCE(coverPos->setScript(script, message));
+		FOR_EACH_INSTANCE(renderer->onViewportChange());
 		redrawMainWin();
-		if (killCovPos)
-			delete covPos;
 	}
 	void setUpEditBox(){
 		int tabstops[1] = {14};

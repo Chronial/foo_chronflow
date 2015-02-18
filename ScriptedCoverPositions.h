@@ -349,7 +349,7 @@ class ScriptedCoverPositions
 public:
 	ScriptedCoverPositions(){
 		if (!sessionCompiledCPInfo.isEmpty()){
-			cInfo = sessionCompiledCPInfo;
+			cInfo = new CompiledCPInfo(*sessionCompiledCPInfo);
 		} else {
 			const CoverConfig* config = cfgCoverConfigs.getPtrByName(cfgCoverConfigSel);
 			pfc::string8 errorMsg;
@@ -363,8 +363,7 @@ public:
 		}
 	}
 	~ScriptedCoverPositions(){
-		// don't delete cInfo since it is shared with sessionCompiledCPInfo
-		// delete cInfo;
+		delete cInfo;
 	}
 
 	bool setScript(const char* script, pfc::string_base& errorMsg){
@@ -375,15 +374,11 @@ public:
 			if (compiler.compileScript(script, *compiled, errorMsg)){
 				CompiledCPInfo* oldInfo = cInfo;
 				cInfo = compiled;
+				delete oldInfo;
 
 				CompiledCPInfo* oldSessInfo = sessionCompiledCPInfo;
-				sessionCompiledCPInfo = compiled;
-				if (oldInfo == oldSessInfo){
-					delete oldInfo;
-				} else {
-					delete oldInfo;
-					delete oldSessInfo;
-				}
+				sessionCompiledCPInfo = new CompiledCPInfo(*compiled);
+				delete oldSessInfo;
 				return true;
 			} else {
 				delete compiled;

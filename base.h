@@ -19,9 +19,12 @@
 #define IDT_PLAYBACK_TRACER 666
 #define IDT_FIND_AS_YOU_TYPE_RESET 667
 
-// TODO: this function is obsolete?
+// TODO: This is dirty, do it right
 class AppInstance;
-AppInstance* gGetSingleInstance();
+void getAppInstances(pfc::array_t<AppInstance*> &instances);
+#define FOR_EACH_INSTANCE(call)	{pfc::array_t<AppInstance*> instances; getAppInstances(instances); for (t_size i = 0; i < instances.get_count(); i++) { instances[i]->call; }}
+
+
 
 // {37835416-4578-4aaa-A229-E09AB9E2CB9C}
 const GUID guid_configWindow = { 0x37835416, 0x4578, 0x4aaa, { 0xa2, 0x29, 0xe0, 0x9a, 0xb9, 0xe2, 0xcb, 0x9c } };

@@ -11,7 +11,13 @@ class AppInstance
 {
 public:
 	AppInstance () {
-		ZeroMemory(this, sizeof(*this));
+		texLoader = 0;
+		albumCollection = 0;
+		renderer = 0;
+		displayPos = 0;
+		playbackTracer = 0;
+		coverPos = 0;
+		mainWindow = 0;
 	}
 public:
 	AsynchTexLoader* texLoader;

@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include <set>
 #include "base.h"
 
 #include "AppInstance.h"
@@ -133,10 +134,13 @@ private:
 	MouseFlicker* mouseFlicker;
 	FindAsYouType* findAsYouType;
 
-	AppInstance* appInstance;
 	bool mainWinMinimized;
 	ui_element_config::ptr config;
 	const ui_element_instance_callback_ptr callback;
+public:
+	AppInstance* appInstance;
+	static std::set<Chronflow*> instances;
+
 public:
 	Chronflow(ui_element_config::ptr config, ui_element_instance_callback_ptr p_callback) : callback(p_callback), config(config) {
 		mouseFlicker = 0;
@@ -144,10 +148,12 @@ public:
 		mainWinMinimized = true;
 		appInstance = new AppInstance();;
 		#ifdef _DEBUG
-			Console::create();
+		Console::create();
 		#endif
+		instances.insert(this);
 	}
 	~Chronflow(){
+		instances.erase(this);
 		delete pfc::replace_null_t(mouseFlicker);
 		delete pfc::replace_null_t(findAsYouType);
 
@@ -552,8 +558,10 @@ private:
 	}
 };
 
+std::set<Chronflow*> Chronflow::instances = std::set<Chronflow*>();
 
-class my_ui_element_impl : public ui_element {
+
+class UiElement : public ui_element {
 public:
 	GUID get_guid() { return Chronflow::g_get_guid(); }
 	GUID get_subclass() { return Chronflow::g_get_subclass(); }
@@ -569,8 +577,15 @@ public:
 	bool get_description(pfc::string_base & out) { out = Chronflow::g_get_description(); return true; }
 };
 
+static service_factory_single_t<UiElement> uiElement;
 
-static service_factory_single_t<my_ui_element_impl> x_chronflow;
+void getAppInstances(pfc::array_t<AppInstance*> &instances){
+	instances.set_count(0);
+	for (Chronflow* i : Chronflow::instances){
+		instances.append_single_val(i->appInstance);
+	}
+}
+
 
 class InitHandler : public init_stage_callback {
 public:
