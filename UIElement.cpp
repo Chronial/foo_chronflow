@@ -116,14 +116,15 @@ public:
 		static const GUID guid_foo_chronflow = { 0x1d56881c, 0xca24, 0x470c, { 0x94, 0x4a, 0xde, 0xd8, 0x30, 0xf9, 0xe9, 0x5d } };
 		return guid_foo_chronflow;
 	}
-
 	static GUID g_get_subclass() { return ui_element_subclass_media_library_viewers; }
-	static void g_get_name(pfc::string_base & out) { out = "Chronflow"; }
+
 	GUID get_guid() { return Chronflow::g_get_guid(); }
 	GUID get_subclass() { return Chronflow::g_get_subclass(); }
 
-	static ui_element_config::ptr g_get_default_configuration() { return ui_element_config::g_create_empty(g_get_guid()); }
+	static void g_get_name(pfc::string_base & out) { out = "Chronflow"; }
 	static const char * g_get_description() { return "A coverflow panel"; }
+
+	static ui_element_config::ptr g_get_default_configuration() { return ui_element_config::g_create_empty(g_get_guid()); }
 
 	HWND get_wnd() {
 		return appInstance->mainWindow;
