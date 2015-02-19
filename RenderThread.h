@@ -26,6 +26,8 @@ public:
 	bool shareLists(HGLRC shareWith); // frees RC in RenderThread, shared, retakes RC in RenderThread
 
 	int getPixelFormat(){ return renderer.getPixelFormat(); };
+
+	void stopRenderThread();
 private:
 	int timerResolution;
 	bool timerInPeriod;
@@ -34,7 +36,6 @@ private:
 
 	void startRenderThread();
 	static unsigned int WINAPI runRenderThread(void* lpParameter);
-	void stopRenderThread();
 	bool closeRenderThread;
 	void renderThreadProc();
 	void onPaint();

@@ -154,6 +154,9 @@ public:
 		instances.insert(this);
 	}
 	~Chronflow(){
+		IF_DEBUG(Console::println(L"Destroying UiElement"));
+		appInstance->renderer->stopRenderThread();
+		appInstance->texLoader->stopWorkerThread();
 		instances.erase(this);
 		delete pfc::replace_null_t(mouseFlicker);
 		delete pfc::replace_null_t(findAsYouType);

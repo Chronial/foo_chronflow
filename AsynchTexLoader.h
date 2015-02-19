@@ -58,10 +58,13 @@ private:
 private:
 	ImgTexture* noCoverTexture;
 	ImgTexture* loadingTexture;
-private:
+
 	void startWorkerThread();
 	static unsigned int WINAPI runWorkerThread(void* lpParameter);
+public:
 	void stopWorkerThread();
+
+private:
 
 	void queueGlDelete(ImgTexture* tex);
 
