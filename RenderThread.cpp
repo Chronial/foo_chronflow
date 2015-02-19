@@ -5,6 +5,7 @@
 
 #include "AppInstance.h"
 #include "AsynchTexLoader.h"
+#include "Console.h"
 #include "ScriptedCoverPositions.h"
 #include "DisplayPosition.h"
 
@@ -160,6 +161,7 @@ RenderThread::RenderThread(AppInstance* appInstance)
 }
 
 RenderThread::~RenderThread(){
+	IF_DEBUG(Console::println(L"Destroying RenderThread"));
 	stopRenderThread();
 }
 
@@ -177,6 +179,7 @@ unsigned int WINAPI RenderThread::runRenderThread(void* lpParameter)
 
 void RenderThread::stopRenderThread()
 {
+	IF_DEBUG(Console::println(L"Stopping Render Thread"));
 	closeRenderThread = true;
 	renderThreadHasWork.setSignal();
 	WaitForSingleObject(renderThread,INFINITE);

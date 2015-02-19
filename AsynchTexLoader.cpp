@@ -73,6 +73,7 @@ void AsynchTexLoader::loadSpecialTextures(){
 
 AsynchTexLoader::~AsynchTexLoader(void)
 {
+	IF_DEBUG(Console::println(L"Destroying AsynchTexLoader"));
 	stopWorkerThread();
 	if (uploadQueueHead){
 		UploadQueueElem* prevE;
@@ -85,6 +86,7 @@ AsynchTexLoader::~AsynchTexLoader(void)
 	}
 	// ugly, do better? - maybe window hook
 	if (IsWindow(glWindow)){
+		IF_DEBUG(Console::println(L" - Window still existed"));
 		clearCache();
 		reserveRenderContext();
 		loadingTexture->glDelete();
@@ -92,6 +94,7 @@ AsynchTexLoader::~AsynchTexLoader(void)
 		runGlDelete();
 		releaseRenderContext();
 	} else {
+		IF_DEBUG(Console::println(L" - Window was already gone"));
 		// Has no effect, but prevents error message
 		loadingTexture->glDelete();
 		noCoverTexture->glDelete();
@@ -216,6 +219,7 @@ void AsynchTexLoader::stopWorkerThread()
 		workerThreadMayRun.setSignal();
 		workerThreadHasWork.setSignal();
 		WaitForSingleObject(workerThread,INFINITE);
+		IF_DEBUG(Console::println(L"AsyncTexLoader worker thread stopped"));
 		CloseHandle(workerThread);
 		workerThread = 0;
 	}
