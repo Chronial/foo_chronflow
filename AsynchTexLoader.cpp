@@ -249,14 +249,14 @@ void AsynchTexLoader::reserveRenderContext()
 {
 	renderContext.enter();
 	if (!wglMakeCurrent(glDC, glRC)){
-		errorPopupWin32("failed to reserve AsyncTexLoader Render Context");
+		IF_DEBUG(errorPopupWin32("failed to reserve AsyncTexLoader Render Context"));
 	}
 }
 
 void AsynchTexLoader::releaseRenderContext()
 {
 	if (!wglMakeCurrent(NULL, NULL)){
-		errorPopupWin32("failed to release AsyncTexLoader Render Context");
+		IF_DEBUG(errorPopupWin32("failed to release AsyncTexLoader Render Context"));
 	}
 	renderContext.leave();
 }
