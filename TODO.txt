@@ -1,6 +1,4 @@
 
-* Check if shutdown is orderly
-* Improve description
 * Restore previous default as an option
 
 // Release
@@ -34,7 +32,7 @@ Fehler wenn instanz während reload beendet wird!
 copyDataToCollection braucht zu lange
 Aufrufhäufigkeit von CleanupCache von Cache-Größe abhängig machen
 FPS anzeige geht im Release nur, wenn Foobar damit gestartet wurde
-
+* Check if shutdown is orderly (probably is)
 
 
 

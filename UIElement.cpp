@@ -122,7 +122,7 @@ public:
 	GUID get_subclass() { return Chronflow::g_get_subclass(); }
 
 	static void g_get_name(pfc::string_base & out) { out = "Chronflow"; }
-	static const char * g_get_description() { return "A coverflow panel"; }
+	static const char * g_get_description() { return "Displays a 3D rendering of the Album Art in your Media Library"; }
 
 	static ui_element_config::ptr g_get_default_configuration() { return ui_element_config::g_create_empty(g_get_guid()); }
 
