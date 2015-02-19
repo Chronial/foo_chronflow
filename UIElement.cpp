@@ -173,10 +173,11 @@ public:
 
 		Gdiplus::GdiplusShutdown(gdiplusToken);
 
-		// This is not right here
+#ifdef _DEBUG
 		if (ImgTexture::instanceCount != 0){
 			errorPopup(pfc::string8("ImgTexture Leak: ") << ImgTexture::instanceCount);
 		}
+#endif
 	}
 
 	void initialize_window(HWND parent) {

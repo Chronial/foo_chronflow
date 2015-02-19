@@ -1,5 +1,4 @@
 
-* Find place to check for ImgTexture Leaks
 * Check if shutdown is orderly
 * Improve description
 * Restore previous default as an option
