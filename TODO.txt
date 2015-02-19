@@ -1,4 +1,7 @@
 
+* Rewrite AsynchTexLoader
+	* Window might be destroyed anytime!
+
 // Release
 * Windows scripting control??
 * Ask for better default images
@@ -8,7 +11,6 @@
 * Ask people to test texture compression
 * explain Database Filters: http://wiki.hydrogenaud.io/index.php?title=Foobar2000:Query_syntax
 * Release on Github
-* Debug info! http://www.hydrogenaud.io/forums/index.php?showtopic=76296
 
 
 // Future
@@ -20,6 +22,12 @@
 * Better texture uploading? https://www.opengl.org/wiki/OpenGL_and_multithreading
 * Drag and Drop?
 
+
+# Release Steps
+* make sure CoverConfigs are in sync
+* Bump version number
+* tag version
+* safe dll AND pdb
 
 
 == BUGS ==
