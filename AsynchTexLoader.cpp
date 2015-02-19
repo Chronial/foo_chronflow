@@ -74,7 +74,6 @@ void AsynchTexLoader::loadSpecialTextures(){
 AsynchTexLoader::~AsynchTexLoader(void)
 {
 	stopWorkerThread();
-	clearCache();
 	if (uploadQueueHead){
 		UploadQueueElem* prevE;
 		UploadQueueElem* e = uploadQueueHead;
@@ -84,12 +83,24 @@ AsynchTexLoader::~AsynchTexLoader(void)
 			delete prevE;
 		}
 	}
-	loadingTexture->glDelete();
-	delete loadingTexture;
-	noCoverTexture->glDelete();
-	delete noCoverTexture;
-	runGlDelete();
+	// ugly, do better? - maybe window hook
+	if (IsWindow(glWindow)){
+		clearCache();
+		reserveRenderContext();
+		loadingTexture->glDelete();
+		noCoverTexture->glDelete();
+		runGlDelete();
+		releaseRenderContext();
+	} else {
+		// Has no effect, but prevents error message
+		loadingTexture->glDelete();
+		noCoverTexture->glDelete();
+		// Do this even if we can’t delete
+		textureCache.enumerate(textureCacheDeleteEnumerator);
+	}
 	destroyLoaderWindow();
+	delete loadingTexture;
+	delete noCoverTexture;
 }
 
 void AsynchTexLoader::textureCacheDeleteEnumerator(int idx, ImgTexture* tex){

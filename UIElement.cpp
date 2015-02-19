@@ -166,7 +166,7 @@ public:
 		delete pfc::replace_null_t(appInstance->playbackTracer);
 
 		if (appInstance->mainWindow)
-			DestroyWindow(appInstance->mainWindow);
+			DestroyWindow(appInstance->mainWindow); // This also deletes the LoaderWindow!
 		appInstance->mainWindow = 0;
 
 		delete pfc::replace_null_t(appInstance);
