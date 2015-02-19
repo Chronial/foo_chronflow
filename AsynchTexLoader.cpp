@@ -147,6 +147,7 @@ void AsynchTexLoader::createLoaderWindow(){
 		throw new pfc::exception();
 	}
 
+	wglMakeCurrent(NULL, NULL);
 }
 
 
@@ -220,30 +221,50 @@ void AsynchTexLoader::resumeLoading()
 	workerThreadMayRun.setSignal();
 }
 
-void AsynchTexLoader::destroyLoaderWindow(){
-	if (glRC)
-	{
-		if (!wglDeleteContext(glRC))
-		{
-			console::print(pfc::string8("Foo_chronflow Error: Release Of RC Failed. (loaderWin) Details:") << format_win32_error(GetLastError()));
+void AsynchTexLoader::destroyLoaderWindow()
+{
+	if (glRC){
+		if (!wglDeleteContext(glRC)){
+			errorPopupWin32("failed to destroy  AsyncTexLoader Render Context");
 		}
-		glRC=NULL;
+		glRC = NULL;
 	}
 
 	if (glWindow)
 		DestroyWindow(glWindow);
 }
 
+void AsynchTexLoader::reserveRenderContext()
+{
+	renderContext.enter();
+	if (!wglMakeCurrent(glDC, glRC)){
+		errorPopupWin32("failed to reserve AsyncTexLoader Render Context");
+	}
+}
+
+void AsynchTexLoader::releaseRenderContext()
+{
+	if (!wglMakeCurrent(NULL, NULL)){
+		errorPopupWin32("failed to release AsyncTexLoader Render Context");
+	}
+	renderContext.leave();
+}
+
+
 void AsynchTexLoader::clearCache()
 {
 	ScopeCS scopeLock(workerThreadInLoop);
+	reserveRenderContext();
 	textureCache.enumerate(textureCacheDeleteEnumerator);
 	textureCache.remove_all();
 	loadDistance = -1;
+	releaseRenderContext();
 }
 
-void AsynchTexLoader::resynchCache(t_resynchCallback callback, void* param){
+void AsynchTexLoader::resynchCache(t_resynchCallback callback, void* param)
+{
 	ScopeCS scopeLock(workerThreadInLoop);
+	reserveRenderContext();
 	t_textureCache oldCache = textureCache;
 	textureCache.remove_all();
 	enumHelper.resynchCallback = callback;
@@ -252,6 +273,7 @@ void AsynchTexLoader::resynchCache(t_resynchCallback callback, void* param){
 	enumHelper.resynchCollection = appInstance->albumCollection;
 	oldCache.enumerate(resynchCacheEnumerator);
 	loadDistance = -1;
+	releaseRenderContext();
 }
 
 void AsynchTexLoader::resynchCacheEnumerator(int idx, ImgTexture* tex){
@@ -274,19 +296,18 @@ void AsynchTexLoader::workerThreadProc()
 	loadCenter = queueCenter;
 	bool nearCenter = true;
 	bool onScreen = true;
-	if (!wglMakeCurrent(glDC,glRC)){
-		popup_message::g_show("Can't load cover textures: Loader Failed in wglMakeCurrent", "foo_chronflow Error", popup_message::icon_error);
-	}
-
 	int notifyThreshold = 10;
 	int notifyC = 0;
 	while(!closeWorkerThread){
 		workerThreadMayRun.waitForSignal();
+
 		if (closeWorkerThread)
 			break;
 
 		if (uploadQueueHead && mayUpload.waitForSignal(0)){
+			reserveRenderContext();
 			doUploadQueue();
+			releaseRenderContext();
 		} else {
 			CollectionPos queueCenterLoc = queueCenter; // work with thread-local copy to be Thread-safe
 			if (!(loadCenter == queueCenterLoc)){
@@ -342,7 +363,9 @@ void AsynchTexLoader::workerThreadProc()
 				if (mayUpload.waitForSignal(0)){
 					doUpload = true;
 				}
+				reserveRenderContext();
 				loadTexImage(loadTarget, doUpload);
+				releaseRenderContext();
 				{ // Redraw Mainwindow
 					if ((nearCenter && (notifyC % 2)) ||
 						(onScreen && ((notifyC % 4) == 0)) ||

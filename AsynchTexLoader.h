@@ -67,6 +67,10 @@ private:
 
 	CollectionPos queueCenter;
 
+	CriticalSection renderContext;
+	void reserveRenderContext();
+	void releaseRenderContext();
+
 	void workerThreadProc();
 	void loadTexImage(CollectionPos pos, bool doUpload);
 	HANDLE workerThread;

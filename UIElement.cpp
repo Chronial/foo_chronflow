@@ -157,15 +157,16 @@ public:
 		delete pfc::replace_null_t(mouseFlicker);
 		delete pfc::replace_null_t(findAsYouType);
 
-		if (appInstance->mainWindow)
-			DestroyWindow(appInstance->mainWindow);
-		appInstance->mainWindow = 0;
 		delete pfc::replace_null_t(appInstance->texLoader);
 		delete pfc::replace_null_t(appInstance->renderer);
 		delete pfc::replace_null_t(appInstance->displayPos);
 		delete pfc::replace_null_t(appInstance->albumCollection);
 		delete pfc::replace_null_t(appInstance->coverPos);
 		delete pfc::replace_null_t(appInstance->playbackTracer);
+
+		if (appInstance->mainWindow)
+			DestroyWindow(appInstance->mainWindow);
+		appInstance->mainWindow = 0;
 
 		delete pfc::replace_null_t(appInstance);
 
