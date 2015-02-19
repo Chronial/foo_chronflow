@@ -1,6 +1,4 @@
 
-* Restore previous default as an option
-
 // Release
 * Windows scripting control??
 * Ask for better default images
