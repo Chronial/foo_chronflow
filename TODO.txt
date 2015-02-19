@@ -1,29 +1,33 @@
 
-* Add Git commit SHA to version / use git describe?
 * Find place to check for ImgTexture Leaks
+* Check if shutdown is orderly
+* Improve description
+* Restore previous default as an option
 
+// Release
+* Windows scripting control??
+* Ask for better default images
+* Ask for better configs
+* Pack default images
+* Document hidden features (keyboard shortcuts) / Link to docu on wiki
+* Ask people to test texture compression
+* explain Database Filters: http://wiki.hydrogenaud.io/index.php?title=Foobar2000:Query_syntax
+* Release on Github
+* Debug info! http://www.hydrogenaud.io/forums/index.php?showtopic=76296
 
 
 // Future
 * Use built-in cover loader
 * Disable when not shown in DUI
 * Add help button for filter
+* Fix AsynchTexLoader
+	* Why are we queueing uploads?
+* Better texture uploading? https://www.opengl.org/wiki/OpenGL_and_multithreading
+* Drag and Drop?
 
-
-// Changelog
-Added Performance Options
-Added Multi- and Supersampling
-Added Find As You Type
-Tuned the Cover Display Editor (strg+A, tab, autointending, line-intending (select + tab / shift+tab))
-Fixed some (all known?) bugs.
-Added numerous new build-in Configs
-Rather heavy internal changes - may have introduced some new bugs.
-
-http://www.microsoft.com/downloads/details.aspx?FamilyId=D7E31492-2595-49E6-8C02-1426FEC693AC&displaylang=en
 
 
 == BUGS ==
-Der Filter funktioniert überhaupt nicht richtig :(
 Fehler wenn instanz während reload beendet wird!
 	- das DB refreshen im texLoader thread machen (some kind of borrowThread(callback function) function?
 		oder: threaded_process.h  (wollen wir ein GUI Fenster, wenn der Reload lange dauert?)
