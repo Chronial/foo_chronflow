@@ -148,7 +148,7 @@ cfg_int cfgSupersamplingPasses(guid_cfgSupersamplingPasses, 2);
 
 // {036F84C3-B3F7-4aee-873C-DC0EFC46B0D3}
 static const GUID guid_cfgTextureCacheSize = { 0x36f84c3, 0xb3f7, 0x4aee, { 0x87, 0x3c, 0xdc, 0xe, 0xfc, 0x46, 0xb0, 0xd3 } };
-cfg_int cfgTextureCacheSize(guid_cfgTextureCacheSize, 100);
+cfg_int cfgTextureCacheSize(guid_cfgTextureCacheSize, 150);
 
 // {87491567-6F1C-4339-BF05-FAFE9AF73820}
 static const GUID guid_cfgMaxTextureSize = { 0x87491567, 0x6f1c, 0x4339, { 0xbf, 0x5, 0xfa, 0xfe, 0x9a, 0xf7, 0x38, 0x20 } };
