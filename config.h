@@ -7,7 +7,7 @@
 /*********************************************** Album Source tab *******************************************************/
 // {8426005A-98F3-42fe-A335-C0929C7DBC69}
 static const GUID guid_cfgFilter = { 0x8426005a, 0x98f3, 0x42fe, { 0xa3, 0x35, 0xc0, 0x92, 0x9c, 0x7d, 0xbc, 0x69 } };
-cfg_string cfgFilter(guid_cfgFilter, "1");
+cfg_string cfgFilter(guid_cfgFilter, "");
 
 // {34E7B6A7-50FF-4e89-8A3E-CE55E05E02EB}
 static const GUID guid_cfgGroup = { 0x34e7b6a7, 0x50ff, 0x4e89, { 0x8a, 0x3e, 0xce, 0x55, 0xe0, 0x5e, 0x2, 0xeb } };
@@ -113,7 +113,7 @@ cfg_int cfgPanelBg(guid_cfgPanelBg, RGB(255, 255, 255));
 
 // {495F43F9-C6A9-4289-AA1A-C871B50C5F62}
 static const GUID guid_cfgHighlightWidth = { 0x495f43f9, 0xc6a9, 0x4289, { 0xaa, 0x1a, 0xc8, 0x71, 0xb5, 0xc, 0x5f, 0x62 } };
-cfg_int cfgHighlightWidth(guid_cfgHighlightWidth, 2);
+cfg_int cfgHighlightWidth(guid_cfgHighlightWidth, 0);
 
 /********************************************* Cover Display tab *********************************************************/
 // {7C3CFFF9-A881-476e-ACE7-503512F75C14}
