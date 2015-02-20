@@ -140,14 +140,15 @@ void AsynchTexLoader::createLoaderWindow(){
 		(HMENU) NULL,           // class menu used              
 		core_api::get_my_instance(),// instance handle              
 		NULL);                  // no window creation data
+
 	if (!glWindow){
-		MessageBox(NULL,L"Window Creation Error (loader Win).",L"Foo_chronflow Error",MB_OK|MB_ICONERROR);
+		errorPopupWin32("TexLoader failed to create a window.");
 		throw new pfc::exception();
 	}
 
-	if (!(glDC=GetDC(glWindow))){
+	if (!(glDC = GetDC(glWindow))){
+		errorPopupWin32("TexLoader failed to get a Device Context");
 		destroyLoaderWindow();
-		MessageBox(NULL,L"TexLoader: Can't Create A GL Device Context.",L"Foo_chronflow Error",MB_OK|MB_ICONEXCLAMATION);
 		throw new pfc::exception();
 	}
 
@@ -156,21 +157,20 @@ void AsynchTexLoader::createLoaderWindow(){
 	DescribePixelFormat(glDC, pixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
 
 	if(!SetPixelFormat(glDC,pixelFormat,&pfd)){
+		errorPopupWin32("TexLoader failed to set PixelFormat");
 		destroyLoaderWindow();
-		MessageBox(NULL,L"TexLoader: Can't Set The PixelFormat.",L"Foo_chronflow Error",MB_OK|MB_ICONEXCLAMATION);
 		throw new pfc::exception();
 	}
 
-	if (!(glRC=wglCreateContext(glDC)))
-	{
+	if (!(glRC = wglCreateContext(glDC))){
+		errorPopupWin32("TexLoader failed to create a Rendering Context");
 		destroyLoaderWindow();
-		MessageBox(NULL,L"TexLoader: Can't Create A GL Rendering Context.",L"Foo_chronflow Error",MB_OK|MB_ICONEXCLAMATION);
 		throw new pfc::exception();
 	}
 
 	if (!appInstance->renderer->shareLists(glRC)){
+		errorPopupWin32("TexLoader failed to share Display Lists");
 		destroyLoaderWindow();
-		MessageBox(NULL,L"TexLoader: Couldn't share Display Lists.",L"Foo_chronflow Error",MB_OK|MB_ICONEXCLAMATION);
 		throw new pfc::exception();
 	}
 

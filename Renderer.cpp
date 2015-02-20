@@ -76,59 +76,51 @@ const PIXELFORMATDESCRIPTOR Renderer::pixelFormatDescriptor = {
 
 bool Renderer::attachGlWindow()
 {
-	if (!(hDC=GetDC(appInstance->mainWindow)))							// Did We Get A Device Context?
-	{
-		destroyGlWindow();								// Reset The Display
-		MessageBox(NULL,L"Can't Create A GL Device Context.",L"Foo_chronflow Error",MB_OK|MB_ICONERROR);
-		return FALSE;								// Return FALSE
+	if (!(hDC = GetDC(appInstance->mainWindow))){
+		errorPopupWin32("Renderer failed to get a Device Context");
+		destroyGlWindow();
+		return false;
 	}
 
 	if (!multisampleEnabled){
-		if (!(pixelFormat=ChoosePixelFormat(hDC,&pixelFormatDescriptor)))	// Did Windows Find A Matching Pixel Format?
-		{
-			destroyGlWindow();								// Reset The Display
-			MessageBox(NULL,L"Can't Find A Suitable PixelFormat.",L"Foo_chronflow Error",MB_OK|MB_ICONERROR);
-			return FALSE;								// Return FALSE
+		if (!(pixelFormat = ChoosePixelFormat(hDC, &pixelFormatDescriptor))){
+			errorPopupWin32("Renderer can't find a suitable PixelFormat.");
+			destroyGlWindow();
+			return false;
 		}
 
-		{
-			PIXELFORMATDESCRIPTOR  pfd; 
-
-			DescribePixelFormat(hDC, pixelFormat,  
-				sizeof(PIXELFORMATDESCRIPTOR), &pfd); 
-			if ((pfd.dwFlags & PFD_GENERIC_FORMAT) && !(pfd.dwFlags & PFD_GENERIC_ACCELERATED)){
-				MessageBox(NULL, L"Couldn't get a hardware accelerated PixelFormat.",L"Foo_chronflow Error",MB_ICONINFORMATION);
-				return false;
-			} else if ((pfd.dwFlags & PFD_GENERIC_FORMAT) || (pfd.dwFlags & PFD_GENERIC_ACCELERATED)){
-				pfc::string8 message("Foo_chronflow Problem: Rendering is not fully hardware accelerated. Details: ");
-				if (pfd.dwFlags & PFD_GENERIC_FORMAT)
-					message << "PFD_GENERIC_FORMAT ";
-				if (pfd.dwFlags & PFD_GENERIC_ACCELERATED)
-					message << "PFD_GENERIC_ACCELERATED";
-				console::print(message);
-			}
+		PIXELFORMATDESCRIPTOR pfd;
+		DescribePixelFormat(hDC, pixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
+		if ((pfd.dwFlags & PFD_GENERIC_FORMAT) && !(pfd.dwFlags & PFD_GENERIC_ACCELERATED)){
+			errorPopupWin32("Renderer couldn't get a hardware accelerated PixelFormat.");
+			destroyGlWindow();
+			return false;
+		} else if ((pfd.dwFlags & PFD_GENERIC_FORMAT) || (pfd.dwFlags & PFD_GENERIC_ACCELERATED)){
+			pfc::string8 message("Foo_chronflow Problem: Rendering is not fully hardware accelerated. Details: ");
+			if (pfd.dwFlags & PFD_GENERIC_FORMAT)
+				message << "PFD_GENERIC_FORMAT ";
+			if (pfd.dwFlags & PFD_GENERIC_ACCELERATED)
+				message << "PFD_GENERIC_ACCELERATED";
+			console::print(message);
 		}
 	}
 
-	if(!SetPixelFormat(hDC,pixelFormat,&pixelFormatDescriptor))		// Are We Able To Set The Pixel Format?
-	{
-		destroyGlWindow();								// Reset The Display
-		MessageBox(NULL,L"Can't Set The PixelFormat.",L"ERROR",MB_OK|MB_ICONERROR);
-		return FALSE;								// Return FALSE
+	if(!SetPixelFormat(hDC,pixelFormat,&pixelFormatDescriptor)){
+		errorPopupWin32("Render failed to set PixelFormat");
+		destroyGlWindow();
+		return false;
 	}
 
-	if (!(hRC=wglCreateContext(hDC)))				// Are We Able To Get A Rendering Context?
-	{
-		destroyGlWindow();								// Reset The Display
-		MessageBox(NULL,L"Can't Create A GL Rendering Context.",L"Foo_chronflow Error",MB_OK|MB_ICONERROR);
-		return FALSE;								// Return FALSE
+	if (!(hRC = wglCreateContext(hDC))){
+		errorPopupWin32("Renderer failed to create a Rendering Context");
+		destroyGlWindow();
+		return false;
 	}
 
-	if(!wglMakeCurrent(hDC, hRC))					// Try To Activate The Rendering Context
-	{
-		destroyGlWindow();								// Reset The Display
-		MessageBox(NULL,L"Can't Activate The GL Rendering Context.",L"Foo_chronflow Error",MB_OK|MB_ICONERROR);
-		return FALSE;								// Return FALSE
+	if(!wglMakeCurrent(hDC, hRC)){
+		errorPopupWin32("Renderer failed to activate the Rendering Context");
+		destroyGlWindow();
+		return false;
 	}
 
 	vSyncEnabled = false;
