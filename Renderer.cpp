@@ -267,17 +267,26 @@ bool Renderer::isWglExtensionSupported(const char *name){
 	return false;
 }
 
-bool Renderer::isExtensionSupported(const char *name){
-	static const char* extensions = (char*)glGetString(GL_EXTENSIONS);
+bool Renderer::isExtensionSupported(const char *extName){
+	char *p;
+	char *end;
+	int extNameLen;
 
-	const size_t extlen = strlen(name);
-	for (const char* p = extensions; ; p++)
-	{
-		p = strstr(p, name);
-		if (p == NULL)
-			return false;						// No Match
-		if ((p==extensions || p[-1]==' ') && (p[extlen]=='\0' || p[extlen]==' '))
-			return true;						// Match
+	extNameLen = strlen(extName);
+
+	p = (char *)glGetString(GL_EXTENSIONS);
+	if (!p) {
+		return false;
+	}
+
+	end = p + strlen(p);
+
+	while (p < end) {
+		int n = strcspn(p, " ");
+		if ((extNameLen == n) && (strncmp(extName, p, n) == 0)) {
+			return true;
+		}
+		p += (n + 1);
 	}
 	return false;
 }
