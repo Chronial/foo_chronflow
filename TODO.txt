@@ -6,7 +6,6 @@
 * Windows scripting control??
 * Ask for better default images
 * Ask for better configs
-* Pack default images
 * Document hidden features (keyboard shortcuts) / Link to docu on wiki
 * Ask people to test texture compression
 * explain Database Filters: http://wiki.hydrogenaud.io/index.php?title=Foobar2000:Query_syntax
@@ -21,6 +20,7 @@
 	* Why are we queueing uploads?
 * Better texture uploading? https://www.opengl.org/wiki/OpenGL_and_multithreading
 * Drag and Drop?
+* Proper unicode sort
 
 
 # Release Steps

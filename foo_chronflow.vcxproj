@@ -156,6 +156,7 @@ del $(ProjectDir)\BUILD_IN_COVERCONFIGS.h
     <ClInclude Include="AsynchTexLoader.h" />
     <ClInclude Include="base.h" />
     <ClInclude Include="cfg_coverConfigs.h" />
+    <ClInclude Include="CGdiPlusBitmap.h" />
     <ClInclude Include="CollectionPos.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="Console.h" />
@@ -178,7 +179,9 @@ del $(ProjectDir)\BUILD_IN_COVERCONFIGS.h
     <ClInclude Include="win32_helpers.h" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="_images\ConfigWindow-bar.bmp" />
+    <Image Include="images\config-window-bar.bmp" />
+    <Image Include="images\cover-loading.png" />
+    <Image Include="images\cover-no-img.png" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

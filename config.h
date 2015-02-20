@@ -35,11 +35,11 @@ cfg_string cfgSources(guid_cfgSources, "$replace(%path%,%filename_ext%,)folder.j
 
 // {3D438A94-7B49-41af-8F39-BE76E6BF47F0}
 static const GUID guid_cfgImgNoCover = { 0x3d438a94, 0x7b49, 0x41af, { 0x8f, 0x39, 0xbe, 0x76, 0xe6, 0xbf, 0x47, 0xf0 } };
-cfg_string cfgImgNoCover(guid_cfgImgNoCover, ".\\components\\no-cover.png");
+cfg_string cfgImgNoCover(guid_cfgImgNoCover, "");
 
 // {7FA5E2CC-04EB-4585-9209-D188CD824C79}
 static const GUID guid_cfgImgLoading = { 0x7fa5e2cc, 0x4eb, 0x4585, { 0x92, 0x9, 0xd1, 0x88, 0xcd, 0x82, 0x4c, 0x79 } };
-cfg_string cfgImgLoading(guid_cfgImgLoading, ".\\components\\loading.png");
+cfg_string cfgImgLoading(guid_cfgImgLoading, "");
 
 /*********************************************** Behaviour tab **********************************************************/
 // {5B915FEB-5FED-4edc-98D7-26F5BC991B3D}

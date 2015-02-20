@@ -158,9 +158,18 @@
     <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="CGdiPlusBitmap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="_images\ConfigWindow-bar.bmp">
+    <Image Include="images\cover-loading.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="images\cover-no-img.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="images\config-window-bar.bmp">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

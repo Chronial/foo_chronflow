@@ -5,6 +5,9 @@
 
 #include "Console.h"
 
+#include "Helpers.h"
+#include "CGdiPlusBitmap.h"
+
 using namespace Gdiplus;
 
 extern cfg_int cfgMaxTextureSize;
@@ -13,21 +16,27 @@ extern cfg_bool cfgTextureCompression;
 bool ImgTexture::forcePowerOfTwo = false;
 int  ImgTexture::maxGlTextureSize = 512;
 
+long ImgTexture::instanceCount = 0;
 
-ImgTexture::ImgTexture(const char * imageFile)
+ImgTexture::ImgTexture()
 {
-	status = STATUS_NONE;
-	bitmap = 0;
-	bitmapData = 0;
-	glTexture = 0;
 	InitializeCriticalSectionAndSpinCount(&uploadCS, 0x80000400);
-
-	this->imageFile = imageFile;
-	loadImage();
 	InterlockedIncrement(&instanceCount);
 }
 
-long ImgTexture::instanceCount = 0;
+
+ImgTexture::ImgTexture(const char * imageFile) : ImgTexture()
+{
+	this->name = imageFile;
+	loadImageFile(imageFile);
+}
+
+ImgTexture::ImgTexture(WORD resource) : ImgTexture()
+{
+	this->name = "internal image";
+	loadImageResource(resource);
+}
+
 
 ImgTexture::~ImgTexture(void)
 {
@@ -40,10 +49,6 @@ ImgTexture::~ImgTexture(void)
 	}
 	DeleteCriticalSection(&uploadCS);
 	InterlockedDecrement(&instanceCount);
-}
-
-const char* ImgTexture::getIdentifier(){
-	return imageFile;
 }
 
 void ImgTexture::glBind(void)
@@ -73,8 +78,7 @@ Bitmap* ImgTexture::getErrorBitmap(){
 	StringFormat format;
 	format.SetAlignment(StringAlignmentCenter);
 	format.SetLineAlignment(StringAlignmentCenter);
-	//drawer.DrawString(L"Couldn't load Image",-1,&font,RectF(0,0,256,256),&format,&whiteBrush);
-	drawer.DrawString(pfc::stringcvt::string_wide_from_utf8(imageFile),-1,&font,RectF(0,0,256,256),&format,&whiteBrush);
+	drawer.DrawString(pfc::stringcvt::string_wide_from_utf8(name),-1,&font,RectF(0,0,256,256),&format,&whiteBrush);
 	return bitmap;
 }
 
@@ -161,7 +165,7 @@ int ImgTexture::getMaxSize(){
 	return min(cfgMaxTextureSize, maxGlTextureSize);
 }
 
-void ImgTexture::loadImage()
+void ImgTexture::loadImageFile(const char * imageFile)
 {
 	bitmap = new Bitmap(pfc::stringcvt::string_wide_from_utf8(imageFile));
 	if ((bitmap->GetLastStatus() != Ok) ||
@@ -173,6 +177,12 @@ void ImgTexture::loadImage()
 	prepareUpload();
 }
 
+void ImgTexture::loadImageResource(WORD resource)
+{
+	bitmapResource.Load(resource, L"PNG", core_api::get_my_instance());
+	bitmap = bitmapResource.stealBitmap();
+	prepareUpload();
+}
 
 void ImgTexture::prepareUpload(void)
 {

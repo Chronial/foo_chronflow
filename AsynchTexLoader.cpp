@@ -59,16 +59,29 @@ void AsynchTexLoader::loadSpecialTextures(){
 		delete loadingTexture;
 	}
 	pfc::string8 loadingTexPath(cfgImgLoading);
-	Helpers::fixPath(loadingTexPath);
-	loadingTexture = new ImgTexture(loadingTexPath);
+	loadingTexPath.skip_trailing_char(' ');
+	if (loadingTexPath.get_length() > 0){
+		Helpers::fixPath(loadingTexPath);
+		loadingTexture = new ImgTexture(loadingTexPath);
+	}
+	else {
+		loadingTexture = new ImgTexture(IDB_COVER_LOADING);
+	}
 
 	if (noCoverTexture){
 		noCoverTexture->glDelete();
 		delete noCoverTexture;
 	}
 	pfc::string8 noCoverTexPath(cfgImgNoCover);
-	Helpers::fixPath(noCoverTexPath);
-	noCoverTexture = new ImgTexture(noCoverTexPath);
+	noCoverTexPath.skip_trailing_char(' ');
+	if (noCoverTexPath.get_length() > 0){
+		Helpers::fixPath(noCoverTexPath);
+		noCoverTexture = new ImgTexture(noCoverTexPath);
+	}
+	else {
+		noCoverTexture = new ImgTexture(IDB_COVER_NO_IMG);
+	}
+
 }
 
 AsynchTexLoader::~AsynchTexLoader(void)
