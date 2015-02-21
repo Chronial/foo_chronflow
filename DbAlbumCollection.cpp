@@ -55,37 +55,32 @@ private:
 
 
 	void generateData(){
-		//collection->reloadSourceScripts();
 		static_api_ptr_t<titleformat_compiler> compiler;
 
 		static_api_ptr_t<metadb> db;
-		static_api_ptr_t<search_filter_manager> filter_manager;
+		double actionStart;
 		
-		t_size count = library.get_count();
-
-		double preFilter = Helpers::getHighresTimer();
-
+		actionStart = Helpers::getHighresTimer();
 		if (!cfgFilter.is_empty()){ // filter
 			try {
-				search_filter::ptr filter = filter_manager->create(cfgFilter);
+				search_filter::ptr filter = static_api_ptr_t<search_filter_manager>()->create(cfgFilter);
 				pfc::array_t<bool> mask;
 				mask.set_size(library.get_count());
 				filter->test_multi(library, mask.get_ptr());
 				library.filter_mask(mask.get_ptr());
 			}
 			catch (pfc::exception const &) {};
-			count = library.get_count();
 		}
-		console::printf("Filter %d msec",int((Helpers::getHighresTimer() - preFilter)*1000));
+		console::printf("foo_chronflow: Filter took %d msec", int((Helpers::getHighresTimer() - actionStart) * 1000));
 		
 
-		double preGroup = Helpers::getHighresTimer();
+		actionStart = Helpers::getHighresTimer();
 		{ // GroupMap
 			service_ptr_t<titleformat_object> groupScript;
 			compiler->compile(groupScript, cfgGroup);
-			ptrGroupMap.prealloc(count);
+			ptrGroupMap.prealloc(library.get_size());
 			pfc::string8_fastalloc titleFormatOut;
-			for (t_size i = 0; i < count; i++){
+			for (t_size i = 0; i < library.get_size(); i++){
 				t_ptrAlbumGroup map;
 				map.ptr = library.get_item(i);
 				map.ptr->format_title(0, titleFormatOut, groupScript, 0);
@@ -93,11 +88,10 @@ private:
 				ptrGroupMap.add_item(map);
 			}
 		}
-		console::printf("Group %d msec",int((Helpers::getHighresTimer() - preGroup)*1000));
+		console::printf("foo_chronflow: Group formatting took %d msec", int((Helpers::getHighresTimer() - actionStart) * 1000));
 
 
-		double prePopulate = Helpers::getHighresTimer();
-		albums.prealloc(count);
+		actionStart = Helpers::getHighresTimer();
 		{ // Populate albums
 			pfc::sort_t(ptrGroupMap, [](t_ptrAlbumGroup& a, t_ptrAlbumGroup& b){
 				return uSortStringCompare(a.group, b.group);
@@ -106,67 +100,71 @@ private:
 			t_ptrAlbumGroup* ptrGroupMapPtr = ptrGroupMap.get_ptr();
 			HANDLE previousGroup = 0;
 			int albumCount = -1;
-			for (t_size i=0; i < count; i++){
-				t_ptrAlbumGroup* e = ptrGroupMapPtr + i;//ptrGroupMap.get_item(i);
+			for (t_size i = 0; i < ptrGroupMap.get_size(); i++){
+				t_ptrAlbumGroup* e = ptrGroupMapPtr + i;
 				if (previousGroup == 0 || uSortStringCompare(e->group, previousGroup) != 0){
 					albumCount++;
 					albums.add_item(e->ptr);
 					uSortStringFree(previousGroup);
 					previousGroup = e->group;
-				} else {
+				}
+				else {
 					//belongs to previous Group
 					uSortStringFree(e->group);
 				}
-				e->groupId = albumCount;
+				e->groupId = albums.get_size() - 1;
 			}
 			uSortStringFree(previousGroup);
-			albumCount++;
-			
+
 			ptrGroupMap.sort(ptrGroupMap_comparePtr());
+		}
+		console::printf("foo_chronflow: Group clustering took %d msec", int((Helpers::getHighresTimer() - actionStart) * 1000));
 
-			if (!cfgSortGroup){ //Sort albums
-				service_ptr_t<titleformat_object> sortScript;
-				compiler->compile(sortScript, cfgSort);
-				pfc::array_t<t_size> order; order.set_size(albumCount);
-				pfc::array_t<t_size> revOrder; revOrder.set_size(albumCount);
 
-				{ // fill Order with correct permutation
-					pfc::string8_fastalloc sortOut; sortOut.prealloc(512);
-					pfc::array_t<custom_sort_data> sortData; sortData.set_size(albumCount);
+		actionStart = Helpers::getHighresTimer();
+		if (!cfgSortGroup){ //Sort albums
+			service_ptr_t<titleformat_object> sortScript;
+			compiler->compile(sortScript, cfgSort);
+			pfc::array_t<t_size> order; order.set_size(albums.get_size());
+			pfc::array_t<t_size> revOrder; revOrder.set_size(albums.get_size());
 
-					for(int i=0; i < albumCount; i++)
-					{
-						albums.get_item_ref(i)->format_title(0, sortOut, sortScript, 0);
-						sortData[i].index = i;
-						sortData[i].text = uSortStringCreate(sortOut);
-					}
-					pfc::sort_t(sortData, custom_sort_compare, albumCount);
+			{ // fill Order with correct permutation
+				pfc::string8_fastalloc sortOut; sortOut.prealloc(512);
+				pfc::array_t<custom_sort_data> sortData; sortData.set_size(albums.get_size());
 
-					for(int i=0; i < albumCount; i++){
-						order[i] = sortData[i].index;
-						revOrder[sortData[i].index] = i;
-						uSortStringFree(sortData[i].text);
-					}
+				for (t_size i = 0; i < albums.get_size(); i++){
+					albums.get_item_ref(i)->format_title(0, sortOut, sortScript, 0);
+					sortData[i].index = i;
+					sortData[i].text = uSortStringCreate(sortOut);
 				}
-				albums.reorder(order.get_ptr());
+				pfc::sort_t(sortData, custom_sort_compare, albums.get_size());
 
-				t_ptrAlbumGroup* ptrGroupMapPtr = ptrGroupMap.get_ptr();
-				for (t_size i = 0; i < count; i++){
-					t_ptrAlbumGroup* map = ptrGroupMapPtr + i;
-					map->groupId = revOrder[map->groupId];
+				for (t_size i = 0; i < albums.get_size(); i++){
+					order[i] = sortData[i].index;
+					revOrder[sortData[i].index] = i;
+					uSortStringFree(sortData[i].text);
 				}
 			}
+			albums.reorder(order.get_ptr());
 
-			{ // Generate Map for Find As You Type
-				titleGroupMap.set_size(albumCount);
-				for (int i=0; i < albumCount; i++){
-					titleGroupMap[i].groupId = i;
-					albums.get_item_ref(i)->format_title(0, titleGroupMap[i].title, cfgAlbumTitleScript, 0);
-				}
-				titleGroupMap.sort(titleGroupMap_compareTitle());
+			t_ptrAlbumGroup* ptrGroupMapPtr = ptrGroupMap.get_ptr();
+			for (t_size i = 0; i < ptrGroupMap.get_size(); i++){
+				t_ptrAlbumGroup* map = ptrGroupMapPtr + i;
+				map->groupId = revOrder[map->groupId];
 			}
 		}
-		console::printf("Populate %d msec",int((Helpers::getHighresTimer() - prePopulate)*1000));
+		console::printf("foo_chronflow: Sorting took %d msec", int((Helpers::getHighresTimer() - actionStart) * 1000));
+
+		actionStart = Helpers::getHighresTimer();
+		{ // Generate Map for Find As You Type
+			titleGroupMap.set_size(albums.get_size());
+			for (t_size i = 0; i < albums.get_size(); i++){
+				titleGroupMap[i].groupId = i;
+				albums.get_item_ref(i)->format_title(0, titleGroupMap[i].title, cfgAlbumTitleScript, 0);
+			}
+			titleGroupMap.sort(titleGroupMap_compareTitle());
+		}
+		console::printf("foo_chronflow: FAYT map generated in %d msec", int((Helpers::getHighresTimer() - actionStart) * 1000));
 	}
 
 private:
