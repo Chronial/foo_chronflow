@@ -159,43 +159,29 @@ TextDisplay::DisplayTexture TextDisplay::createTexture(const char* text)
 		strFormat.SetAlignment(StringAlignmentCenter);
 		strFormat.SetTrimming(StringTrimmingNone);
 		strFormat.SetFormatFlags(StringFormatFlagsNoFitBlackBox |
-								 StringFormatFlagsMeasureTrailingSpaces | 
 								 StringFormatFlagsNoWrap |
 								 StringFormatFlagsNoClip);
-		RectF stringSize(0.0, 0.0, 0.0, 0.0);
+		RectF stringSize(0, 0, 1024, 128);
 
 		{ // calculate Text Size
 			Bitmap calcBitmap(5, 5, PixelFormat32bppARGB);
 			Graphics graphics(&calcBitmap);
-			CharacterRange charRange(0, wcslen(w_text));
 
-			strFormat.SetMeasurableCharacterRanges(1, &charRange);
-			Region charRangeRegion;
-			
-			{
-				HDC fontDC = graphics.GetHDC();
-				font = new Gdiplus::Font(fontDC, &(cfgTitleFont.get_value()));
-				graphics.ReleaseHDC(fontDC);
-				if (!font->IsAvailable()){
-					delete font;
-					font = new Gdiplus::Font(L"Verdana", 8.0f);
-				}
+			HDC fontDC = graphics.GetHDC();
+			font = new Gdiplus::Font(fontDC, &(cfgTitleFont.get_value()));
+			graphics.ReleaseHDC(fontDC);
+			if (!font->IsAvailable()){
+				delete font;
+				font = new Gdiplus::Font(L"Verdana", 8.0f);
 			}
 
-
-			Status res = graphics.MeasureCharacterRanges(w_text, -1,
-				font, RectF(0.0f, 0.0f, 1024.0f, 128.0f), &strFormat, 1, &charRangeRegion);
-			if (res == Ok){
-				charRangeRegion.GetBounds(&stringSize,&graphics);
-			} else {
-				stringSize.Width = stringSize.Height = stringSize.X = stringSize.Y = 10;
-			}
+			graphics.MeasureString(w_text, -1, font, PointF(), &stringSize);
 		}
-		stringSize.Height += stringSize.Y * 2 + 2;
-		stringSize.Width += 10 + stringSize.Width / 10;
-		stringSize.X = stringSize.Y = 0;
-		displayTex.texWidth  = displayTex.textWidth  = (int)ceil(stringSize.Width);
-		displayTex.texHeight = displayTex.textHeight = (int)ceil(stringSize.Height);
+		// round to multiples of two, so centering is consistent
+		stringSize.Width = ceil(stringSize.Width / 2.0f) * 2;
+		stringSize.Height = ceil(stringSize.Height);
+		displayTex.texWidth  = displayTex.textWidth  = (int)stringSize.Width;
+		displayTex.texHeight = displayTex.textHeight = (int)stringSize.Height;
 		if (ImgTexture::forcePowerOfTwo){
 			displayTex.texWidth = 1;
 			while (displayTex.texWidth < displayTex.textWidth)
@@ -215,7 +201,6 @@ TextDisplay::DisplayTexture TextDisplay::createTexture(const char* text)
 		SolidBrush textBrush(textColor);
 		displayTex.color = cfgTitleColor;
 
-		drawer.DrawString(w_text, -1, font, PointF(stringSize.Width/2,0), &strFormat, &textBrush);
 		drawer.DrawString(w_text, -1, font, stringSize, &strFormat, &textBrush);
 	}
 

@@ -97,11 +97,10 @@ cfg_int cfgTitleColor(guid_cfgTitleColor, RGB(0, 0, 0));
 // {3BBA50BD-207E-43b2-95F1-44B67B898C26}
 static const GUID guid_cfgTitleFont = { 0x3bba50bd, 0x207e, 0x43b2, { 0x95, 0xf1, 0x44, 0xb6, 0x7b, 0x89, 0x8c, 0x26 } };
 static inline LOGFONT def_cfgTitleFont(){
-	LOGFONT out;
-	ZeroMemory(&out, sizeof(out));
+	LOGFONT out{};
 	wcscpy_s(out.lfFaceName,L"Verdana");
-	out.lfHeight = -21;
-	out.lfWeight = 700;
+	out.lfHeight = -18;
+	out.lfWeight = 400;
 	return out;
 }
 cfg_struct_t<LOGFONT> cfgTitleFont(guid_cfgTitleFont, def_cfgTitleFont());
