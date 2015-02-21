@@ -29,6 +29,8 @@
 * Bump version number
 * tag version
 * safe dll AND pdb
+* upload to github
+* update forum post
 
 
 == BUGS ==
