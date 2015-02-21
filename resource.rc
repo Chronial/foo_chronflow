@@ -28,11 +28,11 @@ IDB_BAR                 BITMAP                  "images\\config-window-bar.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// PNG
+// JPG
 //
 
-IDB_COVER_NO_IMG        PNG                     "images\\cover-no-img.png"
-IDB_COVER_LOADING       PNG                     "images\\cover-loading.png"
+IDR_COVER_LOADING       JPG                     "images\\cover-loading.jpg"
+IDR_COVER_NO_IMG        JPG                     "images\\cover-no-img.jpg"
 #endif    // Neutral resources
 /////////////////////////////////////////////////////////////////////////////
 

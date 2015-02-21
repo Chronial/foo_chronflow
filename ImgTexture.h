@@ -17,7 +17,7 @@ private:
 	ImgTexture();
 public:
 	ImgTexture(const char* imageFile);
-	ImgTexture(WORD resource);
+	ImgTexture(WORD resource, LPCTSTR type);
 	~ImgTexture(void);
 
 	void glBind(void);
@@ -49,6 +49,6 @@ private:
 	void prepareUpload(void);
 
 	void loadImageFile(const char * imageFile);
-	void loadImageResource(WORD resource);
+	void loadImageResource(WORD resource, LPCTSTR type);
 	pfc::string8 name;
 };

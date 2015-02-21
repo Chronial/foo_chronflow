@@ -11,7 +11,8 @@
 #define IDD_CONFIG_NAME                 108
 #define IDD_PERF_TAB                    109
 #define IDB_BAR                         111
-#define IDB_COVER_NO_IMG                117
+#define IDR_COVER_LOADING               122
+#define IDR_COVER_NO_IMG                123
 #define IDC_SOURCES                     1003
 #define IDC_FILTER                      1004
 #define IDC_BTN_REFRESH                 1016
@@ -31,7 +32,6 @@
 #define IDC_MIDDLE_CLICK                1034
 #define IDC_ENTER_KEY                   1035
 #define IDC_ALBUM_FORMAT                1035
-#define IDB_COVER_LOADING               1035
 #define IDC_TPOS_V                      1036
 #define IDC_TPOS_H                      1037
 #define IDC_SAVED_ADD                   1039
@@ -80,7 +80,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        122
+#define _APS_NEXT_RESOURCE_VALUE        124
 #define _APS_NEXT_COMMAND_VALUE         40004
 #define _APS_NEXT_CONTROL_VALUE         1116
 #define _APS_NEXT_SYMED_VALUE           101

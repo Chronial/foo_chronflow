@@ -65,7 +65,7 @@ void AsynchTexLoader::loadSpecialTextures(){
 		loadingTexture = new ImgTexture(loadingTexPath);
 	}
 	else {
-		loadingTexture = new ImgTexture(IDB_COVER_LOADING);
+		loadingTexture = new ImgTexture(IDR_COVER_LOADING, L"JPG");
 	}
 
 	if (noCoverTexture){
@@ -79,7 +79,7 @@ void AsynchTexLoader::loadSpecialTextures(){
 		noCoverTexture = new ImgTexture(noCoverTexPath);
 	}
 	else {
-		noCoverTexture = new ImgTexture(IDB_COVER_NO_IMG);
+		noCoverTexture = new ImgTexture(IDR_COVER_NO_IMG, L"JPG");
 	}
 
 }

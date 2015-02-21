@@ -180,8 +180,8 @@ del $(ProjectDir)\BUILD_IN_COVERCONFIGS.h
   </ItemGroup>
   <ItemGroup>
     <Image Include="images\config-window-bar.bmp" />
-    <Image Include="images\cover-loading.png" />
-    <Image Include="images\cover-no-img.png" />
+    <Image Include="images\cover-loading.jpg" />
+    <Image Include="images\cover-no-img.jpg" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

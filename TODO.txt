@@ -1,6 +1,8 @@
 
 * Rewrite AsynchTexLoader
 	* Window might be destroyed anytime!
+* Use built-in cover loader
+    * cache covers?
 
 // Release
 * Windows scripting control??
@@ -13,7 +15,6 @@
 
 
 // Future
-* Use built-in cover loader
 * Disable when not shown in DUI
 * Add help button for filter
 * Fix AsynchTexLoader

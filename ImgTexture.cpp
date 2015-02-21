@@ -31,10 +31,10 @@ ImgTexture::ImgTexture(const char * imageFile) : ImgTexture()
 	loadImageFile(imageFile);
 }
 
-ImgTexture::ImgTexture(WORD resource) : ImgTexture()
+ImgTexture::ImgTexture(WORD resource, LPCTSTR type) : ImgTexture()
 {
 	this->name = "internal image";
-	loadImageResource(resource);
+	loadImageResource(resource, type);
 }
 
 
@@ -177,9 +177,9 @@ void ImgTexture::loadImageFile(const char * imageFile)
 	prepareUpload();
 }
 
-void ImgTexture::loadImageResource(WORD resource)
+void ImgTexture::loadImageResource(WORD resource, LPCTSTR type)
 {
-	bitmapResource.Load(resource, L"PNG", core_api::get_my_instance());
+	bitmapResource.Load(resource, type, core_api::get_my_instance());
 	bitmap = bitmapResource.stealBitmap();
 	prepareUpload();
 }
