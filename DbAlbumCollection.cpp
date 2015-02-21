@@ -79,18 +79,17 @@ private:
 		console::printf("Filter %d msec",int((Helpers::getHighresTimer() - preFilter)*1000));
 		
 
-
-
-		service_ptr_t<titleformat_object> groupScript;
-		compiler->compile(groupScript, cfgGroup);
 		double preGroup = Helpers::getHighresTimer();
-		ptrGroupMap.prealloc(count);
 		{ // GroupMap
-			for (t_size i=0; i < count; i++){
+			service_ptr_t<titleformat_object> groupScript;
+			compiler->compile(groupScript, cfgGroup);
+			ptrGroupMap.prealloc(count);
+			pfc::string8_fastalloc titleFormatOut;
+			for (t_size i = 0; i < count; i++){
 				t_ptrAlbumGroup map;
 				map.ptr = library.get_item(i);
-				map.group = new pfc::string8;
-				map.ptr->format_title(0, *map.group, groupScript, 0);
+				map.ptr->format_title(0, titleFormatOut, groupScript, 0);
+				map.group = uSortStringCreate(titleFormatOut);
 				ptrGroupMap.add_item(map);
 			}
 		}
@@ -100,24 +99,27 @@ private:
 		double prePopulate = Helpers::getHighresTimer();
 		albums.prealloc(count);
 		{ // Populate albums
-			ptrGroupMap.sort(ptrGroupMap_compareGroup());
+			pfc::sort_t(ptrGroupMap, [](t_ptrAlbumGroup& a, t_ptrAlbumGroup& b){
+				return uSortStringCompare(a.group, b.group);
+			}, ptrGroupMap.get_size());
+
 			t_ptrAlbumGroup* ptrGroupMapPtr = ptrGroupMap.get_ptr();
-			pfc::string8 * previousGroup = 0;
+			HANDLE previousGroup = 0;
 			int albumCount = -1;
 			for (t_size i=0; i < count; i++){
 				t_ptrAlbumGroup* e = ptrGroupMapPtr + i;//ptrGroupMap.get_item(i);
-				if (previousGroup == 0 || stricmp_utf8(e->group->get_ptr(),previousGroup->get_ptr()) != 0){
+				if (previousGroup == 0 || uSortStringCompare(e->group, previousGroup) != 0){
 					albumCount++;
 					albums.add_item(e->ptr);
-					delete previousGroup;
+					uSortStringFree(previousGroup);
 					previousGroup = e->group;
 				} else {
 					//belongs to previous Group
-					delete e->group;
+					uSortStringFree(e->group);
 				}
 				e->groupId = albumCount;
 			}
-			delete previousGroup;
+			uSortStringFree(previousGroup);
 			albumCount++;
 			
 			ptrGroupMap.sort(ptrGroupMap_comparePtr());

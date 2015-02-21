@@ -49,7 +49,7 @@ private:
 	pfc::list_t<metadb_handle_ptr> albums;
 	struct t_ptrAlbumGroup {
 		metadb_handle_ptr ptr;
-		pfc::string8 * group;
+		HANDLE group;
 		int groupId;
 	};
 	pfc::list_t<t_ptrAlbumGroup> ptrGroupMap;
@@ -69,12 +69,6 @@ private:
 	static int ptrGroupMap_searchPtr(const t_ptrAlbumGroup& a, const metadb_handle_ptr& ptr){
 		return ptr.get_ptr() - a.ptr.get_ptr();
 	}
-	class ptrGroupMap_compareGroup : public pfc::list_base_t<t_ptrAlbumGroup>::sort_callback {
-	public:
-		int compare(const t_ptrAlbumGroup &a, const t_ptrAlbumGroup &b){
-			return stricmp_utf8(a.group->get_ptr(), b.group->get_ptr());
-		}
-	};
 	
 	struct t_titleAlbumGroup {
 		pfc::string8 title;
