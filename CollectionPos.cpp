@@ -70,7 +70,7 @@ int CollectionPos::operator-(const CollectionPos& p) const // returns the shorte
 	return dist;
 };
 
-int CollectionPos::toIndex()
+size_t CollectionPos::toIndex()
 {
 	PFC_ASSERT(collection);
 	int arraySize = collection->getCount();
@@ -82,7 +82,7 @@ int CollectionPos::toIndex()
 	return p;
 };
 
-int CollectionPos::toIndex() const
+size_t CollectionPos::toIndex() const
 {
 	PFC_ASSERT(collection);
 	int arraySize = collection->getCount();

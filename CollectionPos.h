@@ -29,8 +29,8 @@ public:
 	bool operator==(const CollectionPos& p) const;
 	bool operator!=(const CollectionPos& p) const;
 	int operator-(const CollectionPos& p) const; // returns the shortest distance between two CollectionPos
-	int toIndex();
-	int toIndex() const;
+	size_t toIndex();
+	size_t toIndex() const;
 
 private:
 	int p;

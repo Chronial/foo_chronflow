@@ -318,7 +318,7 @@ bool DbAlbumCollection::getImageForTrack(const metadb_handle_ptr &track, pfc::st
 }
 
 bool DbAlbumCollection::getTracks(CollectionPos pos, metadb_handle_list& out){
-	int idx = pos.toIndex();
+	size_t idx = pos.toIndex();
 	if (idx >= sortedAlbums.get_count()){
 		return false;
 	}
