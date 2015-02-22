@@ -7,6 +7,7 @@
 #include "DisplayPosition.h"
 #include "ImgTexture.h"
 
+#include <Shlwapi.h>
 #include <process.h>
 
 extern cfg_string cfgGroup;
@@ -35,16 +36,18 @@ static int __cdecl custom_sort_compare(const custom_sort_data & elem1, const cus
 class DbAlbumCollection::RefreshWorker {
 private:
 	metadb_handle_list library;
-	pfc::list_t<DbAlbumCollection::t_ptrAlbumGroup> ptrGroupMap;
-	pfc::list_t<metadb_handle_ptr> albums;
-	pfc::list_t<DbAlbumCollection::t_titleAlbumGroup> titleGroupMap;
+	std::unordered_map<std::string, DbAlbum> albumMap;
+	pfc::list_t<DbAlbum*> sortedAlbums;
+	pfc::list_t<DbAlbum*> findAsYouType;
+	service_ptr_t<titleformat_object> albumMapper;
 
 private:
-	void copyDataToCollection(DbAlbumCollection* collection){
+	void moveDataToCollection(DbAlbumCollection* collection){
 		ScopeCS scopeLock(collection->renderThreadCS);
-		collection->albums = albums;
-		collection->ptrGroupMap = ptrGroupMap;
-		collection->titleGroupMap = titleGroupMap;
+		sortedAlbums.g_swap(collection->sortedAlbums, sortedAlbums);
+		findAsYouType.g_swap(collection->findAsYouType, findAsYouType);
+		collection->albumMapper = std::move(albumMapper);
+		collection->albumMap = std::move(albumMap);
 	}
 private:
 	// call from mainthread!
@@ -53,15 +56,14 @@ private:
 		lm->get_all_items(library);
 	}
 
-
 	void generateData(){
 		static_api_ptr_t<titleformat_compiler> compiler;
-
 		static_api_ptr_t<metadb> db;
 		double actionStart;
-		
+
+
 		actionStart = Helpers::getHighresTimer();
-		if (!cfgFilter.is_empty()){ // filter
+		if (!cfgFilter.is_empty()){
 			try {
 				search_filter::ptr filter = static_api_ptr_t<search_filter_manager>()->create(cfgFilter);
 				pfc::array_t<bool> mask;
@@ -72,98 +74,62 @@ private:
 			catch (pfc::exception const &) {};
 		}
 		console::printf("foo_chronflow: Filter took %d msec", int((Helpers::getHighresTimer() - actionStart) * 1000));
-		
+
 
 		actionStart = Helpers::getHighresTimer();
-		{ // GroupMap
-			service_ptr_t<titleformat_object> groupScript;
-			compiler->compile(groupScript, cfgGroup);
-			ptrGroupMap.prealloc(library.get_size());
-			pfc::string8_fastalloc titleFormatOut;
+		{
+			compiler->compile(albumMapper, cfgGroup);
+			pfc::string8_fast_aggressive albumKey;
+			pfc::string8_fast_aggressive albumSortKey;
+			pfc::string8_fast_aggressive albumFAYTKey;
+			albumMap.reserve(library.get_size());
+			service_ptr_t<titleformat_object> sortFormatter;
+			if (!cfgSortGroup){
+				compiler->compile(sortFormatter, cfgSort);
+			}
 			for (t_size i = 0; i < library.get_size(); i++){
-				t_ptrAlbumGroup map;
-				map.ptr = library.get_item(i);
-				map.ptr->format_title(0, titleFormatOut, groupScript, 0);
-				map.group = uSortStringCreate(titleFormatOut);
-				ptrGroupMap.add_item(map);
+				metadb_handle_ptr track = library.get_item(i);
+				track->format_title(0, albumKey, albumMapper, 0);
+				if (!albumMap.count(albumKey.get_ptr())){
+					DbAlbum* album = &albumMap[albumKey.get_ptr()];
+					album->tracks.prealloc(20);
+					album->tracks.add_item(track);
+					if (cfgSortGroup){
+						album->sortString = pfc::stringcvt::string_wide_from_utf8(albumKey);
+					} else {
+						track->format_title(0, albumSortKey, sortFormatter, 0);
+						album->sortString = pfc::stringcvt::string_wide_from_utf8(albumSortKey);
+					}
+					track->format_title(0, album->findAsYouType, cfgAlbumTitleScript, 0);
+				} else {
+					albumMap[albumKey.get_ptr()].tracks.add_item(track);
+				}
 			}
 		}
-		console::printf("foo_chronflow: Group formatting took %d msec", int((Helpers::getHighresTimer() - actionStart) * 1000));
+		console::printf("foo_chronflow: Grouping took %d msec", int((Helpers::getHighresTimer() - actionStart) * 1000));
 
 
 		actionStart = Helpers::getHighresTimer();
-		{ // Populate albums
-			pfc::sort_t(ptrGroupMap, [](t_ptrAlbumGroup& a, t_ptrAlbumGroup& b){
-				return uSortStringCompare(a.group, b.group);
-			}, ptrGroupMap.get_size());
-
-			t_ptrAlbumGroup* ptrGroupMapPtr = ptrGroupMap.get_ptr();
-			HANDLE previousGroup = 0;
-			int albumCount = -1;
-			for (t_size i = 0; i < ptrGroupMap.get_size(); i++){
-				t_ptrAlbumGroup* e = ptrGroupMapPtr + i;
-				if (previousGroup == 0 || uSortStringCompare(e->group, previousGroup) != 0){
-					albumCount++;
-					albums.add_item(e->ptr);
-					uSortStringFree(previousGroup);
-					previousGroup = e->group;
-				}
-				else {
-					//belongs to previous Group
-					uSortStringFree(e->group);
-				}
-				e->groupId = albums.get_size() - 1;
-			}
-			uSortStringFree(previousGroup);
-
-			ptrGroupMap.sort(ptrGroupMap_comparePtr());
+		for (auto &album : albumMap){
+			sortedAlbums.add_item(&(album.second));
 		}
-		console::printf("foo_chronflow: Group clustering took %d msec", int((Helpers::getHighresTimer() - actionStart) * 1000));
-
-
-		actionStart = Helpers::getHighresTimer();
-		if (!cfgSortGroup){ //Sort albums
-			service_ptr_t<titleformat_object> sortScript;
-			compiler->compile(sortScript, cfgSort);
-			pfc::array_t<t_size> order; order.set_size(albums.get_size());
-			pfc::array_t<t_size> revOrder; revOrder.set_size(albums.get_size());
-
-			{ // fill Order with correct permutation
-				pfc::string8_fastalloc sortOut; sortOut.prealloc(512);
-				pfc::array_t<custom_sort_data> sortData; sortData.set_size(albums.get_size());
-
-				for (t_size i = 0; i < albums.get_size(); i++){
-					albums.get_item_ref(i)->format_title(0, sortOut, sortScript, 0);
-					sortData[i].index = i;
-					sortData[i].text = uSortStringCreate(sortOut);
-				}
-				pfc::sort_t(sortData, custom_sort_compare, albums.get_size());
-
-				for (t_size i = 0; i < albums.get_size(); i++){
-					order[i] = sortData[i].index;
-					revOrder[sortData[i].index] = i;
-					uSortStringFree(sortData[i].text);
-				}
-			}
-			albums.reorder(order.get_ptr());
-
-			t_ptrAlbumGroup* ptrGroupMapPtr = ptrGroupMap.get_ptr();
-			for (t_size i = 0; i < ptrGroupMap.get_size(); i++){
-				t_ptrAlbumGroup* map = ptrGroupMapPtr + i;
-				map->groupId = revOrder[map->groupId];
-			}
+		console::printf("foo_chronflow: Full copy took %d msec", int((Helpers::getHighresTimer() - actionStart) * 1000));
+		sortedAlbums.sort_t([](DbAlbum* a, DbAlbum* b) {
+			return StrCmpLogicalW(a->sortString.data(), b->sortString.data());
+		});
+		for (size_t i = 0; i < sortedAlbums.get_size(); i++){
+			sortedAlbums[i]->index = i;
 		}
 		console::printf("foo_chronflow: Sorting took %d msec", int((Helpers::getHighresTimer() - actionStart) * 1000));
 
+
 		actionStart = Helpers::getHighresTimer();
-		{ // Generate Map for Find As You Type
-			titleGroupMap.set_size(albums.get_size());
-			for (t_size i = 0; i < albums.get_size(); i++){
-				titleGroupMap[i].groupId = i;
-				albums.get_item_ref(i)->format_title(0, titleGroupMap[i].title, cfgAlbumTitleScript, 0);
-			}
-			titleGroupMap.sort(titleGroupMap_compareTitle());
+		for (auto &album : albumMap){
+			findAsYouType.add_item(&(album.second));
 		}
+		findAsYouType.sort_stable_t([](DbAlbum* a, DbAlbum* b) {
+			return stricmp_utf8(a->findAsYouType, b->findAsYouType);
+		});
 		console::printf("foo_chronflow: FAYT map generated in %d msec", int((Helpers::getHighresTimer() - actionStart) * 1000));
 	}
 
@@ -184,7 +150,7 @@ private:
 
 	static unsigned int WINAPI runWorkerThread(void* lpParameter)
 	{
-		((DbAlbumCollection::RefreshWorker*)(lpParameter))->workerThreadProc();
+		((RefreshWorker*)(lpParameter))->workerThreadProc();
 		return 0;
 	}
 
@@ -238,14 +204,14 @@ public:
 		}
 		a[3] = Helpers::getHighresTimer();
 
-		copyDataToCollection(collection);
+		moveDataToCollection(collection);
 		a[4] = Helpers::getHighresTimer();
 		appInstance->texLoader->resumeLoading();
-		a[5] = Helpers::getHighresTimer();
-		for (int i=0; i < 5; i++){
-			console::printf("Times: a%d - a%d: %dmsec", i, i+1, int((a[i+1] - a[i])*1000));
-		}
 		appInstance->redrawMainWin();
+		a[5] = Helpers::getHighresTimer();
+		for (int i = 0; i < 5; i++){
+			console::printf("Times: a%d - a%d: %dmsec", i, i + 1, int((a[i + 1] - a[i]) * 1000));
+		}
 		delete this;
 	}
 	static int CALLBACK staticResynchCallback(int oldIdx, void* p_this, AlbumCollection* collection){
@@ -253,18 +219,20 @@ public:
 	}
 	inline int resynchCallback(int oldIdx, AlbumCollection* collection){
 		DbAlbumCollection* col = dynamic_cast<DbAlbumCollection*>(collection);
-		//t_ptrAlbumGroup oldMap;
-		if (oldIdx+1 > (int)col->albums.get_count())
+		if ((size_t)oldIdx >= col->sortedAlbums.get_count())
 			return -1;
-		//oldMap.ptr = col->albums.get_item_ref(oldIdx);
-		metadb_handle_ptr ptr = col->albums.get_item_ref(oldIdx);
-		t_size ptrIdx;
-		//if (ptrGroupMap.bsearch_t(&(ptrGroupMap_comparePtr::bTreeCompare), oldMap, ptrIdx)){
-		if (ptrGroupMap.bsearch_t(&(ptrGroupMap_searchPtr), ptr, ptrIdx)){
-			return(ptrGroupMap.get_item(ptrIdx).groupId);
-		} else {
-			return -1;
+
+		DbAlbum* oldAlbum = col->sortedAlbums.get_item_ref(oldIdx);
+		int newIdx = -1;
+		pfc::string8_fast_aggressive albumKey;
+		for (t_size i = 0; i < oldAlbum->tracks.get_size(); i++){
+			oldAlbum->tracks[i]->format_title(0, albumKey, albumMapper, 0);
+			if (albumMap.count(albumKey.get_ptr())){
+				newIdx = albumMap[albumKey.get_ptr()].index;
+				break;
+			}
 		}
+		return newIdx;
 	}
 };
 
@@ -303,19 +271,11 @@ DbAlbumCollection::DbAlbumCollection(AppInstance* instance){
 
 	static_api_ptr_t<titleformat_compiler> compiler;
 	compiler->compile(cfgAlbumTitleScript, cfgAlbumTitle);
-
-	//reloadSourceScripts();
-	/*double start = Helpers::getHighresTimer();
-	RefreshWorker worker;
-	worker.init();
-	worker.generateData();
-	double mid = Helpers::getHighresTimer();
-	worker.copyDataToCollection(this);
-	double end = Helpers::getHighresTimer();
-	console::printf("Generate %d msec, copy %d msec",int((mid-start)*1000),int((end-mid)*1000));*/
 }
 
 void DbAlbumCollection::reloadAsynchStart(bool hardRefresh){
+	if (isRefreshing)
+		return;
 	isRefreshing = true;
 	RefreshWorker::reloadAsynchStart(appInstance, hardRefresh);
 	if (hardRefresh){
@@ -357,27 +317,26 @@ bool DbAlbumCollection::getImageForTrack(const metadb_handle_ptr &track, pfc::st
 	return imgFound;
 }
 
-int DbAlbumCollection::getTracks(CollectionPos pos, metadb_handle_list& out){
-	int trackCount = ptrGroupMap.get_count();
-	int group = pos.toIndex();
-	out.remove_all();
-	int c = 0;
-	for (int i=0; i < trackCount; i++){
-		if (ptrGroupMap.get_item_ref(i).groupId == group){
-			out.add_item(ptrGroupMap.get_item_ref(i).ptr);
-			c++;
-		}
+bool DbAlbumCollection::getTracks(CollectionPos pos, metadb_handle_list& out){
+	int idx = pos.toIndex();
+	if (idx >= sortedAlbums.get_count()){
+		return false;
 	}
+	out = sortedAlbums[idx]->tracks;
 	out.sort_by_format(cfgInnerSort, 0);
-	return c;
+	return true;
 }
 
 bool DbAlbumCollection::getAlbumForTrack(const metadb_handle_ptr& track, CollectionPos& out){
-	t_size mapIdx;
-	if(ptrGroupMap.bsearch_t(&(ptrGroupMap_searchPtr), track, mapIdx)){
-		out = CollectionPos(this, ptrGroupMap.get_item_ref(mapIdx).groupId);
+	pfc::string8_fast_aggressive albumKey;
+	if (!albumMapper.is_valid())
+		return false;
+	track->format_title(0, albumKey, albumMapper, 0);
+	try {
+		out = CollectionPos(this, albumMap.at(albumKey.get_ptr()).index);
 		return true;
-	} else {
+	}
+	catch (std::out_of_range) {
 		return false;
 	}
 }
@@ -390,19 +349,19 @@ DbAlbumCollection::~DbAlbumCollection(void)
 
 void DbAlbumCollection::getTitle(CollectionPos pos, pfc::string_base& out){
 	ScopeCS scopeLock(renderThreadCS);
-	if (albums.get_count() > 0)
-		albums.get_item_ref(pos.toIndex())->format_title(0, out, cfgAlbumTitleScript, 0);
+	if (sortedAlbums.get_count() > 0)
+		sortedAlbums[pos.toIndex()]->tracks[0]->format_title(0, out, cfgAlbumTitleScript, 0);
 	else
 		out = "No Covers Loaded";
 }
 
 ImgTexture* DbAlbumCollection::getImgTexture(CollectionPos pos){
-	if (albums.get_count() < 1)
+	if (albumMap.empty())
 		return 0;
 
 	pfc::string8_fast_aggressive imgFile;
 	imgFile.prealloc(512);
-	if (getImageForTrack(albums.get_item_ref(pos.toIndex()), imgFile)){
+	if (getImageForTrack(sortedAlbums[pos.toIndex()]->tracks[0], imgFile)){
 		return new ImgTexture(imgFile);
 	} else {
 		return 0;
@@ -413,8 +372,8 @@ bool DbAlbumCollection::searchAlbumByTitle(const char * title, t_size& o_min, t_
 	bool found = false;
 	t_size max;
 	t_size min;
-	if (o_max > titleGroupMap.get_count()){
-		max = titleGroupMap.get_count();
+	if (o_max > findAsYouType.get_count()){
+		max = findAsYouType.get_count();
 	} else {
 		max = o_max;
 	}
@@ -423,7 +382,7 @@ bool DbAlbumCollection::searchAlbumByTitle(const char * title, t_size& o_min, t_
 	while(min<max)
 	{
 		ptr = min + ( (max-min) >> 1);
-		int result = stricmp_utf8_partial(titleGroupMap[ptr].title, title);
+		int result = stricmp_utf8_partial(findAsYouType[ptr]->findAsYouType, title);
 		if (result<0){
 			min = ptr + 1;
 		} else if (result>0) {
@@ -437,7 +396,7 @@ bool DbAlbumCollection::searchAlbumByTitle(const char * title, t_size& o_min, t_
 			iMax = ptr;
 			while (iMin < iMax){
 				iPtr = iMin + ( (iMax-iMin) >> 1);
-				int res = stricmp_utf8_partial(titleGroupMap[iPtr].title, title);
+				int res = stricmp_utf8_partial(findAsYouType[iPtr]->findAsYouType, title);
 				if (res < 0)
 					iMin = iPtr+1;
 				if (res == 0)
@@ -448,7 +407,7 @@ bool DbAlbumCollection::searchAlbumByTitle(const char * title, t_size& o_min, t_
 			iMax = max;
 			while (iMin < iMax){
 				iPtr = iMin + ( (iMax-iMin) >> 1);
-				int res = stricmp_utf8_partial(titleGroupMap[iPtr].title, title);
+				int res = stricmp_utf8_partial(findAsYouType[iPtr]->findAsYouType, title);
 				if (res == 0)
 					iMin = iPtr+1;
 				if (res > 0)
@@ -462,11 +421,11 @@ bool DbAlbumCollection::searchAlbumByTitle(const char * title, t_size& o_min, t_
 	}
 	if (!found)
 		return false;
-	int outIdx = titleGroupMap[o_min].groupId;
+	int outIdx = findAsYouType[o_min]->index;
 	{ // find the item with the lowest groupId (this is important to select the leftmost album)
 		for(t_size p=o_min; p < o_max; p++){
-			if (titleGroupMap[p].groupId < outIdx)
-				outIdx = titleGroupMap[p].groupId;
+			if (findAsYouType[p]->index < outIdx)
+				outIdx = findAsYouType[p]->index;
 		}
 	}
 	out = CollectionPos(this, outIdx);

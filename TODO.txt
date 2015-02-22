@@ -1,4 +1,6 @@
 
+* Prevent paralell refreshs
+
 * Rewrite AsynchTexLoader
 	* Window might be destroyed anytime!
 * Use built-in cover loader

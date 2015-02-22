@@ -2,7 +2,16 @@
 #include "AlbumCollection.h"
 #include "Helpers.h"
 
+#include <unordered_map>
+
 class AppInstance;
+
+struct DbAlbum {
+	metadb_handle_list tracks;
+	std::wstring sortString;
+	pfc::string8 findAsYouType;
+	int index;
+};
 
 class DbAlbumCollection :
 	public AlbumCollection
@@ -11,16 +20,16 @@ class DbAlbumCollection :
 
 	class RefreshWorker;
 	friend class RefreshWorker;
-	bool isRefreshing; // unsures that only one RefreshWorker is running at a time
+	bool isRefreshing; // ensures that only one RefreshWorker is running at a time
 	AppInstance* appInstance;
 public:
 	DbAlbumCollection(AppInstance* instance);
 	~DbAlbumCollection(void);
-	inline int getCount() { return albums.get_count();	};
+	inline int getCount() { return albumMap.size(); };
 	ImgTexture* getImgTexture(CollectionPos pos);
 	void getTitle(CollectionPos pos, pfc::string_base& out);
 
-	int getTracks(CollectionPos pos, metadb_handle_list& out);
+	bool getTracks(CollectionPos pos, metadb_handle_list& out);
 
 	bool getAlbumForTrack(const metadb_handle_ptr& track, CollectionPos& out);
 
@@ -41,44 +50,12 @@ private:
 	pfc::list_t< service_ptr_t<titleformat_object> > sourceScripts;
 	CRITICAL_SECTION sourceScriptsCS;
 
-
-	/******************************* INTERN DATABASE ***************************/
-	/*typedef struct {
-		metadb_handle_ptr aTrack;
-	} t_album;*/
-	pfc::list_t<metadb_handle_ptr> albums;
-	struct t_ptrAlbumGroup {
-		metadb_handle_ptr ptr;
-		HANDLE group;
-		int groupId;
-	};
-	pfc::list_t<t_ptrAlbumGroup> ptrGroupMap;
-
-	class ptrGroupMap_compareGroupId : public pfc::list_base_t<t_ptrAlbumGroup>::sort_callback {
-	public:
-		int compare(const t_ptrAlbumGroup &a, const t_ptrAlbumGroup &b){
-			return b.groupId - a.groupId;
-		}
-	};
-	class ptrGroupMap_comparePtr : public pfc::list_base_t<t_ptrAlbumGroup>::sort_callback {
-	public:
-		int compare(const t_ptrAlbumGroup &a, const t_ptrAlbumGroup &b){
-			return b.ptr.get_ptr() - a.ptr.get_ptr();
-		}
-	};
-	static int ptrGroupMap_searchPtr(const t_ptrAlbumGroup& a, const metadb_handle_ptr& ptr){
-		return ptr.get_ptr() - a.ptr.get_ptr();
-	}
 	
-	struct t_titleAlbumGroup {
-		pfc::string8 title;
-		int groupId;
-	};
-	pfc::list_t<t_titleAlbumGroup> titleGroupMap;
-	class titleGroupMap_compareTitle : public pfc::list_base_t<t_titleAlbumGroup>::sort_callback {
-	public:
-		int compare(const t_titleAlbumGroup &a, const t_titleAlbumGroup &b){
-			return stricmp_utf8(a.title.get_ptr(), b.title.get_ptr());
-		}
-	};
+
+private:
+	/******************************* INTERN DATABASE ***************************/
+	std::unordered_map<std::string, DbAlbum> albumMap;
+	pfc::list_t<DbAlbum*> sortedAlbums;
+	pfc::list_t<DbAlbum*> findAsYouType;
+	service_ptr_t<titleformat_object> albumMapper;
 };
