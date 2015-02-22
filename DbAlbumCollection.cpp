@@ -169,17 +169,12 @@ public:
 		worker->startWorkerThread();
 	}
 	void reloadAsynchFinish(DbAlbumCollection* collection){
-		double a[6];
-		a[0] = Helpers::getHighresTimer();
-		a[1] = Helpers::getHighresTimer();
 		if (hardRefresh){
 			collection->reloadSourceScripts();
 			appInstance->texLoader->clearCache();
 		} else {
 			appInstance->texLoader->resynchCache(staticResynchCallback, (void*)this);
 		}
-
-		a[2] = Helpers::getHighresTimer();
 
 		{ // update DisplayPosition
 			ScopeCS scopeLock(appInstance->displayPos->accessCS);
@@ -202,16 +197,10 @@ public:
 				appInstance->texLoader->setQueueCenter(targetPos);
 			}
 		}
-		a[3] = Helpers::getHighresTimer();
 
 		moveDataToCollection(collection);
-		a[4] = Helpers::getHighresTimer();
 		appInstance->texLoader->resumeLoading();
 		appInstance->redrawMainWin();
-		a[5] = Helpers::getHighresTimer();
-		for (int i = 0; i < 5; i++){
-			console::printf("Times: a%d - a%d: %dmsec", i, i + 1, int((a[i + 1] - a[i]) * 1000));
-		}
 		delete this;
 	}
 	static int CALLBACK staticResynchCallback(int oldIdx, void* p_this, AlbumCollection* collection){
