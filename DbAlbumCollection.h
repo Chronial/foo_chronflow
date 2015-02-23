@@ -6,12 +6,21 @@
 
 class AppInstance;
 
-struct DbAlbum {
+class DbAlbum : public service_base
+{
+	FB2K_MAKE_SERVICE_INTERFACE(DbAlbum, service_base);
+public:
+	DbAlbum(std::wstring* sortString, pfc::string8 &&findAsYouType) : // steals the strings!
+		sortString(std::move(*sortString)), findAsYouType(std::move(findAsYouType)){};
 	metadb_handle_list tracks;
-	std::wstring sortString;
-	pfc::string8 findAsYouType;
+	const std::wstring sortString;
+	const pfc::string8 findAsYouType;
 	int index;
 };
+// {4F88C012-1F1A-4A1D-A32F-D36C57B4A437}
+FOOGUIDDECL const GUID DbAlbum::class_guid = { 0x4f88c012, 0x1f1a, 0x4a1d, { 0xa3, 0x2f, 0xd3, 0x6c, 0x57, 0xb4, 0xa4, 0x37 } };
+
+typedef service_ptr_t<DbAlbum> DbAlbumPtr;
 
 class DbAlbumCollection :
 	public AlbumCollection
@@ -54,8 +63,9 @@ private:
 
 private:
 	/******************************* INTERN DATABASE ***************************/
-	std::unordered_map<std::string, DbAlbum> albumMap;
-	pfc::list_t<DbAlbum*> sortedAlbums;
-	pfc::list_t<DbAlbum*> findAsYouType;
+	std::unordered_map<std::string, DbAlbumPtr> albumMap;
+	pfc::list_t<DbAlbumPtr> sortedAlbums;
+	pfc::list_t<DbAlbumPtr> findAsYouType;
 	service_ptr_t<titleformat_object> albumMapper;
+
 };

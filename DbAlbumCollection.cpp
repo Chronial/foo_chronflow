@@ -11,25 +11,12 @@
 #include <Shlwapi.h>
 #include <process.h>
 
-namespace {
-	struct custom_sort_data	{
-		HANDLE text;
-		t_size index;
-	};
-}
-static int __cdecl custom_sort_compare(const custom_sort_data & elem1, const custom_sort_data & elem2){
-	int ret = uSortStringCompare(elem1.text,elem2.text);
-	if (ret == 0) ret = pfc::sgn_t((t_ssize)elem1.index - (t_ssize)elem2.index);
-	return ret;
-}
-
-
 class DbAlbumCollection::RefreshWorker {
 private:
 	metadb_handle_list library;
-	std::unordered_map<std::string, DbAlbum> albumMap;
-	pfc::list_t<DbAlbum*> sortedAlbums;
-	pfc::list_t<DbAlbum*> findAsYouType;
+	std::unordered_map<std::string, DbAlbumPtr> albumMap;
+	pfc::list_t<DbAlbumPtr> sortedAlbums;
+	pfc::list_t<DbAlbumPtr> findAsYouType;
 	service_ptr_t<titleformat_object> albumMapper;
 
 private:
@@ -82,18 +69,23 @@ private:
 				metadb_handle_ptr track = library.get_item(i);
 				track->format_title(0, albumKey, albumMapper, 0);
 				if (!albumMap.count(albumKey.get_ptr())){
-					DbAlbum* album = &albumMap[albumKey.get_ptr()];
-					album->tracks.prealloc(20);
-					album->tracks.add_item(track);
+					std::wstring sortString;
 					if (cfgSortGroup){
-						album->sortString = pfc::stringcvt::string_wide_from_utf8(albumKey);
+						sortString = pfc::stringcvt::string_wide_from_utf8(albumKey);
 					} else {
 						track->format_title(0, albumSortKey, sortFormatter, 0);
-						album->sortString = pfc::stringcvt::string_wide_from_utf8(albumSortKey);
+						sortString = pfc::stringcvt::string_wide_from_utf8(albumSortKey);
 					}
-					track->format_title(0, album->findAsYouType, cfgAlbumTitleScript, 0);
+
+					pfc::string8_fast findAsYouType;
+					track->format_title(0, findAsYouType, cfgAlbumTitleScript, 0);
+
+					DbAlbumPtr album = new service_impl_t<DbAlbum>(&sortString, std::move(findAsYouType));
+					albumMap.insert(std::make_pair(albumKey.get_ptr(), album));
+					album->tracks.prealloc(20);
+					album->tracks.add_item(track);
 				} else {
-					albumMap[albumKey.get_ptr()].tracks.add_item(track);
+					albumMap[albumKey.get_ptr()]->tracks.add_item(track);
 				}
 			}
 		}
@@ -102,10 +94,10 @@ private:
 
 		actionStart = Helpers::getHighresTimer();
 		for (auto &album : albumMap){
-			sortedAlbums.add_item(&(album.second));
+			sortedAlbums.add_item(album.second);
 		}
 		console::printf("foo_chronflow: Full copy took %d msec", int((Helpers::getHighresTimer() - actionStart) * 1000));
-		sortedAlbums.sort_t([](DbAlbum* a, DbAlbum* b) {
+		sortedAlbums.sort_t([](DbAlbumPtr a, DbAlbumPtr b) {
 			return StrCmpLogicalW(a->sortString.data(), b->sortString.data());
 		});
 		for (size_t i = 0; i < sortedAlbums.get_size(); i++){
@@ -116,9 +108,9 @@ private:
 
 		actionStart = Helpers::getHighresTimer();
 		for (auto &album : albumMap){
-			findAsYouType.add_item(&(album.second));
+			findAsYouType.add_item(album.second);
 		}
-		findAsYouType.sort_stable_t([](DbAlbum* a, DbAlbum* b) {
+		findAsYouType.sort_stable_t([](DbAlbumPtr a, DbAlbumPtr b) {
 			return stricmp_utf8(a->findAsYouType, b->findAsYouType);
 		});
 		console::printf("foo_chronflow: FAYT map generated in %d msec", int((Helpers::getHighresTimer() - actionStart) * 1000));
@@ -202,13 +194,13 @@ public:
 		if ((size_t)oldIdx >= col->sortedAlbums.get_count())
 			return -1;
 
-		DbAlbum* oldAlbum = col->sortedAlbums.get_item_ref(oldIdx);
+		DbAlbumPtr oldAlbum = col->sortedAlbums.get_item_ref(oldIdx);
 		int newIdx = -1;
 		pfc::string8_fast_aggressive albumKey;
 		for (t_size i = 0; i < oldAlbum->tracks.get_size(); i++){
 			oldAlbum->tracks[i]->format_title(0, albumKey, albumMapper, 0);
 			if (albumMap.count(albumKey.get_ptr())){
-				newIdx = albumMap[albumKey.get_ptr()].index;
+				newIdx = albumMap[albumKey.get_ptr()]->index;
 				break;
 			}
 		}
@@ -315,7 +307,7 @@ bool DbAlbumCollection::getAlbumForTrack(const metadb_handle_ptr& track, Collect
 		return false;
 	track->format_title(0, albumKey, albumMapper, 0);
 	try {
-		out = CollectionPos(this, albumMap.at(albumKey.get_ptr()).index);
+		out = CollectionPos(this, albumMap.at(albumKey.get_ptr())->index);
 		return true;
 	}
 	catch (std::out_of_range) {
