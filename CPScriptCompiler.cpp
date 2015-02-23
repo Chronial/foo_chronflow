@@ -6,6 +6,9 @@
 #include "ScriptedCoverPositions.h"
 #include "SafeArrayHelper.h"
 
+#undef max
+#undef min
+
 CPScriptCompiler::CPScriptCompiler()
 {
 	scriptObj.SetLanguage(L"JScript");
@@ -299,8 +302,6 @@ bool CPScriptCompiler::scCallDArrayFunction(const wchar_t* func, pfc::list_t<dou
 					for (int i = 0; i < length; i++){
 						swprintf_s(id, L"%d", i);
 						GetIDispatchProperty(lpDispatch, id, eVar);
-#undef max
-#undef min
 						try {
 							eVar.ChangeType(VT_R8);
 							if (_isnan(eVar.dblVal)){
