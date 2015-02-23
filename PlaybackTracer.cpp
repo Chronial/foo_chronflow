@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "base.h"
+#include "config.h"
 
 #include "PlaybackTracer.h"
 
@@ -8,8 +9,6 @@
 #include "DisplayPosition.h"
 #include "DbAlbumCollection.h"
 
-extern cfg_bool cfgCoverFollowsPlayback;
-extern cfg_int cfgCoverFollowDelay;
 
 PlaybackTracer::PlaybackTracer(AppInstance* appInstance) :
 appInstance(appInstance),

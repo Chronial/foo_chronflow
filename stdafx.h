@@ -17,7 +17,6 @@
 #include <gl\glu.h>
 #include "opengl\glext.h"
 #include "opengl\wglext.h"
-#include <cmath>
 
 // copied from colums_ui TODO: strip this down
 #include "win32_helpers.h"

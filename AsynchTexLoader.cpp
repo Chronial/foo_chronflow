@@ -1,7 +1,10 @@
 #include "stdafx.h"
 #include <process.h>
+#include "config.h"
+#include "Helpers.h"
 
 #include "AsynchTexLoader.h"
+
 #include "AlbumCollection.h"
 #include "AppInstance.h"
 #include "Console.h"
@@ -10,14 +13,6 @@
 #include "ImgTexture.h"
 #include "RenderThread.h"
 
-#include "Helpers.h"
-
-
-extern cfg_string cfgImgNoCover;
-extern cfg_string cfgImgLoading;
-
-extern cfg_int cfgTextureCacheSize;
-extern cfg_int cfgTexLoaderPrio;
 
 struct AsynchTexLoader::EnumHelper {
 	CollectionPos* loadCenter;

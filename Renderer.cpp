@@ -1,4 +1,7 @@
 #include "stdafx.h"
+#include "config.h"
+
+#include "Renderer.h"
 
 #include "AsynchTexLoader.h"
 #include "AppInstance.h"
@@ -7,23 +10,8 @@
 #include "DbAlbumCollection.h"
 #include "Helpers.h"
 #include "ImgTexture.h"
-#include "Renderer.h"
 #include "ScriptedCoverPositions.h"
-
-
-extern cfg_bool cfgShowFps;
-extern cfg_bool cfgShowAlbumTitle;
-extern cfg_struct_t<double> cfgTitlePosH;
-extern cfg_struct_t<double> cfgTitlePosV;
-extern cfg_int cfgPanelBg;
-extern cfg_int cfgTitleColor;
-extern cfg_int cfgHighlightWidth;
-
-extern cfg_bool cfgSupersampling;
-extern cfg_int cfgSupersamplingPasses;
-
-extern cfg_bool cfgMultisampling;
-extern cfg_int cfgMultisamplingPasses;
+#include "glStructs.h"
 
 
 // Extensions

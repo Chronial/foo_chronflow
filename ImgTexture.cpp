@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "base.h"
+#include "config.h"
 
 #include "ImgTexture.h"
 
@@ -9,9 +10,6 @@
 #include "CGdiPlusBitmap.h"
 
 using namespace Gdiplus;
-
-extern cfg_int cfgMaxTextureSize;
-extern cfg_bool cfgTextureCompression;
 
 bool ImgTexture::forcePowerOfTwo = false;
 int  ImgTexture::maxGlTextureSize = 512;

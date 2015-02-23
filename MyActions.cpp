@@ -1,8 +1,8 @@
 #include "stdafx.h"
+#include "config.h"
 
 #include "MyActions.h"
 
-extern cfg_string cfgTargetPlaylist;
 
 namespace {
 	class AddToPlaylist : public CustomAction {

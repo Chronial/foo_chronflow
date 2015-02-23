@@ -1,12 +1,10 @@
 #include "stdafx.h"
+#include "config.h"
 
 #include "TextDisplay.h"
 
 #include "ImgTexture.h"
 #include "Renderer.h"
-
-extern cfg_int cfgTitleColor;
-extern cfg_struct_t<LOGFONT> cfgTitleFont;
 
 using namespace Gdiplus;
 

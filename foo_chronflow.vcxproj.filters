@@ -81,6 +81,12 @@
     <ClCompile Include="CriticalSection.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="config.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CoverConfig.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AlbumCollection.h">
@@ -92,13 +98,7 @@
     <ClInclude Include="AsynchTexLoader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cfg_coverConfigs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="CollectionPos.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Console.h">
@@ -159,6 +159,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="CGdiPlusBitmap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CoverConfig.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="glStructs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

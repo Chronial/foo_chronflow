@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include <process.h>
+#include "config.h"
 
 #include "RenderThread.h"
 
@@ -9,8 +10,6 @@
 #include "ScriptedCoverPositions.h"
 #include "DisplayPosition.h"
 
-
-extern cfg_int cfgVSyncMode;
 
 void RenderThread::renderThreadProc(){
 	onDeviceModeChange();

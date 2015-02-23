@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "config.h"
 
 #include "DbAlbumCollection.h"
 
@@ -9,16 +10,6 @@
 
 #include <Shlwapi.h>
 #include <process.h>
-
-extern cfg_string cfgGroup;
-extern cfg_string cfgFilter;
-extern cfg_string cfgSources;
-extern cfg_string cfgSort;
-extern cfg_string cfgInnerSort;
-extern cfg_bool cfgSortGroup;
-extern cfg_string cfgAlbumTitle;
-extern service_ptr_t<titleformat_object> cfgAlbumTitleScript;
-
 
 namespace {
 	struct custom_sort_data	{

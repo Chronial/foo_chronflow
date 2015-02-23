@@ -125,9 +125,12 @@ del $(ProjectDir)\BUILD_IN_COVERCONFIGS.h
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AsynchTexLoader.cpp" />
+    <ClCompile Include="CoverConfig.cpp" />
     <ClCompile Include="CollectionPos.cpp" />
     <ClCompile Include="ConfigWindow.cpp" />
-    <ClCompile Include="Console.cpp" />
+    <ClCompile Include="Console.cpp">
+      <FileType>CppCode</FileType>
+    </ClCompile>
     <ClCompile Include="CPScriptCompiler.cpp" />
     <ClCompile Include="CriticalSection.cpp" />
     <ClCompile Include="DbAlbumCollection.cpp" />
@@ -155,14 +158,16 @@ del $(ProjectDir)\BUILD_IN_COVERCONFIGS.h
     <ClInclude Include="AppInstance.h" />
     <ClInclude Include="AsynchTexLoader.h" />
     <ClInclude Include="base.h" />
-    <ClInclude Include="cfg_coverConfigs.h" />
+    <ClInclude Include="CoverConfig.h" />
     <ClInclude Include="CGdiPlusBitmap.h" />
     <ClInclude Include="CollectionPos.h" />
+    <ClCompile Include="config.cpp" />
     <ClInclude Include="config.h" />
     <ClInclude Include="Console.h" />
     <ClInclude Include="CriticalSection.h" />
     <ClInclude Include="DbAlbumCollection.h" />
     <ClInclude Include="DisplayPosition.h" />
+    <ClInclude Include="glStructs.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Helpers.h" />
     <ClInclude Include="ImgTexture.h" />

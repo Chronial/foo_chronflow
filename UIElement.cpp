@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include <set>
 #include "base.h"
+#include "config.h"
 
 #include "AppInstance.h"
 #include "AsynchTexLoader.h"
@@ -14,17 +15,6 @@
 #include "PlaybackTracer.h"
 #include "RenderThread.h"
 #include "ScriptedCoverPositions.h"
-
-extern cfg_int sessionSelectedCover;
-
-extern cfg_bool cfgFindAsYouType;
-
-extern cfg_bool cfgMultisampling;
-extern cfg_bool cfgEmptyCacheOnMinimize;
-
-extern cfg_string cfgDoubleClick;
-extern cfg_string cfgMiddleClick;
-extern cfg_string cfgEnterKey;
 
 #define MAINWINDOW_CLASSNAME L"foo_chronflow MainWindow"
 

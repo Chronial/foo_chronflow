@@ -1,13 +1,13 @@
 #include "stdafx.h"
 #include "base.h"
+#include "config.h"
 #include "Helpers.h"
+
+#include "DisplayPosition.h"
 
 #include "AppInstance.h"
 #include "PlaybackTracer.h"
-#include "DisplayPosition.h"
 
-
-extern cfg_int sessionSelectedCover;
 
 DisplayPosition::DisplayPosition(AppInstance* instance, CollectionPos startingPos)
 	: centeredOffset(0.0f),
