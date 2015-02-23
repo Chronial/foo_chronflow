@@ -266,7 +266,9 @@ void DbAlbumCollection::reloadAsynchStart(bool hardRefresh){
 	if (isRefreshing)
 		return;
 	isRefreshing = true;
+	double synchStart = Helpers::getHighresTimer();
 	RefreshWorker::reloadAsynchStart(appInstance, hardRefresh);
+	console::printf("Sync start: %d msec (in mainthread)", int((Helpers::getHighresTimer() - synchStart) * 1000));
 	if (hardRefresh){
 		appInstance->texLoader->loadSpecialTextures();
 	}
@@ -275,7 +277,7 @@ void DbAlbumCollection::reloadAsynchStart(bool hardRefresh){
 void DbAlbumCollection::reloadAsynchFinish(LPARAM worker){
 	double synchStart = Helpers::getHighresTimer();
 	reinterpret_cast<RefreshWorker*>(worker)->reloadAsynchFinish(this);
-	console::printf("Synch: %d msec (in mainthread!)",int((Helpers::getHighresTimer()-synchStart)*1000));
+	console::printf("Sync finish: %d msec (in mainthread)",int((Helpers::getHighresTimer()-synchStart)*1000));
 	isRefreshing = false;
 }
 
