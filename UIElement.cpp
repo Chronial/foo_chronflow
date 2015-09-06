@@ -15,6 +15,7 @@
 #include "PlaybackTracer.h"
 #include "RenderThread.h"
 #include "ScriptedCoverPositions.h"
+#include "TrackDropSource.h"
 
 #define MAINWINDOW_CLASSNAME L"foo_chronflow MainWindow"
 
@@ -277,12 +278,35 @@ private:
 			case WM_LBUTTONDOWN:
 			{
 				SetFocus(appInstance->mainWindow);
-				CollectionPos newTarget;
-				if (appInstance->renderer->getPositionOnPoint(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), newTarget)){
-					appInstance->displayPos->setTarget(newTarget);
-					appInstance->playbackTracer->userStartedMovement();
-					if (uMsg == WM_LBUTTONDBLCLK)
-						executeAction(cfgDoubleClick, newTarget);
+				CollectionPos clickedCover;
+				if (appInstance->renderer->getPositionOnPoint(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), clickedCover)){
+					POINT pt;
+					GetCursorPos(&pt);
+					if (DragDetect(hWnd, pt)) {
+						metadb_handle_list tracks;
+						appInstance->albumCollection->getTracks(clickedCover, tracks);
+
+						// Create an IDataObject that contains the dragged track.
+						static_api_ptr_t<playlist_incoming_item_filter> piif;
+						// create_dataobject_ex() returns a smart pointer unlike create_dataobject()
+						// which returns a raw COM pointer. The less chance we have to accidentally
+						// get the reference counting wrong, the better.
+						pfc::com_ptr_t<IDataObject> pDataObject = piif->create_dataobject_ex(tracks);
+
+						// Create an IDropSource.
+						// The constructor of IDropSource_tutorial1 is hidden by design; we use the
+						// provided factory method which returns a smart pointer.
+						pfc::com_ptr_t<IDropSource> pDropSource = TrackDropSource::g_create(hWnd);
+
+						DWORD effect;
+						// Perform drag&drop operation.
+						DoDragDrop(pDataObject.get_ptr(), pDropSource.get_ptr(), DROPEFFECT_COPY, &effect);
+					} else {
+						appInstance->displayPos->setTarget(clickedCover);
+						appInstance->playbackTracer->userStartedMovement();
+						if (uMsg == WM_LBUTTONDBLCLK)
+							executeAction(cfgDoubleClick, clickedCover);
+					}
 				} else {
 					mouseFlicker->mouseDown(hWnd, GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
 				}

@@ -1,6 +1,6 @@
 #include "stdafx.h"
 
-#define VERSION "0.4.1"
+#define VERSION "0.4.2"
 
 DECLARE_COMPONENT_VERSION("Chronial's Coverflow", VERSION,
 "Renders Album Art in a 3d environment\n"

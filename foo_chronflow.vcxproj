@@ -135,6 +135,7 @@ del $(ProjectDir)\BUILD_IN_COVERCONFIGS.h
     <ClCompile Include="CriticalSection.cpp" />
     <ClCompile Include="DbAlbumCollection.cpp" />
     <ClCompile Include="DisplayPosition.cpp" />
+    <ClCompile Include="TrackDropSource.cpp" />
     <ClCompile Include="Helpers.cpp" />
     <ClCompile Include="ImgTexture.cpp" />
     <ClCompile Include="main.cpp" />
@@ -167,6 +168,7 @@ del $(ProjectDir)\BUILD_IN_COVERCONFIGS.h
     <ClInclude Include="CriticalSection.h" />
     <ClInclude Include="DbAlbumCollection.h" />
     <ClInclude Include="DisplayPosition.h" />
+    <ClInclude Include="TrackDropSource.h" />
     <ClInclude Include="glStructs.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Helpers.h" />
