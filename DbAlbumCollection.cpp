@@ -334,7 +334,7 @@ struct CompIUtf8Partial
 	}
 };
 
-bool DbAlbumCollection::searchAlbumByTitle(const char * title, t_size& o_min, t_size& o_max, CollectionPos& out){
+bool DbAlbumCollection::performFayt(const char * title, CollectionPos& out){
 	auto &faytIndex = albums.get<2>();
 	auto range = faytIndex.equal_range(title, CompIUtf8Partial());
 

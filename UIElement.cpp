@@ -24,8 +24,6 @@
 class FindAsYouType {
 	static const int typeTimeout = 1000; // milliseconds
 	pfc::string8 enteredString;
-	t_size matchMin;
-	t_size matchMax;
 	AppInstance* appInstance;
 	bool playbackTracerLocked;
 public:
@@ -47,8 +45,6 @@ public:
 	}
 	void removeChar(){
 		enteredString.truncate(enteredString.length() - 1);
-		matchMin = 0;
-		matchMax = ~0;
 		if (enteredString.length() == 0){
 			unlockPlaybackTracer();
 		} else {
@@ -57,19 +53,12 @@ public:
 			SetTimer(appInstance->mainWindow, IDT_FIND_AS_YOU_TYPE_RESET, typeTimeout, NULL);
 		}
 	}
-	void removeAllChars(){
+	void clear(){
 		unlockPlaybackTracer();
 		KillTimer(appInstance->mainWindow, IDT_FIND_AS_YOU_TYPE_RESET);
 		clearSearch();
 	}
-	void resetTimerHit(){
-		unlockPlaybackTracer();
-		KillTimer(appInstance->mainWindow, IDT_FIND_AS_YOU_TYPE_RESET);
-		clearSearch();
-	}
-	t_size getStringLength(){
-		return enteredString.length();
-	}
+
 private:
 	void lockPlaybackTracer(){
 		if (!playbackTracerLocked){
@@ -86,7 +75,7 @@ private:
 	bool doSearch(const char* searchFor){
 		//console::print(pfc::string_formatter() << "searching for: " << searchFor);
 		CollectionPos pos;
-		if (appInstance->albumCollection->searchAlbumByTitle(searchFor, matchMin, matchMax, pos)){
+		if (appInstance->albumCollection->performFayt(searchFor, pos)){
 			appInstance->displayPos->setTarget(pos);
 			return true;
 		} else {
@@ -94,8 +83,6 @@ private:
 		}
 	}
 	void clearSearch(){
-		matchMin = 0;
-		matchMax = ~0;
 		enteredString.reset();
 	}
 };
@@ -333,7 +320,7 @@ private:
 						appInstance->playbackTracer->timerHit();
 						break;
 					case IDT_FIND_AS_YOU_TYPE_RESET:
-						findAsYouType->resetTimerHit();
+						findAsYouType->clear();
 						break;
 					case IDT_CHECK_MINIMIZED:
 						onCheckMinimizeTimerHit();
@@ -410,7 +397,7 @@ private:
 					case 0x0A: // Process a linefeed. 
 					case 0x0D: // Process a carriage return. 
 					case 0x1B: // Process an escape. 
-						findAsYouType->removeAllChars();
+						findAsYouType->clear();
 						break; 
 
 					default: // Process any writeable character

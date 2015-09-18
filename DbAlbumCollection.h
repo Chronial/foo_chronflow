@@ -74,10 +74,9 @@ public:
 
 	bool getAlbumForTrack(const metadb_handle_ptr& track, CollectionPos& out);
 
-	// This will modify o_min and o_max only if it returns true
-	// o_min is the first element that might match, o_max is the frist element that will not match
-	// to search the whole collection, set o_min=0 and o_max=~0
-	bool searchAlbumByTitle(const char * title, t_size& o_min, t_size& o_max, CollectionPos& out);
+	// Set `out` to leftmost album whose title starts with `title`
+	// Returns whether any results have been found
+	bool performFayt(const char * title, CollectionPos& out);
 
 	void reloadAsynchStart(bool hardRefresh = false);
 	void reloadAsynchFinish(LPARAM worker);

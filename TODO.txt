@@ -7,6 +7,8 @@
     * cache covers?
 * Use default ui colors and font?
 
+* Do not loop around (collectionPos)
+
 // Release
 * Windows scripting control??
 * Ask for better default images
