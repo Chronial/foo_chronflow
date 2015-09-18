@@ -5,7 +5,6 @@
 
 #include "AsynchTexLoader.h"
 
-#include "AlbumCollection.h"
 #include "AppInstance.h"
 #include "Console.h"
 #include "ScriptedCoverPositions.h"
@@ -22,7 +21,7 @@ struct AsynchTexLoader::EnumHelper {
 	t_resynchCallback resynchCallback;
 	void* resynchCallbackParam;
 	t_textureCache* resynchCallbackOut;
-	AlbumCollection* resynchCollection;
+	DbAlbumCollection* resynchCollection;
 };
 AsynchTexLoader::EnumHelper AsynchTexLoader::enumHelper = {0};
 

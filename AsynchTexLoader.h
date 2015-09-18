@@ -8,7 +8,7 @@ class AlbumCollection;
 class AppInstance;
 class ImgTexture;
 
-typedef int (CALLBACK* t_resynchCallback)(int, void*, AlbumCollection*);
+typedef int (CALLBACK* t_resynchCallback)(int, void*, DbAlbumCollection*);
 
 
 class AsynchTexLoader

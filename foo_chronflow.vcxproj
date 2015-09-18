@@ -157,7 +157,6 @@ del $(ProjectDir)\BUILD_IN_COVERCONFIGS.h
     <ClCompile Include="win32_helpers.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AlbumCollection.h" />
     <ClInclude Include="AppInstance.h" />
     <ClInclude Include="AsynchTexLoader.h" />
     <ClInclude Include="base.h" />

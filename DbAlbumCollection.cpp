@@ -156,10 +156,10 @@ public:
 		appInstance->redrawMainWin();
 		delete this;
 	}
-	static int CALLBACK staticResynchCallback(int oldIdx, void* p_this, AlbumCollection* collection){
+	static int CALLBACK staticResynchCallback(int oldIdx, void* p_this, DbAlbumCollection* collection){
 		return reinterpret_cast<RefreshWorker*>(p_this)->resynchCallback(oldIdx, collection);
 	}
-	inline int resynchCallback(int oldIdx, AlbumCollection* collection){
+	inline int resynchCallback(int oldIdx, DbAlbumCollection* collection){
 		return -1;
 		DbAlbumCollection* col = dynamic_cast<DbAlbumCollection*>(collection);
 		if ((size_t)oldIdx >= col->albums.size())

@@ -1,6 +1,7 @@
 #pragma once
-#include "AlbumCollection.h"
+#include "CollectionPos.h"
 #include "Helpers.h"
+#include "ImgTexture.h"
 
 #include <Shlwapi.h>
 
@@ -54,8 +55,7 @@ typedef multi_index_container<
 > DbAlbums;
 
 
-class DbAlbumCollection :
-	public AlbumCollection
+class DbAlbumCollection
 {
 	CriticalSection renderThreadCS;
 

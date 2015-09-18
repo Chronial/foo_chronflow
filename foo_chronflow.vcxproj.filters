@@ -92,9 +92,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AlbumCollection.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="AppInstance.h">
       <Filter>Header Files</Filter>
     </ClInclude>
