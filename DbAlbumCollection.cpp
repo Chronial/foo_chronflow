@@ -346,7 +346,7 @@ bool DbAlbumCollection::performFayt(const char * title, CollectionPos& out){
 
 		// find the item with the lowest index (this is important to select the leftmost album)
 		for (auto it = range.first; it != range.second; ++it){
-			t_size thisIdx = sortIndex.rank(albums.project<1>(range.first));
+			t_size thisIdx = sortIndex.rank(albums.project<1>(it));
 			if (thisIdx < outIdx)
 				outIdx = thisIdx;
 		}
