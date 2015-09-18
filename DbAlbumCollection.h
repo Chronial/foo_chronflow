@@ -2,25 +2,57 @@
 #include "AlbumCollection.h"
 #include "Helpers.h"
 
-#include <unordered_map>
+#include <Shlwapi.h>
+
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/hashed_index.hpp>
+#include <boost/multi_index/ranked_index.hpp>
+#include <boost/multi_index/member.hpp>
+
+#include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index/identity.hpp>
+using namespace boost::multi_index;
 
 class AppInstance;
 
-class DbAlbum : public service_base
+struct DbAlbum
 {
-	FB2K_MAKE_SERVICE_INTERFACE(DbAlbum, service_base);
-public:
-	DbAlbum(std::wstring* sortString, pfc::string8 &&findAsYouType) : // steals the strings!
-		sortString(std::move(*sortString)), findAsYouType(std::move(findAsYouType)){};
+	std::string groupString;
+	std::wstring sortString;
+	pfc::string8 findAsYouType;
 	metadb_handle_list tracks;
-	const std::wstring sortString;
-	const pfc::string8 findAsYouType;
-	int index;
 };
-// {4F88C012-1F1A-4A1D-A32F-D36C57B4A437}
-FOOGUIDDECL const GUID DbAlbum::class_guid = { 0x4f88c012, 0x1f1a, 0x4a1d, { 0xa3, 0x2f, 0xd3, 0x6c, 0x57, 0xb4, 0xa4, 0x37 } };
 
-typedef service_ptr_t<DbAlbum> DbAlbumPtr;
+struct CompWLogical
+{
+	bool operator()(std::wstring a, std::wstring b)const{
+		return StrCmpLogicalW(a.data(), b.data()) < 0;
+	}
+};
+
+struct CompIUtf8
+{
+	bool operator()(pfc::string8 a, pfc::string8 b)const{
+		return stricmp_utf8(a, b) < 0;
+	}
+};
+
+
+typedef multi_index_container<
+	DbAlbum,
+	indexed_by<
+		hashed_unique< member<DbAlbum, std::string, &DbAlbum::groupString> >,
+		ranked_non_unique<
+			member<DbAlbum, std::wstring, &DbAlbum::sortString>,
+			CompWLogical
+		>,
+		ordered_non_unique<
+			member<DbAlbum, pfc::string8, &DbAlbum::findAsYouType>,
+			CompIUtf8
+		>
+	>
+> DbAlbums;
+
 
 class DbAlbumCollection :
 	public AlbumCollection
@@ -34,7 +66,7 @@ class DbAlbumCollection :
 public:
 	DbAlbumCollection(AppInstance* instance);
 	~DbAlbumCollection(void);
-	inline int getCount() { return albumMap.size(); };
+	inline int getCount() { return albums.size(); };
 	ImgTexture* getImgTexture(CollectionPos pos);
 	void getTitle(CollectionPos pos, pfc::string_base& out);
 
@@ -63,9 +95,6 @@ private:
 
 private:
 	/******************************* INTERN DATABASE ***************************/
-	std::unordered_map<std::string, DbAlbumPtr> albumMap;
-	pfc::list_t<DbAlbumPtr> sortedAlbums;
-	pfc::list_t<DbAlbumPtr> findAsYouType;
+	DbAlbums albums;
 	service_ptr_t<titleformat_object> albumMapper;
-
 };
