@@ -690,11 +690,13 @@ void Renderer::drawCovers(bool showTarget){
 	if (cfgHighlightWidth == 0)
 		showTarget = false;
 
-	int firstCover = appInstance->coverPos->getFirstCover()+1;
-	int lastCover  = appInstance->coverPos->getLastCover();
 	float centerOffset = appInstance->displayPos->getCenteredOffset();
-	CollectionPos p = appInstance->displayPos->getCenteredPos() + firstCover;
-	for (int o = firstCover; o <= lastCover; ++o, ++p){
+	CollectionPos centerCover = appInstance->displayPos->getCenteredPos();
+	CollectionPos firstCover = appInstance->displayPos->getCenteredPos() + (appInstance->coverPos->getFirstCover() + 1);
+	CollectionPos lastCover = appInstance->displayPos->getCenteredPos() + appInstance->coverPos->getLastCover();
+	
+	for (CollectionPos p = firstCover; ; ++p){
+		int o = p - centerCover;
 		float co = -centerOffset + o;
 
 		ImgTexture* tex = appInstance->texLoader->getLoadedImgTexture(p);
@@ -768,6 +770,8 @@ void Renderer::drawCovers(bool showTarget){
 					glEnable(GL_CLIP_PLANE0);
 			}
 		}
+		if (p == lastCover)
+			break;
 	}
 
 #ifdef COVER_ALPHA

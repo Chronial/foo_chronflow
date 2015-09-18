@@ -192,7 +192,12 @@ bool CPScriptCompiler::compileScript(const char * script, CompiledCPInfo& out, p
 				return false;
 			} else {
 				out.firstCover = static_cast<int>(ret.get_item(0));
+				if (out.firstCover > -1)
+					out.firstCover = -1;
 				out.lastCover  = static_cast<int>(ret.get_item(1));
+				if (out.lastCover < 1)
+					out.lastCover = 1;
+
 			}
 		} else {
 			return false;

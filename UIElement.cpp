@@ -342,7 +342,8 @@ private:
 				} else if (wParam == VK_F6){
 					appInstance->playbackTracer->moveToNowPlaying();
 					return 0;
-				} else if (wParam == VK_RIGHT || wParam == VK_LEFT || wParam == VK_NEXT || wParam == VK_PRIOR) {
+				} else if (wParam == VK_RIGHT || wParam == VK_LEFT || wParam == VK_NEXT || wParam == VK_PRIOR
+						|| wParam == VK_HOME || wParam == VK_END) {
 					int move = 0;
 					if (wParam == VK_RIGHT){
 						move = +1;
@@ -352,6 +353,11 @@ private:
 						move = +10;
 					} else if (wParam == VK_PRIOR){
 						move = -10;
+					} else if (wParam == VK_END){
+						// TODO: This is a dirty hack
+						move = +10000000;
+					} else if (wParam == VK_HOME){
+						move -= 10000000;
 					}
 					if (move){
 						move *= LOWORD(lParam);
