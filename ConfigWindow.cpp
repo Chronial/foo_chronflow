@@ -266,7 +266,7 @@ public:
 				{
 				case IDC_BTN_REFRESH:
 					{
-						FOR_EACH_INSTANCE(albumCollection->reloadAsynchStart(true));
+						FOR_EACH_INSTANCE(albumCollection->reloadAsynchStart());
 					}
 					break;
 				case IDC_PL_SORT_DB:

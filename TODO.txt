@@ -15,7 +15,6 @@
 
 * Fix rightclick
 * Restore Coverpos after restart
-* Remove Hard refresh concept
 
 
 

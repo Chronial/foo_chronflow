@@ -77,7 +77,7 @@ public:
 	// Returns whether any results have been found
 	bool performFayt(const char * title, CollectionPos& out);
 
-	void reloadAsynchStart(bool hardRefresh = false);
+	void reloadAsynchStart();
 	void reloadAsynchFinish(LPARAM worker);
 
 	CollectionPos begin() const;

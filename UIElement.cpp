@@ -186,7 +186,7 @@ public:
 		findAsYouType = new FindAsYouType(appInstance);
 		mouseFlicker = new MouseFlicker(appInstance);
 		
-		appInstance->albumCollection->reloadAsynchStart(true);
+		appInstance->albumCollection->reloadAsynchStart();
 	}
 
 
@@ -335,8 +335,7 @@ private:
 					executeAction(cfgEnterKey, appInstance->displayPos->getTarget());
 					return 0;
 				} else if (wParam == VK_F5){
-					bool hardRefresh = (GetKeyState(VK_CONTROL) & 0x8000) > 0;
-					appInstance->albumCollection->reloadAsynchStart(hardRefresh);
+					appInstance->albumCollection->reloadAsynchStart();
 					return 0;
 				} else if (wParam == VK_F6){
 					appInstance->playbackTracer->moveToNowPlaying();

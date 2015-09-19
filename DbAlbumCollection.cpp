@@ -94,7 +94,6 @@ private:
 	}
 private:
 	HANDLE workerThread;
-	bool hardRefresh;
 	void startWorkerThread()
 	{
 		workerThread = (HANDLE)_beginthreadex(0,0,&(this->runWorkerThread),(void*)this,0,0);
@@ -115,20 +114,15 @@ private:
 	}
 
 public:
-	static void reloadAsynchStart(AppInstance* instance, bool hardRefresh = false){
+	static void reloadAsynchStart(AppInstance* instance){
 		instance->texLoader->pauseLoading();
 		RefreshWorker* worker = new RefreshWorker(instance);
-		worker->hardRefresh = hardRefresh;
 		worker->init();
 		worker->startWorkerThread();
 	}
 	void reloadAsynchFinish(DbAlbumCollection* collection){
-		if (hardRefresh){
-			collection->reloadSourceScripts();
-			appInstance->texLoader->clearCache();
-		} else {
-			//appInstance->texLoader->resynchCache(staticResynchCallback, (void*)this);
-		}
+		collection->reloadSourceScripts();
+		appInstance->texLoader->clearCache();
 
 		{ // update DisplayPosition
 			ScopeCS scopeLock(appInstance->displayPos->accessCS);
@@ -223,16 +217,14 @@ DbAlbumCollection::DbAlbumCollection(AppInstance* instance){
 	compiler->compile(cfgAlbumTitleScript, cfgAlbumTitle);
 }
 
-void DbAlbumCollection::reloadAsynchStart(bool hardRefresh){
+void DbAlbumCollection::reloadAsynchStart(){
 	if (isRefreshing)
 		return;
 	isRefreshing = true;
 	double synchStart = Helpers::getHighresTimer();
-	RefreshWorker::reloadAsynchStart(appInstance, hardRefresh);
+	RefreshWorker::reloadAsynchStart(appInstance);
 	console::printf("Sync start: %d msec (in mainthread)", int((Helpers::getHighresTimer() - synchStart) * 1000));
-	if (hardRefresh){
-		appInstance->texLoader->loadSpecialTextures();
-	}
+	appInstance->texLoader->loadSpecialTextures();
 }
 
 void DbAlbumCollection::reloadAsynchFinish(LPARAM worker){
