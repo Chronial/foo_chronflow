@@ -18,7 +18,8 @@ private:
 
 private:
 	void moveDataToCollection(DbAlbumCollection* collection){
-		ScopeCS scopeLock(collection->renderThreadCS);
+		ScopeCS renderScopeLock(collection->renderThreadCS);
+		ScopeCS texloadScopeLock(collection->texloaderThreadCS);
 		collection->albums = std::move(albums);
 		collection->albumMapper = std::move(albumMapper);
 	}
@@ -126,18 +127,27 @@ public:
 			collection->reloadSourceScripts();
 			appInstance->texLoader->clearCache();
 		} else {
-			appInstance->texLoader->resynchCache(staticResynchCallback, (void*)this);
+			//appInstance->texLoader->resynchCache(staticResynchCallback, (void*)this);
 		}
 
 		{ // update DisplayPosition
 			ScopeCS scopeLock(appInstance->displayPos->accessCS);
-			CollectionPos centeredPos = appInstance->displayPos->getCenteredPos();
-			int centeredIdx = centeredPos.toIndex();
-			CollectionPos targetPos = appInstance->displayPos->getTarget();
-			int targetIdx = targetPos.toIndex();
+			CollectionPos oldCenteredPos = appInstance->displayPos->getCenteredPos();
+			auto &sortedIndex = albums.get<1>();
 
-			int newCenteredIdx = resynchCallback(centeredIdx, collection);
-			if (newCenteredIdx >= 0){
+			int centeredIdx = collection->rank(oldCenteredPos);
+			CollectionPos targetPos = appInstance->displayPos->getTarget();
+			int targetIdx = collection->rank(targetPos);
+
+			CollectionPos newCenteredPos = findMatchingPosition(oldCenteredPos, collection);
+			if (newCenteredPos == sortedIndex.end()){
+				newCenteredPos = sortedIndex.begin();
+			}
+			appInstance->displayPos->hardSetCenteredPos(newCenteredPos);
+			appInstance->displayPos->hardSetTarget(newCenteredPos);
+			appInstance->texLoader->setQueueCenter(newCenteredPos);
+			// smarter target sync:
+			/*if (newCenteredIdx >= 0){
 				centeredPos += (newCenteredIdx - centeredIdx);
 				appInstance->displayPos->hardSetCenteredPos(centeredPos);
 				int newTargetIdx = resynchCallback(targetIdx, collection);
@@ -146,9 +156,8 @@ public:
 				} else {
 					targetPos += (newCenteredIdx - centeredIdx);
 				}
-				appInstance->displayPos->hardSetTarget(targetPos);
-				appInstance->texLoader->setQueueCenter(targetPos);
-			}
+
+			}*/
 		}
 
 		moveDataToCollection(collection);
@@ -156,28 +165,24 @@ public:
 		appInstance->redrawMainWin();
 		delete this;
 	}
-	static int CALLBACK staticResynchCallback(int oldIdx, void* p_this, DbAlbumCollection* collection){
-		return reinterpret_cast<RefreshWorker*>(p_this)->resynchCallback(oldIdx, collection);
-	}
-	inline int resynchCallback(int oldIdx, DbAlbumCollection* collection){
-		return -1;
+	CollectionPos findMatchingPosition(CollectionPos oldPos, DbAlbumCollection* collection){
 		DbAlbumCollection* col = dynamic_cast<DbAlbumCollection*>(collection);
-		if ((size_t)oldIdx >= col->albums.size())
-			return -1;
 
 		auto &sortedIndex = albums.get<1>();
-		auto &oldSortedIndex = col->albums.get<1>();
-		auto oldAlbum = oldSortedIndex.nth(oldIdx);
-		int newIdx = -1;
+		CollectionPos newPos = sortedIndex.end();
 		pfc::string8_fast_aggressive albumKey;
-		for (t_size i = 0; i < oldAlbum->tracks.get_size(); i++){
-			oldAlbum->tracks[i]->format_title(0, albumKey, albumMapper, 0);
-			if (albums.count(albumKey.get_ptr())){
-				newIdx = sortedIndex.rank(albums.project<1>(oldAlbum));
-				break;
+		if (oldPos == collection->end()){
+			newPos = sortedIndex.begin();
+		} else {
+			for (t_size i = 0; i < oldPos->tracks.get_size(); i++){
+				oldPos->tracks[i]->format_title(0, albumKey, albumMapper, 0);
+				if (albums.count(albumKey.get_ptr())){
+					newPos = albums.project<1>(albums.find(albumKey.get_ptr()));
+					break;
+				}
 			}
 		}
-		return newIdx;
+		return newPos;
 	}
 };
 
@@ -265,13 +270,7 @@ bool DbAlbumCollection::getImageForTrack(const metadb_handle_ptr &track, pfc::st
 }
 
 bool DbAlbumCollection::getTracks(CollectionPos pos, metadb_handle_list& out){
-	auto &sortedIndex = albums.get<1>();
-	size_t idx = pos.toIndex();
-	if (idx >= sortedIndex.size()){
-		return false;
-	}
-	auto album = sortedIndex.nth(idx);
-	out = album->tracks;
+	out = pos->tracks;
 	out.sort_by_format(cfgInnerSort, 0);
 	return true;
 }
@@ -286,8 +285,8 @@ bool DbAlbumCollection::getAlbumForTrack(const metadb_handle_ptr& track, Collect
 		auto groupAlbum = albums.find(albumKey.get_ptr());
 		auto sortAlbum = albums.project<1>(groupAlbum);
 		int idx = sortedIndex.rank(sortAlbum);
-		out = CollectionPos(this, idx);
-		return true;
+		out = sortAlbum;
+		return true; 
 	} else {
 		return false;
 	}
@@ -300,12 +299,13 @@ DbAlbumCollection::~DbAlbumCollection(void)
 }
 
 void DbAlbumCollection::getTitle(CollectionPos pos, pfc::string_base& out){
-	ScopeCS scopeLock(renderThreadCS);
 	auto &sortedIndex = albums.get<1>();
-	if (!albums.empty())
-		sortedIndex.nth(pos.toIndex())->tracks[0]->format_title(0, out, cfgAlbumTitleScript, 0);
-	else
+	if (!albums.empty()){
+		pos->tracks[0]->format_title(0, out, cfgAlbumTitleScript, 0);
+	} else {
+		// FIXME this should never get called
 		out = "No Covers Loaded";
+	}
 }
 
 ImgTexture* DbAlbumCollection::getImgTexture(CollectionPos pos){
@@ -315,7 +315,7 @@ ImgTexture* DbAlbumCollection::getImgTexture(CollectionPos pos){
 	auto &sortedIndex = albums.get<1>();
 	pfc::string8_fast_aggressive imgFile;
 	imgFile.prealloc(512);
-	if (getImageForTrack(sortedIndex.nth(pos.toIndex())->tracks[0], imgFile)){
+	if (getImageForTrack(pos->tracks[0], imgFile)){
 		return new ImgTexture(imgFile);
 	} else {
 		return 0;
@@ -343,14 +343,30 @@ bool DbAlbumCollection::performFayt(const char * title, CollectionPos& out){
 	} else {
 		auto &sortIndex = albums.get<1>();
 		t_size outIdx = ~0;
+		out = sortIndex.begin();
 
 		// find the item with the lowest index (this is important to select the leftmost album)
 		for (auto it = range.first; it != range.second; ++it){
-			t_size thisIdx = sortIndex.rank(albums.project<1>(it));
-			if (thisIdx < outIdx)
+			CollectionPos thisPos = albums.project<1>(it);
+			t_size thisIdx = sortIndex.rank(thisPos);
+			if (thisIdx < outIdx){
 				outIdx = thisIdx;
+				out = thisPos;
+			}
 		}
-		out = CollectionPos(this, outIdx);
 		return true;
 	}
+}
+
+
+CollectionPos DbAlbumCollection::begin() const{
+	return albums.get<1>().begin();
+}
+
+CollectionPos DbAlbumCollection::end() const{
+	return albums.get<1>().end();
+}
+
+t_size DbAlbumCollection::rank(CollectionPos p) {
+	return albums.get<1>().rank(p);
 }

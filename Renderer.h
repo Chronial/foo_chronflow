@@ -1,10 +1,10 @@
 #pragma once
 #include "Helpers.h"
 
+#include "DbAlbumCollection.h"
 #include "TextDisplay.h"
 
 class AppInstance;
-struct CollectionPos;
 
 enum VSyncMode {
 	VSYNC_SLEEP_ONLY = 1,
@@ -26,7 +26,7 @@ public:
 	void destroyGlWindow(void); //clean up all the GL stuff
 	void resizeGlScene(int width, int height);
 public:
-	bool positionOnPoint(int x, int y, CollectionPos& out);
+	bool offsetOnPoint(int x, int y, int& out);
 public:
 	void drawFrame();
 

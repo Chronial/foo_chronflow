@@ -128,7 +128,6 @@ del $(ProjectDir)\BUILD_IN_COVERCONFIGS.h
   <ItemGroup>
     <ClCompile Include="AsynchTexLoader.cpp" />
     <ClCompile Include="CoverConfig.cpp" />
-    <ClCompile Include="CollectionPos.cpp" />
     <ClCompile Include="ConfigWindow.cpp" />
     <ClCompile Include="Console.cpp">
       <FileType>CppCode</FileType>
@@ -162,7 +161,6 @@ del $(ProjectDir)\BUILD_IN_COVERCONFIGS.h
     <ClInclude Include="base.h" />
     <ClInclude Include="CoverConfig.h" />
     <ClInclude Include="CGdiPlusBitmap.h" />
-    <ClInclude Include="CollectionPos.h" />
     <ClCompile Include="config.cpp" />
     <ClInclude Include="config.h" />
     <ClInclude Include="Console.h" />

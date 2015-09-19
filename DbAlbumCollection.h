@@ -1,7 +1,5 @@
 #pragma once
-#include "CollectionPos.h"
 #include "Helpers.h"
-#include "ImgTexture.h"
 
 #include <Shlwapi.h>
 
@@ -15,6 +13,7 @@
 using namespace boost::multi_index;
 
 class AppInstance;
+class ImgTexture;
 
 struct DbAlbum
 {
@@ -54,10 +53,10 @@ typedef multi_index_container<
 	>
 > DbAlbums;
 
+typedef DbAlbums::nth_index<1>::type::iterator CollectionPos;
 
 class DbAlbumCollection
 {
-	CriticalSection renderThreadCS;
 
 	class RefreshWorker;
 	friend class RefreshWorker;
@@ -80,6 +79,12 @@ public:
 
 	void reloadAsynchStart(bool hardRefresh = false);
 	void reloadAsynchFinish(LPARAM worker);
+
+	CollectionPos begin() const;
+	CollectionPos end() const;
+	t_size rank(CollectionPos p);
+	CriticalSection renderThreadCS;
+	CriticalSection texloaderThreadCS;
 
 private:
 	void reloadSourceScripts();

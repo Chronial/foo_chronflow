@@ -33,10 +33,10 @@ void RenderThread::renderThreadProc(){
 			continue;
 		}
 
-		if (getPosData.requested){
-			getPosData.outFound = renderer.positionOnPoint(getPosData.x, getPosData.y, *getPosData.outPos);
-			getPosData.requested = false;
-			getPosData.done.setSignal();
+		if (getOffsetData.requested){
+			getOffsetData.outFound = renderer.offsetOnPoint(getOffsetData.x, getOffsetData.y, getOffsetData.outOffset);
+			getOffsetData.requested = false;
+			getOffsetData.done.setSignal();
 			doPaint = true;
 			continue;
 		}
@@ -72,13 +72,16 @@ void RenderThread::onPaint(){
 	appInstance->texLoader->blockUpload();
 	appInstance->texLoader->runGlDelete();
 	appInstance->displayPos->accessCS.enter();
+	appInstance->albumCollection->renderThreadCS.enter();
+
 	appInstance->displayPos->update();
 	appInstance->texLoader->setQueueCenter(appInstance->displayPos->getTarget());
+	appInstance->displayPos->accessCS.leave();
 
 	appInstance->coverPos->lock();
 	renderer.drawFrame();
 	appInstance->coverPos->unlock();
-	appInstance->displayPos->accessCS.leave();
+	appInstance->albumCollection->renderThreadCS.leave();
 
 
 
@@ -90,12 +93,13 @@ void RenderThread::onPaint(){
 	double frameEnd = Helpers::getHighresTimer();
 	renderer.fpsCounter.recordFrame(frameStart, frameEnd);
 
-
+	appInstance->displayPos->accessCS.enter();
 	if (appInstance->displayPos->isMoving()){
 		doPaint = true;
 	} else {
 		doPaint = false;
 	}
+	appInstance->displayPos->accessCS.leave();
 
 	renderer.ensureVSync(cfgVSyncMode != VSYNC_SLEEP_ONLY);
 	if (cfgVSyncMode == VSYNC_AND_SLEEP || cfgVSyncMode == VSYNC_SLEEP_ONLY){
@@ -124,8 +128,10 @@ void RenderThread::onPaint(){
 		renderer.swapBuffers();
 		afterLastSwap = Helpers::getHighresTimer();
 	}
+	appInstance->displayPos->accessCS.enter();
 	if (!doPaint && appInstance->displayPos->isMoving())
 		doPaint = true; // MT safety - if during Sleep something chaned dPos target and set forceRedraw we might have lost the change
+	appInstance->displayPos->accessCS.leave();
 	if (!doPaint)
 		appInstance->texLoader->allowUpload();
 	if (!doPaint && timerInPeriod){
@@ -143,7 +149,7 @@ RenderThread::RenderThread(AppInstance* appInstance)
 	attachData.requested = false;
 	multisamplingInit.requested = false;
 	resizeData.requested = false;
-	getPosData.requested = false;
+	getOffsetData.requested = false;
 	shareListData.requested = false;
 
 	textFormatChanged = false;
@@ -186,15 +192,15 @@ void RenderThread::stopRenderThread()
 	renderThread = 0;
 }
 
-bool RenderThread::getPositionOnPoint (int x, int y, CollectionPos& out){
-	getPosData.x = x;
-	getPosData.y = y;
-	getPosData.outPos = &out;
-	getPosData.requested = true;
+bool RenderThread::getOffsetOnPoint (int x, int y, int& out){
+	getOffsetData.x = x;
+	getOffsetData.y = y;
+	getOffsetData.requested = true;
 	renderThreadHasWork.setSignal();
-	getPosData.done.waitForSignal();
+	getOffsetData.done.waitForSignal();
+	out = getOffsetData.outOffset;
 	
-	return getPosData.outFound;
+	return getOffsetData.outFound;
 }
 
 void RenderThread::redraw(){

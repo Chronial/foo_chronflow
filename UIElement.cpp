@@ -5,7 +5,6 @@
 
 #include "AppInstance.h"
 #include "AsynchTexLoader.h"
-#include "CollectionPos.h"
 #include "Console.h"
 #include "DbAlbumCollection.h"
 #include "DisplayPosition.h"
@@ -182,7 +181,7 @@ public:
 
 		appInstance->albumCollection = new DbAlbumCollection(appInstance);
 		appInstance->texLoader = new AsynchTexLoader(appInstance);
-		appInstance->displayPos = new DisplayPosition(appInstance, CollectionPos(appInstance->albumCollection,sessionSelectedCover));
+		appInstance->displayPos = new DisplayPosition(appInstance, appInstance->albumCollection->begin());
 		appInstance->playbackTracer = new PlaybackTracer(appInstance);
 		findAsYouType = new FindAsYouType(appInstance);
 		mouseFlicker = new MouseFlicker(appInstance);
@@ -244,17 +243,15 @@ private:
 				zDelta -= GET_WHEEL_DELTA_WPARAM(wParam);
 				int m = zDelta / WHEEL_DELTA;
 				zDelta = zDelta % WHEEL_DELTA;
-				{
-					ScopeCS scopeLock(appInstance->displayPos->accessCS);
-					appInstance->displayPos->setTarget(appInstance->displayPos->getTarget() + m);
-				}
+				appInstance->displayPos->moveTargetBy(m);
 				appInstance->playbackTracer->userStartedMovement();
 				return 0;
 			}
 			case WM_MBUTTONDOWN:
 			{
-				CollectionPos newTarget;
-				if (appInstance->renderer->getPositionOnPoint(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), newTarget)){
+				int clickedOffset;
+				if (appInstance->renderer->getOffsetOnPoint(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), clickedOffset)){
+					CollectionPos newTarget = appInstance->displayPos->getOffsetPos(clickedOffset);
 					appInstance->displayPos->setTarget(newTarget);
 					appInstance->playbackTracer->userStartedMovement();
 					executeAction(cfgMiddleClick, newTarget);
@@ -265,8 +262,10 @@ private:
 			case WM_LBUTTONDOWN:
 			{
 				SetFocus(appInstance->mainWindow);
-				CollectionPos clickedCover;
-				if (appInstance->renderer->getPositionOnPoint(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), clickedCover)){
+				int clickedOffset;
+				if (appInstance->renderer->getOffsetOnPoint(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), clickedOffset)){
+					CollectionPos clickedCover = appInstance->displayPos->getOffsetPos(clickedOffset);
+
 					POINT pt;
 					GetCursorPos(&pt);
 					if (DragDetect(hWnd, pt)) {
@@ -362,7 +361,7 @@ private:
 					if (move){
 						move *= LOWORD(lParam);
 						ScopeCS scopeLock(appInstance->displayPos->accessCS);
-						appInstance->displayPos->setTarget(appInstance->displayPos->getTarget() + move);
+						appInstance->displayPos->moveTargetBy(move);
 						appInstance->playbackTracer->userStartedMovement();
 						return 0;
 					}
@@ -484,6 +483,7 @@ private:
 		}
 	}
 	void onContextMenu (HWND hWnd, const int x, const int y){
+		// FIXME handle not yet loaded collection – in ohter interaction handler too
 		PlaybackTracerScopeLock lock(appInstance->playbackTracer);
 		POINT pt;
 		metadb_handle_list tracks;
@@ -497,9 +497,9 @@ private:
 			pt.y = y;
 			POINT clientPt = pt;
 			ScreenToClient(hWnd, &clientPt);
-			CollectionPos clickedOn;
-			if(appInstance->renderer->getPositionOnPoint(clientPt.x, clientPt.y, clickedOn)){
-				target = clickedOn;
+			int clickedOffset;
+			if (appInstance->renderer->getOffsetOnPoint(clientPt.x, clientPt.y, clickedOffset)){
+				target = appInstance->displayPos->getOffsetPos(clickedOffset);
 			}
 		}
 		appInstance->albumCollection->getTracks(target, tracks);

@@ -32,15 +32,53 @@ void DisplayPosition::setTarget(CollectionPos pos)
 			appInstance->redrawMainWin();
 	}
 	targetPos = pos;
-	sessionSelectedCover = pos.toIndex();
+	
+	sessionSelectedCover = appInstance->albumCollection->rank(pos);
 }
+
+void DisplayPosition::moveTargetBy(int n)
+{
+	ScopeCS scopeLock(accessCS);
+	CollectionPos p = targetPos;
+	moveIteratorBy(p, n);
+	setTarget(p);
+}
+
+CollectionPos DisplayPosition::getOffsetPos(int n) const
+{
+	CollectionPos p = centeredPos;
+	moveIteratorBy(p, n);
+	return p;
+}
+
+inline void DisplayPosition::moveIteratorBy(CollectionPos& p, int n) const
+{
+	if (n > 0){
+		CollectionPos next;
+		for (int i = 0; i < n; ++i){
+			if (p == appInstance->albumCollection->end())
+				break;
+			next = p;
+			++next;
+			// Do only move just before the end, don't reach the end
+			if (next == appInstance->albumCollection->end())
+				break;
+			p = next;
+		}
+	} else {
+		for (int i = 0; i > n && p != appInstance->albumCollection->begin(); --p, --i){}
+	}
+}
+
 
 void DisplayPosition::update(void)
 {
 	CS_ASSERT(accessCS);
 	double currentTime = Helpers::getHighresTimer();
 	if (isMoving()){
-		float dist = (targetPos - centeredPos) - centeredOffset;
+		int targetRank = appInstance->albumCollection->rank(targetPos);
+		int centeredRank = appInstance->albumCollection->rank(centeredPos);
+		float dist = (targetRank - centeredRank) - centeredOffset;
 		float dTime = float(currentTime - lastMovement);
 		float speed = abs(targetDist2moveDist(dist));
 		if (lastSpeed < 0.1f)
@@ -70,7 +108,7 @@ void DisplayPosition::update(void)
 				moveDistInt -= 1;
 			}
 			centeredOffset = newOffset;
-			centeredPos += moveDistInt;
+			std::advance(centeredPos, moveDistInt);
 		}
 	}
 	if (!isMoving()){

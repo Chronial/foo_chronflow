@@ -1,9 +1,9 @@
 #pragma once
+#include "DbAlbumCollection.h"
 #include "CriticalSection.h"
 #include "Renderer.h"
 
 class AppInstance;
-struct CollectionPos;
 
 class RenderThread {
 	Renderer renderer;
@@ -15,7 +15,7 @@ public:
 	bool initMultisampling();
 	void unAttachFromMainWindow();
 
-	bool getPositionOnPoint(int x, int y, CollectionPos& out); // synchronized
+	bool getOffsetOnPoint(int x, int y, int& out); // synchronized
 	void redraw(); // flag
 	void onViewportChange();
 	void onWindowResize(int newWidth, int newHeight); // flag
@@ -74,9 +74,9 @@ private:
 		volatile int x;
 		volatile int y;
 		volatile bool outFound;
-		CollectionPos* outPos;
+		int outOffset;
 		Event done;
-	} getPosData;
+	} getOffsetData;
 
 	struct __someNameE {
 		volatile bool requested;

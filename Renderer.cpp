@@ -5,7 +5,6 @@
 
 #include "AsynchTexLoader.h"
 #include "AppInstance.h"
-#include "CollectionPos.h"
 #include "DisplayPosition.h"
 #include "DbAlbumCollection.h"
 #include "Helpers.h"
@@ -378,7 +377,7 @@ void Renderer::glPopOrthoMatrix(){
 	glEnable(GL_DEPTH_TEST);
 }
 
-bool Renderer::positionOnPoint(int x, int y, CollectionPos& out) 
+bool Renderer::offsetOnPoint(int x, int y, int& out) 
 {
 	GLuint buf[256];
 	glSelectBuffer(256, buf);
@@ -403,7 +402,7 @@ bool Renderer::positionOnPoint(int x, int y, CollectionPos& out)
 		p += names;
 	}
 	if (minZ != INFINITE){
-		out = appInstance->displayPos->getCenteredPos() + (selectedName - SELECTION_CENTER);
+		out = (selectedName - SELECTION_CENTER);
 		return true;
 	} else {
 		return false;
@@ -536,7 +535,9 @@ void Renderer::drawScene(bool selectionPass)
 void Renderer::drawGui(){
 	if (cfgShowAlbumTitle || appInstance->albumCollection->getCount() == 0){
 		pfc::string8 albumTitle;
+		appInstance->displayPos->accessCS.enter();
 		appInstance->albumCollection->getTitle(appInstance->displayPos->getTarget(), albumTitle);
+		appInstance->displayPos->accessCS.leave();
 		textDisplay.displayText(albumTitle, int(winWidth*cfgTitlePosH), int(winHeight*(1-cfgTitlePosV)), TextDisplay::center, TextDisplay::middle);
 	}
 
@@ -690,14 +691,22 @@ void Renderer::drawCovers(bool showTarget){
 	if (cfgHighlightWidth == 0)
 		showTarget = false;
 
+	if (appInstance->albumCollection->getCount() == 0)
+		return;
+
+	appInstance->displayPos->accessCS.enter();
 	float centerOffset = appInstance->displayPos->getCenteredOffset();
 	CollectionPos centerCover = appInstance->displayPos->getCenteredPos();
-	CollectionPos firstCover = appInstance->displayPos->getCenteredPos() + (appInstance->coverPos->getFirstCover() + 1);
-	CollectionPos lastCover = appInstance->displayPos->getCenteredPos() + appInstance->coverPos->getLastCover();
+	CollectionPos firstCover = appInstance->displayPos->getOffsetPos(appInstance->coverPos->getFirstCover() + 1);
+	CollectionPos lastCover = appInstance->displayPos->getOffsetPos(appInstance->coverPos->getLastCover());
+	lastCover++; // getOffsetPos does not return the end() element
+	CollectionPos targetCover = appInstance->displayPos->getTarget();
+	appInstance->displayPos->accessCS.leave();
+
+	int offset = appInstance->albumCollection->rank(firstCover) - appInstance->albumCollection->rank(centerCover);
 	
-	for (CollectionPos p = firstCover; ; ++p){
-		int o = p - centerCover;
-		float co = -centerOffset + o;
+	for (CollectionPos p = firstCover; p != lastCover; ++p, ++offset){
+		float co = -centerOffset + offset;
 
 		ImgTexture* tex = appInstance->texLoader->getLoadedImgTexture(p);
 		tex->glBind();
@@ -717,7 +726,7 @@ void Renderer::drawCovers(bool showTarget){
 
 		glQuad coverQuad = appInstance->coverPos->getCoverQuad(co, tex->getAspect());
 		
-		glPushName(SELECTION_CENTER + o);
+		glPushName(SELECTION_CENTER + offset);
 
 		glBegin(GL_QUADS);
 			if (glFogCoordf) glFogCoordf((GLfloat)appInstance->coverPos->distanceToMirror(coverQuad.topLeft));
@@ -739,7 +748,7 @@ void Renderer::drawCovers(bool showTarget){
 		glPopName();
 
 		if (showTarget){
-			if (p == appInstance->displayPos->getTarget()){
+			if (p == targetCover){
 				bool clipPlane = false;
 				if (glIsEnabled(GL_CLIP_PLANE0)){
 					glDisable(GL_CLIP_PLANE0);
@@ -770,8 +779,6 @@ void Renderer::drawCovers(bool showTarget){
 					glEnable(GL_CLIP_PLANE0);
 			}
 		}
-		if (p == lastCover)
-			break;
 	}
 
 #ifdef COVER_ALPHA

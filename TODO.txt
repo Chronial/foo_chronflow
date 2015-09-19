@@ -1,13 +1,23 @@
 
 * Prevent paralell refreshs
 
+* Fix and simplify locking – use read/write lock system (we write very seldomly)
+* make ImgTexture refcounted
 * Rewrite AsynchTexLoader
 	* Window might be destroyed anytime!
+	* Bias loading of covers towards current position
 * Use built-in cover loader
     * cache covers?
 * Use default ui colors and font?
+* Highlight typed fayt text
+* Improve cover caching strategy
 
-* Do not loop around (collectionPos)
+
+* Fix rightclick
+* Restore Coverpos after restart
+* Remove Hard refresh concept
+
+
 
 // Release
 * Windows scripting control??

@@ -7,6 +7,12 @@
 #define IF_DEBUG(X)  
 #endif
 
+
+#ifdef _DEBUG
+#define BOOST_MULTI_INDEX_ENABLE_SAFE_MODE
+#endif
+
+
 #ifndef M_PI
 #define M_PI 3.1415926535897932385
 #endif

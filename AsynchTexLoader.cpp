@@ -13,22 +13,10 @@
 #include "RenderThread.h"
 
 
-struct AsynchTexLoader::EnumHelper {
-	CollectionPos* loadCenter;
-	DbAlbumCollection* collection;
-	pfc::list_t<AsynchTexLoader::t_cleanUpCacheDistance>* cleanUpCacheDistances;
-
-	t_resynchCallback resynchCallback;
-	void* resynchCallbackParam;
-	t_textureCache* resynchCallbackOut;
-	DbAlbumCollection* resynchCollection;
-};
-AsynchTexLoader::EnumHelper AsynchTexLoader::enumHelper = {0};
-
 AsynchTexLoader::AsynchTexLoader(AppInstance* instance) :
 appInstance(instance),
-queueCenter(instance->albumCollection,0),
-loadCenter(instance->albumCollection, 0),
+queueCenter(instance->albumCollection->end()),
+queueCenterMoved(false),
 loadingTexture(0),
 noCoverTexture(0),
 workerThread(0),
@@ -75,7 +63,6 @@ void AsynchTexLoader::loadSpecialTextures(){
 	else {
 		noCoverTexture = new ImgTexture(IDR_COVER_NO_IMG, L"JPG");
 	}
-
 }
 
 AsynchTexLoader::~AsynchTexLoader(void)
@@ -106,18 +93,15 @@ AsynchTexLoader::~AsynchTexLoader(void)
 		loadingTexture->glDelete();
 		noCoverTexture->glDelete();
 		// Do this even if we can’t delete
-		textureCache.enumerate(textureCacheDeleteEnumerator);
+		for (auto it = textureCache.begin(); it != textureCache.end(); ++it){
+			it->texture->glDelete();
+			if (it->texture)
+				delete it->texture;
+		}
 	}
 	destroyLoaderWindow();
 	delete loadingTexture;
 	delete noCoverTexture;
-}
-
-void AsynchTexLoader::textureCacheDeleteEnumerator(int idx, ImgTexture* tex){
-	if (tex){
-		tex->glDelete();
-		delete tex;
-	}
 }
 
 void AsynchTexLoader::createLoaderWindow(){
@@ -175,13 +159,17 @@ void AsynchTexLoader::createLoaderWindow(){
 
 ImgTexture* AsynchTexLoader::getLoadedImgTexture(CollectionPos pos)
 {
-	ImgTexture* tex;
-	int idx = pos.toIndex();
+	// TODO: this needs locking?
+	int idx = appInstance->albumCollection->rank(pos);
 
+	ImgTexture* tex;
 	textureCacheCS.enter();
-	if(textureCache.query(idx, tex)){
-		if (tex == 0)
+	auto entry = textureCache.find(idx);
+	if (entry != textureCache.end()){
+		if (entry->texture == 0)
 			tex = noCoverTexture;
+		else
+			tex = entry->texture;
 	} else {
 		tex = loadingTexture;
 	}
@@ -191,8 +179,14 @@ ImgTexture* AsynchTexLoader::getLoadedImgTexture(CollectionPos pos)
 
 void AsynchTexLoader::setQueueCenter(CollectionPos center)
 {
+	// The new center might be from a new collection
+#ifdef BOOST_MULTI_INDEX_ENABLE_SAFE_MODE
+	if ((center.owner() != queueCenter.owner()) || !(center == queueCenter)){
+#else
 	if (!(center == queueCenter)){
+#endif
 		queueCenter = center;
+		queueCenterMoved = true;
 		workerThreadHasWork.setSignal();
 	}
 }
@@ -277,45 +271,22 @@ void AsynchTexLoader::clearCache()
 {
 	ScopeCS scopeLock(workerThreadInLoop);
 	reserveRenderContext();
-	textureCache.enumerate(textureCacheDeleteEnumerator);
-	textureCache.remove_all();
-	loadDistance = -1;
-	releaseRenderContext();
-}
-
-void AsynchTexLoader::resynchCache(t_resynchCallback callback, void* param)
-{
-	ScopeCS scopeLock(workerThreadInLoop);
-	reserveRenderContext();
-	t_textureCache oldCache = textureCache;
-	textureCache.remove_all();
-	enumHelper.resynchCallback = callback;
-	enumHelper.resynchCallbackParam = param;
-	enumHelper.resynchCallbackOut = &textureCache;
-	enumHelper.resynchCollection = appInstance->albumCollection;
-	oldCache.enumerate(resynchCacheEnumerator);
-	loadDistance = -1;
-	releaseRenderContext();
-}
-
-void AsynchTexLoader::resynchCacheEnumerator(int idx, ImgTexture* tex){
-	int newIdx = enumHelper.resynchCallback(idx, enumHelper.resynchCallbackParam, enumHelper.resynchCollection);
-	if (newIdx >= 0)
-		enumHelper.resynchCallbackOut->set(newIdx, tex);
-	else {
-		if (tex){
-			tex->glDelete();
-			delete tex;
-		}
+	for (auto it = textureCache.begin(); it != textureCache.end(); ++it){
+		it->texture->glDelete();
+		delete it->texture;
 	}
+	textureCache.clear();
+	queueCenterMoved = true;
+	releaseRenderContext();
 }
-
-
 
 void AsynchTexLoader::workerThreadProc()
 {
-	loadDistance = -1;
-	loadCenter = queueCenter;
+	CollectionPos leftLoader = queueCenter;
+	CollectionPos rightLoader = queueCenter;
+	int leftDistance = 0;
+	int rightDistance = 0;
+	int loadCount = 0;
 	bool nearCenter = true;
 	bool onScreen = true;
 	int notifyThreshold = 10;
@@ -331,39 +302,67 @@ void AsynchTexLoader::workerThreadProc()
 			doUploadQueue();
 			releaseRenderContext();
 		} else {
-			CollectionPos queueCenterLoc = queueCenter; // work with thread-local copy to be Thread-safe
-			if (!(loadCenter == queueCenterLoc)){
-				int centerMove = queueCenterLoc - loadCenter;
-				loadDistance -= abs(centerMove)*2; // not 100% correct
-				if (loadDistance < 0)
-					loadDistance = -1;
-				loadCenter = queueCenterLoc;
+			
+			// work with thread-local copy to be Thread-safe – FIXME this copying is not safe
+			CollectionPos queueCenterLoc = queueCenter;
+				
+			if (queueCenterMoved){
+				queueCenterMoved = false;
+				loadCount = 0;
+				leftLoader = queueCenterLoc;
+				rightLoader = queueCenterLoc;
+				leftDistance = 0;
+				rightDistance = 0;
 			}
-			static int cleanUpC = 0;
-			cleanUpC++;
 
-			if ((loadDistance >= int((cfgTextureCacheSize - 1)*0.9)) ||
-				((loadDistance+1) >= appInstance->albumCollection->getCount())){
-				cleanUpCache();
-				cleanUpC = 0;
+			appInstance->albumCollection->texloaderThreadCS.enter();
+			int collectionSize = appInstance->albumCollection->getCount();
+			appInstance->albumCollection->texloaderThreadCS.leave();
+
+			if ((loadCount >= int((cfgTextureCacheSize - 1)*0.8)) ||
+				((loadCount + 1) >= collectionSize)){
+				// Loaded enough textures
 				if (uploadQueueHead){
 					workerThreadHasWork.waitForTwo(mayUpload, false);
 				} else {
 					workerThreadHasWork.waitForSignal();
 				}
 			} else {
+				// Load another texture
 				ScopeCS scopeLock(workerThreadInLoop);
-				loadDistance++;
-				int loadIdx;
-				if (loadDistance % 2){
-					loadIdx = (loadDistance + 1) / 2;
+				ScopeCS scopeLockCollection(appInstance->albumCollection->texloaderThreadCS);
+				CollectionPos loadNext = queueCenterLoc;
+				bool foundCoverToLoad = false;
+				int loadOffset = 0;
+				if (loadCount == 0){
+					foundCoverToLoad = true;
 				} else {
-					loadIdx = -loadDistance / 2;
+					if (loadCount % 2){
+						loadNext = rightLoader;
+						++loadNext;
+						if (loadNext != appInstance->albumCollection->end()){
+							foundCoverToLoad = true;
+							rightLoader = loadNext;
+							rightDistance++;
+							loadOffset = rightDistance;
+						}
+					}
+					if (!foundCoverToLoad){
+						if (leftLoader != appInstance->albumCollection->begin()){
+							foundCoverToLoad = true;
+							--leftLoader;
+							loadNext = leftLoader;
+							leftDistance++;
+							loadOffset = -leftDistance;
+						}
+					}
 				}
+				loadCount++;
+				
 				// unclean / hack - this is not mulithread safe!
-				onScreen = (loadIdx >= appInstance->coverPos->getFirstCover()) && (loadIdx <= appInstance->coverPos->getLastCover());
+				onScreen = (loadOffset >= appInstance->coverPos->getFirstCover()) && (loadOffset <= appInstance->coverPos->getLastCover());
 
-				if (loadDistance < 16){
+				if (loadCount < 16){
 					if (!nearCenter){
 						nearCenter = true;
 						setWorkerThreadPrio(cfgTexLoaderPrio);
@@ -374,27 +373,22 @@ void AsynchTexLoader::workerThreadProc()
 						setWorkerThreadPrio(THREAD_PRIORITY_IDLE);
 					}
 				}
-				if ((cleanUpC % (int(ceil(cfgTextureCacheSize * 0.2))+1)) == 0){
-					cleanUpCache();
-					cleanUpC = 0;
-				}
-				CollectionPos loadTarget = loadCenter + loadIdx;
-				IF_DEBUG(Console::printf(L"L d:%2d - idx:%4d\n",loadDistance, loadTarget.toIndex()));
 				
 				bool doUpload = false;
 				if (mayUpload.waitForSignal(0)){
 					doUpload = true;
 				}
 				reserveRenderContext();
-				loadTexImage(loadTarget, doUpload);
+				bool textureLoaded = loadTexImage(loadNext, doUpload);
 				releaseRenderContext();
 				{ // Redraw Mainwindow
-					if ((nearCenter && (notifyC % 2)) ||
+					if (textureLoaded && (
+						(nearCenter && (notifyC % 2)) ||
 						(onScreen && ((notifyC % 4) == 0)) ||
-						(loadDistance == 0) ||
-						(++notifyC == notifyThreshold)){
+						(loadCount == 1) ||
+						(++notifyC == notifyThreshold))){
 						notifyC = 0;
-						notifyThreshold = loadDistance * loadDistance / cfgTextureCacheSize;
+						notifyThreshold = loadCount * loadCount / cfgTextureCacheSize;
 						IF_DEBUG(Console::println(L"                    Refresh trig."));
 						appInstance->redrawMainWin();
 					}
@@ -404,15 +398,23 @@ void AsynchTexLoader::workerThreadProc()
 	}
 }
 
-void AsynchTexLoader::loadTexImage(CollectionPos pos, bool doUpload){
-	int idx = pos.toIndex();
-	ImgTexture * tex;
-	if (textureCache.query(idx, tex)){ //already loaded
-		if (doUpload && tex)
-			tex->glUpload();
-		return;
+bool AsynchTexLoader::loadTexImage(CollectionPos pos, bool doUpload){
+	int idx = appInstance->albumCollection->rank(pos);
+	auto &mruIndex = textureCache.get<1>();
+
+	textureCacheCS.enter();
+	auto oldEntry = textureCache.find(idx);
+	if (oldEntry != textureCache.end()){ //already loaded
+		// move to front of MRU
+		mruIndex.relocate(mruIndex.begin(), textureCache.project<1>(oldEntry));
+		textureCacheCS.leave();
+		if (oldEntry->texture && doUpload)
+			oldEntry->texture->glUpload();
+		return false;
 	}
+	textureCacheCS.leave();
 	IF_DEBUG(Console::println(L"                 x"));
+	ImgTexture * tex;
 	tex = appInstance->albumCollection->getImgTexture(pos);
 	if (doUpload && tex){
 		tex->glUpload();
@@ -427,8 +429,16 @@ void AsynchTexLoader::loadTexImage(CollectionPos pos, bool doUpload){
 		uploadQueueTail = e;
 	}
 	textureCacheCS.enter();
-	textureCache.set(idx,tex);
+	mruIndex.push_front({ idx, tex });
+
+	if (textureCache.size() > (size_t)cfgTextureCacheSize){
+		CacheItem deleteEntry = mruIndex.back();
+		mruIndex.pop_back();
+		if (deleteEntry.texture)
+			queueGlDelete(deleteEntry.texture);
+	}
 	textureCacheCS.leave();
+	return true;
 }
 
 void AsynchTexLoader::allowUpload(){
@@ -441,14 +451,13 @@ void AsynchTexLoader::blockUpload(){
 
 void AsynchTexLoader::doUploadQueue(){
 	UploadQueueElem* e = uploadQueueHead;
-	ImgTexture* tex;
 	while (e){
 		if (!mayUpload.waitForSignal(0))
 			break;
-		if(textureCache.query(e->texIdx, tex)){
-			if (tex != 0){
-				tex->glUpload();
-			}
+		auto cacheEntry = textureCache.find(e->texIdx);
+
+		if(cacheEntry != textureCache.end() && cacheEntry->texture){
+			cacheEntry->texture->glUpload();
 		}
 		if (e == uploadQueueTail)
 			uploadQueueTail = 0;
@@ -456,37 +465,6 @@ void AsynchTexLoader::doUploadQueue(){
 		delete e;
 		e = uploadQueueHead;
 	}
-}
-
-void AsynchTexLoader::cleanUpCache(){
-	int textureCacheCount = textureCache.get_count();
-	int deleteCount = textureCacheCount - cfgTextureCacheSize;
-	if (deleteCount > 0){
-		cleanUpCacheDistances.remove_all();
-		cleanUpCacheDistances.prealloc(textureCacheCount);
-		enumHelper.loadCenter = &loadCenter;
-		enumHelper.collection = appInstance->albumCollection;
-		enumHelper.cleanUpCacheDistances = &cleanUpCacheDistances;
-		textureCache.enumerate(cleanUpCacheGetDistances);
-		cleanUpCacheDistances.sort(cleanUpCacheDistances_compare());
-		for (int i=0; i < deleteCount; i++){
-			int idx = cleanUpCacheDistances.get_item_ref(i).cacheIdx;
-			ImgTexture * tex;
-			if (!textureCache.query(idx, tex))
-				continue;
-			textureCacheCS.enter();
-			textureCache.remove(idx);
-			textureCacheCS.leave();
-			queueGlDelete(tex);
-		}
-	}
-}
-
-void AsynchTexLoader::cleanUpCacheGetDistances(int idx, ImgTexture* tex){
-	t_cleanUpCacheDistance dst;
-	dst.cacheIdx = idx;
-	dst.distance = abs(*(enumHelper.loadCenter) - CollectionPos(enumHelper.collection, idx));
-	enumHelper.cleanUpCacheDistances->add_item(dst);
 }
 
 void AsynchTexLoader::queueGlDelete(ImgTexture* tex){
