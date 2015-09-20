@@ -94,9 +94,10 @@ AsynchTexLoader::~AsynchTexLoader(void)
 		noCoverTexture->glDelete();
 		// Do this even if we can’t delete
 		for (auto it = textureCache.begin(); it != textureCache.end(); ++it){
-			it->texture->glDelete();
-			if (it->texture)
+			if (it->texture){
+				it->texture->glDelete();
 				delete it->texture;
+			}
 		}
 	}
 	destroyLoaderWindow();
@@ -272,8 +273,10 @@ void AsynchTexLoader::clearCache()
 	ScopeCS scopeLock(workerThreadInLoop);
 	reserveRenderContext();
 	for (auto it = textureCache.begin(); it != textureCache.end(); ++it){
-		it->texture->glDelete();
-		delete it->texture;
+		if (it->texture){
+			it->texture->glDelete();
+			delete it->texture;
+		}
 	}
 	textureCache.clear();
 	queueCenterMoved = true;
