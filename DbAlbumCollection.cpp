@@ -17,11 +17,11 @@ private:
 	service_ptr_t<titleformat_object> albumMapper;
 
 private:
-	void moveDataToCollection(DbAlbumCollection* collection){
-		ScopeCS renderScopeLock(collection->renderThreadCS);
-		ScopeCS texloadScopeLock(collection->texloaderThreadCS);
-		collection->albums = std::move(albums);
-		collection->albumMapper = std::move(albumMapper);
+	void moveDataToAppInstance(){
+		ScopeCS renderScopeLock(appInstance->albumCollection->renderThreadCS);
+		ScopeCS texloadScopeLock(appInstance->albumCollection->texloaderThreadCS);
+		appInstance->albumCollection->albums = std::move(albums);
+		appInstance->albumCollection->albumMapper = std::move(albumMapper);
 	}
 private:
 	// call from mainthread!
@@ -120,63 +120,57 @@ public:
 		worker->init();
 		worker->startWorkerThread();
 	}
-	void reloadAsynchFinish(DbAlbumCollection* collection){
-		collection->reloadSourceScripts();
+	void reloadAsynchFinish(){
+		ScopeCS scopeLock(appInstance->displayPos->accessCS);
+		appInstance->albumCollection->reloadSourceScripts();
 		appInstance->texLoader->clearCache();
+		
+		;
 
-		{ // update DisplayPosition
-			ScopeCS scopeLock(appInstance->displayPos->accessCS);
-			CollectionPos oldCenteredPos = appInstance->displayPos->getCenteredPos();
-			auto &sortedIndex = albums.get<1>();
+		CollectionPos newCenteredPos;
+		auto &sortedIndex = albums.get<1>();
 
-			int centeredIdx = collection->rank(oldCenteredPos);
-			CollectionPos targetPos = appInstance->displayPos->getTarget();
-			int targetIdx = collection->rank(targetPos);
-
-			CollectionPos newCenteredPos = findMatchingPosition(oldCenteredPos, collection);
-			if (newCenteredPos == sortedIndex.end()){
+		if (appInstance->albumCollection->getCount() == 0){
+			if (albums.size() > (t_size)sessionSelectedCover){
+				newCenteredPos = sortedIndex.nth(sessionSelectedCover);
+			} else {
 				newCenteredPos = sortedIndex.begin();
 			}
-			appInstance->displayPos->hardSetCenteredPos(newCenteredPos);
-			appInstance->displayPos->hardSetTarget(newCenteredPos);
-			appInstance->texLoader->setQueueCenter(newCenteredPos);
-			// smarter target sync:
-			/*if (newCenteredIdx >= 0){
-				centeredPos += (newCenteredIdx - centeredIdx);
-				appInstance->displayPos->hardSetCenteredPos(centeredPos);
-				int newTargetIdx = resynchCallback(targetIdx, collection);
-				if (newTargetIdx >= 0){
-					targetPos += (newTargetIdx - targetIdx);
-				} else {
-					targetPos += (newCenteredIdx - centeredIdx);
-				}
-
-			}*/
-		}
-
-		moveDataToCollection(collection);
-		appInstance->texLoader->resumeLoading();
-		appInstance->redrawMainWin();
-		delete this;
-	}
-	CollectionPos findMatchingPosition(CollectionPos oldPos, DbAlbumCollection* collection){
-		DbAlbumCollection* col = dynamic_cast<DbAlbumCollection*>(collection);
-
-		auto &sortedIndex = albums.get<1>();
-		CollectionPos newPos = sortedIndex.end();
-		pfc::string8_fast_aggressive albumKey;
-		if (oldPos == collection->end()){
-			newPos = sortedIndex.begin();
 		} else {
-			for (t_size i = 0; i < oldPos->tracks.get_size(); i++){
-				oldPos->tracks[i]->format_title(0, albumKey, albumMapper, 0);
+			CollectionPos oldCenteredPos = appInstance->displayPos->getCenteredPos();
+			newCenteredPos = sortedIndex.begin();
+
+			pfc::string8_fast_aggressive albumKey;
+			for (t_size i = 0; i < oldCenteredPos->tracks.get_size(); i++){
+				newCenteredPos->tracks[i]->format_title(0, albumKey, albumMapper, 0);
 				if (albums.count(albumKey.get_ptr())){
-					newPos = albums.project<1>(albums.find(albumKey.get_ptr()));
+					newCenteredPos = albums.project<1>(albums.find(albumKey.get_ptr()));
 					break;
 				}
 			}
 		}
-		return newPos;
+
+
+		appInstance->displayPos->hardSetCenteredPos(newCenteredPos);
+		appInstance->displayPos->hardSetTarget(newCenteredPos);
+		appInstance->texLoader->setQueueCenter(newCenteredPos);
+		// smarter target sync:
+		/*if (newCenteredIdx >= 0){
+			centeredPos += (newCenteredIdx - centeredIdx);
+			appInstance->displayPos->hardSetCenteredPos(centeredPos);
+			int newTargetIdx = resynchCallback(targetIdx, collection);
+			if (newTargetIdx >= 0){
+				targetPos += (newTargetIdx - targetIdx);
+			} else {
+				targetPos += (newCenteredIdx - centeredIdx);
+			}
+
+		}*/
+
+		moveDataToAppInstance();
+		appInstance->texLoader->resumeLoading();
+		appInstance->redrawMainWin();
+		delete this;
 	}
 };
 
@@ -229,7 +223,7 @@ void DbAlbumCollection::reloadAsynchStart(){
 
 void DbAlbumCollection::reloadAsynchFinish(LPARAM worker){
 	double synchStart = Helpers::getHighresTimer();
-	reinterpret_cast<RefreshWorker*>(worker)->reloadAsynchFinish(this);
+	reinterpret_cast<RefreshWorker*>(worker)->reloadAsynchFinish();
 	console::printf("Sync finish: %d msec (in mainthread)",int((Helpers::getHighresTimer()-synchStart)*1000));
 	isRefreshing = false;
 }

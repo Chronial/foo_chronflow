@@ -13,11 +13,6 @@
 * Improve cover caching strategy
 
 
-* Fix rightclick
-* Restore Coverpos after restart
-
-
-
 // Release
 * Windows scripting control??
 * Ask for better default images
