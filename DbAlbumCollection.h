@@ -83,8 +83,6 @@ public:
 	CollectionPos begin() const;
 	CollectionPos end() const;
 	t_size rank(CollectionPos p);
-	CriticalSection renderThreadCS;
-	CriticalSection texloaderThreadCS;
 
 private:
 	void reloadSourceScripts();

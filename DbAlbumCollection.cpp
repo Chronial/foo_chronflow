@@ -18,8 +18,7 @@ private:
 
 private:
 	void moveDataToAppInstance(){
-		ScopeCS renderScopeLock(appInstance->albumCollection->renderThreadCS);
-		ScopeCS texloadScopeLock(appInstance->albumCollection->texloaderThreadCS);
+		ASSERT_APP_EXCLUSIVE(appInstance);
 		appInstance->albumCollection->albums = std::move(albums);
 		appInstance->albumCollection->albumMapper = std::move(albumMapper);
 	}
@@ -121,12 +120,12 @@ public:
 		worker->startWorkerThread();
 	}
 	void reloadAsynchFinish(){
+		ASSERT_APP_EXCLUSIVE(appInstance);
 		ScopeCS scopeLock(appInstance->displayPos->accessCS);
+
 		appInstance->albumCollection->reloadSourceScripts();
 		appInstance->texLoader->clearCache();
 		
-		;
-
 		CollectionPos newCenteredPos;
 		auto &sortedIndex = albums.get<1>();
 
@@ -175,6 +174,7 @@ public:
 };
 
 void DbAlbumCollection::reloadSourceScripts(){
+	ASSERT_APP_EXCLUSIVE(appInstance);
 	static_api_ptr_t<titleformat_compiler> compiler;
 	EnterCriticalSection(&sourceScriptsCS);
 	sourceScripts.remove_all();
@@ -222,6 +222,7 @@ void DbAlbumCollection::reloadAsynchStart(){
 }
 
 void DbAlbumCollection::reloadAsynchFinish(LPARAM worker){
+	ASSERT_APP_EXCLUSIVE(appInstance);
 	double synchStart = Helpers::getHighresTimer();
 	reinterpret_cast<RefreshWorker*>(worker)->reloadAsynchFinish();
 	console::printf("Sync finish: %d msec (in mainthread)",int((Helpers::getHighresTimer()-synchStart)*1000));

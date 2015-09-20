@@ -18,5 +18,16 @@
 #include "opengl\glext.h"
 #include "opengl\wglext.h"
 
+#include <unordered_set>
+
 // copied from colums_ui TODO: strip this down
 #include "win32_helpers.h"
+
+#include <boost/thread/lock_types.hpp> 
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/shared_mutex.hpp>
+
+using boost::mutex;
+using boost::unique_lock;
+using boost::shared_mutex;
+using boost::shared_lock;

@@ -13,6 +13,8 @@
 * Improve cover caching strategy
 
 
+** Memory leak when jumping from t to k via fayt??
+
 // Release
 * Windows scripting control??
 * Ask for better default images

@@ -318,9 +318,9 @@ void AsynchTexLoader::workerThreadProc()
 				rightDistance = 0;
 			}
 
-			appInstance->albumCollection->texloaderThreadCS.enter();
+			appInstance->lock_shared();
 			int collectionSize = appInstance->albumCollection->getCount();
-			appInstance->albumCollection->texloaderThreadCS.leave();
+			appInstance->unlock_shared();
 
 			if ((loadCount >= int((cfgTextureCacheSize - 1)*0.8)) ||
 				((loadCount + 1) >= collectionSize)){
@@ -332,8 +332,8 @@ void AsynchTexLoader::workerThreadProc()
 				}
 			} else {
 				// Load another texture
+				shared_lock<AppInstance> lock(*appInstance);
 				ScopeCS scopeLock(workerThreadInLoop);
-				ScopeCS scopeLockCollection(appInstance->albumCollection->texloaderThreadCS);
 				CollectionPos loadNext = queueCenterLoc;
 				bool foundCoverToLoad = false;
 				int loadOffset = 0;

@@ -68,21 +68,24 @@ void RenderThread::renderThreadProc(){
 }
 
 void RenderThread::onPaint(){
+	appInstance->lock_shared();
 	double frameStart = Helpers::getHighresTimer();
 	appInstance->texLoader->blockUpload();
 	appInstance->texLoader->runGlDelete();
 	appInstance->displayPos->accessCS.enter();
-	appInstance->albumCollection->renderThreadCS.enter();
 
+	// FIXME this would require write lock
 	appInstance->displayPos->update();
+	// continue animation if we are not done
+	doPaint = appInstance->displayPos->isMoving();
 	appInstance->texLoader->setQueueCenter(appInstance->displayPos->getTarget());
+
 	appInstance->displayPos->accessCS.leave();
 
 	appInstance->coverPos->lock();
 	renderer.drawFrame();
 	appInstance->coverPos->unlock();
-	appInstance->albumCollection->renderThreadCS.leave();
-
+	appInstance->unlock_shared();
 
 
 	/*double curTime = Helpers::getHighresTimer();
@@ -94,12 +97,9 @@ void RenderThread::onPaint(){
 	renderer.fpsCounter.recordFrame(frameStart, frameEnd);
 
 	appInstance->displayPos->accessCS.enter();
-	if (appInstance->displayPos->isMoving()){
-		doPaint = true;
-	} else {
-		doPaint = false;
-	}
 	appInstance->displayPos->accessCS.leave();
+
+
 
 	renderer.ensureVSync(cfgVSyncMode != VSYNC_SLEEP_ONLY);
 	if (cfgVSyncMode == VSYNC_AND_SLEEP || cfgVSyncMode == VSYNC_SLEEP_ONLY){
@@ -128,12 +128,15 @@ void RenderThread::onPaint(){
 		renderer.swapBuffers();
 		afterLastSwap = Helpers::getHighresTimer();
 	}
+	appInstance->lock_shared();
 	appInstance->displayPos->accessCS.enter();
 	if (!doPaint && appInstance->displayPos->isMoving())
 		doPaint = true; // MT safety - if during Sleep something chaned dPos target and set forceRedraw we might have lost the change
 	appInstance->displayPos->accessCS.leave();
 	if (!doPaint)
 		appInstance->texLoader->allowUpload();
+	appInstance->unlock_shared();
+
 	if (!doPaint && timerInPeriod){
 		timeEndPeriod(timerResolution);
 		timerInPeriod = false;

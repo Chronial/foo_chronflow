@@ -81,6 +81,7 @@
       <AssemblyDebug>true</AssemblyDebug>
       <SubSystem>Windows</SubSystem>
       <LinkTimeCodeGeneration />
+      <AdditionalLibraryDirectories>..\..\boost_1_59_0\stage\lib</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Message>Cleanup...</Message>
@@ -119,6 +120,7 @@ del $(ProjectDir)\BUILD_IN_COVERCONFIGS.h
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       <FixedBaseAddress>false</FixedBaseAddress>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>..\..\boost_1_59_0\stage\lib</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Message>Cleanup</Message>

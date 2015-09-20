@@ -215,8 +215,11 @@ private:
 	LRESULT MessageHandler (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 		switch (uMsg){
 			case WM_COLLECTION_REFRESHED:
+			{
+				unique_lock<AppInstance> lock(*appInstance);
 				appInstance->albumCollection->reloadAsynchFinish(lParam);
 				return 0;
+			}
 			case WM_DESTROY:
 				if (appInstance->renderer){
 					appInstance->renderer->unAttachFromMainWindow();
