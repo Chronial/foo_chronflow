@@ -6,6 +6,7 @@
 #include "ScriptedCoverPositions.h"
 
 class AppInstance;
+class DisplayPosition;
 
 enum VSyncMode {
 	VSYNC_SLEEP_ONLY = 1,
@@ -16,7 +17,7 @@ enum VSyncMode {
 class Renderer
 {
 public:
-	Renderer(AppInstance* instance);
+	Renderer(AppInstance* instance, DisplayPosition* displayPos);
 	~Renderer(void);
 
 	bool attachGlWindow();
@@ -44,10 +45,10 @@ public:
 public:
 	bool initMultisampling();
 
-public:
-	FpsCounter fpsCounter;
 	TextDisplay textDisplay;
+	FpsCounter fpsCounter;
 	ScriptedCoverPositions coverPos;
+	DisplayPosition* displayPos;
 
 private:
 	void loadExtensions(void);

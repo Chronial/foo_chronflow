@@ -68,9 +68,7 @@ public:
 	inline int getCount() { return albums.size(); };
 	shared_ptr<ImgTexture> getImgTexture(CollectionPos pos);
 	void getTitle(CollectionPos pos, pfc::string_base& out);
-
 	bool getTracks(CollectionPos pos, metadb_handle_list& out);
-
 	bool getAlbumForTrack(const metadb_handle_ptr& track, CollectionPos& out);
 
 	// Set `out` to leftmost album whose title starts with `title`
@@ -83,6 +81,32 @@ public:
 	CollectionPos begin() const;
 	CollectionPos end() const;
 	t_size rank(CollectionPos p);
+
+public:
+	CollectionPos getTargetPos() {
+		// FIXME assert lock
+		return *targetPos;
+	}
+	void setTargetPos(CollectionPos newTarget);
+	void moveTargetBy(int n);
+	inline void movePosBy(CollectionPos& p, int n) const
+	{
+		if (n > 0){
+			CollectionPos next;
+			for (int i = 0; i < n; ++i){
+				if (p == this->end())
+					break;
+				next = p;
+				++next;
+				// Do only move just before the end, don't reach the end
+				if (next == this->end())
+					break;
+				p = next;
+			}
+		} else {
+			for (int i = 0; i > n && p != this->begin(); --p, --i){}
+		}
+	}
 
 private:
 	void reloadSourceScripts();
@@ -98,5 +122,6 @@ private:
 private:
 	/******************************* INTERN DATABASE ***************************/
 	DbAlbums albums;
+	boost::synchronized_value<CollectionPos> targetPos;
 	service_ptr_t<titleformat_object> albumMapper;
 };

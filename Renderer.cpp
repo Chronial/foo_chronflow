@@ -23,8 +23,9 @@ PFNGLBLENDCOLORPROC glBlendColor = NULL;
 #define SELECTION_COVERS 1
 #define SELECTION_MIRROR 2
 
-Renderer::Renderer(AppInstance* instance)
+Renderer::Renderer(AppInstance* instance, DisplayPosition* displayPos)
 : appInstance(instance),
+  displayPos(displayPos),
   multisampleEnabled(false),
   textDisplay(this),
   hDC(0), hRC(0)
@@ -533,9 +534,7 @@ void Renderer::drawScene(bool selectionPass)
 void Renderer::drawGui(){
 	if (cfgShowAlbumTitle || appInstance->albumCollection->getCount() == 0){
 		pfc::string8 albumTitle;
-		appInstance->displayPos->accessCS.enter();
-		appInstance->albumCollection->getTitle(appInstance->displayPos->getTarget(), albumTitle);
-		appInstance->displayPos->accessCS.leave();
+		appInstance->albumCollection->getTitle(appInstance->albumCollection->getTargetPos(), albumTitle);
 		textDisplay.displayText(albumTitle, int(winWidth*cfgTitlePosH), int(winHeight*(1-cfgTitlePosV)), TextDisplay::center, TextDisplay::middle);
 	}
 
@@ -692,14 +691,12 @@ void Renderer::drawCovers(bool showTarget){
 	if (appInstance->albumCollection->getCount() == 0)
 		return;
 
-	appInstance->displayPos->accessCS.enter();
-	float centerOffset = appInstance->displayPos->getCenteredOffset();
-	CollectionPos centerCover = appInstance->displayPos->getCenteredPos();
-	CollectionPos firstCover = appInstance->displayPos->getOffsetPos(coverPos.getFirstCover() + 1);
-	CollectionPos lastCover = appInstance->displayPos->getOffsetPos(coverPos.getLastCover());
+	float centerOffset = displayPos->getCenteredOffset();
+	CollectionPos centerCover = displayPos->getCenteredPos();
+	CollectionPos firstCover = displayPos->getOffsetPos(coverPos.getFirstCover() + 1);
+	CollectionPos lastCover = displayPos->getOffsetPos(coverPos.getLastCover());
 	lastCover++; // getOffsetPos does not return the end() element
-	CollectionPos targetCover = appInstance->displayPos->getTarget();
-	appInstance->displayPos->accessCS.leave();
+	CollectionPos targetCover = appInstance->albumCollection->getTargetPos();
 
 	int offset = appInstance->albumCollection->rank(firstCover) - appInstance->albumCollection->rank(centerCover);
 	

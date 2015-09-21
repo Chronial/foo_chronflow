@@ -61,12 +61,13 @@ void PlaybackTracer::timerHit()
 
 void PlaybackTracer::moveToNowPlaying()
 {
+	// FIXME we need db lock here
 	static_api_ptr_t<playback_control_v2> pc;
 	metadb_handle_ptr nowPlaying;
 	if (pc->get_now_playing(nowPlaying)){
 		CollectionPos target;
 		if (appInstance->albumCollection->getAlbumForTrack(nowPlaying, target)){
-			appInstance->displayPos->setTarget(target);
+			appInstance->albumCollection->setTargetPos(target);
 		}
 	}
 }

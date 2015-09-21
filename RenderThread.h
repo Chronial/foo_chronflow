@@ -1,4 +1,5 @@
 #pragma once
+#include "DisplayPosition.h"
 #include "DbAlbumCollection.h"
 #include "BlockingQueue.h"
 #include "CriticalSection.h"
@@ -50,11 +51,12 @@ public:
 	int width;
 	int height;
 };
+class RTTargetChangedMessage : public RTMessage {};
 
-class RTGetOffsetMessage : public RTAnswerMessage <std::pair<bool, int>> {
-	RTGetOffsetMessage(){};
+class RTGetPosAtCoordsMessage : public RTAnswerMessage <shared_ptr<CollectionPos>> {
+	RTGetPosAtCoordsMessage(){};
 public:
-	RTGetOffsetMessage(int x, int y) : x(x), y(y) {};
+	RTGetPosAtCoordsMessage(int x, int y) : x(x), y(y) {};
 	int x;
 	int y;
 };
@@ -73,6 +75,7 @@ public:
 
 
 class RenderThread {
+	DisplayPosition displayPos;
 	Renderer renderer;
 	AppInstance* appInstance;
 public:
@@ -85,6 +88,9 @@ public:
 		return renderer.getPixelFormat();
 	};
 	void stopRenderThread();
+
+	CollectionPos getCenteredPos();
+	void hardSetCenteredPos(CollectionPos pos);
 
 	void send(shared_ptr<RTMessage> msg);
 private:

@@ -13,8 +13,8 @@ DisplayPosition::DisplayPosition(AppInstance* instance, CollectionPos startingPo
 	: centeredOffset(0.0f),
 	  appInstance(instance),
 	  centeredPos(startingPos),
-	  targetPos(startingPos),
-	  lastSpeed(0.0f)
+	  lastSpeed(0.0f),
+	  rendering(false)
 {
 }
 
@@ -23,59 +23,35 @@ DisplayPosition::~DisplayPosition(void)
 {
 }
 
-void DisplayPosition::setTarget(CollectionPos pos)
+void DisplayPosition::onTargetChange()
 {
-	ScopeCS scopeLock(accessCS);
-	if (!isMoving()){
+	// FIXME assert db lock
+	// TODO: this can be done smarter:
+	// render thread nows whether we are currently moving, and thus if lastMovement was correct
+	if (!rendering){
 		lastMovement = Helpers::getHighresTimer();
-		if (targetPos != pos)
-			appInstance->redrawMainWin();
+		rendering = true;
 	}
-	targetPos = pos;
-	
-	sessionSelectedCover = appInstance->albumCollection->rank(pos);
+	CollectionPos targetPos = appInstance->albumCollection->getTargetPos();
+	// FIXME send message to renderer instead
+	appInstance->redrawMainWin();
 }
 
-void DisplayPosition::moveTargetBy(int n)
-{
-	ScopeCS scopeLock(accessCS);
-	CollectionPos p = targetPos;
-	moveIteratorBy(p, n);
-	setTarget(p);
-}
 
 CollectionPos DisplayPosition::getOffsetPos(int n) const
 {
+	// FIME assert db lock
 	CollectionPos p = centeredPos;
-	moveIteratorBy(p, n);
+	appInstance->albumCollection->movePosBy(p, n);
 	return p;
 }
 
-inline void DisplayPosition::moveIteratorBy(CollectionPos& p, int n) const
-{
-	if (n > 0){
-		CollectionPos next;
-		for (int i = 0; i < n; ++i){
-			if (p == appInstance->albumCollection->end())
-				break;
-			next = p;
-			++next;
-			// Do only move just before the end, don't reach the end
-			if (next == appInstance->albumCollection->end())
-				break;
-			p = next;
-		}
-	} else {
-		for (int i = 0; i > n && p != appInstance->albumCollection->begin(); --p, --i){}
-	}
-}
-
-
 void DisplayPosition::update(void)
 {
-	CS_ASSERT(accessCS);
 	double currentTime = Helpers::getHighresTimer();
-	if (isMoving()){
+	CollectionPos targetPos = appInstance->albumCollection->getTargetPos();
+	// do this here because of concurrency – isMoving might see a different targetPos
+	if (centeredPos != targetPos || centeredOffset != 0){
 		int targetRank = appInstance->albumCollection->rank(targetPos);
 		int centeredRank = appInstance->albumCollection->rank(centeredPos);
 		float dist = (targetRank - centeredRank) - centeredOffset;
@@ -112,6 +88,7 @@ void DisplayPosition::update(void)
 		}
 	}
 	if (!isMoving()){
+		rendering = false;
 		appInstance->playbackTracer->movementEnded();
 	}
 	lastMovement = currentTime;
@@ -125,12 +102,7 @@ float DisplayPosition::targetDist2moveDist(float targetDist){
 
 bool DisplayPosition::isMoving(void)
 {
-	return !((centeredPos == targetPos) && (centeredOffset == 0));
-}
-
-CollectionPos DisplayPosition::getTarget(void) const
-{
-	return targetPos;
+	return !((centeredPos == appInstance->albumCollection->getTargetPos()) && (centeredOffset == 0));
 }
 
 CollectionPos DisplayPosition::getCenteredPos(void) const
@@ -145,12 +117,5 @@ float DisplayPosition::getCenteredOffset(void) const
 
 void DisplayPosition::hardSetCenteredPos(CollectionPos pos)
 {
-	CS_ASSERT(accessCS);
 	centeredPos = pos;
-}
-
-void DisplayPosition::hardSetTarget(CollectionPos pos)
-{
-	CS_ASSERT(accessCS);
-	targetPos = pos;
 }

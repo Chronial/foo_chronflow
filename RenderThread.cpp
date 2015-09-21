@@ -27,6 +27,8 @@ void RenderThread::threadProc(){
 			// do nothing, this is just here so that onPaint may run
 		} else if (auto m = dynamic_pointer_cast<RTRedrawMessage>(msg)){
 			doPaint = true;
+		} else if (auto m = dynamic_pointer_cast<RTTargetChangedMessage>(msg)){
+			displayPos.onTargetChange();
 		} else if (auto m = dynamic_pointer_cast<RTAttachMessage>(msg)){
 			bool result = renderer.attachGlWindow();
 			m->setAnswer(result);
@@ -49,11 +51,15 @@ void RenderThread::threadProc(){
 			renderer.resizeGlScene(m->width, m->height);
 		} else if (auto m = dynamic_pointer_cast<RTTextFormatChangedMessage>(msg)){
 			renderer.textDisplay.clearCache();
-		} else if (auto m = dynamic_pointer_cast<RTGetOffsetMessage>(msg)){
-			// TODO: this should not be getOffset, but getPosition
+		} else if (auto m = dynamic_pointer_cast<RTGetPosAtCoordsMessage>(msg)){
+			// FIXME this needs db lock
 			int offset;
-			bool success = renderer.offsetOnPoint(m->x, m->y, offset);
-			m->setAnswer(std::make_pair(success, offset));
+			if (renderer.offsetOnPoint(m->x, m->y, offset)){
+				CollectionPos pos = displayPos.getOffsetPos(offset);
+				m->setAnswer(make_shared<CollectionPos>(pos));
+			} else {
+				m->setAnswer(nullptr);
+			}
 			// TODO: Check if need to repaint here
 		} else if (auto m = dynamic_pointer_cast<RTChangeCPScriptMessage>(msg)){
 			pfc::string8 tmp;
@@ -75,15 +81,11 @@ void RenderThread::onPaint(){
 	appInstance->lock_shared();
 	double frameStart = Helpers::getHighresTimer();
 	appInstance->texLoader->blockUpload();
-	appInstance->displayPos->accessCS.enter();
 
-	// FIXME this would require write lock
-	appInstance->displayPos->update();
+	displayPos.update();
 	// continue animation if we are not done
-	doPaint = appInstance->displayPos->isMoving();
-	appInstance->texLoader->setQueueCenter(appInstance->displayPos->getTarget());
-
-	appInstance->displayPos->accessCS.leave();
+	doPaint = displayPos.isMoving();
+	appInstance->texLoader->setQueueCenter(appInstance->albumCollection->getTargetPos());
 
 	renderer.drawFrame();
 	appInstance->unlock_shared();
@@ -96,9 +98,6 @@ void RenderThread::onPaint(){
 
 	double frameEnd = Helpers::getHighresTimer();
 	renderer.fpsCounter.recordFrame(frameStart, frameEnd);
-
-	appInstance->displayPos->accessCS.enter();
-	appInstance->displayPos->accessCS.leave();
 
 
 
@@ -137,9 +136,11 @@ void RenderThread::onPaint(){
 
 
 
-RenderThread::RenderThread(AppInstance* appInstance) 
-: appInstance(appInstance), renderer(appInstance),
-	afterLastSwap(0){
+RenderThread::RenderThread(AppInstance* appInstance)
+	: appInstance(appInstance),
+	  displayPos(appInstance, appInstance->albumCollection->begin()), // TODO: make sure albumCollection exists
+	  renderer(appInstance, &displayPos),
+	  afterLastSwap(0){
 
 	doPaint = false;
 
@@ -194,4 +195,14 @@ bool RenderThread::shareLists(HGLRC shareWith){
 	bool res = renderer.shareLists(shareWith);
 	answer->setAnswer(true);
 	return res;
+}
+
+void RenderThread::hardSetCenteredPos(CollectionPos pos){
+	// FIXME assert !!exclusive!! db lock
+	displayPos.hardSetCenteredPos(pos);
+}
+
+CollectionPos RenderThread::getCenteredPos(){
+	// FIXME assert !!exclusive!! db lock
+	return displayPos.getCenteredPos();
 }

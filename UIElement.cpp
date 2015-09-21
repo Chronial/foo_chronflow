@@ -71,9 +71,10 @@ private:
 	}
 	bool doSearch(const char* searchFor){
 		//console::print(pfc::string_formatter() << "searching for: " << searchFor);
+		// FIXME this needs db read lock
 		CollectionPos pos;
 		if (appInstance->albumCollection->performFayt(searchFor, pos)){
-			appInstance->displayPos->setTarget(pos);
+			appInstance->albumCollection->setTargetPos(pos);
 			return true;
 		} else {
 			return false;
@@ -135,7 +136,6 @@ public:
 
 		delete pfc::replace_null_t(appInstance->texLoader);
 		delete pfc::replace_null_t(appInstance->renderer);
-		delete pfc::replace_null_t(appInstance->displayPos);
 		delete pfc::replace_null_t(appInstance->albumCollection);
 		delete pfc::replace_null_t(appInstance->playbackTracer);
 
@@ -154,6 +154,8 @@ public:
 		Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
 		appInstance->mainWindow = createWindow(parent);
+		// TODO if we throw exception, this needs to be cleaned up. Maybe use unique_ptr?
+		appInstance->albumCollection = new DbAlbumCollection(appInstance);
 		appInstance->renderer = new RenderThread(appInstance);
 		auto attachMessage = make_shared<RTAttachMessage>();
 		appInstance->renderer->send(attachMessage);
@@ -174,9 +176,8 @@ public:
 			}
 		}
 
-		appInstance->albumCollection = new DbAlbumCollection(appInstance);
+		
 		appInstance->texLoader = new AsynchTexLoader(appInstance);
-		appInstance->displayPos = new DisplayPosition(appInstance, appInstance->albumCollection->begin());
 		appInstance->playbackTracer = new PlaybackTracer(appInstance);
 		findAsYouType = new FindAsYouType(appInstance);
 		
@@ -239,42 +240,42 @@ private:
 			}
 			case WM_MOUSEWHEEL:
 			{
+				boost::shared_lock<AppInstance> lock(*appInstance);
 				static int zDelta = 0;
 				zDelta -= GET_WHEEL_DELTA_WPARAM(wParam);
 				int m = zDelta / WHEEL_DELTA;
 				zDelta = zDelta % WHEEL_DELTA;
-				appInstance->displayPos->moveTargetBy(m);
+				appInstance->albumCollection->moveTargetBy(m);
 				appInstance->playbackTracer->userStartedMovement();
 				return 0;
 			}
 			case WM_MBUTTONDOWN:
 			{
-				auto msg = make_shared<RTGetOffsetMessage>(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+				boost::shared_lock<AppInstance> lock(*appInstance);
+				auto msg = make_shared<RTGetPosAtCoordsMessage>(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
 				appInstance->renderer->send(msg);
-				auto answer = msg->getAnswer();
-				if (answer.first){
-					CollectionPos newTarget = appInstance->displayPos->getOffsetPos(answer.second);
-					appInstance->displayPos->setTarget(newTarget);
+				auto posPtr = msg->getAnswer();
+				if (posPtr){
+					appInstance->albumCollection->setTargetPos(*posPtr);
 					appInstance->playbackTracer->userStartedMovement();
-					executeAction(cfgMiddleClick, newTarget);
+					executeAction(cfgMiddleClick, *posPtr);
 				}
 				return 0;
 			}
 			case WM_LBUTTONDBLCLK:
 			case WM_LBUTTONDOWN:
 			{
+				// FIXME this needs db lock
 				SetFocus(appInstance->mainWindow);
-				auto msg = make_shared<RTGetOffsetMessage>(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+				auto msg = make_shared<RTGetPosAtCoordsMessage>(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
 				appInstance->renderer->send(msg);
-				auto answer = msg->getAnswer();
-				if (answer.first){
-					CollectionPos clickedCover = appInstance->displayPos->getOffsetPos(answer.second);
-
+				auto clickedCoverPtr = msg->getAnswer();
+				if (clickedCoverPtr){
 					POINT pt;
 					GetCursorPos(&pt);
 					if (DragDetect(hWnd, pt)) {
 						metadb_handle_list tracks;
-						appInstance->albumCollection->getTracks(clickedCover, tracks);
+						appInstance->albumCollection->getTracks(*clickedCoverPtr, tracks);
 
 						// Create an IDataObject that contains the dragged track.
 						static_api_ptr_t<playlist_incoming_item_filter> piif;
@@ -292,10 +293,10 @@ private:
 						// Perform drag&drop operation.
 						DoDragDrop(pDataObject.get_ptr(), pDropSource.get_ptr(), DROPEFFECT_COPY, &effect);
 					} else {
-						appInstance->displayPos->setTarget(clickedCover);
+						appInstance->albumCollection->setTargetPos(*clickedCoverPtr);
 						appInstance->playbackTracer->userStartedMovement();
 						if (uMsg == WM_LBUTTONDBLCLK)
-							executeAction(cfgDoubleClick, clickedCover);
+							executeAction(cfgDoubleClick, *clickedCoverPtr);
 					}
 				}
 				return 0;
@@ -325,7 +326,8 @@ private:
 			case WM_SYSKEYDOWN:
 			{
 				if (wParam == VK_RETURN){
-					executeAction(cfgEnterKey, appInstance->displayPos->getTarget());
+					boost::shared_lock<AppInstance> dbLock(*appInstance);
+					executeAction(cfgEnterKey, appInstance->albumCollection->getTargetPos());
 					return 0;
 				} else if (wParam == VK_F5){
 					appInstance->albumCollection->reloadAsynchStart();
@@ -351,9 +353,9 @@ private:
 						move -= 10000000;
 					}
 					if (move){
+						boost::shared_lock<AppInstance> dbLock(*appInstance);
 						move *= LOWORD(lParam);
-						ScopeCS scopeLock(appInstance->displayPos->accessCS);
-						appInstance->displayPos->moveTargetBy(move);
+						appInstance->albumCollection->moveTargetBy(move);
 						appInstance->playbackTracer->userStartedMovement();
 						return 0;
 					}
@@ -368,8 +370,9 @@ private:
 					if (ksm->on_keydown(ksm->TYPE_MAIN,wParam)){
 						return 0;
 					} else {
+						boost::shared_lock<AppInstance> dbLock(*appInstance);
 						metadb_handle_list tracks;
-						if (appInstance->albumCollection->getTracks(appInstance->displayPos->getTarget(), tracks)){
+						if (appInstance->albumCollection->getTracks(appInstance->albumCollection->getTargetPos(), tracks)){
 							if (ksm->on_keydown_context(tracks, wParam, contextmenu_item::caller_undefined))
 								return 0;
 						}
@@ -476,10 +479,11 @@ private:
 	}
 	void onContextMenu (HWND hWnd, const int x, const int y){
 		// FIXME handle not yet loaded collection – in ohter interaction handler too
+		boost::shared_lock<AppInstance> dbLock(*appInstance);
 		PlaybackTracerScopeLock lock(appInstance->playbackTracer);
 		POINT pt;
 		metadb_handle_list tracks;
-		CollectionPos target = appInstance->displayPos->getTarget();
+		CollectionPos target = appInstance->albumCollection->getTargetPos();
 		if (x == -1){
 			pt.x = 0;
 			pt.y = 0;
@@ -489,11 +493,11 @@ private:
 			pt.y = y;
 			POINT clientPt = pt;
 			ScreenToClient(hWnd, &clientPt);
-			auto msg = make_shared<RTGetOffsetMessage>(pt.x, pt.y);
+			auto msg = make_shared<RTGetPosAtCoordsMessage>(pt.x, pt.y);
 			appInstance->renderer->send(msg);
-			auto answer = msg->getAnswer();
-			if (answer.first){
-				target = appInstance->displayPos->getOffsetPos(answer.second);
+			auto clickedCoverPtr = msg->getAnswer();
+			if (clickedCoverPtr){
+				target = *clickedCoverPtr;
 			}
 		}
 		appInstance->albumCollection->getTracks(target, tracks);

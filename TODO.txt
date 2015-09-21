@@ -16,6 +16,8 @@
 
 * Fix crash on right-click before covers are loaded
 * RenderThread should own displayPosition and texLoader and pass all messsages
+* RenderThread should move the dbcollection?
+   Whoever does it does not need readlocks?
 * call glFinish after buffer swap https://www.opengl.org/wiki/Swap_Interval
 ** Memory leak when jumping from t to k via fayt??
 

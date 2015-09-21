@@ -7,6 +7,7 @@
 #include "AppInstance.h"
 #include "DisplayPosition.h"
 #include "ImgTexture.h"
+#include "RenderThread.h"
 
 #include <process.h>
 
@@ -121,8 +122,6 @@ public:
 	}
 	void reloadAsynchFinish(){
 		ASSERT_APP_EXCLUSIVE(appInstance);
-		ScopeCS scopeLock(appInstance->displayPos->accessCS);
-
 		appInstance->albumCollection->reloadSourceScripts();
 		appInstance->texLoader->clearCache();
 		
@@ -136,7 +135,7 @@ public:
 				newCenteredPos = sortedIndex.begin();
 			}
 		} else {
-			CollectionPos oldCenteredPos = appInstance->displayPos->getCenteredPos();
+			CollectionPos oldCenteredPos = appInstance->renderer->getCenteredPos();
 			newCenteredPos = sortedIndex.begin();
 
 			pfc::string8_fast_aggressive albumKey;
@@ -150,8 +149,10 @@ public:
 		}
 
 
-		appInstance->displayPos->hardSetCenteredPos(newCenteredPos);
-		appInstance->displayPos->hardSetTarget(newCenteredPos);
+
+		moveDataToAppInstance();
+		appInstance->renderer->hardSetCenteredPos(newCenteredPos);
+		appInstance->albumCollection->setTargetPos(newCenteredPos);
 		appInstance->texLoader->setQueueCenter(newCenteredPos);
 		// smarter target sync:
 		/*if (newCenteredIdx >= 0){
@@ -166,7 +167,6 @@ public:
 
 		}*/
 
-		moveDataToAppInstance();
 		appInstance->texLoader->resumeLoading();
 		appInstance->redrawMainWin();
 		delete this;
@@ -202,7 +202,8 @@ void DbAlbumCollection::reloadSourceScripts(){
 	LeaveCriticalSection(&sourceScriptsCS);
 }
 
-DbAlbumCollection::DbAlbumCollection(AppInstance* instance){
+DbAlbumCollection::DbAlbumCollection(AppInstance* instance):
+		targetPos(albums.get<1>().end()){
 	this->appInstance = instance;
 	InitializeCriticalSectionAndSpinCount(&sourceScriptsCS, 0x80000400);
 	isRefreshing = false;
@@ -356,4 +357,22 @@ CollectionPos DbAlbumCollection::end() const{
 
 t_size DbAlbumCollection::rank(CollectionPos p) {
 	return albums.get<1>().rank(p);
+}
+
+
+
+
+void DbAlbumCollection::setTargetPos(CollectionPos newTarget) {
+	// TODO assert db lock
+	*targetPos = newTarget;
+	sessionSelectedCover = this->rank(newTarget);
+	appInstance->renderer->send(make_shared<RTTargetChangedMessage>());
+}
+
+void DbAlbumCollection::moveTargetBy(int n)
+{
+	auto target = targetPos.synchronize();
+	movePosBy(*target, n);
+	sessionSelectedCover = this->rank(*target);
+	appInstance->renderer->send(make_shared<RTTargetChangedMessage>());
 }

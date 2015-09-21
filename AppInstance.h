@@ -14,7 +14,6 @@ public:
 		texLoader = 0;
 		albumCollection = 0;
 		renderer = 0;
-		displayPos = 0;
 		playbackTracer = 0;
 		mainWindow = 0;
 		IF_DEBUG(mtx_exclusive_owner = 0);
@@ -23,7 +22,6 @@ public:
 	AsynchTexLoader* texLoader;
 	DbAlbumCollection* albumCollection;
 	RenderThread* renderer;
-	DisplayPosition* displayPos;
 	PlaybackTracer* playbackTracer;
 	HWND mainWindow;
 
