@@ -27,16 +27,16 @@ public:
 	static void setMaxGlTextureSize(int size);
 
 private:
-	Gdiplus::Bitmap* getErrorBitmap();
+	unique_ptr<Gdiplus::Bitmap> getErrorBitmap();
 	int getMaxSize();
 	float aspect;
 
 	static bool forcePowerOfTwo;
 	static int maxGlTextureSize;
-	Gdiplus::Bitmap* bitmap = 0;
+	unique_ptr<Gdiplus::Bitmap> bitmap;
 	CGdiPlusBitmapResource bitmapResource;
 	GLuint* glTexture = 0;
-	Gdiplus::BitmapData* bitmapData = 0;
+	unique_ptr<Gdiplus::BitmapData> bitmapData;
 	GLenum bitmapDataFormat; 
 	enum  {
 		STATUS_NONE = 0,

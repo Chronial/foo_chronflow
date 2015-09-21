@@ -35,10 +35,6 @@ ImgTexture::ImgTexture(WORD resource, LPCTSTR type) : ImgTexture()
 
 ImgTexture::~ImgTexture(void)
 {
-	if (bitmap)
-		delete bitmap;
-	if (bitmapData)
-		delete bitmapData;
 	if (glTexture){
 		IF_DEBUG(__debugbreak());
 	}
@@ -58,9 +54,9 @@ void ImgTexture::glBind(void)
 	glBindTexture(GL_TEXTURE_2D,glTexture[0]);
 }
 
-Bitmap* ImgTexture::getErrorBitmap(){
-	Bitmap* bitmap = new Bitmap(256,256);
-	Graphics drawer(bitmap);
+unique_ptr<Bitmap> ImgTexture::getErrorBitmap(){
+	unique_ptr<Bitmap> bitmap = make_unique<Bitmap>(256, 256);
+	Graphics drawer(bitmap.get());
 	SolidBrush blackBrush(Color(0,0,0));
 	Pen redPen(Color(255, 0, 0), 10);
 	Rect imgRect (0,0,256,256);
@@ -118,11 +114,9 @@ void ImgTexture::glUpload(void)
 		IF_DEBUG(Console::println(L"                                     UPLOAD"));
 		
 		glTexImage2D(GL_TEXTURE_2D, 0, glInternalFormat, width, height, 0, bitmapDataFormat, GL_UNSIGNED_BYTE, data);
-		bitmap->UnlockBits(bitmapData);
-		delete bitmapData;
-		bitmapData = 0;
-		delete bitmap;
-		bitmap = 0;
+		bitmap->UnlockBits(bitmapData.get());
+		bitmapData.reset();
+		bitmap.reset();
 		status = STATUS_UPLOADED;
 	}
 	LeaveCriticalSection(&uploadCS);
@@ -162,11 +156,10 @@ int ImgTexture::getMaxSize(){
 
 void ImgTexture::loadImageFile(const char * imageFile)
 {
-	bitmap = new Bitmap(pfc::stringcvt::string_wide_from_utf8(imageFile));
+	bitmap = make_unique<Bitmap>(pfc::stringcvt::string_wide_from_utf8(imageFile));
 	if ((bitmap->GetLastStatus() != Ok) ||
 		(1 > (bitmap->GetWidth())) ||
 		(1 > (bitmap->GetHeight()))){
-		delete bitmap;
 		bitmap = getErrorBitmap();
 	}
 	prepareUpload();
@@ -214,13 +207,12 @@ void ImgTexture::prepareUpload(void)
 		}
 	}
 	if (resize){
-		Bitmap* oldBitmap = bitmap;
-		bitmap = new Bitmap(width,height);
-		Graphics resizer(bitmap);
+		unique_ptr<Bitmap> oldBitmap = std::move(bitmap);
+		bitmap = make_unique<Bitmap>(width,height);
+		Graphics resizer(bitmap.get());
 		//resizer.SetInterpolationMode(InterpolationModeHighQualityBicubic);
-		resizer.DrawImage(oldBitmap,0,0,width,height);
+		resizer.DrawImage(oldBitmap.get(),0,0,width,height);
 		resizer.Flush();
-		delete oldBitmap;
 	}
 
 #ifdef COVER_ALPHA
@@ -239,7 +231,7 @@ void ImgTexture::prepareUpload(void)
 #endif
 
 	Rect rc(0,0,bitmap->GetWidth(),bitmap->GetHeight());
-	bitmapData = new BitmapData();
-	bitmap->LockBits(&rc, ImageLockModeRead, texFmt, bitmapData);
+	bitmapData = make_unique<BitmapData>();
+	bitmap->LockBits(&rc, ImageLockModeRead, texFmt, bitmapData.get());
 	status = STATUS_IMG_LOCKED;
 }

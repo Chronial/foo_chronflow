@@ -5,28 +5,26 @@
 class CGdiPlusBitmap
 {
 public:
-	Gdiplus::Bitmap* m_pBitmap;
+	unique_ptr<Gdiplus::Bitmap> m_pBitmap;
 
 public:
 	CGdiPlusBitmap()							{ m_pBitmap = NULL; }
 	CGdiPlusBitmap(LPCWSTR pFile)				{ m_pBitmap = NULL; Load(pFile); }
 	virtual ~CGdiPlusBitmap()					{ Empty(); }
 
-	void Empty()								{ delete m_pBitmap; m_pBitmap = NULL; }
+	void Empty()								{ m_pBitmap.reset(); }
 
 	bool Load(LPCWSTR pFile)
 	{
 		Empty();
-		m_pBitmap = Gdiplus::Bitmap::FromFile(pFile);
+		m_pBitmap = unique_ptr<Gdiplus::Bitmap>(Gdiplus::Bitmap::FromFile(pFile));
 		return m_pBitmap->GetLastStatus() == Gdiplus::Ok;
 	}
 
-	operator Gdiplus::Bitmap*() const			{ return m_pBitmap; }
+	//operator Gdiplus::Bitmap*() const			{ return m_pBitmap; }
 
-	Gdiplus::Bitmap* stealBitmap() {
-		Gdiplus::Bitmap* out = m_pBitmap;
-		m_pBitmap = NULL;
-		return out;
+	unique_ptr<Gdiplus::Bitmap> stealBitmap() {
+		return std::move(m_pBitmap);
 	}
 };
 
@@ -97,15 +95,14 @@ bool CGdiPlusBitmapResource::Load(LPCTSTR pName, LPCTSTR pType, HMODULE hInst)
 			IStream* pStream = NULL;
 			if (::CreateStreamOnHGlobal(m_hBuffer, FALSE, &pStream) == S_OK)
 			{
-				m_pBitmap = Gdiplus::Bitmap::FromStream(pStream);
+				m_pBitmap = unique_ptr<Gdiplus::Bitmap>(Gdiplus::Bitmap::FromStream(pStream));
 				pStream->Release();
 				if (m_pBitmap)
 				{ 
 					if (m_pBitmap->GetLastStatus() == Gdiplus::Ok)
 						return true;
 
-					delete m_pBitmap;
-					m_pBitmap = NULL;
+					m_pBitmap.reset();
 				}
 			}
 			::GlobalUnlock(m_hBuffer);
