@@ -316,7 +316,7 @@ void Renderer::getFrustrumSize(double &right, double &top, double &zNear, double
 	// Calculate The Aspect Ratio Of The Window
 	static const double fov = 45;
 	static const double squareLength = tan(deg2rad(fov)/2) * zNear;
-	fovAspectBehaviour weight = appInstance->coverPos->getAspectBehaviour();
+	fovAspectBehaviour weight = coverPos.getAspectBehaviour();
 	double aspect = (double)winHeight/winWidth;
 	right = squareLength / pow(aspect, (double)weight.y);
 	top   = squareLength * pow(aspect, (double)weight.x);
@@ -384,9 +384,7 @@ bool Renderer::offsetOnPoint(int x, int y, int& out)
 	glRenderMode(GL_SELECT);
 	setProjectionMatrix(true, x, y);
 	glInitNames();
-	appInstance->coverPos->lock();
 	drawScene(true);
-	appInstance->coverPos->unlock();
 	GLint hits = glRenderMode(GL_RENDER);
 	setProjectionMatrix();
 	GLuint *p = buf;
@@ -410,8 +408,8 @@ bool Renderer::offsetOnPoint(int x, int y, int& out)
 }
 
 void Renderer::drawMirrorPass(){
-	glVectord mirrorNormal = appInstance->coverPos->getMirrorNormal();
-	glVectord mirrorCenter = appInstance->coverPos->getMirrorCenter();
+	glVectord mirrorNormal = coverPos.getMirrorNormal();
+	glVectord mirrorCenter = coverPos.getMirrorCenter();
 
 	double mirrorDist; // distance from origin
 	mirrorDist = mirrorCenter * mirrorNormal;
@@ -470,9 +468,9 @@ void Renderer::drawMirrorOverlay(){
 }
 
 pfc::array_t<double> Renderer::getMirrorClipPlane(){
-	glVectord mirrorNormal = appInstance->coverPos->getMirrorNormal();
-	glVectord mirrorCenter = appInstance->coverPos->getMirrorCenter();
-	glVectord eye2mCent = (mirrorCenter - appInstance->coverPos->getCameraPos());
+	glVectord mirrorNormal = coverPos.getMirrorNormal();
+	glVectord mirrorCenter = coverPos.getMirrorCenter();
+	glVectord eye2mCent = (mirrorCenter - coverPos.getCameraPos());
 
 	// Angle at which the mirror normal stands to the eyePos
 	double mirrorNormalAngle = rad2deg(eye2mCent.intersectAng(mirrorNormal));
@@ -496,13 +494,13 @@ void Renderer::drawScene(bool selectionPass)
 {
 	glLoadIdentity();
 	gluLookAt(
-		appInstance->coverPos->getCameraPos().x, appInstance->coverPos->getCameraPos().y, appInstance->coverPos->getCameraPos().z, 
-		appInstance->coverPos->getLookAt().x,    appInstance->coverPos->getLookAt().y,    appInstance->coverPos->getLookAt().z, 
-		appInstance->coverPos->getUpVector().x,  appInstance->coverPos->getUpVector().y,  appInstance->coverPos->getUpVector().z);
+		coverPos.getCameraPos().x, coverPos.getCameraPos().y, coverPos.getCameraPos().z,
+		coverPos.getLookAt().x, coverPos.getLookAt().y, coverPos.getLookAt().z,
+		coverPos.getUpVector().x, coverPos.getUpVector().y, coverPos.getUpVector().z);
 	
 	pfc::array_t<double> clipEq;
 
-	if (appInstance->coverPos->isMirrorPlaneEnabled()){
+	if (coverPos.isMirrorPlaneEnabled()){
 		clipEq = getMirrorClipPlane();
 		if (!selectionPass){
 			glClipPlane(GL_CLIP_PLANE0, clipEq.get_ptr());
@@ -527,7 +525,7 @@ void Renderer::drawScene(bool selectionPass)
 		drawCovers(true);
 	glPopName();
 	
-	if (appInstance->coverPos->isMirrorPlaneEnabled()){
+	if (coverPos.isMirrorPlaneEnabled()){
 		glDisable(GL_CLIP_PLANE0);
 	}
 }
@@ -697,8 +695,8 @@ void Renderer::drawCovers(bool showTarget){
 	appInstance->displayPos->accessCS.enter();
 	float centerOffset = appInstance->displayPos->getCenteredOffset();
 	CollectionPos centerCover = appInstance->displayPos->getCenteredPos();
-	CollectionPos firstCover = appInstance->displayPos->getOffsetPos(appInstance->coverPos->getFirstCover() + 1);
-	CollectionPos lastCover = appInstance->displayPos->getOffsetPos(appInstance->coverPos->getLastCover());
+	CollectionPos firstCover = appInstance->displayPos->getOffsetPos(coverPos.getFirstCover() + 1);
+	CollectionPos lastCover = appInstance->displayPos->getOffsetPos(coverPos.getLastCover());
 	lastCover++; // getOffsetPos does not return the end() element
 	CollectionPos targetCover = appInstance->displayPos->getTarget();
 	appInstance->displayPos->accessCS.leave();
@@ -724,24 +722,24 @@ void Renderer::drawCovers(bool showTarget){
 		glColor3f( g, g, g);
 		glVectord origin(0, 0.5, 0);
 
-		glQuad coverQuad = appInstance->coverPos->getCoverQuad(co, tex->getAspect());
+		glQuad coverQuad = coverPos.getCoverQuad(co, tex->getAspect());
 		
 		glPushName(SELECTION_CENTER + offset);
 
 		glBegin(GL_QUADS);
-			if (glFogCoordf) glFogCoordf((GLfloat)appInstance->coverPos->distanceToMirror(coverQuad.topLeft));
+		if (glFogCoordf) glFogCoordf((GLfloat)coverPos.distanceToMirror(coverQuad.topLeft));
 			glTexCoord2f(0.0f, 1.0f); // top left
 			glVertex3fv((GLfloat*)&(coverQuad.topLeft.x));
 
-			if (glFogCoordf) glFogCoordf((GLfloat)appInstance->coverPos->distanceToMirror(coverQuad.topRight));
+			if (glFogCoordf) glFogCoordf((GLfloat)coverPos.distanceToMirror(coverQuad.topRight));
 			glTexCoord2f(1.0f, 1.0f); // top right
 			glVertex3fv((GLfloat*)&(coverQuad.topRight.x));
 
-			if (glFogCoordf) glFogCoordf((GLfloat)appInstance->coverPos->distanceToMirror(coverQuad.bottomRight));
+			if (glFogCoordf) glFogCoordf((GLfloat)coverPos.distanceToMirror(coverQuad.bottomRight));
 			glTexCoord2f(1.0f, 0.0f); // bottom right
 			glVertex3fv((GLfloat*)&(coverQuad.bottomRight.x));
 
-			if (glFogCoordf) glFogCoordf((GLfloat)appInstance->coverPos->distanceToMirror(coverQuad.bottomLeft));
+			if (glFogCoordf) glFogCoordf((GLfloat)coverPos.distanceToMirror(coverQuad.bottomLeft));
 			glTexCoord2f(0.0f, 0.0f); // bottom left
 			glVertex3fv((GLfloat*)&(coverQuad.bottomLeft.x));
 		glEnd();

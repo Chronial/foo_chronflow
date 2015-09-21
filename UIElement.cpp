@@ -142,7 +142,6 @@ public:
 		delete pfc::replace_null_t(appInstance->renderer);
 		delete pfc::replace_null_t(appInstance->displayPos);
 		delete pfc::replace_null_t(appInstance->albumCollection);
-		delete pfc::replace_null_t(appInstance->coverPos);
 		delete pfc::replace_null_t(appInstance->playbackTracer);
 
 		if (appInstance->mainWindow)
@@ -165,7 +164,6 @@ public:
 		// TODO: catch errors from this call
 		Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
-		appInstance->coverPos = new ScriptedCoverPositions();
 		appInstance->mainWindow = createWindow(parent);
 		appInstance->renderer = new RenderThread(appInstance);
 		auto attachMessage = make_shared<RTAttachMessage>();

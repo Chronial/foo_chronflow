@@ -363,7 +363,9 @@ void AsynchTexLoader::workerThreadProc()
 				loadCount++;
 				
 				// unclean / hack - this is not mulithread safe!
-				onScreen = (loadOffset >= appInstance->coverPos->getFirstCover()) && (loadOffset <= appInstance->coverPos->getLastCover());
+				//onScreen = (loadOffset >= appInstance->coverPos->getFirstCover()) && (loadOffset <= appInstance->coverPos->getLastCover());
+				// TODO FIXME
+				onScreen = false;
 
 				if (loadCount < 16){
 					if (!nearCenter){

@@ -621,11 +621,9 @@ public:
 			uSetDlgItemText(hWnd, IDC_COMPILE_STATUS, message);
 			return;
 		}
-		FOR_EACH_INSTANCE(coverPos->setScript(script, message));
 
-		auto msg = make_shared<RTCoverPositionsChangedMessage>();
+		auto msg = make_shared<RTChangeCPScriptMessage>(script);
 		FOR_EACH_INSTANCE(renderer->send(msg));
-		redrawMainWin();
 	}
 	void setUpEditBox(){
 		int tabstops[1] = {14};

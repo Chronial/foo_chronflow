@@ -3,6 +3,7 @@
 
 #include "DbAlbumCollection.h"
 #include "TextDisplay.h"
+#include "ScriptedCoverPositions.h"
 
 class AppInstance;
 
@@ -46,7 +47,7 @@ public:
 public:
 	FpsCounter fpsCounter;
 	TextDisplay textDisplay;
-
+	ScriptedCoverPositions coverPos;
 
 private:
 	void loadExtensions(void);

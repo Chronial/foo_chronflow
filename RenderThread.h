@@ -41,7 +41,6 @@ class RTStopThreadMessage : public RTMessage {};
 class RTAttachMessage : public RTAnswerMessage <bool> {};
 class RTUnattachMessage : public RTAnswerMessage <bool> {};
 class RTMultiSamplingMessage : public RTAnswerMessage <bool> {};
-class RTCoverPositionsChangedMessage : public RTMessage {};
 class RTTextFormatChangedMessage : public RTMessage {};
 class RTDeviceModeMessage : public RTMessage {};
 class RTWindowResizeMessage : public RTMessage {
@@ -64,6 +63,12 @@ class RTShareListDataAnswer : public RTAnswerMessage <bool> {};
 class RTShareListDataMessage : public RTAnswerMessage < shared_ptr<RTShareListDataAnswer> > {};
 
 
+class RTChangeCPScriptMessage : public RTMessage {
+	RTChangeCPScriptMessage(){};
+public:
+	RTChangeCPScriptMessage(const pfc::string_base &script) : script(script) {};
+	pfc::string8 script;
+};
 
 
 

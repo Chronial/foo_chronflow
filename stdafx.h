@@ -36,6 +36,5 @@ using std::dynamic_pointer_cast;
 #include <boost/thread/shared_mutex.hpp>
 
 
-using boost::unique_lock;
 using boost::shared_mutex;
 using boost::shared_lock;

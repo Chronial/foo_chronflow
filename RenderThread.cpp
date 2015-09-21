@@ -12,6 +12,8 @@
 
 
 void RenderThread::threadProc(){
+	// Required that we can compile CoverPos Scripts
+	CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
 	for (;;){
 		if (messageQueue.size() == 0 && doPaint){
 			onPaint();
@@ -41,8 +43,6 @@ void RenderThread::threadProc(){
 			renderer.takeRC();
 		} else if (auto m = dynamic_pointer_cast<RTMultiSamplingMessage>(msg)){
 			m->setAnswer(renderer.initMultisampling());
-		} else if (auto m = dynamic_pointer_cast<RTCoverPositionsChangedMessage>(msg)){
-			renderer.setProjectionMatrix();
 		} else if (auto m = dynamic_pointer_cast<RTDeviceModeMessage>(msg)){
 			updateRefreshRate();
 		} else if (auto m = dynamic_pointer_cast<RTWindowResizeMessage>(msg)){
@@ -55,10 +55,16 @@ void RenderThread::threadProc(){
 			bool success = renderer.offsetOnPoint(m->x, m->y, offset);
 			m->setAnswer(std::make_pair(success, offset));
 			// TODO: Check if need to repaint here
+		} else if (auto m = dynamic_pointer_cast<RTChangeCPScriptMessage>(msg)){
+			pfc::string8 tmp;
+			renderer.coverPos.setScript(m->script, tmp);
+			renderer.setProjectionMatrix();
+			doPaint = true;
 		} else {
 			IF_DEBUG(__debugbreak());
 		}
 	}
+	CoUninitialize();
 }
 
 void RenderThread::send(shared_ptr<RTMessage> msg){
@@ -80,9 +86,7 @@ void RenderThread::onPaint(){
 
 	appInstance->displayPos->accessCS.leave();
 
-	appInstance->coverPos->lock();
 	renderer.drawFrame();
-	appInstance->coverPos->unlock();
 	appInstance->unlock_shared();
 
 
