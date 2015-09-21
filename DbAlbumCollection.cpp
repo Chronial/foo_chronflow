@@ -295,7 +295,7 @@ void DbAlbumCollection::getTitle(CollectionPos pos, pfc::string_base& out){
 	}
 }
 
-ImgTexture* DbAlbumCollection::getImgTexture(CollectionPos pos){
+shared_ptr<ImgTexture> DbAlbumCollection::getImgTexture(CollectionPos pos){
 	if (albums.empty())
 		return 0;
 
@@ -303,9 +303,9 @@ ImgTexture* DbAlbumCollection::getImgTexture(CollectionPos pos){
 	pfc::string8_fast_aggressive imgFile;
 	imgFile.prealloc(512);
 	if (getImageForTrack(pos->tracks[0], imgFile)){
-		return new ImgTexture(imgFile);
+		return make_shared<ImgTexture>(imgFile);
 	} else {
-		return 0;
+		return nullptr;
 	}
 }
 

@@ -66,7 +66,7 @@ public:
 	DbAlbumCollection(AppInstance* instance);
 	~DbAlbumCollection(void);
 	inline int getCount() { return albums.size(); };
-	ImgTexture* getImgTexture(CollectionPos pos);
+	shared_ptr<ImgTexture> getImgTexture(CollectionPos pos);
 	void getTitle(CollectionPos pos, pfc::string_base& out);
 
 	bool getTracks(CollectionPos pos, metadb_handle_list& out);

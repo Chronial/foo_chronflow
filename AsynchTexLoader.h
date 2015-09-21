@@ -27,9 +27,8 @@ public:
 
 	// If you wan't to call this before any hardrefresh,
 	// you'll have to call loadSpecialTextures() in the constructor
-	ImgTexture* getLoadedImgTexture(CollectionPos pos);
+	shared_ptr<ImgTexture> getLoadedImgTexture(CollectionPos pos);
 
-	void runGlDelete();
 
 	void pauseLoading();
 	void resumeLoading();
@@ -42,6 +41,7 @@ public:
 	void blockUpload();
 
 private:
+	void runGlDelete();
 	void createLoaderWindow();
 	void destroyLoaderWindow();
 	bool initGlContext();
@@ -49,8 +49,8 @@ private:
 	HDC glDC;
 	HGLRC glRC;
 
-	ImgTexture* noCoverTexture;
-	ImgTexture* loadingTexture;
+	shared_ptr<ImgTexture> noCoverTexture;
+	shared_ptr<ImgTexture> loadingTexture;
 
 	void startWorkerThread();
 	static unsigned int WINAPI runWorkerThread(void* lpParameter);
@@ -85,19 +85,16 @@ private:
 	int deleteBufferOut;
 	Event deleteBufferFreed;
 
-	struct UploadQueueElem {
-		int texIdx;
-		UploadQueueElem* next;
-	};
-	UploadQueueElem* uploadQueueHead;
-	UploadQueueElem* uploadQueueTail;
+	std::deque<int> uploadQueue;
+	std::deque<shared_ptr<ImgTexture>> deleteQueue;
+
 	Event mayUpload;
 	void doUploadQueue();
 
 	CriticalSection textureCacheCS;
 	struct CacheItem {
 		int texIdx;
-		ImgTexture* texture;
+		shared_ptr<ImgTexture> texture;
 	};
 	typedef multi_index_container <
 		CacheItem,

@@ -8,7 +8,6 @@
 #include "Console.h"
 #include "DbAlbumCollection.h"
 #include "DisplayPosition.h"
-#include "ImgTexture.h"
 #include "MouseFlicker.h"
 #include "MyActions.h"
 #include "PlaybackTracer.h"
@@ -151,12 +150,6 @@ public:
 		delete pfc::replace_null_t(appInstance);
 
 		Gdiplus::GdiplusShutdown(gdiplusToken);
-
-#ifdef _DEBUG
-		if (ImgTexture::instanceCount != 0){
-			errorPopup(pfc::string8("ImgTexture Leak: ") << ImgTexture::instanceCount);
-		}
-#endif
 	}
 
 	void initialize_window(HWND parent) {

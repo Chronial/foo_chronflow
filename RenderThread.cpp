@@ -75,7 +75,6 @@ void RenderThread::onPaint(){
 	appInstance->lock_shared();
 	double frameStart = Helpers::getHighresTimer();
 	appInstance->texLoader->blockUpload();
-	appInstance->texLoader->runGlDelete();
 	appInstance->displayPos->accessCS.enter();
 
 	// FIXME this would require write lock

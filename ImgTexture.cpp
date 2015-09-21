@@ -14,12 +14,9 @@ using namespace Gdiplus;
 bool ImgTexture::forcePowerOfTwo = false;
 int  ImgTexture::maxGlTextureSize = 512;
 
-long ImgTexture::instanceCount = 0;
-
 ImgTexture::ImgTexture()
 {
 	InitializeCriticalSectionAndSpinCount(&uploadCS, 0x80000400);
-	InterlockedIncrement(&instanceCount);
 }
 
 
@@ -43,16 +40,16 @@ ImgTexture::~ImgTexture(void)
 	if (bitmapData)
 		delete bitmapData;
 	if (glTexture){
-		MessageBoxW(NULL,L"Destructed ImgTexture with existing glTexture\nMemory Leak!",L"Chronflow Error",MB_OK |MB_ICONINFORMATION);
+		IF_DEBUG(__debugbreak());
 	}
 	DeleteCriticalSection(&uploadCS);
-	InterlockedDecrement(&instanceCount);
 }
 
 void ImgTexture::glBind(void)
 {
 	switch (status){
 		case STATUS_NONE:
+			IF_DEBUG(__debugbreak());
 			return;
 		case STATUS_IMG_LOCKED:
 			IF_DEBUG(Console::println(L"------------------------------forced UPLOAD"));

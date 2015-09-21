@@ -22,8 +22,6 @@ noCoverTexture(0),
 workerThread(0),
 deleteBufferIn(0),
 deleteBufferOut(0),
-uploadQueueHead(0),
-uploadQueueTail(0),
 glRC(0),
 glDC(0),
 workerThreadMayRun(true, true),
@@ -38,30 +36,28 @@ mayUpload(true, true)
 void AsynchTexLoader::loadSpecialTextures(){
 	if (loadingTexture){
 		loadingTexture->glDelete();
-		delete loadingTexture;
 	}
 	pfc::string8 loadingTexPath(cfgImgLoading);
 	loadingTexPath.skip_trailing_char(' ');
 	if (loadingTexPath.get_length() > 0){
 		Helpers::fixPath(loadingTexPath);
-		loadingTexture = new ImgTexture(loadingTexPath);
+		loadingTexture = make_shared<ImgTexture>(loadingTexPath);
 	}
 	else {
-		loadingTexture = new ImgTexture(IDR_COVER_LOADING, L"JPG");
+		loadingTexture = make_shared<ImgTexture>(IDR_COVER_LOADING, L"JPG");
 	}
 
 	if (noCoverTexture){
 		noCoverTexture->glDelete();
-		delete noCoverTexture;
 	}
 	pfc::string8 noCoverTexPath(cfgImgNoCover);
 	noCoverTexPath.skip_trailing_char(' ');
 	if (noCoverTexPath.get_length() > 0){
 		Helpers::fixPath(noCoverTexPath);
-		noCoverTexture = new ImgTexture(noCoverTexPath);
+		noCoverTexture = make_shared<ImgTexture>(noCoverTexPath);
 	}
 	else {
-		noCoverTexture = new ImgTexture(IDR_COVER_NO_IMG, L"JPG");
+		noCoverTexture = make_shared<ImgTexture>(IDR_COVER_NO_IMG, L"JPG");
 	}
 }
 
@@ -69,15 +65,7 @@ AsynchTexLoader::~AsynchTexLoader(void)
 {
 	IF_DEBUG(Console::println(L"Destroying AsynchTexLoader"));
 	stopWorkerThread();
-	if (uploadQueueHead){
-		UploadQueueElem* prevE;
-		UploadQueueElem* e = uploadQueueHead;
-		while (e){
-			prevE = e;
-			e = prevE->next;
-			delete prevE;
-		}
-	}
+
 	// ugly, do better? - maybe window hook
 	if (IsWindow(glWindow)){
 		IF_DEBUG(Console::println(L" - Window still existed"));
@@ -92,17 +80,15 @@ AsynchTexLoader::~AsynchTexLoader(void)
 		// Has no effect, but prevents error message
 		loadingTexture->glDelete();
 		noCoverTexture->glDelete();
+		runGlDelete();
 		// Do this even if we can’t delete
 		for (auto it = textureCache.begin(); it != textureCache.end(); ++it){
 			if (it->texture){
 				it->texture->glDelete();
-				delete it->texture;
 			}
 		}
 	}
 	destroyLoaderWindow();
-	delete loadingTexture;
-	delete noCoverTexture;
 }
 
 void AsynchTexLoader::createLoaderWindow(){
@@ -158,12 +144,12 @@ void AsynchTexLoader::createLoaderWindow(){
 
 
 
-ImgTexture* AsynchTexLoader::getLoadedImgTexture(CollectionPos pos)
+shared_ptr<ImgTexture> AsynchTexLoader::getLoadedImgTexture(CollectionPos pos)
 {
 	// TODO: this needs locking?
 	int idx = appInstance->albumCollection->rank(pos);
 
-	ImgTexture* tex;
+	shared_ptr<ImgTexture> tex;
 	textureCacheCS.enter();
 	auto entry = textureCache.find(idx);
 	if (entry != textureCache.end()){
@@ -275,7 +261,6 @@ void AsynchTexLoader::clearCache()
 	for (auto it = textureCache.begin(); it != textureCache.end(); ++it){
 		if (it->texture){
 			it->texture->glDelete();
-			delete it->texture;
 		}
 	}
 	textureCache.clear();
@@ -300,7 +285,7 @@ void AsynchTexLoader::workerThreadProc()
 		if (closeWorkerThread)
 			break;
 
-		if (uploadQueueHead && mayUpload.waitForSignal(0)){
+		if (uploadQueue.size() && mayUpload.waitForSignal(0)){
 			reserveRenderContext();
 			doUploadQueue();
 			releaseRenderContext();
@@ -325,7 +310,7 @@ void AsynchTexLoader::workerThreadProc()
 			if ((loadCount >= int((cfgTextureCacheSize - 1)*0.8)) ||
 				((loadCount + 1) >= collectionSize)){
 				// Loaded enough textures
-				if (uploadQueueHead){
+				if (uploadQueue.size()){
 					workerThreadHasWork.waitForTwo(mayUpload, false);
 				} else {
 					workerThreadHasWork.waitForSignal();
@@ -419,19 +404,11 @@ bool AsynchTexLoader::loadTexImage(CollectionPos pos, bool doUpload){
 	}
 	textureCacheCS.leave();
 	IF_DEBUG(Console::println(L"                 x"));
-	ImgTexture * tex;
-	tex = appInstance->albumCollection->getImgTexture(pos);
+	shared_ptr<ImgTexture> tex = appInstance->albumCollection->getImgTexture(pos);
 	if (doUpload && tex){
 		tex->glUpload();
 	} else {
-		UploadQueueElem* e = new UploadQueueElem;
-		e->next = 0;
-		e->texIdx = idx;
-		if (uploadQueueTail)
-			uploadQueueTail->next = e;
-		else
-			uploadQueueHead = e;
-		uploadQueueTail = e;
+		uploadQueue.push_back(idx);
 	}
 	textureCacheCS.enter();
 	mruIndex.push_front({ idx, tex });
@@ -440,7 +417,7 @@ bool AsynchTexLoader::loadTexImage(CollectionPos pos, bool doUpload){
 		CacheItem deleteEntry = mruIndex.back();
 		mruIndex.pop_back();
 		if (deleteEntry.texture)
-			queueGlDelete(deleteEntry.texture);
+			deleteQueue.push_back(deleteEntry.texture);
 	}
 	textureCacheCS.leave();
 	return true;
@@ -455,43 +432,27 @@ void AsynchTexLoader::blockUpload(){
 }
 
 void AsynchTexLoader::doUploadQueue(){
-	UploadQueueElem* e = uploadQueueHead;
-	while (e){
+	runGlDelete();
+	while (uploadQueue.size()){
 		if (!mayUpload.waitForSignal(0))
 			break;
-		auto cacheEntry = textureCache.find(e->texIdx);
+
+		int texIdx = uploadQueue.front();
+		uploadQueue.pop_front();
+		auto cacheEntry = textureCache.find(texIdx);
 
 		if(cacheEntry != textureCache.end() && cacheEntry->texture){
 			cacheEntry->texture->glUpload();
 		}
-		if (e == uploadQueueTail)
-			uploadQueueTail = 0;
-		uploadQueueHead = e->next;
-		delete e;
-		e = uploadQueueHead;
 	}
-}
-
-void AsynchTexLoader::queueGlDelete(ImgTexture* tex){
-	if (tex == 0)
-		return;
-	deleteBuffer[deleteBufferIn] = tex;
-	int target = deleteBufferIn + 1; // needed because of multithreading
-	if (target == DELETE_BUFFER_SIZE)
-		target = 0;
-	if (target == deleteBufferOut)
-		deleteBufferFreed.waitForSignal();
-	deleteBufferIn = target;
 }
 
 void AsynchTexLoader::runGlDelete(){
-	while (deleteBufferOut != deleteBufferIn){
-		deleteBuffer[deleteBufferOut]->glDelete();
-		delete deleteBuffer[deleteBufferOut];
-		int target = deleteBufferOut + 1; // needed because of multithreading
-		if (target == DELETE_BUFFER_SIZE)
-			target = 0;
-		deleteBufferOut = target;
+	while (deleteQueue.size()){
+		if (!mayUpload.waitForSignal(0))
+			break;
+		auto texture = deleteQueue.front();
+		deleteQueue.pop_front();
+		texture->glDelete();
 	}
-	deleteBufferFreed.setSignal();
 }
