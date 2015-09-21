@@ -16,18 +16,18 @@ class Renderer
 {
 public:
 	Renderer(AppInstance* instance);
-public:
 	~Renderer(void);
-public:
+
 	bool attachGlWindow();
 	void initGlState();
 	int getPixelFormat();
-public:
+
 	void destroyGlWindow(void); //clean up all the GL stuff
 	void resizeGlScene(int width, int height);
-public:
+	void setProjectionMatrix(bool pickMatrix = false, int x = 0, int y = 0);
+
 	bool offsetOnPoint(int x, int y, int& out);
-public:
+
 	void drawFrame();
 
 	void freeRC();
@@ -53,7 +53,7 @@ private:
 	bool isExtensionSupported(const char *name);
 	bool isWglExtensionSupported(const char *name);
 
-	void setProjectionMatrix(bool pickMatrix = false, int x = 0, int y = 0);
+
 	void getFrustrumSize(double &right, double &top, double &zNear, double &zFar);
 	void setProjectionMatrixJittered(double xoff, double yoff);
 private:

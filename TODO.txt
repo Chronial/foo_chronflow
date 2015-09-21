@@ -13,7 +13,12 @@
 * Improve cover caching strategy
 
 
+
+* RenderThread should own displayPosition and texLoader and pass all messsages
+* call glFinish after buffer swap https://www.opengl.org/wiki/Swap_Interval
 ** Memory leak when jumping from t to k via fayt??
+
+
 
 // Release
 * Windows scripting control??

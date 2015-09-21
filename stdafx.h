@@ -18,7 +18,15 @@
 #include "opengl\glext.h"
 #include "opengl\wglext.h"
 
+#include <deque>
 #include <unordered_set>
+#include <condition_variable>
+#include <mutex>
+#include <memory>
+
+using std::shared_ptr;
+using std::make_shared;
+using std::dynamic_pointer_cast;
 
 // copied from colums_ui TODO: strip this down
 #include "win32_helpers.h"
@@ -27,7 +35,7 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/shared_mutex.hpp>
 
-using boost::mutex;
+
 using boost::unique_lock;
 using boost::shared_mutex;
 using boost::shared_lock;

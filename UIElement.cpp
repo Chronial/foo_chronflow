@@ -168,14 +168,22 @@ public:
 		appInstance->coverPos = new ScriptedCoverPositions();
 		appInstance->mainWindow = createWindow(parent);
 		appInstance->renderer = new RenderThread(appInstance);
-		if (!appInstance->renderer->attachToMainWindow()){
+		auto attachMessage = make_shared<RTAttachMessage>();
+		appInstance->renderer->send(attachMessage);
+		if (!attachMessage->getAnswer()){
 			throw std::exception("Renderer failed to attach to window");
 		}
-		if (cfgMultisampling && appInstance->renderer->initMultisampling()){
-			DestroyWindow(appInstance->mainWindow);
-			appInstance->mainWindow = createWindow(parent);
-			if (!appInstance->renderer->attachToMainWindow()){
-				throw std::exception("Renderer failed to attach to window for Multisampling");
+		if (cfgMultisampling){
+			auto multiSamplingMessage = make_shared<RTMultiSamplingMessage>();
+			appInstance->renderer->send(multiSamplingMessage);
+			if (multiSamplingMessage->getAnswer()){
+				DestroyWindow(appInstance->mainWindow);
+				appInstance->mainWindow = createWindow(parent);
+				auto attachMessage = make_shared<RTAttachMessage>();
+				appInstance->renderer->send(attachMessage);
+				if (!attachMessage->getAnswer()){
+					throw std::exception("Renderer failed to attach to window for Multisampling");
+				}
 			}
 		}
 
@@ -216,13 +224,15 @@ private:
 		switch (uMsg){
 			case WM_COLLECTION_REFRESHED:
 			{
-				unique_lock<AppInstance> lock(*appInstance);
+				std::unique_lock<AppInstance> lock(*appInstance);
 				appInstance->albumCollection->reloadAsynchFinish(lParam);
 				return 0;
 			}
 			case WM_DESTROY:
 				if (appInstance->renderer){
-					appInstance->renderer->unAttachFromMainWindow();
+					auto msg = make_shared<RTUnattachMessage>();
+					appInstance->renderer->send(msg);
+					msg->getAnswer();
 				}
 				return 0;
 			case WM_NCDESTROY:
@@ -230,14 +240,15 @@ private:
 				return 0;
 			case WM_SIZE:
 				if (appInstance->renderer){
-					appInstance->renderer->onWindowResize(LOWORD(lParam),HIWORD(lParam));
+					auto msg = make_shared<RTWindowResizeMessage>(LOWORD(lParam), HIWORD(lParam));
+					appInstance->renderer->send(msg);
 				}
 				return 0;
 			case WM_DISPLAYCHANGE:
 			case WM_DEVMODECHANGE:
 			{
 				if (appInstance->renderer)
-					appInstance->renderer->onDeviceModeChange();
+					appInstance->renderer->send(make_shared<RTDeviceModeMessage>());
 				return 0;
 			}
 			case WM_MOUSEWHEEL:
@@ -252,9 +263,11 @@ private:
 			}
 			case WM_MBUTTONDOWN:
 			{
-				int clickedOffset;
-				if (appInstance->renderer->getOffsetOnPoint(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), clickedOffset)){
-					CollectionPos newTarget = appInstance->displayPos->getOffsetPos(clickedOffset);
+				auto msg = make_shared<RTGetOffsetMessage>(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+				appInstance->renderer->send(msg);
+				auto answer = msg->getAnswer();
+				if (answer.first){
+					CollectionPos newTarget = appInstance->displayPos->getOffsetPos(answer.second);
 					appInstance->displayPos->setTarget(newTarget);
 					appInstance->playbackTracer->userStartedMovement();
 					executeAction(cfgMiddleClick, newTarget);
@@ -265,9 +278,11 @@ private:
 			case WM_LBUTTONDOWN:
 			{
 				SetFocus(appInstance->mainWindow);
-				int clickedOffset;
-				if (appInstance->renderer->getOffsetOnPoint(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), clickedOffset)){
-					CollectionPos clickedCover = appInstance->displayPos->getOffsetPos(clickedOffset);
+				auto msg = make_shared<RTGetOffsetMessage>(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+				appInstance->renderer->send(msg);
+				auto answer = msg->getAnswer();
+				if (answer.first){
+					CollectionPos clickedCover = appInstance->displayPos->getOffsetPos(answer.second);
 
 					POINT pt;
 					GetCursorPos(&pt);
@@ -420,7 +435,7 @@ private:
 			case WM_PAINT:
 			{
 				if (GetUpdateRect(hWnd, 0, FALSE)){
-					appInstance->renderer->redraw();
+					appInstance->renderer->send(make_shared<RTRedrawMessage>());
 					ValidateRect(hWnd,NULL);
 					if (cfgEmptyCacheOnMinimize){
 						if (mainWinMinimized){
@@ -499,9 +514,11 @@ private:
 			pt.y = y;
 			POINT clientPt = pt;
 			ScreenToClient(hWnd, &clientPt);
-			int clickedOffset;
-			if (appInstance->renderer->getOffsetOnPoint(clientPt.x, clientPt.y, clickedOffset)){
-				target = appInstance->displayPos->getOffsetPos(clickedOffset);
+			auto msg = make_shared<RTGetOffsetMessage>(pt.x, pt.y);
+			appInstance->renderer->send(msg);
+			auto answer = msg->getAnswer();
+			if (answer.first){
+				target = appInstance->displayPos->getOffsetPos(answer.second);
 			}
 		}
 		appInstance->albumCollection->getTracks(target, tracks);

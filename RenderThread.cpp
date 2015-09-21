@@ -11,60 +11,58 @@
 #include "DisplayPosition.h"
 
 
-void RenderThread::renderThreadProc(){
-	onDeviceModeChange();
-	while (!closeRenderThread){
-		if (!unAttachDone.waitForSignal(0)){
-			renderer.destroyGlWindow();
-			unAttachDone.setSignal();
-			continue;
-		}
-		if (attachData.requested){
-			attachData.result = renderer.attachGlWindow();
-			attachData.requested = false;
-			attachData.done.setSignal();
-			if (attachData.result) renderer.initGlState();
-			continue;
-		}
-		if (multisamplingInit.requested){
-			multisamplingInit.result = renderer.initMultisampling();
-			multisamplingInit.requested = false;
-			multisamplingInit.done.setSignal();
-			continue;
-		}
-
-		if (getOffsetData.requested){
-			getOffsetData.outFound = renderer.offsetOnPoint(getOffsetData.x, getOffsetData.y, getOffsetData.outOffset);
-			getOffsetData.requested = false;
-			getOffsetData.done.setSignal();
-			doPaint = true;
-			continue;
-		}
-		if (shareListData.requested){
-			renderer.freeRC();
-			shareListData.rcFreed.setSignal();
-			shareListData.requested = false;
-			shareListData.shareDone.waitForSignal();
-			renderer.takeRC();
-			continue;
-		}
-		if (resizeData.requested){
-			ScopeCS scopeLock(resizeDataCS);
-			renderer.resizeGlScene(resizeData.width, resizeData.height);
-			resizeData.requested = false;
-			continue;
-		}
-		if (textFormatChanged){
-			textFormatChanged = false;
-			renderer.textDisplay.clearCache();
-			continue;
-		}
-		if (doPaint || forceRedraw){
+void RenderThread::threadProc(){
+	for (;;){
+		if (messageQueue.size() == 0 && doPaint){
 			onPaint();
 			continue;
 		}
-		renderThreadHasWork.waitForSignal();
+		auto msg = messageQueue.pop();
+
+		if (auto m = dynamic_pointer_cast<RTStopThreadMessage>(msg)){
+			break;
+		} else if (auto m = dynamic_pointer_cast<RTPaintMessage>(msg)){
+			// do nothing, this is just here so that onPaint may run
+		} else if (auto m = dynamic_pointer_cast<RTRedrawMessage>(msg)){
+			doPaint = true;
+		} else if (auto m = dynamic_pointer_cast<RTAttachMessage>(msg)){
+			bool result = renderer.attachGlWindow();
+			m->setAnswer(result);
+			if (result)
+				renderer.initGlState();
+		} else if (auto m = dynamic_pointer_cast<RTUnattachMessage>(msg)){
+			renderer.destroyGlWindow();
+			m->setAnswer(true);
+		} else if (auto m = dynamic_pointer_cast<RTShareListDataMessage>(msg)){
+			renderer.freeRC();
+			auto answer = make_shared<RTShareListDataAnswer>();
+			m->setAnswer(answer);
+			answer->getAnswer();
+			renderer.takeRC();
+		} else if (auto m = dynamic_pointer_cast<RTMultiSamplingMessage>(msg)){
+			m->setAnswer(renderer.initMultisampling());
+		} else if (auto m = dynamic_pointer_cast<RTCoverPositionsChangedMessage>(msg)){
+			renderer.setProjectionMatrix();
+		} else if (auto m = dynamic_pointer_cast<RTDeviceModeMessage>(msg)){
+			updateRefreshRate();
+		} else if (auto m = dynamic_pointer_cast<RTWindowResizeMessage>(msg)){
+			renderer.resizeGlScene(m->width, m->height);
+		} else if (auto m = dynamic_pointer_cast<RTTextFormatChangedMessage>(msg)){
+			renderer.textDisplay.clearCache();
+		} else if (auto m = dynamic_pointer_cast<RTGetOffsetMessage>(msg)){
+			// TODO: this should not be getOffset, but getPosition
+			int offset;
+			bool success = renderer.offsetOnPoint(m->x, m->y, offset);
+			m->setAnswer(std::make_pair(success, offset));
+			// TODO: Check if need to repaint here
+		} else {
+			IF_DEBUG(__debugbreak());
+		}
 	}
+}
+
+void RenderThread::send(shared_ptr<RTMessage> msg){
+	messageQueue.push(msg);
 }
 
 void RenderThread::onPaint(){
@@ -118,44 +116,28 @@ void RenderThread::onPaint(){
 			Sleep(sleepTime);
 		}
 	}
-	if (forceRedraw){
-		forceRedrawCS.enter();
-		renderer.swapBuffers();
-		afterLastSwap = Helpers::getHighresTimer();
-		forceRedraw = false;
-		forceRedrawCS.leave();
-	} else {
-		renderer.swapBuffers();
-		afterLastSwap = Helpers::getHighresTimer();
-	}
-	appInstance->lock_shared();
-	appInstance->displayPos->accessCS.enter();
-	if (!doPaint && appInstance->displayPos->isMoving())
-		doPaint = true; // MT safety - if during Sleep something chaned dPos target and set forceRedraw we might have lost the change
-	appInstance->displayPos->accessCS.leave();
-	if (!doPaint)
-		appInstance->texLoader->allowUpload();
-	appInstance->unlock_shared();
 
-	if (!doPaint && timerInPeriod){
-		timeEndPeriod(timerResolution);
-		timerInPeriod = false;
+	renderer.swapBuffers();
+	afterLastSwap = Helpers::getHighresTimer();
+
+	if (doPaint){
+		this->send(make_shared<RTPaintMessage>());
+	} else {
+		appInstance->texLoader->allowUpload();
+		if (timerInPeriod){
+			timeEndPeriod(timerResolution);
+			timerInPeriod = false;
+		}
+
 	}
 }
 
 
 
 RenderThread::RenderThread(AppInstance* appInstance) 
-: appInstance(appInstance), unAttachDone(true, true), renderer(appInstance),
+: appInstance(appInstance), renderer(appInstance),
 	afterLastSwap(0){
-	forceRedraw = false;
-	attachData.requested = false;
-	multisamplingInit.requested = false;
-	resizeData.requested = false;
-	getOffsetData.requested = false;
-	shareListData.requested = false;
 
-	textFormatChanged = false;
 	doPaint = false;
 
 	timerInPeriod = false;
@@ -164,8 +146,9 @@ RenderThread::RenderThread(AppInstance* appInstance)
 	if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) == TIMERR_NOERROR){
 		timerResolution = min(max(tc.wPeriodMin, 1), tc.wPeriodMax);
 	}
-
-	startRenderThread();
+	
+	updateRefreshRate();
+	renderThread = (HANDLE)_beginthreadex(0, 0, &(this->runRenderThread), (void*)this, 0, 0);
 }
 
 RenderThread::~RenderThread(){
@@ -173,59 +156,23 @@ RenderThread::~RenderThread(){
 	stopRenderThread();
 }
 
-void RenderThread::startRenderThread(){
-	closeRenderThread = false;
-	renderThread = (HANDLE)_beginthreadex(0,0,&(this->runRenderThread),(void*)this,0,0);
-	//SetThreadPriority(renderThread, THREAD_PRIORITY_HIGHEST);
-}
 
 unsigned int WINAPI RenderThread::runRenderThread(void* lpParameter)
 {
-	reinterpret_cast<RenderThread*>(lpParameter)->renderThreadProc();
+	reinterpret_cast<RenderThread*>(lpParameter)->threadProc();
 	return 0;
 }
 
 void RenderThread::stopRenderThread()
 {
 	IF_DEBUG(Console::println(L"Stopping Render Thread"));
-	closeRenderThread = true;
-	renderThreadHasWork.setSignal();
+	this->send(make_shared<RTStopThreadMessage>());
 	WaitForSingleObject(renderThread,INFINITE);
 	CloseHandle(renderThread);
 	renderThread = 0;
 }
 
-bool RenderThread::getOffsetOnPoint (int x, int y, int& out){
-	getOffsetData.x = x;
-	getOffsetData.y = y;
-	getOffsetData.requested = true;
-	renderThreadHasWork.setSignal();
-	getOffsetData.done.waitForSignal();
-	out = getOffsetData.outOffset;
-	
-	return getOffsetData.outFound;
-}
-
-void RenderThread::redraw(){
-	ScopeCS scopeLock(forceRedrawCS);
-	forceRedraw = true;
-	renderThreadHasWork.setSignal();
-}
-
-void RenderThread::onViewportChange(){
-	ScopeCS scopeLock(resizeDataCS);
-	resizeData.requested = true;
-	// a bit of a hack, but resizeData will always be filled with the last resize, so that's fine.
-}
-void RenderThread::onWindowResize(int newWidth, int newHeight){
-	ScopeCS scopeLock(resizeDataCS);
-	resizeData.width = newWidth;
-	resizeData.height = newHeight;
-	resizeData.requested = true;
-	renderThreadHasWork.setSignal();
-}
-
-void RenderThread::onDeviceModeChange(){
+void RenderThread::updateRefreshRate(){
 	DEVMODE dispSettings;
 	ZeroMemory(&dispSettings,sizeof(dispSettings));
 	dispSettings.dmSize=sizeof(dispSettings);
@@ -237,39 +184,11 @@ void RenderThread::onDeviceModeChange(){
 	}
 }
 
-void RenderThread::onTextFormatChanged(){
-	textFormatChanged = true;
-}
-
 bool RenderThread::shareLists(HGLRC shareWith){
-	shareListData.requested = true;
-	renderThreadHasWork.setSignal();
-	shareListData.rcFreed.waitForSignal();
+	auto msg = make_shared<RTShareListDataMessage>();
+	this->send(msg);
+	auto answer = msg->getAnswer();
 	bool res = renderer.shareLists(shareWith);
-	shareListData.shareDone.setSignal();
+	answer->setAnswer(true);
 	return res;
-}
-
-
-
-
-bool RenderThread::attachToMainWindow(){
-	attachData.requested = true;
-	renderThreadHasWork.setSignal();
-	attachData.done.waitForSignal();
-	return attachData.result;
-}
-
-
-bool RenderThread::initMultisampling(){
-	multisamplingInit.requested = true;
-	renderThreadHasWork.setSignal();
-	multisamplingInit.done.waitForSignal();
-	return multisamplingInit.result;
-}
-
-void RenderThread::unAttachFromMainWindow(){
-	unAttachDone.resetSignal();
-	renderThreadHasWork.setSignal();
-	unAttachDone.waitForSignal();
 }

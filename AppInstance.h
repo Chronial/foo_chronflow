@@ -40,7 +40,7 @@ public:
 		mtx.lock_shared();
 #ifdef _DEBUG
 		{
-			unique_lock<mutex> guard(debug_mtx);
+			unique_lock<boost::mutex> guard(debug_mtx);
 			mtx_shared_owners.insert(GetCurrentThreadId());
 		}
 #endif
@@ -48,7 +48,7 @@ public:
 	void unlock_shared() {
 #ifdef _DEBUG
 		{
-			unique_lock<mutex> guard(debug_mtx);
+			unique_lock<boost::mutex> guard(debug_mtx);
 			DWORD threadId = GetCurrentThreadId();
 			auto owner = mtx_shared_owners.find(threadId);
 			if (owner == mtx_shared_owners.end())
@@ -63,7 +63,7 @@ public:
 		mtx.lock();
 #ifdef _DEBUG
 		{
-			unique_lock<mutex> guard(debug_mtx);
+			unique_lock<boost::mutex> guard(debug_mtx);
 			assert(mtx_exclusive_owner == 0);
 			mtx_exclusive_owner = GetCurrentThreadId();
 		}
@@ -72,7 +72,7 @@ public:
 	void unlock() {
 #ifdef _DEBUG
 		{
-			unique_lock<mutex> guard(debug_mtx);
+			unique_lock<boost::mutex> guard(debug_mtx);
 			assert(mtx_exclusive_owner == GetCurrentThreadId());
 			mtx_exclusive_owner = 0;
 		}
@@ -82,14 +82,14 @@ public:
 
 #ifdef _DEBUG
 	void assert_shared() {
-		unique_lock<mutex> guard(debug_mtx);
+		unique_lock<boost::mutex> guard(debug_mtx);
 		DWORD threadId = GetCurrentThreadId();
 		if (mtx_shared_owners.count(threadId) < 1 && mtx_exclusive_owner != threadId){
 			__debugbreak();
 		}
 	}
 	void assert_exclusive() {
-		unique_lock<mutex> guard(debug_mtx);
+		unique_lock<boost::mutex> guard(debug_mtx);
 		if (mtx_exclusive_owner != GetCurrentThreadId())
 			__debugbreak();
 	}
@@ -98,7 +98,7 @@ public:
 private:
 	shared_mutex mtx;
 #ifdef _DEBUG
-	mutex debug_mtx;
+	boost::mutex debug_mtx;
 	std::unordered_multiset<DWORD> mtx_shared_owners;
 	DWORD mtx_exclusive_owner;
 #endif

@@ -483,7 +483,8 @@ public:
 						if (selectFont(titleFont)){
 							cfgTitleFont = titleFont;
 							uSendDlgItemMessage(hWnd, IDC_FONT_PREV, WM_SETTEXT, 0, (LPARAM)cfgTitleFont.get_value().lfFaceName);
-							FOR_EACH_INSTANCE(renderer->onTextFormatChanged());
+							auto msg = make_shared<RTTextFormatChangedMessage>();
+							FOR_EACH_INSTANCE(renderer->send(msg));
 						}
 					}
 				}
@@ -621,7 +622,9 @@ public:
 			return;
 		}
 		FOR_EACH_INSTANCE(coverPos->setScript(script, message));
-		FOR_EACH_INSTANCE(renderer->onViewportChange());
+
+		auto msg = make_shared<RTCoverPositionsChangedMessage>();
+		FOR_EACH_INSTANCE(renderer->send(msg));
 		redrawMainWin();
 	}
 	void setUpEditBox(){
