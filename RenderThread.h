@@ -45,20 +45,18 @@ class RTMultiSamplingMessage : public RTAnswerMessage <bool> {};
 class RTTextFormatChangedMessage : public RTMessage {};
 class RTDeviceModeMessage : public RTMessage {};
 class RTWindowResizeMessage : public RTMessage {
-	RTWindowResizeMessage(){};
 public:
 	RTWindowResizeMessage(int width, int height) : width(width), height(height) {};
-	int width;
-	int height;
+	const int width;
+	const int height;
 };
 class RTTargetChangedMessage : public RTMessage {};
 
 class RTGetPosAtCoordsMessage : public RTAnswerMessage <shared_ptr<CollectionPos>> {
-	RTGetPosAtCoordsMessage(){};
 public:
 	RTGetPosAtCoordsMessage(int x, int y) : x(x), y(y) {};
-	int x;
-	int y;
+	const int x;
+	const int y;
 };
 
 class RTShareListDataAnswer : public RTAnswerMessage <bool> {};
@@ -66,10 +64,9 @@ class RTShareListDataMessage : public RTAnswerMessage < shared_ptr<RTShareListDa
 
 
 class RTChangeCPScriptMessage : public RTMessage {
-	RTChangeCPScriptMessage(){};
 public:
 	RTChangeCPScriptMessage(const pfc::string_base &script) : script(script) {};
-	pfc::string8 script;
+	const pfc::string8 script;
 };
 
 
