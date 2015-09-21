@@ -14,7 +14,6 @@ public:
 	void setTarget(CollectionPos pos);
 	void moveTargetBy(int n);
 	void update(void);
-	float moveDist2targetDist(float moveDist);
 
 	bool isMoving(void);
 	CollectionPos getTarget(void) const;

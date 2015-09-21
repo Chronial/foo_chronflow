@@ -147,7 +147,6 @@ del $(ProjectDir)\BUILD_IN_COVERCONFIGS.h
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="UIElement.cpp" />
-    <ClCompile Include="MouseFlicker.cpp" />
     <ClCompile Include="MyActions.cpp" />
     <ClCompile Include="PlaybackTracer.cpp" />
     <ClCompile Include="Renderer.cpp" />
@@ -175,7 +174,6 @@ del $(ProjectDir)\BUILD_IN_COVERCONFIGS.h
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Helpers.h" />
     <ClInclude Include="ImgTexture.h" />
-    <ClInclude Include="MouseFlicker.h" />
     <ClInclude Include="MyActions.h" />
     <ClInclude Include="PlaybackTracer.h" />
     <ClInclude Include="Renderer.h" />

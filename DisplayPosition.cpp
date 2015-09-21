@@ -123,16 +123,6 @@ float DisplayPosition::targetDist2moveDist(float targetDist){
 	return (goRight?1:-1) * ((0.1f * targetDist*targetDist) + (0.9f * targetDist) + 2.0f);
 }
 
-float DisplayPosition::moveDist2targetDist(float moveDist){
-	bool goRight = (moveDist > 0.0f);
-	moveDist = abs(moveDist);
-	if (moveDist < 2){
-		return 0;
-	} else {
-		return float((goRight?1:-1) * (-(9.0/2) + sqrt((81.0/4) - 20 + 10*moveDist)));
-	}
-}
-
 bool DisplayPosition::isMoving(void)
 {
 	return !((centeredPos == targetPos) && (centeredOffset == 0));

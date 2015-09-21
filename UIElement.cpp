@@ -8,7 +8,6 @@
 #include "Console.h"
 #include "DbAlbumCollection.h"
 #include "DisplayPosition.h"
-#include "MouseFlicker.h"
 #include "MyActions.h"
 #include "PlaybackTracer.h"
 #include "RenderThread.h"
@@ -108,7 +107,6 @@ public:
 
 private:
 	ULONG_PTR gdiplusToken;
-	MouseFlicker* mouseFlicker;
 	FindAsYouType* findAsYouType;
 
 	bool mainWinMinimized;
@@ -120,7 +118,6 @@ public:
 
 public:
 	Chronflow(ui_element_config::ptr config, ui_element_instance_callback_ptr p_callback) : callback(p_callback), config(config) {
-		mouseFlicker = 0;
 		findAsYouType = 0;
 		mainWinMinimized = true;
 		appInstance = new AppInstance();;
@@ -134,7 +131,6 @@ public:
 		appInstance->renderer->stopRenderThread();
 		appInstance->texLoader->stopWorkerThread();
 		instances.erase(this);
-		delete pfc::replace_null_t(mouseFlicker);
 		delete pfc::replace_null_t(findAsYouType);
 
 		delete pfc::replace_null_t(appInstance->texLoader);
@@ -183,7 +179,6 @@ public:
 		appInstance->displayPos = new DisplayPosition(appInstance, appInstance->albumCollection->begin());
 		appInstance->playbackTracer = new PlaybackTracer(appInstance);
 		findAsYouType = new FindAsYouType(appInstance);
-		mouseFlicker = new MouseFlicker(appInstance);
 		
 		appInstance->albumCollection->reloadAsynchStart();
 	}
@@ -302,25 +297,14 @@ private:
 						if (uMsg == WM_LBUTTONDBLCLK)
 							executeAction(cfgDoubleClick, clickedCover);
 					}
-				} else {
-					mouseFlicker->mouseDown(hWnd, GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
 				}
 				return 0;
 			}
-			case WM_LBUTTONUP:
-				mouseFlicker->mouseUp(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
-				return 0;
 			case WM_CONTEXTMENU:
 				if (callback->is_edit_mode_enabled()){
 					return DefWindowProc(hWnd, uMsg, wParam, lParam);
 				}
 				onContextMenu(hWnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-				return 0;
-			case WM_MOUSEMOVE:
-				mouseFlicker->mouseMove(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
-				return 0;
-			case WM_CAPTURECHANGED:
-				mouseFlicker->lostCapture(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
 				return 0;
 			case WM_TIMER:
 				switch (wParam){
