@@ -137,6 +137,7 @@ del $(ProjectDir)\BUILD_IN_COVERCONFIGS.h
     <ClCompile Include="CPScriptCompiler.cpp" />
     <ClCompile Include="CriticalSection.cpp" />
     <ClCompile Include="DbAlbumCollection.cpp" />
+    <ClCompile Include="DbReloadWorker.cpp" />
     <ClCompile Include="DisplayPosition.cpp" />
     <ClCompile Include="TrackDropSource.cpp" />
     <ClCompile Include="Helpers.cpp" />
@@ -167,7 +168,7 @@ del $(ProjectDir)\BUILD_IN_COVERCONFIGS.h
     <ClInclude Include="Console.h" />
     <ClInclude Include="CriticalSection.h" />
     <ClInclude Include="DbAlbumCollection.h" />
-    <ClInclude Include="DbRefreshWorker.h" />
+    <ClInclude Include="DbReloadWorker.h" />
     <ClInclude Include="DisplayPosition.h" />
     <ClInclude Include="BlockingQueue.h" />
     <ClInclude Include="TrackDropSource.h" />

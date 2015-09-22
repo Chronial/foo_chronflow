@@ -9,6 +9,8 @@
 #include <GdiPlus.h>
 #include <ShellApi.h>
 #include <Mmsystem.h>
+#include <Shlwapi.h>
+#include <process.h>
 
 #include "../SDK/foobar2000.h"
 #include "../helpers/helpers.h"
@@ -33,11 +35,23 @@ using std::dynamic_pointer_cast;
 // copied from colums_ui TODO: strip this down
 #include "win32_helpers.h"
 
+
 #include <boost/thread/lock_types.hpp> 
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/synchronized_value.hpp>
 
-
 using boost::shared_mutex;
 using boost::shared_lock;
+
+#ifdef _DEBUG
+#define BOOST_MULTI_INDEX_ENABLE_SAFE_MODE
+#endif
+
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/member.hpp>
+#include <boost/multi_index/identity.hpp>
+#include <boost/multi_index/hashed_index.hpp>
+#include <boost/multi_index/ranked_index.hpp>
+#include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index/sequenced_index.hpp>

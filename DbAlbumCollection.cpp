@@ -9,7 +9,7 @@
 #include "ImgTexture.h"
 #include "RenderThread.h"
 
-#include "DbRefreshWorker.h"
+#include "DbReloadWorker.h"
 
 void DbAlbumCollection::reloadSourceScripts(){
 	ASSERT_APP_EXCLUSIVE(appInstance);
@@ -50,21 +50,49 @@ DbAlbumCollection::DbAlbumCollection(AppInstance* instance):
 	compiler->compile(cfgAlbumTitleScript, cfgAlbumTitle);
 }
 
-void DbAlbumCollection::reloadAsynchStart(){
+void DbAlbumCollection::startAsyncReload(){
 	if (isRefreshing)
 		return;
 	isRefreshing = true;
 	double synchStart = Helpers::getHighresTimer();
-	RefreshWorker::reloadAsynchStart(appInstance);
+	// We will clear the cache anyways when we are done.
+	// So stop texloader now to have more cpu (RenderThread will start it again afterwards)
+	appInstance->texLoader->pauseLoading();
+	DbReloadWorker::startNew(appInstance);
 	console::printf("Sync start: %d msec (in mainthread)", int((Helpers::getHighresTimer() - synchStart) * 1000));
-	appInstance->texLoader->loadSpecialTextures();
 }
 
-void DbAlbumCollection::reloadAsynchFinish(LPARAM worker){
+void DbAlbumCollection::onCollectionReload(DbReloadWorker& worker){
 	ASSERT_APP_EXCLUSIVE(appInstance);
-	double synchStart = Helpers::getHighresTimer();
-	reinterpret_cast<RefreshWorker*>(worker)->reloadAsynchFinish();
-	console::printf("Sync finish: %d msec (in mainthread)",int((Helpers::getHighresTimer()-synchStart)*1000));
+	this->reloadSourceScripts();
+	
+	// Synchronize TargetPos
+	CollectionPos newTargetPos;
+	auto &newSortedIndex = worker.albums.get<1>();
+	if (albums.size() == 0){
+		if (worker.albums.size() > (t_size)sessionSelectedCover){
+			newTargetPos = newSortedIndex.nth(sessionSelectedCover);
+		} else {
+			newTargetPos = newSortedIndex.begin();
+		}
+	} else {
+		newTargetPos = newSortedIndex.begin();
+		CollectionPos oldTargetPos = *targetPos;
+		pfc::string8_fast_aggressive albumKey;
+		for (t_size i = 0; i < oldTargetPos->tracks.get_size(); i++){
+			newTargetPos->tracks[i]->format_title(0, albumKey, worker.albumMapper, 0);
+			if (worker.albums.count(albumKey.get_ptr())){
+				newTargetPos = worker.albums.project<1>(worker.albums.find(albumKey.get_ptr()));
+				break;
+			}
+		}
+	}
+
+	albums = std::move(worker.albums);
+	albumMapper = std::move(worker.albumMapper);
+
+	setTargetPos(newTargetPos);
+
 	isRefreshing = false;
 }
 

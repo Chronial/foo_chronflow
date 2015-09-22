@@ -66,6 +66,16 @@ void RenderThread::threadProc(){
 			renderer.coverPos.setScript(m->script, tmp);
 			renderer.setProjectionMatrix();
 			doPaint = true;
+		} else if (auto m = dynamic_pointer_cast<RTCollectionReloadedMessage>(msg)){
+			boost::unique_lock<AppInstance> lock(*appInstance);
+			auto reloadWorker = std::move(m->worker);
+			//appInstance->texLoader->clearCache();
+			appInstance->albumCollection->onCollectionReload(*reloadWorker);
+			CollectionPos newTargetPos = appInstance->albumCollection->getTargetPos();
+			displayPos.hardSetCenteredPos(newTargetPos);
+			appInstance->texLoader->setQueueCenter(newTargetPos);
+			appInstance->texLoader->resumeLoading();
+			appInstance->redrawMainWin();
 		} else {
 			IF_DEBUG(__debugbreak());
 		}
@@ -195,14 +205,4 @@ bool RenderThread::shareLists(HGLRC shareWith){
 	bool res = renderer.shareLists(shareWith);
 	answer->setAnswer(true);
 	return res;
-}
-
-void RenderThread::hardSetCenteredPos(CollectionPos pos){
-	// FIXME assert !!exclusive!! db lock
-	displayPos.hardSetCenteredPos(pos);
-}
-
-CollectionPos RenderThread::getCenteredPos(){
-	// FIXME assert !!exclusive!! db lock
-	return displayPos.getCenteredPos();
 }

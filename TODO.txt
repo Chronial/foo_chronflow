@@ -11,6 +11,9 @@
 * Improve cover caching strategy
 
 
+* DO ON F5: appInstance->texLoader->loadSpecialTextures();
+* lock collection instead of appInstance!
+
 
 * Fix crash on right-click before covers are loaded
 * RenderThread should own displayPosition and texLoader and pass all messsages

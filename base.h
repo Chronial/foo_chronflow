@@ -7,19 +7,12 @@
 #define IF_DEBUG(X)  
 #endif
 
-
-#ifdef _DEBUG
-#define BOOST_MULTI_INDEX_ENABLE_SAFE_MODE
-#endif
-
-
 #ifndef M_PI
 #define M_PI 3.1415926535897932385
 #endif
 #define deg2rad(X) (X*M_PI/180)
 #define rad2deg(X) (X*180/M_PI)
 
-#define WM_COLLECTION_REFRESHED (WM_USER+1)
 
 #define IDT_CHECK_MINIMIZED 665
 #define IDT_PLAYBACK_TRACER 666

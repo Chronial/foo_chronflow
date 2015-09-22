@@ -96,6 +96,9 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files\Basics</Filter>
     </ClCompile>
+    <ClCompile Include="DbReloadWorker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AppInstance.h">
@@ -176,7 +179,7 @@
     <ClInclude Include="BlockingQueue.h">
       <Filter>Header Files\Helpers</Filter>
     </ClInclude>
-    <ClInclude Include="DbRefreshWorker.h">
+    <ClInclude Include="DbReloadWorker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

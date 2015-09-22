@@ -181,7 +181,7 @@ public:
 		appInstance->playbackTracer = new PlaybackTracer(appInstance);
 		findAsYouType = new FindAsYouType(appInstance);
 		
-		appInstance->albumCollection->reloadAsynchStart();
+		appInstance->albumCollection->startAsyncReload();
 	}
 
 
@@ -209,12 +209,6 @@ public:
 private:
 	LRESULT MessageHandler (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 		switch (uMsg){
-			case WM_COLLECTION_REFRESHED:
-			{
-				std::unique_lock<AppInstance> lock(*appInstance);
-				appInstance->albumCollection->reloadAsynchFinish(lParam);
-				return 0;
-			}
 			case WM_DESTROY:
 				if (appInstance->renderer){
 					auto msg = make_shared<RTUnattachMessage>();
@@ -330,7 +324,7 @@ private:
 					executeAction(cfgEnterKey, appInstance->albumCollection->getTargetPos());
 					return 0;
 				} else if (wParam == VK_F5){
-					appInstance->albumCollection->reloadAsynchStart();
+					appInstance->albumCollection->startAsyncReload();
 					return 0;
 				} else if (wParam == VK_F6){
 					appInstance->playbackTracer->moveToNowPlaying();

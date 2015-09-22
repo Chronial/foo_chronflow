@@ -1,19 +1,11 @@
 #pragma once
 #include "Helpers.h"
 
-#include <Shlwapi.h>
-
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/hashed_index.hpp>
-#include <boost/multi_index/ranked_index.hpp>
-#include <boost/multi_index/member.hpp>
-
-#include <boost/multi_index/ordered_index.hpp>
-#include <boost/multi_index/identity.hpp>
 using namespace boost::multi_index;
 
 class AppInstance;
 class ImgTexture;
+class DbReloadWorker;
 
 struct DbAlbum
 {
@@ -57,9 +49,6 @@ typedef DbAlbums::nth_index<1>::type::iterator CollectionPos;
 
 class DbAlbumCollection
 {
-
-	class RefreshWorker;
-	friend class RefreshWorker;
 	bool isRefreshing; // ensures that only one RefreshWorker is running at a time
 	AppInstance* appInstance;
 public:
@@ -75,8 +64,8 @@ public:
 	// Returns whether any results have been found
 	bool performFayt(const char * title, CollectionPos& out);
 
-	void reloadAsynchStart();
-	void reloadAsynchFinish(LPARAM worker);
+	void startAsyncReload();
+	void onCollectionReload(DbReloadWorker& worker);
 
 	CollectionPos begin() const;
 	CollectionPos end() const;

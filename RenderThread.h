@@ -1,11 +1,12 @@
 #pragma once
 #include "DisplayPosition.h"
 #include "DbAlbumCollection.h"
+#include "DbReloadWorker.h"
 #include "BlockingQueue.h"
-#include "CriticalSection.h"
 #include "Renderer.h"
 
 class AppInstance;
+class DbReloadWorker;
 
 class RTMessage {
 public:
@@ -62,11 +63,15 @@ public:
 class RTShareListDataAnswer : public RTAnswerMessage <bool> {};
 class RTShareListDataMessage : public RTAnswerMessage < shared_ptr<RTShareListDataAnswer> > {};
 
-
 class RTChangeCPScriptMessage : public RTMessage {
 public:
 	RTChangeCPScriptMessage(const pfc::string_base &script) : script(script) {};
 	const pfc::string8 script;
+};
+
+class RTCollectionReloadedMessage : public RTMessage {
+public:
+	unique_ptr<DbReloadWorker> worker;
 };
 
 
@@ -85,9 +90,6 @@ public:
 		return renderer.getPixelFormat();
 	};
 	void stopRenderThread();
-
-	CollectionPos getCenteredPos();
-	void hardSetCenteredPos(CollectionPos pos);
 
 	void send(shared_ptr<RTMessage> msg);
 private:
