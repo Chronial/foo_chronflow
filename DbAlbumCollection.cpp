@@ -83,7 +83,7 @@ void DbAlbumCollection::onCollectionReload(DbReloadWorker& worker){
 		CollectionPos oldTargetPos = *targetPos;
 		pfc::string8_fast_aggressive albumKey;
 		for (t_size i = 0; i < oldTargetPos->tracks.get_size(); i++){
-			newTargetPos->tracks[i]->format_title(0, albumKey, worker.albumMapper, 0);
+			oldTargetPos->tracks[i]->format_title(0, albumKey, worker.albumMapper, 0);
 			if (worker.albums.count(albumKey.get_ptr())){
 				newTargetPos = worker.albums.project<1>(worker.albums.find(albumKey.get_ptr()));
 				break;
