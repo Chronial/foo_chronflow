@@ -182,6 +182,9 @@
     <ClInclude Include="DbReloadWorker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="shared_mutex.h">
+      <Filter>Header Files\Helpers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="images\config-window-bar.bmp">

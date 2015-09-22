@@ -146,7 +146,6 @@ void AsynchTexLoader::createLoaderWindow(){
 
 shared_ptr<ImgTexture> AsynchTexLoader::getLoadedImgTexture(CollectionPos pos)
 {
-	// TODO: this needs locking?
 	int idx = appInstance->albumCollection->rank(pos);
 
 	shared_ptr<ImgTexture> tex;
@@ -303,9 +302,9 @@ void AsynchTexLoader::workerThreadProc()
 				rightDistance = 0;
 			}
 
-			appInstance->lock_shared();
+			appInstance->albumCollection->lock_shared();
 			int collectionSize = appInstance->albumCollection->getCount();
-			appInstance->unlock_shared();
+			appInstance->albumCollection->unlock_shared();
 
 			if ((loadCount >= int((cfgTextureCacheSize - 1)*0.8)) ||
 				((loadCount + 1) >= collectionSize)){
@@ -317,7 +316,7 @@ void AsynchTexLoader::workerThreadProc()
 				}
 			} else {
 				// Load another texture
-				shared_lock<AppInstance> lock(*appInstance);
+				collection_read_lock lock(appInstance);
 				ScopeCS scopeLock(workerThreadInLoop);
 				CollectionPos loadNext = queueCenterLoc;
 				bool foundCoverToLoad = false;

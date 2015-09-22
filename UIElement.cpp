@@ -71,7 +71,7 @@ private:
 	}
 	bool doSearch(const char* searchFor){
 		//console::print(pfc::string_formatter() << "searching for: " << searchFor);
-		// FIXME this needs db read lock
+		ASSERT_SHARED(appInstance->albumCollection);
 		CollectionPos pos;
 		if (appInstance->albumCollection->performFayt(searchFor, pos)){
 			appInstance->albumCollection->setTargetPos(pos);
@@ -156,32 +156,35 @@ public:
 		appInstance->mainWindow = createWindow(parent);
 		// TODO if we throw exception, this needs to be cleaned up. Maybe use unique_ptr?
 		appInstance->albumCollection = new DbAlbumCollection(appInstance);
-		appInstance->renderer = new RenderThread(appInstance);
-		auto attachMessage = make_shared<RTAttachMessage>();
-		appInstance->renderer->send(attachMessage);
-		if (!attachMessage->getAnswer()){
-			throw std::exception("Renderer failed to attach to window");
-		}
-		if (cfgMultisampling){
-			auto multiSamplingMessage = make_shared<RTMultiSamplingMessage>();
-			appInstance->renderer->send(multiSamplingMessage);
-			if (multiSamplingMessage->getAnswer()){
-				DestroyWindow(appInstance->mainWindow);
-				appInstance->mainWindow = createWindow(parent);
-				auto attachMessage = make_shared<RTAttachMessage>();
-				appInstance->renderer->send(attachMessage);
-				if (!attachMessage->getAnswer()){
-					throw std::exception("Renderer failed to attach to window for Multisampling");
+		{
+			collection_read_lock lock(appInstance);
+			appInstance->renderer = new RenderThread(appInstance);
+			auto attachMessage = make_shared<RTAttachMessage>();
+			appInstance->renderer->send(attachMessage);
+			if (!attachMessage->getAnswer()){
+				throw std::exception("Renderer failed to attach to window");
+			}
+			if (cfgMultisampling){
+				auto multiSamplingMessage = make_shared<RTMultiSamplingMessage>();
+				appInstance->renderer->send(multiSamplingMessage);
+				if (multiSamplingMessage->getAnswer()){
+					DestroyWindow(appInstance->mainWindow);
+					appInstance->mainWindow = createWindow(parent);
+					auto attachMessage = make_shared<RTAttachMessage>();
+					appInstance->renderer->send(attachMessage);
+					if (!attachMessage->getAnswer()){
+						throw std::exception("Renderer failed to attach to window for Multisampling");
+					}
 				}
 			}
-		}
 
-		
-		appInstance->texLoader = new AsynchTexLoader(appInstance);
-		appInstance->playbackTracer = new PlaybackTracer(appInstance);
-		findAsYouType = new FindAsYouType(appInstance);
-		
-		appInstance->albumCollection->startAsyncReload();
+
+			appInstance->texLoader = new AsynchTexLoader(appInstance);
+			appInstance->playbackTracer = new PlaybackTracer(appInstance);
+			findAsYouType = new FindAsYouType(appInstance);
+
+			appInstance->albumCollection->startAsyncReload();
+		}
 	}
 
 
@@ -234,7 +237,7 @@ private:
 			}
 			case WM_MOUSEWHEEL:
 			{
-				boost::shared_lock<AppInstance> lock(*appInstance);
+				collection_read_lock l(appInstance);
 				static int zDelta = 0;
 				zDelta -= GET_WHEEL_DELTA_WPARAM(wParam);
 				int m = zDelta / WHEEL_DELTA;
@@ -245,7 +248,7 @@ private:
 			}
 			case WM_MBUTTONDOWN:
 			{
-				boost::shared_lock<AppInstance> lock(*appInstance);
+				collection_read_lock l(appInstance);
 				auto msg = make_shared<RTGetPosAtCoordsMessage>(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
 				appInstance->renderer->send(msg);
 				auto posPtr = msg->getAnswer();
@@ -259,7 +262,7 @@ private:
 			case WM_LBUTTONDBLCLK:
 			case WM_LBUTTONDOWN:
 			{
-				// FIXME this needs db lock
+				collection_read_lock lock(appInstance);
 				SetFocus(appInstance->mainWindow);
 				auto msg = make_shared<RTGetPosAtCoordsMessage>(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
 				appInstance->renderer->send(msg);
@@ -298,14 +301,19 @@ private:
 			case WM_CONTEXTMENU:
 				if (callback->is_edit_mode_enabled()){
 					return DefWindowProc(hWnd, uMsg, wParam, lParam);
+				} else {
+					collection_read_lock lock(appInstance);
+					onContextMenu(hWnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
 				}
-				onContextMenu(hWnd, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
 				return 0;
 			case WM_TIMER:
 				switch (wParam){
 					case IDT_PLAYBACK_TRACER:
+					{
+						collection_read_lock lock(appInstance);
 						appInstance->playbackTracer->timerHit();
 						break;
+					}
 					case IDT_FIND_AS_YOU_TYPE_RESET:
 						findAsYouType->clear();
 						break;
@@ -320,13 +328,15 @@ private:
 			case WM_SYSKEYDOWN:
 			{
 				if (wParam == VK_RETURN){
-					boost::shared_lock<AppInstance> dbLock(*appInstance);
+					collection_read_lock lock(appInstance);
 					executeAction(cfgEnterKey, appInstance->albumCollection->getTargetPos());
 					return 0;
 				} else if (wParam == VK_F5){
+					collection_read_lock lock(appInstance);
 					appInstance->albumCollection->startAsyncReload();
 					return 0;
 				} else if (wParam == VK_F6){
+					collection_read_lock lock(appInstance);
 					appInstance->playbackTracer->moveToNowPlaying();
 					return 0;
 				} else if (wParam == VK_RIGHT || wParam == VK_LEFT || wParam == VK_NEXT || wParam == VK_PRIOR
@@ -347,7 +357,7 @@ private:
 						move -= 10000000;
 					}
 					if (move){
-						boost::shared_lock<AppInstance> dbLock(*appInstance);
+						collection_read_lock lock(appInstance);
 						move *= LOWORD(lParam);
 						appInstance->albumCollection->moveTargetBy(move);
 						appInstance->playbackTracer->userStartedMovement();
@@ -364,7 +374,7 @@ private:
 					if (ksm->on_keydown(ksm->TYPE_MAIN,wParam)){
 						return 0;
 					} else {
-						boost::shared_lock<AppInstance> dbLock(*appInstance);
+						collection_read_lock lock(appInstance);
 						metadb_handle_list tracks;
 						if (appInstance->albumCollection->getTracks(appInstance->albumCollection->getTargetPos(), tracks)){
 							if (ksm->on_keydown_context(tracks, wParam, contextmenu_item::caller_undefined))
@@ -375,8 +385,8 @@ private:
 				break;
 			}
 			case WM_CHAR:
-			{
 				if (cfgFindAsYouType){
+					collection_read_lock lock(appInstance);
 					switch (wParam) 
 					{ 
 					case 1: // any other nonchar character
@@ -401,7 +411,6 @@ private:
 					return 0;
 				}
 				break;
-			}
 			case WM_ERASEBKGND:
 				return TRUE;
 			case WM_PAINT:
@@ -473,7 +482,6 @@ private:
 	}
 	void onContextMenu (HWND hWnd, const int x, const int y){
 		// FIXME handle not yet loaded collection – in ohter interaction handler too
-		boost::shared_lock<AppInstance> dbLock(*appInstance);
 		PlaybackTracerScopeLock lock(appInstance->playbackTracer);
 		POINT pt;
 		metadb_handle_list tracks;

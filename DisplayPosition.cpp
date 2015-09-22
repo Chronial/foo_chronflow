@@ -25,22 +25,19 @@ DisplayPosition::~DisplayPosition(void)
 
 void DisplayPosition::onTargetChange()
 {
-	// FIXME assert db lock
-	// TODO: this can be done smarter:
-	// render thread nows whether we are currently moving, and thus if lastMovement was correct
+	ASSERT_SHARED(appInstance->albumCollection);
 	if (!rendering){
 		lastMovement = Helpers::getHighresTimer();
 		rendering = true;
 	}
 	CollectionPos targetPos = appInstance->albumCollection->getTargetPos();
-	// FIXME send message to renderer instead
 	appInstance->redrawMainWin();
 }
 
 
 CollectionPos DisplayPosition::getOffsetPos(int n) const
 {
-	// FIME assert db lock
+	ASSERT_SHARED(appInstance->albumCollection);
 	CollectionPos p = centeredPos;
 	appInstance->albumCollection->movePosBy(p, n);
 	return p;

@@ -28,6 +28,7 @@ void RenderThread::threadProc(){
 		} else if (auto m = dynamic_pointer_cast<RTRedrawMessage>(msg)){
 			doPaint = true;
 		} else if (auto m = dynamic_pointer_cast<RTTargetChangedMessage>(msg)){
+			collection_read_lock lock(appInstance);
 			displayPos.onTargetChange();
 		} else if (auto m = dynamic_pointer_cast<RTAttachMessage>(msg)){
 			bool result = renderer.attachGlWindow();
@@ -52,7 +53,7 @@ void RenderThread::threadProc(){
 		} else if (auto m = dynamic_pointer_cast<RTTextFormatChangedMessage>(msg)){
 			renderer.textDisplay.clearCache();
 		} else if (auto m = dynamic_pointer_cast<RTGetPosAtCoordsMessage>(msg)){
-			// FIXME this needs db lock
+			collection_read_lock lock(appInstance);
 			int offset;
 			if (renderer.offsetOnPoint(m->x, m->y, offset)){
 				CollectionPos pos = displayPos.getOffsetPos(offset);
@@ -60,14 +61,13 @@ void RenderThread::threadProc(){
 			} else {
 				m->setAnswer(nullptr);
 			}
-			// TODO: Check if need to repaint here
 		} else if (auto m = dynamic_pointer_cast<RTChangeCPScriptMessage>(msg)){
 			pfc::string8 tmp;
 			renderer.coverPos.setScript(m->script, tmp);
 			renderer.setProjectionMatrix();
 			doPaint = true;
 		} else if (auto m = dynamic_pointer_cast<RTCollectionReloadedMessage>(msg)){
-			boost::unique_lock<AppInstance> lock(*appInstance);
+			boost::unique_lock<DbAlbumCollection> lock(*(appInstance->albumCollection));
 			auto reloadWorker = std::move(m->worker);
 			//appInstance->texLoader->clearCache();
 			appInstance->albumCollection->onCollectionReload(*reloadWorker);
@@ -88,7 +88,7 @@ void RenderThread::send(shared_ptr<RTMessage> msg){
 }
 
 void RenderThread::onPaint(){
-	appInstance->lock_shared();
+	appInstance->albumCollection->lock_shared();
 	double frameStart = Helpers::getHighresTimer();
 	appInstance->texLoader->blockUpload();
 
@@ -98,7 +98,7 @@ void RenderThread::onPaint(){
 	appInstance->texLoader->setQueueCenter(appInstance->albumCollection->getTargetPos());
 
 	renderer.drawFrame();
-	appInstance->unlock_shared();
+	appInstance->albumCollection->unlock_shared();
 
 
 	/*double curTime = Helpers::getHighresTimer();
@@ -148,7 +148,7 @@ void RenderThread::onPaint(){
 
 RenderThread::RenderThread(AppInstance* appInstance)
 	: appInstance(appInstance),
-	  displayPos(appInstance, appInstance->albumCollection->begin()), // TODO: make sure albumCollection exists
+	  displayPos(appInstance, appInstance->albumCollection->begin()),
 	  renderer(appInstance, &displayPos),
 	  afterLastSwap(0){
 

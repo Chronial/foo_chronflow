@@ -1,4 +1,5 @@
 #pragma once
+#include "shared_mutex.h"
 #include "Helpers.h"
 
 using namespace boost::multi_index;
@@ -47,7 +48,7 @@ typedef multi_index_container<
 
 typedef DbAlbums::nth_index<1>::type::iterator CollectionPos;
 
-class DbAlbumCollection
+class DbAlbumCollection : public shared_mutex
 {
 	bool isRefreshing; // ensures that only one RefreshWorker is running at a time
 	AppInstance* appInstance;
@@ -73,7 +74,7 @@ public:
 
 public:
 	CollectionPos getTargetPos() {
-		// FIXME assert lock
+		ASSERT_SHARED(this);
 		return *targetPos;
 	}
 	void setTargetPos(CollectionPos newTarget);
@@ -113,4 +114,10 @@ private:
 	DbAlbums albums;
 	boost::synchronized_value<CollectionPos> targetPos;
 	service_ptr_t<titleformat_object> albumMapper;
+};
+
+
+class collection_read_lock : public boost::shared_lock < DbAlbumCollection > {
+public:
+	collection_read_lock(AppInstance* appInstance);
 };

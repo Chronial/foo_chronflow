@@ -7,6 +7,16 @@
 #define IF_DEBUG(X)  
 #endif
 
+
+
+#ifdef _DEBUG
+#define ASSERT_SHARED(X) X->assert_shared()
+#define ASSERT_EXCLUSIVE(X) X->assert_exclusive()
+#else
+#define ASSERT_SHARED(X)
+#define ASSERT_EXCLUSIVE(X)
+#endif
+
 #ifndef M_PI
 #define M_PI 3.1415926535897932385
 #endif

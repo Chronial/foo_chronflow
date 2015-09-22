@@ -11,8 +11,11 @@
 
 #include "DbReloadWorker.h"
 
+collection_read_lock::collection_read_lock(AppInstance* appInstance) :
+	boost::shared_lock<DbAlbumCollection>(*(appInstance->albumCollection)){};
+
 void DbAlbumCollection::reloadSourceScripts(){
-	ASSERT_APP_EXCLUSIVE(appInstance);
+	ASSERT_EXCLUSIVE(this);
 	static_api_ptr_t<titleformat_compiler> compiler;
 	EnterCriticalSection(&sourceScriptsCS);
 	sourceScripts.remove_all();
@@ -63,7 +66,7 @@ void DbAlbumCollection::startAsyncReload(){
 }
 
 void DbAlbumCollection::onCollectionReload(DbReloadWorker& worker){
-	ASSERT_APP_EXCLUSIVE(appInstance);
+	ASSERT_EXCLUSIVE(this);
 	this->reloadSourceScripts();
 	
 	// Synchronize TargetPos
@@ -229,7 +232,7 @@ t_size DbAlbumCollection::rank(CollectionPos p) {
 
 
 void DbAlbumCollection::setTargetPos(CollectionPos newTarget) {
-	// TODO assert db lock
+	ASSERT_SHARED(this);
 	*targetPos = newTarget;
 	sessionSelectedCover = this->rank(newTarget);
 	appInstance->renderer->send(make_shared<RTTargetChangedMessage>());

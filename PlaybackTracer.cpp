@@ -61,7 +61,7 @@ void PlaybackTracer::timerHit()
 
 void PlaybackTracer::moveToNowPlaying()
 {
-	// FIXME we need db lock here
+	ASSERT_SHARED(appInstance->albumCollection);
 	static_api_ptr_t<playback_control_v2> pc;
 	metadb_handle_ptr nowPlaying;
 	if (pc->get_now_playing(nowPlaying)){
@@ -95,6 +95,7 @@ void PlaybackTracer::followSettingsChanged()
 void PlaybackTracer::on_playback_new_track(metadb_handle_ptr p_track)
 {
 	if (lockCount == 0 && !waitingForTimer){
+		collection_read_lock lock(appInstance);
 		moveToNowPlaying();
 	}
 }
