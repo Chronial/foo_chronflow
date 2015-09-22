@@ -14,8 +14,6 @@
 * On F5 and "Reload Sources" in Settings: appInstance->texLoader->loadSpecialTextures();
 
 
-* Fix: F5 jumps to first cover
-
 
 * Fix crash on right-click before covers are loaded
 * RenderThread should own displayPosition and texLoader and pass all messsages

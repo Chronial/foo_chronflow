@@ -69,7 +69,11 @@ void RenderThread::threadProc(){
 		} else if (auto m = dynamic_pointer_cast<RTCollectionReloadedMessage>(msg)){
 			boost::unique_lock<DbAlbumCollection> lock(*(appInstance->albumCollection));
 			auto reloadWorker = std::move(m->worker);
-			//appInstance->texLoader->clearCache();
+			{
+				// TODO: this is ugly, texloader should do this in its own thread?
+				appInstance->texLoader->clearCache();
+				renderer.takeRC();
+			}
 			appInstance->albumCollection->onCollectionReload(*reloadWorker);
 			CollectionPos newTargetPos = appInstance->albumCollection->getTargetPos();
 			displayPos.hardSetCenteredPos(newTargetPos);
