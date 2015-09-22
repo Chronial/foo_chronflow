@@ -1,6 +1,5 @@
 
 
-* Fix and simplify locking – use read/write lock system (we write very seldomly)
 * Rewrite AsynchTexLoader
 	* Window might be destroyed anytime!
 	* Bias loading of covers towards current position
@@ -21,25 +20,13 @@
 ** Memory leak when jumping from t to k via fayt??
 
 
-
-// Release
-* Windows scripting control??
-* Ask for better default images
-* Ask for better configs
-* Document hidden features (keyboard shortcuts) / Link to docu on wiki
-* Ask people to test texture compression
-* explain Database Filters: http://wiki.hydrogenaud.io/index.php?title=Foobar2000:Query_syntax
-* Release on Github
-
-
 // Future
+* 
 * Disable when not shown in DUI
 * Add help button for filter
 * Fix AsynchTexLoader
 	* Why are we queueing uploads?
 * Better texture uploading? https://www.opengl.org/wiki/OpenGL_and_multithreading
-* Drag and Drop?
-* Proper unicode sort
 
 
 # Release Steps
@@ -52,20 +39,25 @@
 * update forum post
 
 
+// Release
+* Windows scripting control??
+* Document hidden features (keyboard shortcuts) / Link to docu on wiki
+* Ask people to test texture compression
+* explain Database Filters: http://wiki.hydrogenaud.io/index.php?title=Foobar2000:Query_syntax
+
+
+
 == BUGS ==
 Fehler wenn instanz während reload beendet wird!
 	- das DB refreshen im texLoader thread machen (some kind of borrowThread(callback function) function?
 		oder: threaded_process.h  (wollen wir ein GUI Fenster, wenn der Reload lange dauert?)
 	- keine window message, sondern main_thread_callback (stellt sicher, dass cache geleert wird)
-copyDataToCollection braucht zu lange
 Aufrufhäufigkeit von CleanupCache von Cache-Größe abhängig machen
-FPS anzeige geht im Release nur, wenn Foobar damit gestartet wurde
 * Check if shutdown is orderly (probably is)
 
 
 
 == incomplete/bad implementations ==
-MouseFlicker: - Bildschirmauflösung beachten bei win2pos (bewegung relativ zur Bildschirmbreite)
 DbAlbumCollection - Handle illegal chars in titleformat strings (see titleformat_helper in uie_albumart)
 Custom Positions: Hillfelink zu JScript docu? Oder alles über wiki machen?
                   Check that upVector is not linear to view-vector
@@ -75,7 +67,6 @@ We can catch minimize messages - see message_loop.h
 Contextmenu: use standard_config_objects::query_show_keyboard_shortcuts_in_menus()
 CompiledCPos nicht in die Settings Datei, sondern eigene Datei.
 Was passiert mit CoverRotation(30, 0, 0, 0)? (gradzahl angegeben, aber keine Achse)
-
 
 
 
