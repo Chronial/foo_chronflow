@@ -4,10 +4,8 @@
 #include "config.h"
 
 #include "AppInstance.h"
-#include "AsynchTexLoader.h"
 #include "Console.h"
 #include "DbAlbumCollection.h"
-#include "DisplayPosition.h"
 #include "MyActions.h"
 #include "PlaybackTracer.h"
 #include "RenderThread.h"
@@ -130,14 +128,12 @@ public:
 	~Chronflow(){
 		IF_DEBUG(Console::println(L"Destroying UiElement"));
 		appInstance->renderer->stopRenderThread();
-		appInstance->texLoader->stopWorkerThread();
 		instances.erase(this);
 		delete pfc::replace_null_t(findAsYouType);
 
-		delete pfc::replace_null_t(appInstance->texLoader);
 		delete pfc::replace_null_t(appInstance->renderer);
-		delete pfc::replace_null_t(appInstance->albumCollection);
 		delete pfc::replace_null_t(appInstance->playbackTracer);
+		delete pfc::replace_null_t(appInstance->albumCollection);
 
 		if (appInstance->mainWindow)
 			DestroyWindow(appInstance->mainWindow); // This also deletes the LoaderWindow!
@@ -178,8 +174,6 @@ public:
 				}
 			}
 
-
-			appInstance->texLoader = new AsynchTexLoader(appInstance);
 			appInstance->playbackTracer = new PlaybackTracer(appInstance);
 			findAsYouType = new FindAsYouType(appInstance);
 
@@ -420,13 +414,11 @@ private:
 				if (GetUpdateRect(hWnd, 0, FALSE)){
 					appInstance->renderer->send(make_shared<RTRedrawMessage>());
 					ValidateRect(hWnd,NULL);
-					if (cfgEmptyCacheOnMinimize){
-						if (mainWinMinimized){
-							mainWinMinimized = false;
-							appInstance->texLoader->resumeLoading();
-						}
-						SetTimer(hWnd, IDT_CHECK_MINIMIZED, MINIMIZE_CHECK_TIMEOUT, 0);
+					if (mainWinMinimized){
+						mainWinMinimized = false;
+						appInstance->renderer->send(make_shared<RTWindowShowMessage>());
 					}
+					SetTimer(hWnd, IDT_CHECK_MINIMIZED, MINIMIZE_CHECK_TIMEOUT, 0);
 				}
 				return 0;
 			}
@@ -465,20 +457,11 @@ private:
 		}
 	}
 	void onCheckMinimizeTimerHit(){
-		if (cfgEmptyCacheOnMinimize){
-			if (appInstance->isMainWinMinimized()){
-				if (!mainWinMinimized){
-					mainWinMinimized = true;
-					appInstance->texLoader->pauseLoading();
-					appInstance->texLoader->clearCache();
-					KillTimer(appInstance->mainWindow, IDT_CHECK_MINIMIZED);
-				}
-			}
-		} else {
-			KillTimer(appInstance->mainWindow, IDT_CHECK_MINIMIZED);
-			if (mainWinMinimized){
-				mainWinMinimized = false;
-				appInstance->texLoader->resumeLoading();
+		if (appInstance->isMainWinMinimized()){
+			if (!mainWinMinimized){
+				mainWinMinimized = true;
+				appInstance->renderer->send(make_shared<RTWindowHideMessage>());
+				KillTimer(appInstance->mainWindow, IDT_CHECK_MINIMIZED);
 			}
 		}
 	}

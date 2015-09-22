@@ -5,7 +5,6 @@
 #include "PlaybackTracer.h"
 
 #include "AppInstance.h"
-#include "DisplayPosition.h"
 #include "DbAlbumCollection.h"
 
 

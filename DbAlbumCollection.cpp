@@ -3,9 +3,7 @@
 
 #include "DbAlbumCollection.h"
 
-#include "AsynchTexLoader.h"
 #include "AppInstance.h"
-#include "DisplayPosition.h"
 #include "ImgTexture.h"
 #include "RenderThread.h"
 
@@ -58,9 +56,7 @@ void DbAlbumCollection::startAsyncReload(){
 		return;
 	isRefreshing = true;
 	double synchStart = Helpers::getHighresTimer();
-	// We will clear the cache anyways when we are done.
-	// So stop texloader now to have more cpu (RenderThread will start it again afterwards)
-	appInstance->texLoader->pauseLoading();
+	appInstance->renderer->send(make_shared<RTCollectionReloadStartMessage>());
 	DbReloadWorker::startNew(appInstance);
 	console::printf("Sync start: %d msec (in mainthread)", int((Helpers::getHighresTimer() - synchStart) * 1000));
 }

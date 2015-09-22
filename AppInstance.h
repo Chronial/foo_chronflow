@@ -11,14 +11,12 @@ class AppInstance
 {
 public:
 	AppInstance () {
-		texLoader = 0;
 		albumCollection = 0;
 		renderer = 0;
 		playbackTracer = 0;
 		mainWindow = 0;
 	}
 
-	AsynchTexLoader* texLoader;
 	DbAlbumCollection* albumCollection;
 	RenderThread* renderer;
 	PlaybackTracer* playbackTracer;

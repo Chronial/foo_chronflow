@@ -33,8 +33,10 @@ void RenderThread::threadProc(){
 		} else if (auto m = dynamic_pointer_cast<RTAttachMessage>(msg)){
 			bool result = renderer.attachGlWindow();
 			m->setAnswer(result);
-			if (result)
+			if (result){
 				renderer.initGlState();
+				texLoader.start();
+			}
 		} else if (auto m = dynamic_pointer_cast<RTUnattachMessage>(msg)){
 			renderer.destroyGlWindow();
 			m->setAnswer(true);
@@ -50,6 +52,13 @@ void RenderThread::threadProc(){
 			updateRefreshRate();
 		} else if (auto m = dynamic_pointer_cast<RTWindowResizeMessage>(msg)){
 			renderer.resizeGlScene(m->width, m->height);
+		} else if (auto m = dynamic_pointer_cast<RTWindowHideMessage>(msg)){
+			texLoader.pauseLoading();
+			if (cfgEmptyCacheOnMinimize){
+				texLoader.clearCache();
+			}
+		} else if (auto m = dynamic_pointer_cast<RTWindowShowMessage>(msg)){
+			texLoader.resumeLoading();
 		} else if (auto m = dynamic_pointer_cast<RTTextFormatChangedMessage>(msg)){
 			renderer.textDisplay.clearCache();
 		} else if (auto m = dynamic_pointer_cast<RTGetPosAtCoordsMessage>(msg)){
@@ -66,19 +75,23 @@ void RenderThread::threadProc(){
 			renderer.coverPos.setScript(m->script, tmp);
 			renderer.setProjectionMatrix();
 			doPaint = true;
+		} else if (auto m = dynamic_pointer_cast<RTCollectionReloadStartMessage>(msg)){
+			// We will clear the cache anyways when we are done.
+			// So stop texloader now to have more cpu for reload
+			texLoader.pauseLoading();
 		} else if (auto m = dynamic_pointer_cast<RTCollectionReloadedMessage>(msg)){
 			boost::unique_lock<DbAlbumCollection> lock(*(appInstance->albumCollection));
 			auto reloadWorker = std::move(m->worker);
 			{
 				// TODO: this is ugly, texloader should do this in its own thread?
-				appInstance->texLoader->clearCache();
+				texLoader.clearCache();
 				renderer.takeRC();
 			}
 			appInstance->albumCollection->onCollectionReload(*reloadWorker);
 			CollectionPos newTargetPos = appInstance->albumCollection->getTargetPos();
 			displayPos.hardSetCenteredPos(newTargetPos);
-			appInstance->texLoader->setQueueCenter(newTargetPos);
-			appInstance->texLoader->resumeLoading();
+			texLoader.setQueueCenter(newTargetPos);
+			texLoader.resumeLoading();
 			appInstance->redrawMainWin();
 		} else {
 			IF_DEBUG(__debugbreak());
@@ -94,12 +107,12 @@ void RenderThread::send(shared_ptr<RTMessage> msg){
 void RenderThread::onPaint(){
 	appInstance->albumCollection->lock_shared();
 	double frameStart = Helpers::getHighresTimer();
-	appInstance->texLoader->blockUpload();
+	texLoader.blockUpload();
 
 	displayPos.update();
 	// continue animation if we are not done
 	doPaint = displayPos.isMoving();
-	appInstance->texLoader->setQueueCenter(appInstance->albumCollection->getTargetPos());
+	texLoader.setQueueCenter(appInstance->albumCollection->getTargetPos());
 
 	renderer.drawFrame();
 	appInstance->albumCollection->unlock_shared();
@@ -139,7 +152,7 @@ void RenderThread::onPaint(){
 	if (doPaint){
 		this->send(make_shared<RTPaintMessage>());
 	} else {
-		appInstance->texLoader->allowUpload();
+		texLoader.allowUpload();
 		if (timerInPeriod){
 			timeEndPeriod(timerResolution);
 			timerInPeriod = false;
@@ -154,7 +167,9 @@ RenderThread::RenderThread(AppInstance* appInstance)
 	: appInstance(appInstance),
 	  displayPos(appInstance, appInstance->albumCollection->begin()),
 	  renderer(appInstance, &displayPos),
+	  texLoader(appInstance),
 	  afterLastSwap(0){
+	renderer.texLoader = &texLoader;
 
 	doPaint = false;
 
@@ -172,6 +187,7 @@ RenderThread::RenderThread(AppInstance* appInstance)
 RenderThread::~RenderThread(){
 	IF_DEBUG(Console::println(L"Destroying RenderThread"));
 	stopRenderThread();
+	texLoader.stopWorkerThread();
 }
 
 

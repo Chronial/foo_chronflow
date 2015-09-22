@@ -17,6 +17,8 @@ public:
 	AsynchTexLoader(AppInstance* instance);
 	~AsynchTexLoader(void);
 
+	void start();
+
 	void setQueueCenter(CollectionPos center);
 
 	// If you wan't to call this before any hardrefresh,
@@ -38,7 +40,7 @@ private:
 	void runGlDelete();
 	void createLoaderWindow();
 	void destroyLoaderWindow();
-	bool initGlContext();
+	void initGlContext();
 	HWND glWindow;
 	HDC glDC;
 	HGLRC glRC;
@@ -72,12 +74,6 @@ private:
 	bool queueCenterMoved;
 
 	Event workerThreadMayRun;
-
-	static const int DELETE_BUFFER_SIZE = 256;
-	ImgTexture* deleteBuffer[DELETE_BUFFER_SIZE];
-	int deleteBufferIn;
-	int deleteBufferOut;
-	Event deleteBufferFreed;
 
 	std::deque<int> uploadQueue;
 	std::deque<shared_ptr<ImgTexture>> deleteQueue;

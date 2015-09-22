@@ -20,20 +20,20 @@ queueCenterMoved(false),
 loadingTexture(0),
 noCoverTexture(0),
 workerThread(0),
-deleteBufferIn(0),
-deleteBufferOut(0),
 glRC(0),
 glDC(0),
 workerThreadMayRun(true, true),
 mayUpload(true, true)
 {
-	loadSpecialTextures();
 	createLoaderWindow();
-	ZeroMemory(deleteBuffer,sizeof(deleteBuffer));
+}
+
+void AsynchTexLoader::start(){
 	startWorkerThread();
 }
 
 void AsynchTexLoader::loadSpecialTextures(){
+	// FIXME this may only be called from the texloader thread
 	if (loadingTexture){
 		loadingTexture->glDelete();
 	}
@@ -92,7 +92,7 @@ AsynchTexLoader::~AsynchTexLoader(void)
 }
 
 void AsynchTexLoader::createLoaderWindow(){
-	glWindow = CreateWindowEx( 
+	glWindow = CreateWindowEx(
 		0,
 		L"Chronflow LoaderWindow",        // class name                   
 		L"Chronflow Loader Window",       // window name                  
@@ -102,7 +102,7 @@ void AsynchTexLoader::createLoaderWindow(){
 		CW_USEDEFAULT,          // default width                
 		CW_USEDEFAULT,          // default height               
 		appInstance->mainWindow,// parent or owner window    
-		(HMENU) NULL,           // class menu used              
+		(HMENU)NULL,           // class menu used              
 		core_api::get_my_instance(),// instance handle              
 		NULL);                  // no window creation data
 
@@ -110,7 +110,9 @@ void AsynchTexLoader::createLoaderWindow(){
 		errorPopupWin32("TexLoader failed to create a window.");
 		throw new pfc::exception();
 	}
+}
 
+void AsynchTexLoader::initGlContext(){
 	if (!(glDC = GetDC(glWindow))){
 		errorPopupWin32("TexLoader failed to get a Device Context");
 		destroyLoaderWindow();
@@ -269,6 +271,9 @@ void AsynchTexLoader::clearCache()
 
 void AsynchTexLoader::workerThreadProc()
 {
+	initGlContext();
+	loadSpecialTextures();
+
 	CollectionPos leftLoader = queueCenter;
 	CollectionPos rightLoader = queueCenter;
 	int leftDistance = 0;

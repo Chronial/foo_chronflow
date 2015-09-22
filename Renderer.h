@@ -6,6 +6,7 @@
 #include "ScriptedCoverPositions.h"
 
 class AppInstance;
+class AsynchTexLoader;
 class DisplayPosition;
 
 enum VSyncMode {
@@ -48,7 +49,8 @@ public:
 	TextDisplay textDisplay;
 	FpsCounter fpsCounter;
 	ScriptedCoverPositions coverPos;
-	DisplayPosition* displayPos;
+	DisplayPosition *const displayPos;
+	AsynchTexLoader* texLoader;
 
 private:
 	void loadExtensions(void);

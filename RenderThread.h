@@ -1,4 +1,5 @@
 #pragma once
+#include "AsynchTexLoader.h"
 #include "DisplayPosition.h"
 #include "DbAlbumCollection.h"
 #include "DbReloadWorker.h"
@@ -69,15 +70,20 @@ public:
 	const pfc::string8 script;
 };
 
+class RTCollectionReloadStartMessage : public RTMessage {};
 class RTCollectionReloadedMessage : public RTMessage {
 public:
 	unique_ptr<DbReloadWorker> worker;
 };
 
 
+class RTWindowHideMessage : public RTMessage {};
+class RTWindowShowMessage : public RTMessage {};
+
 
 class RenderThread {
 	DisplayPosition displayPos;
+	AsynchTexLoader texLoader;
 	Renderer renderer;
 	AppInstance* appInstance;
 public:
