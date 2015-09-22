@@ -329,7 +329,9 @@ private:
 			{
 				if (wParam == VK_RETURN){
 					collection_read_lock lock(appInstance);
-					executeAction(cfgEnterKey, appInstance->albumCollection->getTargetPos());
+					if (appInstance->albumCollection->getCount()){
+						executeAction(cfgEnterKey, appInstance->albumCollection->getTargetPos());
+					}
 					return 0;
 				} else if (wParam == VK_F5){
 					collection_read_lock lock(appInstance);
@@ -370,16 +372,16 @@ private:
 					// disable hotkeys that interfer with find-as-you-type
 					return 0;
 				} else {
+					collection_read_lock lock(appInstance);
 					static_api_ptr_t<keyboard_shortcut_manager> ksm;
-					if (ksm->on_keydown(ksm->TYPE_MAIN,wParam)){
-						return 0;
+					metadb_handle_list tracks;
+					if (appInstance->albumCollection->getCount() &&
+							appInstance->albumCollection->getTracks(appInstance->albumCollection->getTargetPos(), tracks)){
+						if (ksm->on_keydown_auto_context(tracks, wParam, contextmenu_item::caller_media_library_viewer))
+							return 0;
 					} else {
-						collection_read_lock lock(appInstance);
-						metadb_handle_list tracks;
-						if (appInstance->albumCollection->getTracks(appInstance->albumCollection->getTargetPos(), tracks)){
-							if (ksm->on_keydown_context(tracks, wParam, contextmenu_item::caller_undefined))
-								return 0;
-						}
+						if (ksm->on_keydown_auto(wParam))
+							return 0;
 					}
 				}
 				break;
@@ -481,11 +483,11 @@ private:
 		}
 	}
 	void onContextMenu (HWND hWnd, const int x, const int y){
-		// FIXME handle not yet loaded collection – in ohter interaction handler too
 		PlaybackTracerScopeLock lock(appInstance->playbackTracer);
 		POINT pt;
 		metadb_handle_list tracks;
-		CollectionPos target = appInstance->albumCollection->getTargetPos();
+		unique_ptr<CollectionPos> target;
+
 		if (x == -1){
 			pt.x = 0;
 			pt.y = 0;
@@ -499,10 +501,15 @@ private:
 			appInstance->renderer->send(msg);
 			auto clickedCoverPtr = msg->getAnswer();
 			if (clickedCoverPtr){
-				target = *clickedCoverPtr;
+				target = make_unique<CollectionPos>(*clickedCoverPtr);
 			}
 		}
-		appInstance->albumCollection->getTracks(target, tracks);
+		if (!target && appInstance->albumCollection->getCount()){
+			target = make_unique<CollectionPos>(appInstance->albumCollection->getTargetPos());
+		}
+		if (target){
+			appInstance->albumCollection->getTracks(*target, tracks);
+		}
 
 		enum {
 			ID_ENTER = 1,
@@ -513,23 +520,24 @@ private:
 			ID_CONTEXT_FIRST,
 			ID_CONTEXT_LAST = ID_CONTEXT_FIRST + 1000,
 		};
-
-		HMENU hMenu = CreatePopupMenu();
-		if ((cfgEnterKey.length() > 0) && (strcmp(cfgEnterKey, cfgDoubleClick) != 0))
-			uAppendMenu(hMenu, MF_STRING, ID_ENTER, pfc::string8(cfgEnterKey) << "\tEnter");
-		if (cfgDoubleClick.length() > 0)
-			uAppendMenu(hMenu, MF_STRING, ID_DOUBLECLICK, pfc::string8(cfgDoubleClick) << "\tDouble Click");
-		if ((cfgMiddleClick.length() > 0) && (strcmp(cfgMiddleClick, cfgDoubleClick) != 0) && (strcmp(cfgMiddleClick, cfgEnterKey) != 0))
-			uAppendMenu(hMenu, MF_STRING, ID_MIDDLECLICK, pfc::string8(cfgMiddleClick) << "\tMiddle Click");
-
 		service_ptr_t<contextmenu_manager> cmm;
 		contextmenu_manager::g_create(cmm);
-		cmm->init_context(tracks, contextmenu_manager::FLAG_SHOW_SHORTCUTS);
-		if (cmm->get_root()){
-			if (GetMenuItemCount(hMenu) > 0)
+		HMENU hMenu = CreatePopupMenu();
+		if (target){
+			if ((cfgEnterKey.length() > 0) && (strcmp(cfgEnterKey, cfgDoubleClick) != 0))
+				uAppendMenu(hMenu, MF_STRING, ID_ENTER, pfc::string8(cfgEnterKey) << "\tEnter");
+			if (cfgDoubleClick.length() > 0)
+				uAppendMenu(hMenu, MF_STRING, ID_DOUBLECLICK, pfc::string8(cfgDoubleClick) << "\tDouble Click");
+			if ((cfgMiddleClick.length() > 0) && (strcmp(cfgMiddleClick, cfgDoubleClick) != 0) && (strcmp(cfgMiddleClick, cfgEnterKey) != 0))
+				uAppendMenu(hMenu, MF_STRING, ID_MIDDLECLICK, pfc::string8(cfgMiddleClick) << "\tMiddle Click");
+
+			cmm->init_context(tracks, contextmenu_manager::FLAG_SHOW_SHORTCUTS);
+			if (cmm->get_root()){
+				if (GetMenuItemCount(hMenu) > 0)
+					uAppendMenu(hMenu, MF_SEPARATOR, 0, 0);
+				cmm->win32_build_menu(hMenu, ID_CONTEXT_FIRST, ID_CONTEXT_LAST);
 				uAppendMenu(hMenu, MF_SEPARATOR, 0, 0);
-			cmm->win32_build_menu(hMenu, ID_CONTEXT_FIRST, ID_CONTEXT_LAST);
-			uAppendMenu(hMenu, MF_SEPARATOR, 0, 0);
+			}
 		}
 		uAppendMenu(hMenu, MF_STRING, ID_PREFERENCES, "Chronflow Preferences...");
 
@@ -540,11 +548,11 @@ private:
 		if (cmd == ID_PREFERENCES){
 			static_api_ptr_t<ui_control>()->show_preferences(guid_configWindow);
 		} else if (cmd == ID_ENTER){
-			executeAction(cfgEnterKey, target, tracks);
+			executeAction(cfgEnterKey, *target, tracks);
 		} else if (cmd == ID_DOUBLECLICK){
-			executeAction(cfgDoubleClick, target, tracks);
+			executeAction(cfgDoubleClick, *target, tracks);
 		} else if (cmd == ID_MIDDLECLICK){
-			executeAction(cfgMiddleClick, target, tracks);
+			executeAction(cfgMiddleClick, *target, tracks);
 		} else if (cmd >= ID_CONTEXT_FIRST && cmd <= ID_CONTEXT_LAST){
 			cmm->execute_by_id(cmd - ID_CONTEXT_FIRST);
 		}
