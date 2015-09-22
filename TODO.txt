@@ -1,8 +1,6 @@
 
-* Prevent paralell refreshs
 
 * Fix and simplify locking – use read/write lock system (we write very seldomly)
-* make ImgTexture refcounted
 * Rewrite AsynchTexLoader
 	* Window might be destroyed anytime!
 	* Bias loading of covers towards current position

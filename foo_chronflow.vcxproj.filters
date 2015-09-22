@@ -176,6 +176,9 @@
     <ClInclude Include="BlockingQueue.h">
       <Filter>Header Files\Helpers</Filter>
     </ClInclude>
+    <ClInclude Include="DbRefreshWorker.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="images\config-window-bar.bmp">
