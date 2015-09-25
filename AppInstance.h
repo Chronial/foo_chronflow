@@ -1,26 +1,16 @@
 #pragma once
 
-class AsynchTexLoader;
 class DbAlbumCollection;
 class RenderThread;
-class DisplayPosition;
 class PlaybackTracer;
-class ScriptedCoverPositions;
 
 class AppInstance
 {
 public:
-	AppInstance () {
-		albumCollection = 0;
-		renderer = 0;
-		playbackTracer = 0;
-		mainWindow = 0;
-	}
-
-	DbAlbumCollection* albumCollection;
-	RenderThread* renderer;
-	PlaybackTracer* playbackTracer;
-	HWND mainWindow;
+	std::unique_ptr<DbAlbumCollection> albumCollection;
+	std::unique_ptr<RenderThread> renderer;
+	std::unique_ptr<PlaybackTracer> playbackTracer;
+	HWND mainWindow = nullptr;
 
 	inline void redrawMainWin(){
 		RedrawWindow(mainWindow,NULL,NULL,RDW_INVALIDATE);

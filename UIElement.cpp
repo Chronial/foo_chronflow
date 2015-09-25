@@ -106,9 +106,9 @@ public:
 
 private:
 	ULONG_PTR gdiplusToken;
-	FindAsYouType* findAsYouType;
+	std::unique_ptr<FindAsYouType> findAsYouType;
 
-	bool mainWinMinimized;
+	bool mainWinMinimized = true;
 	ui_element_config::ptr config;
 	const ui_element_instance_callback_ptr callback;
 public:
@@ -116,45 +116,20 @@ public:
 	static std::set<Chronflow*> instances;
 
 public:
-	Chronflow(ui_element_config::ptr config, ui_element_instance_callback_ptr p_callback) : callback(p_callback), config(config) {
-		findAsYouType = 0;
-		mainWinMinimized = true;
-		appInstance = new AppInstance();;
-		#ifdef _DEBUG
-		Console::create();
-		#endif
-		instances.insert(this);
-	}
-	~Chronflow(){
-		IF_DEBUG(Console::println(L"Destroying UiElement"));
-		appInstance->renderer->stopRenderThread();
-		instances.erase(this);
-		delete pfc::replace_null_t(findAsYouType);
+	Chronflow(HWND parent, ui_element_config::ptr config, ui_element_instance_callback_ptr p_callback)
+			: callback(p_callback), config(config) {
+		appInstance = new AppInstance();
+		IF_DEBUG(Console::create());
 
-		delete pfc::replace_null_t(appInstance->renderer);
-		delete pfc::replace_null_t(appInstance->playbackTracer);
-		delete pfc::replace_null_t(appInstance->albumCollection);
-
-		if (appInstance->mainWindow)
-			DestroyWindow(appInstance->mainWindow); // This also deletes the LoaderWindow!
-		appInstance->mainWindow = 0;
-
-		delete pfc::replace_null_t(appInstance);
-
-		Gdiplus::GdiplusShutdown(gdiplusToken);
-	}
-
-	void initialize_window(HWND parent) {
 		Gdiplus::GdiplusStartupInput gdiplusStartupInput;
 		// TODO: catch errors from this call
 		Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
 		appInstance->mainWindow = createWindow(parent);
-		// TODO if we throw exception, this needs to be cleaned up. Maybe use unique_ptr?
-		appInstance->albumCollection = new DbAlbumCollection(appInstance);
+		appInstance->albumCollection = make_unique<DbAlbumCollection>(appInstance);
 		{
 			collection_read_lock lock(appInstance);
-			appInstance->renderer = new RenderThread(appInstance);
+			appInstance->renderer = make_unique<RenderThread>(appInstance);
 			auto attachMessage = make_shared<RTAttachMessage>();
 			appInstance->renderer->send(attachMessage);
 			if (!attachMessage->getAnswer()){
@@ -174,13 +149,32 @@ public:
 				}
 			}
 
-			appInstance->playbackTracer = new PlaybackTracer(appInstance);
-			findAsYouType = new FindAsYouType(appInstance);
+			appInstance->playbackTracer = make_unique<PlaybackTracer>(appInstance);
+			findAsYouType = make_unique<FindAsYouType>(appInstance);
 
 			appInstance->albumCollection->startAsyncReload();
 		}
+		instances.insert(this);
+	}
+	~Chronflow(){
+		IF_DEBUG(Console::println(L"Destroying UiElement"));
+		if (appInstance)
+			DestroyWindow(appInstance->mainWindow);
 	}
 
+	// Called on window destruction
+	void shutdown(){
+		instances.erase(this);
+		findAsYouType.reset();
+
+		appInstance->playbackTracer.reset();
+		appInstance->renderer.reset();
+		appInstance->albumCollection.reset();
+		appInstance->mainWindow = nullptr;
+		delete pfc::replace_null_t(appInstance);
+
+		Gdiplus::GdiplusShutdown(gdiplusToken);
+	}
 
 	void set_configuration(ui_element_config::ptr config) { this->config = config; }
 	ui_element_config::ptr get_configuration() { return config; }
@@ -205,16 +199,11 @@ public:
 
 private:
 	LRESULT MessageHandler (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
+		if (!appInstance) // We are already shut down – do we need this? set a breakpoint here and check
+			return DefWindowProc(hWnd, uMsg, wParam, lParam);
 		switch (uMsg){
 			case WM_DESTROY:
-				if (appInstance->renderer){
-					auto msg = make_shared<RTUnattachMessage>();
-					appInstance->renderer->send(msg);
-					msg->getAnswer();
-				}
-				return 0;
-			case WM_NCDESTROY:
-				appInstance->mainWindow = 0;
+				shutdown();
 				return 0;
 			case WM_SIZE:
 				if (appInstance->renderer){
@@ -466,7 +455,7 @@ private:
 		}
 	}
 	void onContextMenu (HWND hWnd, const int x, const int y){
-		PlaybackTracerScopeLock lock(appInstance->playbackTracer);
+		PlaybackTracerScopeLock lock(*(appInstance->playbackTracer));
 		POINT pt;
 		metadb_handle_list tracks;
 		unique_ptr<CollectionPos> target;
@@ -572,8 +561,7 @@ public:
 	void get_name(pfc::string_base & out) { Chronflow::g_get_name(out); }
 	ui_element_instance::ptr instantiate(HWND parent, ui_element_config::ptr cfg, ui_element_instance_callback::ptr callback) {
 		PFC_ASSERT(cfg->get_guid() == get_guid());
-		service_nnptr_t<Chronflow> item = new service_impl_t<Chronflow>(cfg, callback);
-		item->initialize_window(parent);
+		service_nnptr_t<Chronflow> item = new service_impl_t<Chronflow>(parent, cfg, callback);
 		return item;
 	}
 	ui_element_config::ptr get_default_configuration() { return Chronflow::g_get_default_configuration(); }

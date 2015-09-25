@@ -12,10 +12,9 @@
 
 * On F5 and "Reload Sources" in Settings: appInstance->texLoader->loadSpecialTextures();
 
-* Make sure mainthread does not hold any locks when sending messages to renderThread & document that
 * Syncronize texloader startup (make sure its started before renderer requests textures) & shutdown
-* Asynctexloader: handle window destruction! (we can stop the asynctexloader before everybody else,
-   but renderer may not render any more (no textures!) / allow error return for gettexture (just don't render the cover))
+
+* Handle ReloadWorkers that are still running when the instance is destroyed
 
 
 * call glFinish after buffer swap https://www.opengl.org/wiki/Swap_Interval

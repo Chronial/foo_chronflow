@@ -66,14 +66,15 @@ public:
 	std::mutex openglAccess;
 
 private:
-	void loadSpecialTextures();
 	void createLoaderWindow();
-	void destroyLoaderWindow();
-	void initGlContext();
 	HWND glWindow = nullptr;
+
+	void initGlContext();
+	void destroyGlContext();
 	HDC glDC = nullptr;
 	HGLRC glRC = nullptr;
 
+	void loadSpecialTextures();
 	shared_ptr<ImgTexture> noCoverTexture;
 	shared_ptr<ImgTexture> loadingTexture;
 

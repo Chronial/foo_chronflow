@@ -67,14 +67,8 @@ AsynchTexLoader::~AsynchTexLoader(void)
 		CloseHandle(workerThread);
 		workerThread = nullptr;
 	}
-	clearCache();
-	// ugly, do better? - maybe window hook
-	if (IsWindow(glWindow)){
-		IF_DEBUG(Console::println(L" - Window still existed"));
-	} else {
-		IF_DEBUG(Console::println(L" - Window was already gone"));
-	}
-	destroyLoaderWindow();
+	ASSERT(IsWindow(glWindow));
+	DestroyWindow(glWindow);
 }
 
 void AsynchTexLoader::createLoaderWindow(){
@@ -101,7 +95,7 @@ void AsynchTexLoader::createLoaderWindow(){
 void AsynchTexLoader::initGlContext(){
 	if (!(glDC = GetDC(glWindow))){
 		errorPopupWin32("TexLoader failed to get a Device Context");
-		destroyLoaderWindow();
+		destroyGlContext();
 		throw new pfc::exception();
 	}
 
@@ -111,25 +105,41 @@ void AsynchTexLoader::initGlContext(){
 
 	if(!SetPixelFormat(glDC,pixelFormat,&pfd)){
 		errorPopupWin32("TexLoader failed to set PixelFormat");
-		destroyLoaderWindow();
+		destroyGlContext();
 		throw new pfc::exception();
 	}
 
 	if (!(glRC = wglCreateContext(glDC))){
 		errorPopupWin32("TexLoader failed to create a Rendering Context");
-		destroyLoaderWindow();
+		destroyGlContext();
 		throw new pfc::exception();
 	}
 
 	if (!appInstance->renderer->shareLists(glRC)){
 		errorPopupWin32("TexLoader failed to share Display Lists");
-		destroyLoaderWindow();
+		destroyGlContext();
 		throw new pfc::exception();
 	}
 
 	wglMakeCurrent(glDC, glRC);
 }
 
+void AsynchTexLoader::destroyGlContext()
+{
+	if (glRC){
+		if (!wglDeleteContext(glRC)){
+			errorPopupWin32("failed to destroy AsyncTexLoader Render Context");
+		}
+		glRC = nullptr;
+	}
+
+	if (glDC){
+		if (!ReleaseDC(appInstance->mainWindow, glDC)){
+			errorPopupWin32("failed to release AsyncTexLoader Device Context");
+		}
+		glDC = nullptr;
+	}
+}
 
 
 shared_ptr<ImgTexture> AsynchTexLoader::getLoadedImgTexture(CollectionPos pos)
@@ -155,18 +165,6 @@ void AsynchTexLoader::setWorkerThreadPrio(int nPrio, bool force)
 	}
 }
 
-void AsynchTexLoader::destroyLoaderWindow()
-{
-	if (glRC){
-		if (!wglDeleteContext(glRC)){
-			errorPopupWin32("failed to destroy  AsyncTexLoader Render Context");
-		}
-		glRC = NULL;
-	}
-
-	if (glWindow)
-		DestroyWindow(glWindow);
-}
 
 void AsynchTexLoader::send(shared_ptr<ATMessage> msg){
 	messageQueue.push(msg);
@@ -231,6 +229,7 @@ void AsynchTexLoader::threadProc()
 	loadingTexture->glDelete();
 	noCoverTexture->glDelete();
 	clearCache();
+	destroyGlContext();
 }
 
 void AsynchTexLoader::clearCache(){

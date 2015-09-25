@@ -58,8 +58,8 @@ public:
 
 class PlaybackTracerScopeLock {
 public:
-	PlaybackTracerScopeLock(PlaybackTracer* tracer)
-		: t(tracer){
+	PlaybackTracerScopeLock(PlaybackTracer &tracer)
+		: t(&tracer){
 			t->lock();
 	}
 	~PlaybackTracerScopeLock(){

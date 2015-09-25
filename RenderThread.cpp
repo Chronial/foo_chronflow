@@ -38,9 +38,6 @@ void RenderThread::threadProc(){
 				renderer.initGlState();
 				texLoader.start();
 			}
-		} else if (auto m = dynamic_pointer_cast<RTUnattachMessage>(msg)){
-			renderer.destroyGlWindow();
-			m->setAnswer(true);
 		} else if (auto m = dynamic_pointer_cast<RTShareListDataMessage>(msg)){
 			renderer.freeRC();
 			auto answer = make_shared<RTShareListDataAnswer>();
@@ -105,6 +102,7 @@ void RenderThread::threadProc(){
 			IF_DEBUG(__debugbreak());
 		}
 	}
+	renderer.destroyGlWindow();
 	CoUninitialize();
 }
 
@@ -188,7 +186,9 @@ RenderThread::RenderThread(AppInstance* appInstance)
 
 RenderThread::~RenderThread(){
 	IF_DEBUG(Console::println(L"Destroying RenderThread"));
-	stopRenderThread();
+	this->send(make_shared<RTStopThreadMessage>());
+	WaitForSingleObject(renderThread, INFINITE);
+	CloseHandle(renderThread);
 }
 
 
@@ -198,14 +198,6 @@ unsigned int WINAPI RenderThread::runRenderThread(void* lpParameter)
 	return 0;
 }
 
-void RenderThread::stopRenderThread()
-{
-	IF_DEBUG(Console::println(L"Stopping Render Thread"));
-	this->send(make_shared<RTStopThreadMessage>());
-	WaitForSingleObject(renderThread,INFINITE);
-	CloseHandle(renderThread);
-	renderThread = nullptr;
-}
 
 void RenderThread::updateRefreshRate(){
 	DEVMODE dispSettings;

@@ -42,8 +42,7 @@ void DbAlbumCollection::reloadSourceScripts(){
 }
 
 DbAlbumCollection::DbAlbumCollection(AppInstance* instance):
-		targetPos(albums.get<1>().end()){
-	this->appInstance = instance;
+		appInstance(instance), targetPos(albums.get<1>().end()){
 	InitializeCriticalSectionAndSpinCount(&sourceScriptsCS, 0x80000400);
 	isRefreshing = false;
 
