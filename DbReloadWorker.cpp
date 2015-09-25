@@ -6,27 +6,37 @@
 #include "RenderThread.h"
 
 
-void DbReloadWorker::run(){
+void DbReloadWorker::startNew(AppInstance* instance){
+	auto worker = instance->reloadWorker.synchronize();
+	if (*worker) // already running
+		return;
+	(*worker) = unique_ptr<DbReloadWorker>(new DbReloadWorker(instance));
+}
+
+DbReloadWorker::DbReloadWorker(AppInstance* instance) : appInstance(instance){
 	// copy whole library
 	static_api_ptr_t<library_manager> lm;
 	lm->get_all_items(library);
 
-	HANDLE workerThread;
 	//workerThread = (HANDLE)_beginthreadex(0, 0, &(this->runWorkerThread), (void*)this, 0, 0);
-	workerThread = (HANDLE)_beginthreadex(0, 0, [](void* self)  -> unsigned int {
+	thread = (HANDLE)_beginthreadex(0, 0, [](void* self)  -> unsigned int {
 		static_cast<DbReloadWorker*>(self)->threadProc();
 		return 0;
 	}, (void*)this, 0, 0);
-	SetThreadPriority(workerThread, THREAD_PRIORITY_BELOW_NORMAL);
-	SetThreadPriorityBoost(workerThread, true);
+	SetThreadPriority(thread, THREAD_PRIORITY_BELOW_NORMAL);
+	SetThreadPriorityBoost(thread, true);
 };
+
+DbReloadWorker::~DbReloadWorker(){
+	kill = true;
+	WaitForSingleObject(thread, INFINITE);
+	CloseHandle(thread);
+}
 
 void DbReloadWorker::threadProc(){
 	this->generateData();
-
-	auto msg = make_shared<RTCollectionReloadedMessage>();
-	msg->worker = unique_ptr<DbReloadWorker>(this);
-	appInstance->renderer->send(msg);
+	if (!kill)
+		appInstance->renderer->send(make_shared<RTCollectionReloadedMessage>());
 	// Notify renderer to copy data, after copying, refresh AsynchTexloader + start Loading
 };
 
@@ -49,6 +59,8 @@ void DbReloadWorker::generateData(){
 	}
 	console::printf("foo_chronflow: Filter took %d msec", int((Helpers::getHighresTimer() - actionStart) * 1000));
 
+	if (kill) return;
+
 	auto &groupIndex = albums.get<0>();
 	actionStart = Helpers::getHighresTimer();
 	{
@@ -60,6 +72,7 @@ void DbReloadWorker::generateData(){
 			compiler->compile(sortFormatter, cfgSort);
 		}
 		for (t_size i = 0; i < library.get_size(); i++){
+			if (kill) return;
 			pfc::string8_fast groupString;
 			metadb_handle_ptr track = library.get_item(i);
 			track->format_title(0, groupString, albumMapper, 0);

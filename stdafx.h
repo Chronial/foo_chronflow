@@ -25,6 +25,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <memory>
+#include <atomic>
 
 using std::unique_ptr;
 using std::make_unique;

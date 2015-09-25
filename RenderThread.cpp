@@ -87,10 +87,11 @@ void RenderThread::threadProc(){
 				// There is a race condition here, so use this only as a guess
 				int waitTime = messageQueue.size() ? 10 : 100;
 				if (lock.try_lock_for(boost::chrono::milliseconds(waitTime))){
-					auto reloadWorker = std::move(m->worker);
-					appInstance->albumCollection->onCollectionReload(*reloadWorker);
+					auto reloadWorker = appInstance->reloadWorker.synchronize();
+					appInstance->albumCollection->onCollectionReload(**reloadWorker);
 					CollectionPos newTargetPos = appInstance->albumCollection->getTargetPos();
 					displayPos.hardSetCenteredPos(newTargetPos);
+					reloadWorker->reset();
 				} else {
 					// looks like a deadlock, retry at the end of the messageQueue
 					this->send(msg);

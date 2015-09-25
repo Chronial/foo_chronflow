@@ -50,7 +50,6 @@ typedef DbAlbums::nth_index<1>::type::iterator CollectionPos;
 
 class DbAlbumCollection : public shared_mutex
 {
-	bool isRefreshing; // ensures that only one RefreshWorker is running at a time
 	AppInstance* appInstance;
 public:
 	DbAlbumCollection(AppInstance* instance);
@@ -65,14 +64,12 @@ public:
 	// Returns whether any results have been found
 	bool performFayt(const char * title, CollectionPos& out);
 
-	void startAsyncReload();
 	void onCollectionReload(DbReloadWorker& worker);
 
 	CollectionPos begin() const;
 	CollectionPos end() const;
 	t_size rank(CollectionPos p);
 
-public:
 	CollectionPos getTargetPos() {
 		ASSERT_SHARED(this);
 		return *targetPos;
@@ -99,17 +96,14 @@ public:
 	}
 
 private:
-	void reloadSourceScripts();
-
-private:
 	bool getImageForTrack(const metadb_handle_ptr &track, pfc::string_base &out);
 
+	void reloadSourceScripts();
 	pfc::list_t< service_ptr_t<titleformat_object> > sourceScripts;
 	CRITICAL_SECTION sourceScriptsCS;
 
 	
 
-private:
 	/******************************* INTERN DATABASE ***************************/
 	DbAlbums albums;
 	boost::synchronized_value<CollectionPos> targetPos;

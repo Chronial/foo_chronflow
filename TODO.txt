@@ -14,8 +14,8 @@
 
 * Syncronize texloader startup (make sure its started before renderer requests textures) & shutdown
 
-* Handle ReloadWorkers that are still running when the instance is destroyed
 
+* Do not initialize targetPos on Collection construction and fix ensuing errors
 
 * call glFinish after buffer swap https://www.opengl.org/wiki/Swap_Interval
 ** Memory leak when jumping from t to k via fayt??

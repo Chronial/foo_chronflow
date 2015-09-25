@@ -44,19 +44,9 @@ void DbAlbumCollection::reloadSourceScripts(){
 DbAlbumCollection::DbAlbumCollection(AppInstance* instance):
 		appInstance(instance), targetPos(albums.get<1>().end()){
 	InitializeCriticalSectionAndSpinCount(&sourceScriptsCS, 0x80000400);
-	isRefreshing = false;
 
 	static_api_ptr_t<titleformat_compiler> compiler;
 	compiler->compile(cfgAlbumTitleScript, cfgAlbumTitle);
-}
-
-void DbAlbumCollection::startAsyncReload(){
-	if (isRefreshing)
-		return;
-	isRefreshing = true;
-	double synchStart = Helpers::getHighresTimer();
-	DbReloadWorker::startNew(appInstance);
-	console::printf("Sync start: %d msec (in mainthread)", int((Helpers::getHighresTimer() - synchStart) * 1000));
 }
 
 void DbAlbumCollection::onCollectionReload(DbReloadWorker& worker){
@@ -88,8 +78,6 @@ void DbAlbumCollection::onCollectionReload(DbReloadWorker& worker){
 	albumMapper = std::move(worker.albumMapper);
 
 	setTargetPos(newTargetPos);
-
-	isRefreshing = false;
 }
 
 bool DbAlbumCollection::getImageForTrack(const metadb_handle_ptr &track, pfc::string_base &out){

@@ -152,7 +152,7 @@ public:
 			appInstance->playbackTracer = make_unique<PlaybackTracer>(appInstance);
 			findAsYouType = make_unique<FindAsYouType>(appInstance);
 
-			appInstance->albumCollection->startAsyncReload();
+			appInstance->startCollectionReload();
 		}
 		instances.insert(this);
 	}
@@ -167,6 +167,7 @@ public:
 		instances.erase(this);
 		findAsYouType.reset();
 
+		appInstance->reloadWorker.synchronize()->reset();
 		appInstance->playbackTracer.reset();
 		appInstance->renderer.reset();
 		appInstance->albumCollection.reset();
@@ -317,8 +318,7 @@ private:
 					}
 					return 0;
 				} else if (wParam == VK_F5){
-					collection_read_lock lock(appInstance);
-					appInstance->albumCollection->startAsyncReload();
+					appInstance->startCollectionReload();
 					return 0;
 				} else if (wParam == VK_F6){
 					collection_read_lock lock(appInstance);
