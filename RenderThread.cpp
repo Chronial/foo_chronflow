@@ -30,6 +30,7 @@ void RenderThread::threadProc(){
 		} else if (auto m = dynamic_pointer_cast<RTTargetChangedMessage>(msg)){
 			collection_read_lock lock(appInstance);
 			displayPos.onTargetChange();
+			texLoader.send(make_shared<ATTargetChangedMessage>());
 		} else if (auto m = dynamic_pointer_cast<RTAttachMessage>(msg)){
 			bool result = renderer.attachGlWindow();
 			m->setAnswer(result);
@@ -53,16 +54,17 @@ void RenderThread::threadProc(){
 		} else if (auto m = dynamic_pointer_cast<RTWindowResizeMessage>(msg)){
 			renderer.resizeGlScene(m->width, m->height);
 		} else if (auto m = dynamic_pointer_cast<RTWindowHideMessage>(msg)){
-			texLoader.pauseLoading();
+			texLoader.send(make_shared<ATPauseMessage>());
 			if (cfgEmptyCacheOnMinimize){
-				texLoader.clearCache();
+				texLoader.send(make_shared<ATClearCacheMessage>());
 			}
 		} else if (auto m = dynamic_pointer_cast<RTWindowShowMessage>(msg)){
-			texLoader.resumeLoading();
+			texLoader.send(make_shared<ATResumeMessage>());
 		} else if (auto m = dynamic_pointer_cast<RTTextFormatChangedMessage>(msg)){
 			renderer.textDisplay.clearCache();
 		} else if (auto m = dynamic_pointer_cast<RTGetPosAtCoordsMessage>(msg)){
 			collection_read_lock lock(appInstance);
+			std::unique_lock<std::mutex> openglLock(texLoader.openglAccess);
 			int offset;
 			if (renderer.offsetOnPoint(m->x, m->y, offset)){
 				CollectionPos pos = displayPos.getOffsetPos(offset);
@@ -75,23 +77,18 @@ void RenderThread::threadProc(){
 			renderer.coverPos.setScript(m->script, tmp);
 			renderer.setProjectionMatrix();
 			doPaint = true;
-		} else if (auto m = dynamic_pointer_cast<RTCollectionReloadStartMessage>(msg)){
-			// We will clear the cache anyways when we are done.
-			// So stop texloader now to have more cpu for reload
-			texLoader.pauseLoading();
 		} else if (auto m = dynamic_pointer_cast<RTCollectionReloadedMessage>(msg)){
-			boost::unique_lock<DbAlbumCollection> lock(*(appInstance->albumCollection));
-			auto reloadWorker = std::move(m->worker);
+			auto tlMsg = make_shared<ATCollectionReloadMessage>();
+			texLoader.send(tlMsg);
+			tlMsg->waitForHalt();
 			{
-				// TODO: this is ugly, texloader should do this in its own thread?
-				texLoader.clearCache();
-				renderer.takeRC();
+				boost::unique_lock<DbAlbumCollection> lock(*(appInstance->albumCollection));
+				auto reloadWorker = std::move(m->worker);
+				appInstance->albumCollection->onCollectionReload(*reloadWorker);
+				CollectionPos newTargetPos = appInstance->albumCollection->getTargetPos();
+				displayPos.hardSetCenteredPos(newTargetPos);
 			}
-			appInstance->albumCollection->onCollectionReload(*reloadWorker);
-			CollectionPos newTargetPos = appInstance->albumCollection->getTargetPos();
-			displayPos.hardSetCenteredPos(newTargetPos);
-			texLoader.setQueueCenter(newTargetPos);
-			texLoader.resumeLoading();
+			tlMsg->allowThreadResume();
 			appInstance->redrawMainWin();
 		} else {
 			IF_DEBUG(__debugbreak());
@@ -105,27 +102,19 @@ void RenderThread::send(shared_ptr<RTMessage> msg){
 }
 
 void RenderThread::onPaint(){
-	appInstance->albumCollection->lock_shared();
+	collection_read_lock lock(appInstance);
+	std::unique_lock<std::mutex> openglLock(texLoader.openglAccess);
 	double frameStart = Helpers::getHighresTimer();
-	texLoader.blockUpload();
 
 	displayPos.update();
 	// continue animation if we are not done
 	doPaint = displayPos.isMoving();
-	texLoader.setQueueCenter(appInstance->albumCollection->getTargetPos());
 
 	renderer.drawFrame();
-	appInstance->albumCollection->unlock_shared();
 
-
-	/*double curTime = Helpers::getHighresTimer();
-	int sleepFor = int((1000.0/(refreshRate*1.10)) - (1000*(curTime - lastTime))); //1.05 are tolerance
-	if (sleepFor > 0)
-	SleepEx(sleepFor,false);*/
-
+	// this might not be right – do we need a glFinish() here?
 	double frameEnd = Helpers::getHighresTimer();
 	renderer.fpsCounter.recordFrame(frameStart, frameEnd);
-
 
 
 	renderer.ensureVSync(cfgVSyncMode != VSYNC_SLEEP_ONLY);
@@ -149,15 +138,17 @@ void RenderThread::onPaint(){
 	renderer.swapBuffers();
 	afterLastSwap = Helpers::getHighresTimer();
 
+	texLoader.trimCache();
 	if (doPaint){
 		this->send(make_shared<RTPaintMessage>());
 	} else {
-		texLoader.allowUpload();
 		if (timerInPeriod){
 			timeEndPeriod(timerResolution);
 			timerInPeriod = false;
 		}
-
+		// release before we notify texLoader
+		openglLock.unlock();
+		texLoader.send(make_shared<ATRenderingDoneMessage>());
 	}
 }
 
@@ -177,7 +168,7 @@ RenderThread::RenderThread(AppInstance* appInstance)
 	timerResolution = 10;
 	TIMECAPS tc;
 	if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) == TIMERR_NOERROR){
-		timerResolution = min(max(tc.wPeriodMin, 1), tc.wPeriodMax);
+		timerResolution = min(max(tc.wPeriodMin, (UINT)1), tc.wPeriodMax);
 	}
 	
 	updateRefreshRate();
@@ -187,7 +178,6 @@ RenderThread::RenderThread(AppInstance* appInstance)
 RenderThread::~RenderThread(){
 	IF_DEBUG(Console::println(L"Destroying RenderThread"));
 	stopRenderThread();
-	texLoader.stopWorkerThread();
 }
 
 
@@ -203,7 +193,7 @@ void RenderThread::stopRenderThread()
 	this->send(make_shared<RTStopThreadMessage>());
 	WaitForSingleObject(renderThread,INFINITE);
 	CloseHandle(renderThread);
-	renderThread = 0;
+	renderThread = nullptr;
 }
 
 void RenderThread::updateRefreshRate(){

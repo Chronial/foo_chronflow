@@ -70,7 +70,6 @@ public:
 	const pfc::string8 script;
 };
 
-class RTCollectionReloadStartMessage : public RTMessage {};
 class RTCollectionReloadedMessage : public RTMessage {
 public:
 	unique_ptr<DbReloadWorker> worker;

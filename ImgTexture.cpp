@@ -48,7 +48,7 @@ void ImgTexture::glBind(void)
 			IF_DEBUG(__debugbreak());
 			return;
 		case STATUS_IMG_LOCKED:
-			IF_DEBUG(Console::println(L"------------------------------forced UPLOAD"));
+			IF_DEBUG(Console::println(L"                                     forced"));
 			glUpload();
 	}
 	glBindTexture(GL_TEXTURE_2D,glTexture[0]);
@@ -151,7 +151,7 @@ void ImgTexture::setMaxGlTextureSize(int size)
 
 
 int ImgTexture::getMaxSize(){
-	return min(cfgMaxTextureSize, maxGlTextureSize);
+	return std::min((int)cfgMaxTextureSize, maxGlTextureSize);
 }
 
 void ImgTexture::loadImageFile(const char * imageFile)

@@ -54,3 +54,8 @@ using boost::shared_lock;
 #include <boost/multi_index/ranked_index.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/sequenced_index.hpp>
+
+
+// Get rid of these macros
+#undef min
+#undef max

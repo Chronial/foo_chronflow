@@ -56,7 +56,6 @@ void DbAlbumCollection::startAsyncReload(){
 		return;
 	isRefreshing = true;
 	double synchStart = Helpers::getHighresTimer();
-	appInstance->renderer->send(make_shared<RTCollectionReloadStartMessage>());
 	DbReloadWorker::startNew(appInstance);
 	console::printf("Sync start: %d msec (in mainthread)", int((Helpers::getHighresTimer() - synchStart) * 1000));
 }
@@ -86,7 +85,6 @@ void DbAlbumCollection::onCollectionReload(DbReloadWorker& worker){
 			}
 		}
 	}
-
 	albums = std::move(worker.albums);
 	albumMapper = std::move(worker.albumMapper);
 

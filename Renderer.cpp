@@ -708,7 +708,7 @@ void Renderer::drawCovers(bool showTarget){
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		// calculate darkening
-		float g = 1-(min(1,(abs(co)-2)/5))*0.5f;
+		float g = 1-(min(1.0f,(abs(co)-2)/5))*0.5f;
 		if (abs(co) < 2)
 			g = 1;
 		/*float g = 1 - (abs(co)-2)*0.2f;

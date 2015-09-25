@@ -14,26 +14,22 @@
 
 
 AsynchTexLoader::AsynchTexLoader(AppInstance* instance) :
-appInstance(instance),
-queueCenter(instance->albumCollection->end()),
-queueCenterMoved(false),
-loadingTexture(0),
-noCoverTexture(0),
-workerThread(0),
-glRC(0),
-glDC(0),
-workerThreadMayRun(true, true),
-mayUpload(true, true)
+appInstance(instance)
 {
 	createLoaderWindow();
 }
 
 void AsynchTexLoader::start(){
-	startWorkerThread();
+	workerThread = (HANDLE)_beginthreadex(0, 0, [](void* self) -> unsigned int {
+		static_cast<AsynchTexLoader*>(self)->threadProc();
+		return 0;
+	}, (void*)this, 0, 0);
+	setWorkerThreadPrio(cfgTexLoaderPrio, true);
 }
 
 void AsynchTexLoader::loadSpecialTextures(){
-	// FIXME this may only be called from the texloader thread
+	// lock textureCache to synchronize with texture getter
+	auto lock = textureCache.synchronize();
 	if (loadingTexture){
 		loadingTexture->glDelete();
 	}
@@ -64,29 +60,19 @@ void AsynchTexLoader::loadSpecialTextures(){
 AsynchTexLoader::~AsynchTexLoader(void)
 {
 	IF_DEBUG(Console::println(L"Destroying AsynchTexLoader"));
-	stopWorkerThread();
-
+	if (workerThread){
+		this->send(make_shared<ATStopThreadMessage>());
+		WaitForSingleObject(workerThread, INFINITE);
+		IF_DEBUG(Console::println(L"AsyncTexLoader worker thread stopped"));
+		CloseHandle(workerThread);
+		workerThread = nullptr;
+	}
+	clearCache();
 	// ugly, do better? - maybe window hook
 	if (IsWindow(glWindow)){
 		IF_DEBUG(Console::println(L" - Window still existed"));
-		clearCache();
-		reserveRenderContext();
-		loadingTexture->glDelete();
-		noCoverTexture->glDelete();
-		runGlDelete();
-		releaseRenderContext();
 	} else {
 		IF_DEBUG(Console::println(L" - Window was already gone"));
-		// Has no effect, but prevents error message
-		loadingTexture->glDelete();
-		noCoverTexture->glDelete();
-		runGlDelete();
-		// Do this even if we can’t delete
-		for (auto it = textureCache.begin(); it != textureCache.end(); ++it){
-			if (it->texture){
-				it->texture->glDelete();
-			}
-		}
 	}
 	destroyLoaderWindow();
 }
@@ -141,41 +127,23 @@ void AsynchTexLoader::initGlContext(){
 		throw new pfc::exception();
 	}
 
-	wglMakeCurrent(NULL, NULL);
+	wglMakeCurrent(glDC, glRC);
 }
 
 
 
 shared_ptr<ImgTexture> AsynchTexLoader::getLoadedImgTexture(CollectionPos pos)
 {
-	int idx = appInstance->albumCollection->rank(pos);
-
+	auto lockedCache = textureCache.synchronize();
 	shared_ptr<ImgTexture> tex;
-	textureCacheCS.enter();
-	auto entry = textureCache.find(idx);
-	if (entry != textureCache.end()){
-		if (entry->texture == 0)
-			tex = noCoverTexture;
+	auto entry = lockedCache->find(pos->groupString);
+	if (entry != lockedCache->end()){
+		if (entry->texture)
+			return entry->texture;
 		else
-			tex = entry->texture;
+			return noCoverTexture;
 	} else {
-		tex = loadingTexture;
-	}
-	textureCacheCS.leave();
-	return tex;
-}
-
-void AsynchTexLoader::setQueueCenter(CollectionPos center)
-{
-	// The new center might be from a new collection
-#ifdef BOOST_MULTI_INDEX_ENABLE_SAFE_MODE
-	if ((center.owner() != queueCenter.owner()) || !(center == queueCenter)){
-#else
-	if (!(center == queueCenter)){
-#endif
-		queueCenter = center;
-		queueCenterMoved = true;
-		workerThreadHasWork.setSignal();
+		return loadingTexture;
 	}
 }
 
@@ -185,44 +153,6 @@ void AsynchTexLoader::setWorkerThreadPrio(int nPrio, bool force)
 		workerThreadPrio = nPrio;
 		SetThreadPriority(workerThread,nPrio);
 	}
-}
-
-void AsynchTexLoader::startWorkerThread()
-{
-	closeWorkerThread = false;
-	workerThreadMayRun.resetSignal();
-	workerThread = (HANDLE)_beginthreadex(0,0,&(this->runWorkerThread),(void*)this,0,0);
-	setWorkerThreadPrio(cfgTexLoaderPrio, true);
-}
-
-unsigned int WINAPI AsynchTexLoader::runWorkerThread(void* lpParameter)
-{
-	((AsynchTexLoader*)(lpParameter))->workerThreadProc();
-	return 0;
-}
-
-void AsynchTexLoader::stopWorkerThread()
-{
-	if (workerThread){
-		closeWorkerThread = true;
-		workerThreadMayRun.setSignal();
-		workerThreadHasWork.setSignal();
-		WaitForSingleObject(workerThread,INFINITE);
-		IF_DEBUG(Console::println(L"AsyncTexLoader worker thread stopped"));
-		CloseHandle(workerThread);
-		workerThread = 0;
-	}
-}
-
-void AsynchTexLoader::pauseLoading()
-{
-	workerThreadMayRun.resetSignal();
-}
-
-void AsynchTexLoader::resumeLoading()
-{
-	workerThreadHasWork.setSignal();
-	workerThreadMayRun.setSignal();
 }
 
 void AsynchTexLoader::destroyLoaderWindow()
@@ -238,225 +168,204 @@ void AsynchTexLoader::destroyLoaderWindow()
 		DestroyWindow(glWindow);
 }
 
-void AsynchTexLoader::reserveRenderContext()
-{
-	renderContext.enter();
-	if (!wglMakeCurrent(glDC, glRC)){
-		IF_DEBUG(errorPopupWin32("failed to reserve AsyncTexLoader Render Context"));
-	}
+void AsynchTexLoader::send(shared_ptr<ATMessage> msg){
+	messageQueue.push(msg);
 }
 
-void AsynchTexLoader::releaseRenderContext()
+void AsynchTexLoader::threadProc()
 {
-	if (!wglMakeCurrent(NULL, NULL)){
-		IF_DEBUG(errorPopupWin32("failed to release AsyncTexLoader Render Context"));
-	}
-	renderContext.leave();
-}
-
-
-void AsynchTexLoader::clearCache()
-{
-	ScopeCS scopeLock(workerThreadInLoop);
-	reserveRenderContext();
-	for (auto it = textureCache.begin(); it != textureCache.end(); ++it){
-		if (it->texture){
-			it->texture->glDelete();
-		}
-	}
-	textureCache.clear();
-	queueCenterMoved = true;
-	releaseRenderContext();
-}
-
-void AsynchTexLoader::workerThreadProc()
-{
+	// TODO: make sure this thread is stopped before its window is destroyed
+	//       maybe just pass a message processor. But renderer does probably not know then - is that a problem?
 	initGlContext();
 	loadSpecialTextures();
 
-	CollectionPos leftLoader = queueCenter;
-	CollectionPos rightLoader = queueCenter;
-	int leftDistance = 0;
-	int rightDistance = 0;
-	int loadCount = 0;
-	bool nearCenter = true;
-	bool onScreen = true;
-	int notifyThreshold = 10;
-	int notifyC = 0;
-	while(!closeWorkerThread){
-		workerThreadMayRun.waitForSignal();
+	for (;;){
+		if (messageQueue.size() == 0){
+			tryGlStuff();
+			if (!isPaused && !allLoaded){
+				allLoaded = !loadNextTexture();
+				continue;
+			}
+		}
+		auto msg = messageQueue.pop();
 
-		if (closeWorkerThread)
+		if (auto m = dynamic_pointer_cast<ATStopThreadMessage>(msg)){
 			break;
-
-		if (uploadQueue.size() && mayUpload.waitForSignal(0)){
-			reserveRenderContext();
-			doUploadQueue();
-			releaseRenderContext();
-		} else {
-			
-			// work with thread-local copy to be Thread-safe – FIXME this copying is not safe
-			CollectionPos queueCenterLoc = queueCenter;
-				
-			if (queueCenterMoved){
-				queueCenterMoved = false;
-				loadCount = 0;
-				leftLoader = queueCenterLoc;
-				rightLoader = queueCenterLoc;
-				leftDistance = 0;
-				rightDistance = 0;
-			}
-
-			appInstance->albumCollection->lock_shared();
-			int collectionSize = appInstance->albumCollection->getCount();
-			appInstance->albumCollection->unlock_shared();
-
-			if ((loadCount >= int((cfgTextureCacheSize - 1)*0.8)) ||
-				((loadCount + 1) >= collectionSize)){
-				// Loaded enough textures
-				if (uploadQueue.size()){
-					workerThreadHasWork.waitForTwo(mayUpload, false);
-				} else {
-					workerThreadHasWork.waitForSignal();
-				}
-			} else {
-				// Load another texture
+		} else if (auto m = dynamic_pointer_cast<ATRenderingDoneMessage>(msg)){
+			// do nothing here, we just want this thread to wake up
+		} else if (auto m = dynamic_pointer_cast<ATReloadSpecialTexMessage>(msg)){
+			loadSpecialTextures();
+		} else if (auto m = dynamic_pointer_cast<ATCollectionReloadMessage>(msg)){
+			m->haltThread();
+			clearCache();
+			{
 				collection_read_lock lock(appInstance);
-				ScopeCS scopeLock(workerThreadInLoop);
-				CollectionPos loadNext = queueCenterLoc;
-				bool foundCoverToLoad = false;
-				int loadOffset = 0;
-				if (loadCount == 0){
-					foundCoverToLoad = true;
-				} else {
-					if (loadCount % 2){
-						loadNext = rightLoader;
-						++loadNext;
-						if (loadNext != appInstance->albumCollection->end()){
-							foundCoverToLoad = true;
-							rightLoader = loadNext;
-							rightDistance++;
-							loadOffset = rightDistance;
-						}
-					}
-					if (!foundCoverToLoad){
-						if (leftLoader != appInstance->albumCollection->begin()){
-							foundCoverToLoad = true;
-							--leftLoader;
-							loadNext = leftLoader;
-							leftDistance++;
-							loadOffset = -leftDistance;
-						}
-					}
-				}
-				loadCount++;
-				
-				// unclean / hack - this is not mulithread safe!
-				//onScreen = (loadOffset >= appInstance->coverPos->getFirstCover()) && (loadOffset <= appInstance->coverPos->getLastCover());
-				// TODO FIXME
-				onScreen = false;
-
-				if (loadCount < 16){
-					if (!nearCenter){
-						nearCenter = true;
-						setWorkerThreadPrio(cfgTexLoaderPrio);
-					}
-				} else {
-					if (nearCenter){
-						nearCenter = false;
-						setWorkerThreadPrio(THREAD_PRIORITY_IDLE);
-					}
-				}
-				
-				bool doUpload = false;
-				if (mayUpload.waitForSignal(0)){
-					doUpload = true;
-				}
-				reserveRenderContext();
-				bool textureLoaded = loadTexImage(loadNext, doUpload);
-				releaseRenderContext();
-				{ // Redraw Mainwindow
-					if (textureLoaded && (
-						(nearCenter && (notifyC % 2)) ||
-						(onScreen && ((notifyC % 4) == 0)) ||
-						(loadCount == 1) ||
-						(++notifyC == notifyThreshold))){
-						notifyC = 0;
-						notifyThreshold = loadCount * loadCount / cfgTextureCacheSize;
-						IF_DEBUG(Console::println(L"                    Refresh trig."));
-						appInstance->redrawMainWin();
-					}
+				queueCenter = appInstance->albumCollection->getTargetPos();
+			}
+			allLoaded = false;
+		} else if (auto m = dynamic_pointer_cast<ATClearCacheMessage>(msg)){
+			clearCache();
+		} else if (auto m = dynamic_pointer_cast<ATPauseMessage>(msg)){
+			isPaused = true;
+		} else if (auto m = dynamic_pointer_cast<ATResumeMessage>(msg)){
+			isPaused = false;
+		} else if (auto m = dynamic_pointer_cast<ATTargetChangedMessage>(msg)){
+			collection_read_lock lock(appInstance);
+			cacheGeneration++;
+			// wrap around
+			if (cacheGeneration > std::numeric_limits<unsigned int>::max() - 100){
+				cacheGeneration = 1;
+				auto lockedCache = textureCache.synchronize();
+				for (auto it = lockedCache->begin(); it != lockedCache->end(); ++it){
+					lockedCache->modify(it, [&](CacheItem& x) {
+						x.priority.first = 0;
+					});
 				}
 			}
+			queueCenter = appInstance->albumCollection->getTargetPos();
+			allLoaded = false;
+		} else {
+			IF_DEBUG(__debugbreak());
+		}
+	}
+	loadingTexture->glDelete();
+	noCoverTexture->glDelete();
+	clearCache();
+}
+
+void AsynchTexLoader::clearCache(){
+	std::unique_lock<std::mutex> uploadLock(openglAccess);
+	auto lockedCache = textureCache.synchronize();
+
+	for (auto &e : *lockedCache){
+		if (e.texture){
+			e.texture->glDelete();
+		}
+	}
+	lockedCache->clear();
+}
+
+void AsynchTexLoader::tryGlStuff(){
+	auto lockedCache = textureCache.synchronize();
+	while (lockedCache->size() > (size_t)cfgTextureCacheSize){
+		std::unique_lock<std::mutex> uploadLock(openglAccess, std::try_to_lock);
+		if (!uploadLock){
+			return;
+		} else {
+			auto &prorityIndex = lockedCache->get<1>();
+			auto deleteTexture = prorityIndex.begin()->texture;
+			prorityIndex.erase(prorityIndex.begin());
+			if (deleteTexture)
+				deleteTexture->glDelete();
+		}
+	}
+	auto &uploadedIndex = lockedCache->get<2>();
+	while (int c = uploadedIndex.count(false)){
+		std::unique_lock<std::mutex> uploadLock(openglAccess, std::try_to_lock);
+		if (!uploadLock){
+			return;
+		} else {
+			auto toUpload = uploadedIndex.find(false);
+			if (toUpload->texture)
+				toUpload->texture->glUpload();
+			uploadedIndex.modify_key(toUpload, [](bool &isUploaded) {isUploaded = true; });
 		}
 	}
 }
 
-bool AsynchTexLoader::loadTexImage(CollectionPos pos, bool doUpload){
-	int idx = appInstance->albumCollection->rank(pos);
-	auto &mruIndex = textureCache.get<1>();
+bool AsynchTexLoader::loadNextTexture(){
+	collection_read_lock lock(appInstance);
 
-	textureCacheCS.enter();
-	auto oldEntry = textureCache.find(idx);
-	if (oldEntry != textureCache.end()){ //already loaded
-		// move to front of MRU
-		mruIndex.relocate(mruIndex.begin(), textureCache.project<1>(oldEntry));
-		textureCacheCS.leave();
-		if (oldEntry->texture && doUpload)
-			oldEntry->texture->glUpload();
+	int collectionSize = appInstance->albumCollection->getCount();
+	if (collectionSize == 0){
 		return false;
 	}
-	textureCacheCS.leave();
-	IF_DEBUG(Console::println(L"                 x"));
-	shared_ptr<ImgTexture> tex = appInstance->albumCollection->getImgTexture(pos);
-	if (doUpload && tex){
-		tex->glUpload();
-	} else {
-		uploadQueue.push_back(idx);
-	}
-	textureCacheCS.enter();
-	mruIndex.push_front({ idx, tex });
+	unsigned int maxLoad = min(collectionSize, int(cfgTextureCacheSize*0.8));
+	unsigned int loaded = 0;
 
-	if (textureCache.size() > (size_t)cfgTextureCacheSize){
-		CacheItem deleteEntry = mruIndex.back();
-		mruIndex.pop_back();
-		if (deleteEntry.texture)
-			deleteQueue.push_back(deleteEntry.texture);
-	}
-	textureCacheCS.leave();
-	return true;
-}
+	CollectionPos leftLoaded = queueCenter;
+	CollectionPos rightLoaded = queueCenter;
+	CollectionPos loadNext = queueCenter;
 
-void AsynchTexLoader::allowUpload(){
-	mayUpload.setSignal();
-}
+	{
+		auto lockedCache = textureCache.synchronize();
+		for (; lockedCache->count(loadNext->groupString); ++loaded){
+			// make sure the cache contains the right distances
+			auto cacheEntry = lockedCache->find(loadNext->groupString);
+			if (cacheEntry->priority.first != cacheGeneration){
+				lockedCache->modify(cacheEntry, [=](CacheItem &x) {
+					x.priority = std::make_pair(cacheGeneration, -(int)loaded);
+				});
+			}
 
-void AsynchTexLoader::blockUpload(){
-	mayUpload.resetSignal();
-}
-
-void AsynchTexLoader::doUploadQueue(){
-	runGlDelete();
-	while (uploadQueue.size()){
-		if (!mayUpload.waitForSignal(0))
-			break;
-
-		int texIdx = uploadQueue.front();
-		uploadQueue.pop_front();
-		auto cacheEntry = textureCache.find(texIdx);
-
-		if(cacheEntry != textureCache.end() && cacheEntry->texture){
-			cacheEntry->texture->glUpload();
+			if (loaded >= maxLoad)
+				return false;
+			if ((loaded % 2 || leftLoaded == appInstance->albumCollection->begin()) &&
+				++CollectionPos(rightLoaded) != appInstance->albumCollection->end()){
+				++rightLoaded;
+				loadNext = rightLoaded;
+				ASSERT(loadNext != appInstance->albumCollection->end());
+			} else {
+				--leftLoaded;
+				loadNext = leftLoaded;
+			}
 		}
 	}
+
+	auto texture = loadTexImage(loadNext);
+
+	// update TextureCache
+	textureCache->insert({ loadNext->groupString, { cacheGeneration, -(int)loaded }, texture, false });
+
+	bool nearCenter = loaded < 16;
+
+	if ((nearCenter && (loaded % 2)) ||
+		!(loaded % 8)){
+		IF_DEBUG(Console::println(L"Refresh MainWin."));
+		appInstance->redrawMainWin();
+	}
+	return true;
+
+
+	// unclean / hack - this is not mulithread safe!
+	//onScreen = (loadOffset >= appInstance->coverPos->getFirstCover()) && (loadOffset <= appInstance->coverPos->getLastCover());
+
+	/*
+	if (loaded < 16){
+		if (!nearCenter){
+			nearCenter = true;
+			setWorkerThreadPrio(cfgTexLoaderPrio);
+		}
+	} else {
+		if (nearCenter){
+			nearCenter = false;
+			setWorkerThreadPrio(THREAD_PRIORITY_IDLE);
+		}
+	}*/
+
 }
 
-void AsynchTexLoader::runGlDelete(){
-	while (deleteQueue.size()){
-		if (!mayUpload.waitForSignal(0))
-			break;
-		auto texture = deleteQueue.front();
-		deleteQueue.pop_front();
-		texture->glDelete();
+shared_ptr<ImgTexture> AsynchTexLoader::loadTexImage(CollectionPos pos){
+	IF_DEBUG(double preLoad = Helpers::getHighresTimer());
+	shared_ptr<ImgTexture> tex = appInstance->albumCollection->getImgTexture(pos);
+#ifdef _DEBUG
+	if (tex){
+		Console::printf(L"Load image file in %d ms\n", int((Helpers::getHighresTimer() - preLoad) * 1000));
+	} else {
+		Console::printf(L"Detect missing file in %d ms\n", int((Helpers::getHighresTimer() - preLoad) * 1000));
+	}
+#endif
+	return tex;
+}
+
+void AsynchTexLoader::trimCache(){
+	auto lockedCache = textureCache.synchronize();
+	while (lockedCache->size() > (size_t)cfgTextureCacheSize){
+		auto &prorityIndex = lockedCache->get<1>();
+
+		auto deleteTexture = prorityIndex.begin()->texture;
+		prorityIndex.erase(prorityIndex.begin());
+		if (deleteTexture)
+			deleteTexture->glDelete();
 	}
 }
