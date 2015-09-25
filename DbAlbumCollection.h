@@ -13,7 +13,7 @@ struct DbAlbum
 	std::string groupString;
 	std::wstring sortString;
 	pfc::string8 findAsYouType;
-	metadb_handle_list tracks;
+	mutable metadb_handle_list tracks;
 };
 
 struct CompWLogical

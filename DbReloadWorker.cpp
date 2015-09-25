@@ -80,7 +80,7 @@ void DbReloadWorker::generateData(){
 				albums.insert({ groupString.get_ptr(), std::move(sortString), std::move(findAsYouType), std::move(tracks) });
 			} else {
 				auto album = groupIndex.find(groupString.get_ptr());
-				groupIndex.modify(album, [&](DbAlbum &a) { a.tracks.add_item(track); });
+				album->tracks.add_item(track);
 			}
 		}
 	}
