@@ -43,6 +43,20 @@ public:
 #endif
 		mtx.unlock_shared();
 	}
+
+	template <class Rep, class Period>
+	bool try_lock_for(const boost::chrono::duration<Rep, Period>& rel_time){
+		bool has_lock = mtx.try_lock_for(rel_time);
+#ifdef _DEBUG
+		if (has_lock) {
+			std::unique_lock<std::mutex> guard(debug_mtx);
+			assert(mtx_exclusive_owner == 0);
+			mtx_exclusive_owner = GetCurrentThreadId();
+		}
+#endif
+		return has_lock;
+	}
+
 	void lock() {
 		mtx.lock();
 #ifdef _DEBUG

@@ -82,11 +82,22 @@ void RenderThread::threadProc(){
 			texLoader.send(tlMsg);
 			tlMsg->waitForHalt();
 			{
-				boost::unique_lock<DbAlbumCollection> lock(*(appInstance->albumCollection));
-				auto reloadWorker = std::move(m->worker);
-				appInstance->albumCollection->onCollectionReload(*reloadWorker);
-				CollectionPos newTargetPos = appInstance->albumCollection->getTargetPos();
-				displayPos.hardSetCenteredPos(newTargetPos);
+				// mainthread might be waiting for this thread (RTMessage.getAnswer()) and be holding a readlock
+				// detect these cases by only trying for a short time
+				// Maybe we can do this better, but that is difficult as we pass CollectionPos
+				// pointers across thread boundaries and need to make sure they are valid
+				boost::unique_lock<DbAlbumCollection> lock(*(appInstance->albumCollection), boost::defer_lock);
+				// There is a race condition here, so use this only as a guess
+				int waitTime = messageQueue.size() ? 10 : 100;
+				if (lock.try_lock_for(boost::chrono::milliseconds(waitTime))){
+					auto reloadWorker = std::move(m->worker);
+					appInstance->albumCollection->onCollectionReload(*reloadWorker);
+					CollectionPos newTargetPos = appInstance->albumCollection->getTargetPos();
+					displayPos.hardSetCenteredPos(newTargetPos);
+				} else {
+					// looks like a deadlock, retry at the end of the messageQueue
+					this->send(msg);
+				}
 			}
 			tlMsg->allowThreadResume();
 			appInstance->redrawMainWin();
