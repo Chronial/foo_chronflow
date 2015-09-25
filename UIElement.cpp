@@ -148,6 +148,9 @@ public:
 					}
 				}
 			}
+			auto rendererInitMsg = make_shared<RTInitDoneMessage>();
+			appInstance->renderer->send(rendererInitMsg);
+			rendererInitMsg->getAnswer();
 
 			appInstance->playbackTracer = make_unique<PlaybackTracer>(appInstance);
 			findAsYouType = make_unique<FindAsYouType>(appInstance);

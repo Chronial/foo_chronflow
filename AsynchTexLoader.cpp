@@ -19,7 +19,8 @@ appInstance(instance)
 	createLoaderWindow();
 }
 
-void AsynchTexLoader::start(){
+void AsynchTexLoader::start(int pixelFormat){
+	this->pixelFormat = pixelFormat;
 	workerThread = (HANDLE)_beginthreadex(0, 0, [](void* self) -> unsigned int {
 		static_cast<AsynchTexLoader*>(self)->threadProc();
 		return 0;
@@ -99,7 +100,6 @@ void AsynchTexLoader::initGlContext(){
 		throw new pfc::exception();
 	}
 
-	int pixelFormat = appInstance->renderer->getPixelFormat();
 	PIXELFORMATDESCRIPTOR pfd;
 	DescribePixelFormat(glDC, pixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
 
@@ -172,10 +172,9 @@ void AsynchTexLoader::send(shared_ptr<ATMessage> msg){
 
 void AsynchTexLoader::threadProc()
 {
-	// TODO: make sure this thread is stopped before its window is destroyed
-	//       maybe just pass a message processor. But renderer does probably not know then - is that a problem?
 	initGlContext();
 	loadSpecialTextures();
+	appInstance->renderer->send(std::make_shared<RTTexLoaderStartedMessage>());
 
 	for (;;){
 		if (messageQueue.size() == 0){

@@ -57,7 +57,7 @@ public:
 	AsynchTexLoader(AppInstance* instance);
 	~AsynchTexLoader(void);
 
-	void start();
+	void start(int pixelFormat);
 	void send(shared_ptr<ATMessage> msg);
 	shared_ptr<ImgTexture> getLoadedImgTexture(CollectionPos pos);
 
@@ -68,6 +68,7 @@ public:
 private:
 	void createLoaderWindow();
 	HWND glWindow = nullptr;
+	int pixelFormat;
 
 	void initGlContext();
 	void destroyGlContext();

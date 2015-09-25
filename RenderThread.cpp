@@ -14,7 +14,9 @@
 void RenderThread::threadProc(){
 	// Required that we can compile CoverPos Scripts
 	CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+	std::shared_ptr<RTInitDoneMessage> initDoneMsg;
 	for (;;){
+		// TODO: Improve this loop – separate this into startup and normal processing
 		if (messageQueue.size() == 0 && doPaint){
 			onPaint();
 			continue;
@@ -36,14 +38,19 @@ void RenderThread::threadProc(){
 			m->setAnswer(result);
 			if (result){
 				renderer.initGlState();
-				texLoader.start();
 			}
+		} else if (auto m = dynamic_pointer_cast<RTInitDoneMessage>(msg)){
+			// this blocks the mainthread till Texloader signals that he is done
+			initDoneMsg = m;
+			texLoader.start(renderer.getPixelFormat());
 		} else if (auto m = dynamic_pointer_cast<RTShareListDataMessage>(msg)){
 			renderer.freeRC();
 			auto answer = make_shared<RTShareListDataAnswer>();
 			m->setAnswer(answer);
 			answer->getAnswer();
 			renderer.takeRC();
+		} else if (auto m = dynamic_pointer_cast<RTTexLoaderStartedMessage>(msg)){
+			initDoneMsg->setAnswer(true);
 		} else if (auto m = dynamic_pointer_cast<RTMultiSamplingMessage>(msg)){
 			m->setAnswer(renderer.initMultisampling());
 		} else if (auto m = dynamic_pointer_cast<RTDeviceModeMessage>(msg)){

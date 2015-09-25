@@ -12,8 +12,9 @@
 
 * On F5 and "Reload Sources" in Settings: appInstance->texLoader->loadSpecialTextures();
 
-* Syncronize texloader startup (make sure its started before renderer requests textures) & shutdown
-
+* Fix Multisampling! http://www.glfw.org/index.html
+* Remove supersampling and activate Multisampling by default
+* Check what texloader spends its time on (output timestamps with the load messages)
 
 * Do not initialize targetPos on Collection construction and fix ensuing errors
 

@@ -42,6 +42,8 @@ class RTPaintMessage : public RTMessage {};
 class RTRedrawMessage : public RTMessage {};
 class RTStopThreadMessage : public RTMessage {};
 class RTAttachMessage : public RTAnswerMessage <bool> {};
+class RTInitDoneMessage : public RTAnswerMessage <bool> {};
+class RTTexLoaderStartedMessage : public RTMessage {};
 class RTMultiSamplingMessage : public RTAnswerMessage <bool> {};
 class RTTextFormatChangedMessage : public RTMessage {};
 class RTDeviceModeMessage : public RTMessage {};
@@ -86,10 +88,6 @@ public:
 	~RenderThread();
 
 	bool shareLists(HGLRC shareWith); // frees RC in RenderThread, shares, retakes RC in RenderThread
-	int getPixelFormat(){
-		// TODO: synchronize this properly
-		return renderer.getPixelFormat();
-	};
 	void send(shared_ptr<RTMessage> msg);
 private:
 	int timerResolution;
