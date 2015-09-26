@@ -204,7 +204,7 @@ STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 EXSTYLE WS_EX_CONTROLPARENT
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    GROUPBOX        "Rendering Quality",IDC_STATIC,7,7,210,28
+    GROUPBOX        "Rendering Quality",IDC_STATIC,7,7,210,45
     COMBOBOX        IDC_MULTI_SAMPLING_PASSES,78,17,26,57,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Passes",IDC_STATIC,107,19,23,8
     GROUPBOX        "Texture Cache",IDC_STATIC,7,56,294,81
@@ -233,6 +233,7 @@ BEGIN
     LTEXT           "Do not change any settings on this page without having read the help pages.",IDC_STATIC,227,15,68,38
     GROUPBOX        "Warning",IDC_STATIC,221,7,80,45
     CONTROL         "Multisampling:",IDC_MULTI_SAMPLING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,18,61,10
+    LTEXT           "Note: This setting requires a restart of foobar to take effect.",IDC_STATIC,11,36,196,8
 END
 
 

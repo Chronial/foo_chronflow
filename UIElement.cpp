@@ -127,8 +127,7 @@ public:
 
 		// TODO: handle window creation errors?
 		glfwWindowHint(GLFW_DECORATED, false);
-		// TODO: respect cfgMultisampling
-		glfwWindowHint(GLFW_SAMPLES, 8);
+		glfwWindowHint(GLFW_SAMPLES, cfgMultisampling ? cfgMultisamplingPasses : 0);
 		glfwWindowHint(GLFW_FOCUSED, false);
 		glfwWindowHint(GLFW_RESIZABLE, false);
 		window = glfwCreateWindow(640, 480, "foo_chronflow render window", NULL, NULL);
