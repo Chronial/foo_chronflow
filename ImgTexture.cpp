@@ -11,7 +11,6 @@
 
 using namespace Gdiplus;
 
-bool ImgTexture::forcePowerOfTwo = false;
 int  ImgTexture::maxGlTextureSize = 512;
 
 ImgTexture::ImgTexture()
@@ -139,11 +138,6 @@ float ImgTexture::getAspect()
 	return aspect;
 }
 
-void ImgTexture::setForcePowerOfTwo(bool force)
-{
-	forcePowerOfTwo = force;
-}
-
 void ImgTexture::setMaxGlTextureSize(int size)
 {
 	maxGlTextureSize = size;
@@ -193,19 +187,20 @@ void ImgTexture::prepareUpload(void)
 		}
 		resize = true;
 	}
-	if (forcePowerOfTwo){
-		int p2w = 1;
-		int p2h = 1;
-		while (p2w < width)
-			p2w = p2w << 1;
-		while (p2h < height)
-			p2h = p2h << 1;
-		if (p2h != height || p2w != width){
-			height = p2h;
-			width = p2w;
-			resize = true;
-		}
+	
+	// turn texture sizes into powers of two
+	int p2w = 1;
+	int p2h = 1;
+	while (p2w < width)
+		p2w = p2w << 1;
+	while (p2h < height)
+		p2h = p2h << 1;
+	if (p2h != height || p2w != width){
+		height = p2h;
+		width = p2w;
+		resize = true;
 	}
+
 	if (resize){
 		unique_ptr<Bitmap> oldBitmap = std::move(bitmap);
 		bitmap = make_unique<Bitmap>(width,height);

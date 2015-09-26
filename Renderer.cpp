@@ -15,7 +15,6 @@
 
 // Extensions
 PFNGLFOGCOORDFPROC glFogCoordf = NULL;
-PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = NULL;
 PFNGLBLENDCOLORPROC glBlendColor = NULL;
 
 
@@ -47,8 +46,6 @@ void Renderer::initGlState()
 	glHint(GL_TEXTURE_COMPRESSION_HINT,GL_FASTEST);
 	glEnable(GL_TEXTURE_2D);
 
-	if (!isExtensionSupported("GL_ARB_texture_non_power_of_two"))
-		ImgTexture::setForcePowerOfTwo();
 	GLint maxTexSize;
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
 	ImgTexture::setMaxGlTextureSize(maxTexSize);
@@ -76,44 +73,10 @@ void Renderer::loadExtensions(){
 	else
 		glFogCoordf = 0;
 
-	if(isWglExtensionSupported("WGL_EXT_swap_control"))
-		wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
-	else
-		wglSwapIntervalEXT = 0;
-
 	if(isExtensionSupported("GL_EXT_blend_color"))
 		glBlendColor = (PFNGLBLENDCOLORPROC)wglGetProcAddress("glBlendColor");
 	else
 		glBlendColor = 0;
-}
-
-bool Renderer::isWglExtensionSupported(const char *name){
-	static const char* extensions = NULL;
-	if (extensions == NULL){
-		// Try To Use wglGetExtensionStringARB On Current DC, If Possible
-		PFNWGLGETEXTENSIONSSTRINGARBPROC wglGetExtString = (PFNWGLGETEXTENSIONSSTRINGARBPROC)wglGetProcAddress("wglGetExtensionsStringARB");
-
-		if (wglGetExtString)
-			extensions = wglGetExtString(wglGetCurrentDC());
-
-		// If That Failed, Try Standard Opengl Extensions String
-		if (extensions == NULL)
-			extensions = (char*)glGetString(GL_EXTENSIONS);
-
-		if (extensions == NULL)
-			return false;
-	}
-
-	const size_t extlen = strlen(name);
-	for (const char* p = extensions; ; p++)
-	{
-		p = strstr(p, name);
-		if (p == NULL)
-			return false;						// No Match
-		if ((p==extensions || p[-1]==' ') && (p[extlen]=='\0' || p[extlen]==' '))
-			return true;						// Match
-	}
-	return false;
 }
 
 bool Renderer::isExtensionSupported(const char *extName){

@@ -23,7 +23,6 @@ public:
 	void glDelete(void);
 	float getAspect();
 
-	static void setForcePowerOfTwo(bool force = true);
 	static void setMaxGlTextureSize(int size);
 
 private:
@@ -31,7 +30,6 @@ private:
 	int getMaxSize();
 	float aspect;
 
-	static bool forcePowerOfTwo;
 	static int maxGlTextureSize;
 	unique_ptr<Gdiplus::Bitmap> bitmap;
 	CGdiPlusBitmapResource bitmapResource;

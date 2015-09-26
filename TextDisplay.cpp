@@ -180,15 +180,15 @@ TextDisplay::DisplayTexture TextDisplay::createTexture(const char* text)
 		stringSize.Height = ceil(stringSize.Height);
 		displayTex.texWidth  = displayTex.textWidth  = (int)stringSize.Width;
 		displayTex.texHeight = displayTex.textHeight = (int)stringSize.Height;
-		if (ImgTexture::forcePowerOfTwo){
-			displayTex.texWidth = 1;
-			while (displayTex.texWidth < displayTex.textWidth)
-				displayTex.texWidth = displayTex.texWidth << 1;
+		
+		// Make the texture size a power of two
+		displayTex.texWidth = 1;
+		while (displayTex.texWidth < displayTex.textWidth)
+			displayTex.texWidth = displayTex.texWidth << 1;
 
-			displayTex.texHeight = 1;
-			while (displayTex.texHeight < displayTex.textHeight)
-				displayTex.texHeight = displayTex.texHeight << 1;
-		}
+		displayTex.texHeight = 1;
+		while (displayTex.texHeight < displayTex.textHeight)
+			displayTex.texHeight = displayTex.texHeight << 1;
 
 		bitmap = new Bitmap(displayTex.texWidth, displayTex.texHeight, PixelFormat32bppARGB);
 		Graphics drawer(bitmap);
