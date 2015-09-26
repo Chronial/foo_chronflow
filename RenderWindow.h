@@ -25,6 +25,7 @@ public:
 		findAsYouType = make_unique<FindAsYouType>(appInstance);
 
 		// TODO: handle window creation errors?
+		glfwDefaultWindowHints();
 		glfwWindowHint(GLFW_DECORATED, false);
 		glfwWindowHint(GLFW_SAMPLES, cfgMultisampling ? cfgMultisamplingPasses : 0);
 		glfwWindowHint(GLFW_FOCUSED, false);
