@@ -6,8 +6,6 @@
 * Highlight typed fayt text
 
 
-* Check that vsync works correctly
-
 * Syncronize PlaybackTracer!
 * Check what texloader spends its time on (output timestamps with the load messages)
 
@@ -15,12 +13,11 @@
 
 * call glFinish after buffer swap https://www.opengl.org/wiki/Swap_Interval
 
+* Synchronize config vars
 
 // Future
 * Disable when not shown in DUI
 * Add help button for filter
-* Fix AsynchTexLoader
-	* Why are we queueing uploads?
 * Better texture uploading? https://www.opengl.org/wiki/OpenGL_and_multithreading
 
 

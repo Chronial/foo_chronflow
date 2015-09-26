@@ -58,6 +58,9 @@ void Renderer::initGlState()
 		glHint(GL_FOG_HINT, GL_NICEST);						// Per-Pixel Fog Calculation
 		glFogi(GL_FOG_COORD_SRC, GL_FOG_COORD);		// Set Fog Based On Vertice Coordinates
 	}
+
+	glfwSwapInterval(0);
+	vSyncEnabled = false;
 }
 
 void Renderer::ensureVSync(bool enableVSync){
