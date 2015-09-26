@@ -41,12 +41,11 @@ void DbReloadWorker::threadProc(){
 };
 
 void DbReloadWorker::generateData(){
+	console::timer_scope timer("foo_chronflow Collection Generation");
 	static_api_ptr_t<titleformat_compiler> compiler;
 	static_api_ptr_t<metadb> db;
-	double actionStart;
 
 
-	actionStart = Helpers::getHighresTimer();
 	if (!cfgFilter.is_empty()){
 		try {
 			search_filter::ptr filter = static_api_ptr_t<search_filter_manager>()->create(cfgFilter);
@@ -57,12 +56,10 @@ void DbReloadWorker::generateData(){
 		}
 		catch (pfc::exception const &) {};
 	}
-	console::printf("foo_chronflow: Filter took %d msec", int((Helpers::getHighresTimer() - actionStart) * 1000));
 
 	if (kill) return;
 
 	auto &groupIndex = albums.get<0>();
-	actionStart = Helpers::getHighresTimer();
 	{
 		compiler->compile(albumMapper, cfgGroup);
 		pfc::string8_fast_aggressive tmpSortString;
@@ -97,6 +94,5 @@ void DbReloadWorker::generateData(){
 			}
 		}
 	}
-	console::printf("foo_chronflow: Generation took %d msec", int((Helpers::getHighresTimer() - actionStart) * 1000));
 	library.remove_all();
 };
