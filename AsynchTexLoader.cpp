@@ -249,24 +249,6 @@ bool AsynchTexLoader::loadNextTexture(){
 		appInstance->redrawMainWin();
 	}
 	return true;
-
-
-	// unclean / hack - this is not mulithread safe!
-	//onScreen = (loadOffset >= appInstance->coverPos->getFirstCover()) && (loadOffset <= appInstance->coverPos->getLastCover());
-
-	/*
-	if (loaded < 16){
-		if (!nearCenter){
-			nearCenter = true;
-			setWorkerThreadPrio(cfgTexLoaderPrio);
-		}
-	} else {
-		if (nearCenter){
-			nearCenter = false;
-			setWorkerThreadPrio(THREAD_PRIORITY_IDLE);
-		}
-	}*/
-
 }
 
 shared_ptr<ImgTexture> AsynchTexLoader::loadTexImage(CollectionPos pos){

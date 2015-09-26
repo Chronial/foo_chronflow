@@ -16,14 +16,18 @@ void ChronflowWindow::startup(HWND parent) {
 	IF_DEBUG(Console::create());
 
 	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
-	// TODO: catch errors from this call
 	Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
-
 
 	appInstance->mainWindow = createWindow(parent);
 	appInstance->albumCollection = make_unique<DbAlbumCollection>(appInstance);
 
-	appInstance->renderWindow = make_unique<RenderWindow>(appInstance, getDuiCallback());
+	try {
+		appInstance->renderWindow = make_unique<RenderWindow>(appInstance, getDuiCallback());
+	}
+	catch (std::runtime_error&){
+		appInstance->albumCollection.reset();
+		return;
+	}
 	appInstance->renderer = make_unique<RenderThread>(appInstance);
 	auto rendererInitMsg = make_shared<RTInitDoneMessage>();
 	appInstance->renderer->send(rendererInitMsg);
@@ -102,7 +106,8 @@ LRESULT ChronflowWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 			if (!static_api_ptr_t<ui_control>()->is_visible()){
 				if (!mainWinMinimized){
 					mainWinMinimized = true;
-					appInstance->renderer->send(make_shared<RTWindowHideMessage>());
+					if (appInstance->renderer)
+						appInstance->renderer->send(make_shared<RTWindowHideMessage>());
 					KillTimer(appInstance->mainWindow, IDT_CHECK_MINIMIZED);
 				}
 			}
@@ -114,10 +119,25 @@ LRESULT ChronflowWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 	case WM_PAINT:
 	{
 		if (GetUpdateRect(hWnd, 0, FALSE)){
-			appInstance->renderWindow->onDamage();
+			if (appInstance->renderWindow){
+				appInstance->renderWindow->onDamage();
+			} else {
+				PAINTSTRUCT ps;
+				HDC hdc;
+				RECT rc;
+				hdc = BeginPaint(hWnd, &ps);
+				GetClientRect(hWnd, &rc);
+				FillRect(hdc, &rc, (HBRUSH)GetStockObject(WHITE_BRUSH));
+				rc.top += 10;
+				DrawText(hdc, L"foo_chronflow failed to open an opengl window :(.\nSee Console for details.", -1,
+					&rc, DT_CENTER | DT_VCENTER);
+				EndPaint(hWnd, &ps);
+				return 0;
+			}
 			if (mainWinMinimized){
 				mainWinMinimized = false;
-				appInstance->renderer->send(make_shared<RTWindowShowMessage>());
+				if (appInstance->renderer)
+					appInstance->renderer->send(make_shared<RTWindowShowMessage>());
 			}
 			SetTimer(hWnd, IDT_CHECK_MINIMIZED, MINIMIZE_CHECK_TIMEOUT, 0);
 		}

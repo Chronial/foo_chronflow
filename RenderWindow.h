@@ -31,6 +31,9 @@ public:
 		glfwWindowHint(GLFW_FOCUSED, false);
 		glfwWindowHint(GLFW_RESIZABLE, false);
 		window = glfwCreateWindow(640, 480, "foo_chronflow render window", NULL, NULL);
+		if (!window){
+			throw std::runtime_error("Failed to create opengl window");
+		}
 		appInstance->glfwWindow = window;
 
 		hWnd = glfwGetWin32Window(window);
@@ -42,6 +45,11 @@ public:
 
 		glfwWindowHint(GLFW_VISIBLE, false);
 		appInstance->glfwLoaderWindow = glfwCreateWindow(10, 10, "foo_chronflow texloader window", NULL, appInstance->glfwWindow);
+		if (!appInstance->glfwLoaderWindow){
+			glfwDestroyWindow(window);
+			appInstance->glfwWindow = nullptr;
+			throw std::runtime_error("Failed to create opengl loader window");
+		}
 		HWND glfwLoaderHwnd = glfwGetWin32Window(appInstance->glfwLoaderWindow);
 		SetParent(glfwLoaderHwnd, appInstance->mainWindow);
 
@@ -52,10 +60,10 @@ public:
 		glfwSetWindowSizeCallback(window, &RenderWindow::onWindowSize);
 	};
 	~RenderWindow(){
-		glfwDestroyWindow(appInstance->glfwWindow);
-		appInstance->glfwWindow = nullptr;
 		glfwDestroyWindow(appInstance->glfwLoaderWindow);
 		appInstance->glfwLoaderWindow = nullptr;
+		glfwDestroyWindow(appInstance->glfwWindow);
+		appInstance->glfwWindow = nullptr;
 	}
 
 	static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR  uIdSubclass, DWORD_PTR dwRefData){
