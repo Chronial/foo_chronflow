@@ -262,8 +262,7 @@ public:
 			collection_read_lock lock(appInstance);
 			appInstance->playbackTracer->moveToNowPlaying();
 			return true;
-		} else if (wParam == VK_RIGHT || wParam == VK_LEFT || wParam == VK_NEXT || wParam == VK_PRIOR
-			|| wParam == VK_HOME || wParam == VK_END) {
+		} else if (wParam == VK_RIGHT || wParam == VK_LEFT || wParam == VK_NEXT || wParam == VK_PRIOR){
 			int move = 0;
 			if (wParam == VK_RIGHT){
 				move = +1;
@@ -273,16 +272,24 @@ public:
 				move = +10;
 			} else if (wParam == VK_PRIOR){
 				move = -10;
-			} else if (wParam == VK_END){
-				// TODO: This is a dirty hack
-				move = +10000000;
-			} else if (wParam == VK_HOME){
-				move -= 10000000;
 			}
-			if (move){
-				collection_read_lock lock(appInstance);
-				move *= LOWORD(lParam);
+			move *= LOWORD(lParam);
+			collection_read_lock lock(appInstance);
+			if (appInstance->albumCollection->getCount()){
 				appInstance->albumCollection->moveTargetBy(move);
+				appInstance->playbackTracer->userStartedMovement();
+			}
+			return true;
+		} else if (wParam == VK_HOME || wParam == VK_END) {
+			collection_read_lock lock(appInstance);
+			if (appInstance->albumCollection->getCount()){
+				CollectionPos newTarget;
+				if (wParam == VK_END){
+					newTarget = --appInstance->albumCollection->end();
+				} else if (wParam == VK_HOME){
+					newTarget = appInstance->albumCollection->begin();
+				}
+				appInstance->albumCollection->setTargetPos(newTarget);
 				appInstance->playbackTracer->userStartedMovement();
 				return true;
 			}
