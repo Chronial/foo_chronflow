@@ -315,7 +315,13 @@ void Renderer::drawScene(bool selectionPass)
 void Renderer::drawGui(){
 	if (cfgShowAlbumTitle || appInstance->albumCollection->getCount() == 0){
 		pfc::string8 albumTitle;
-		appInstance->albumCollection->getTitle(appInstance->albumCollection->getTargetPos(), albumTitle);
+		if (appInstance->albumCollection->getCount()){
+			appInstance->albumCollection->getTitle(appInstance->albumCollection->getTargetPos(), albumTitle);
+		} else if (*(appInstance->reloadWorker.synchronize())){
+			albumTitle = "Generating Cover Display ...";
+		} else {
+			albumTitle = "No Covers to Display";
+		}
 		textDisplay.displayText(albumTitle, int(winWidth*cfgTitlePosH), int(winHeight*(1-cfgTitlePosV)), TextDisplay::center, TextDisplay::middle);
 	}
 

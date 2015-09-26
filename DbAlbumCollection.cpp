@@ -138,12 +138,7 @@ DbAlbumCollection::~DbAlbumCollection(void)
 
 void DbAlbumCollection::getTitle(CollectionPos pos, pfc::string_base& out){
 	auto &sortedIndex = albums.get<1>();
-	if (!albums.empty()){
-		pos->tracks[0]->format_title(0, out, cfgAlbumTitleScript, 0);
-	} else {
-		// FIXME this should never get called
-		out = "No Covers Loaded";
-	}
+	pos->tracks[0]->format_title(0, out, cfgAlbumTitleScript, 0);
 }
 
 shared_ptr<ImgTexture> DbAlbumCollection::getImgTexture(CollectionPos pos){
