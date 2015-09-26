@@ -16,11 +16,9 @@
 AsynchTexLoader::AsynchTexLoader(AppInstance* instance) :
 appInstance(instance)
 {
-	createLoaderWindow();
 }
 
-void AsynchTexLoader::start(int pixelFormat){
-	this->pixelFormat = pixelFormat;
+void AsynchTexLoader::start(){
 	workerThread = (HANDLE)_beginthreadex(0, 0, [](void* self) -> unsigned int {
 		static_cast<AsynchTexLoader*>(self)->threadProc();
 		return 0;
@@ -68,79 +66,7 @@ AsynchTexLoader::~AsynchTexLoader(void)
 		CloseHandle(workerThread);
 		workerThread = nullptr;
 	}
-	ASSERT(IsWindow(glWindow));
-	DestroyWindow(glWindow);
 }
-
-void AsynchTexLoader::createLoaderWindow(){
-	glWindow = CreateWindowEx(
-		0,
-		L"Chronflow LoaderWindow",        // class name                   
-		L"Chronflow Loader Window",       // window name                  
-		WS_DISABLED | WS_CHILD,
-		CW_USEDEFAULT,          // default horizontal position  
-		CW_USEDEFAULT,          // default vertical position    
-		CW_USEDEFAULT,          // default width                
-		CW_USEDEFAULT,          // default height               
-		appInstance->mainWindow,// parent or owner window    
-		(HMENU)NULL,           // class menu used              
-		core_api::get_my_instance(),// instance handle              
-		NULL);                  // no window creation data
-
-	if (!glWindow){
-		errorPopupWin32("TexLoader failed to create a window.");
-		throw new pfc::exception();
-	}
-}
-
-void AsynchTexLoader::initGlContext(){
-	if (!(glDC = GetDC(glWindow))){
-		errorPopupWin32("TexLoader failed to get a Device Context");
-		destroyGlContext();
-		throw new pfc::exception();
-	}
-
-	PIXELFORMATDESCRIPTOR pfd;
-	DescribePixelFormat(glDC, pixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
-
-	if(!SetPixelFormat(glDC,pixelFormat,&pfd)){
-		errorPopupWin32("TexLoader failed to set PixelFormat");
-		destroyGlContext();
-		throw new pfc::exception();
-	}
-
-	if (!(glRC = wglCreateContext(glDC))){
-		errorPopupWin32("TexLoader failed to create a Rendering Context");
-		destroyGlContext();
-		throw new pfc::exception();
-	}
-
-	if (!appInstance->renderer->shareLists(glRC)){
-		errorPopupWin32("TexLoader failed to share Display Lists");
-		destroyGlContext();
-		throw new pfc::exception();
-	}
-
-	wglMakeCurrent(glDC, glRC);
-}
-
-void AsynchTexLoader::destroyGlContext()
-{
-	if (glRC){
-		if (!wglDeleteContext(glRC)){
-			errorPopupWin32("failed to destroy AsyncTexLoader Render Context");
-		}
-		glRC = nullptr;
-	}
-
-	if (glDC){
-		if (!ReleaseDC(appInstance->mainWindow, glDC)){
-			errorPopupWin32("failed to release AsyncTexLoader Device Context");
-		}
-		glDC = nullptr;
-	}
-}
-
 
 shared_ptr<ImgTexture> AsynchTexLoader::getLoadedImgTexture(CollectionPos pos)
 {
@@ -172,7 +98,7 @@ void AsynchTexLoader::send(shared_ptr<ATMessage> msg){
 
 void AsynchTexLoader::threadProc()
 {
-	initGlContext();
+	glfwMakeContextCurrent(appInstance->glfwLoaderWindow);
 	loadSpecialTextures();
 	appInstance->renderer->send(std::make_shared<RTTexLoaderStartedMessage>());
 
@@ -228,7 +154,6 @@ void AsynchTexLoader::threadProc()
 	loadingTexture->glDelete();
 	noCoverTexture->glDelete();
 	clearCache();
-	destroyGlContext();
 }
 
 void AsynchTexLoader::clearCache(){

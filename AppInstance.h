@@ -4,15 +4,21 @@
 class DbAlbumCollection;
 class DbReloadWorker;
 class RenderThread;
+class RenderWindow;
 class PlaybackTracer;
 
 class AppInstance
 {
 public:
 	std::unique_ptr<DbAlbumCollection> albumCollection;
+	std::unique_ptr<RenderWindow> renderWindow;
 	std::unique_ptr<RenderThread> renderer;
 	std::unique_ptr<PlaybackTracer> playbackTracer;
 	boost::synchronized_value<std::unique_ptr<DbReloadWorker>> reloadWorker;
+
+	// TODO: Get rid of these pointers?
+	GLFWwindow* glfwWindow = nullptr;
+	GLFWwindow* glfwLoaderWindow = nullptr;
 	HWND mainWindow = nullptr;
 
 	inline void redrawMainWin(){

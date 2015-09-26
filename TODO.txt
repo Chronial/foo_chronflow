@@ -13,6 +13,10 @@
 * On F5 and "Reload Sources" in Settings: appInstance->texLoader->loadSpecialTextures();
 
 * Fix Multisampling! http://www.glfw.org/index.html
+  * Remove obsolete opengl header files
+
+ * Improve timer handling, pass functionals or futures
+
 * Remove supersampling and activate Multisampling by default
 * Check what texloader spends its time on (output timestamps with the load messages)
 
@@ -32,10 +36,12 @@
 
 # Release Steps
 * make sure CoverConfigs are in sync
+* Extensively test config Window!
 * Bump version number
 * Build with new version number
 * tag version
 * safe dll AND pdb
+* Add glfw3.dll to pack!
 * upload to github
 * update forum post
 

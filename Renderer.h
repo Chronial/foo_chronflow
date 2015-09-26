@@ -21,11 +21,8 @@ public:
 	Renderer(AppInstance* instance, DisplayPosition* displayPos);
 	~Renderer(void);
 
-	bool attachGlWindow();
 	void initGlState();
-	int getPixelFormat();
 
-	void destroyGlWindow(void); //clean up all the GL stuff
 	void resizeGlScene(int width, int height);
 	void setProjectionMatrix(bool pickMatrix = false, int x = 0, int y = 0);
 
@@ -33,18 +30,12 @@ public:
 
 	void drawFrame();
 
-	void freeRC();
-	bool takeRC();
-	bool shareLists(HGLRC shareWith);
 	void swapBuffers();
 
 	void ensureVSync(bool enableVSync);
 
 	void glPushOrthoMatrix();
 	void glPopOrthoMatrix();
-
-public:
-	bool initMultisampling();
 
 	TextDisplay textDisplay;
 	FpsCounter fpsCounter;
@@ -67,12 +58,8 @@ private:
 	int winWidth;
 	int winHeight;
 
-	int pixelFormat;
 	bool multisampleEnabled;
 	bool vSyncEnabled;
-
-	HDC hDC;
-	HGLRC hRC;
 
 	void drawBg();
 	void drawGui();

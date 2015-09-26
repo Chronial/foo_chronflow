@@ -3,6 +3,13 @@
 #define _WIN32_WINNT 0x501
 #define WIN32_LEAN_AND_MEAN
 
+#define GLFW_DLL
+#define GLFW_INCLUDE_GLU
+#define GLFW_EXPOSE_NATIVE_WIN32
+#define GLFW_EXPOSE_NATIVE_WGL
+#include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
+
 #include <windows.h>
 #include <ActivScp.h>
 #include <Commdlg.h>
@@ -15,8 +22,8 @@
 #include "../SDK/foobar2000.h"
 #include "../helpers/helpers.h"
 
-#include <gl\gl.h>
-#include <gl\glu.h>
+
+//#define APIENTRY
 #include "opengl\glext.h"
 #include "opengl\wglext.h"
 

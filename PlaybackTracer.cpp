@@ -79,8 +79,10 @@ void PlaybackTracer::followSettingsChanged()
 			pcm->register_callback(this, flag_on_playback_new_track, true);
 			callbackRegistered = true;
 		}
-		if (lockCount == 0)
+		if (lockCount == 0){
+			collection_read_lock lock(appInstance);
 			moveToNowPlaying();
+		}
 	} else {
 		KillTimer(appInstance->mainWindow, IDT_PLAYBACK_TRACER);
 		if (callbackRegistered){

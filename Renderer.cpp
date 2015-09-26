@@ -27,94 +27,13 @@ Renderer::Renderer(AppInstance* instance, DisplayPosition* displayPos)
 : appInstance(instance),
   displayPos(displayPos),
   multisampleEnabled(false),
-  textDisplay(this),
-  hDC(0), hRC(0)
+  textDisplay(this)
 {
 }
 
 Renderer::~Renderer(void)
 {
 }
-
-int Renderer::getPixelFormat() {
-	return pixelFormat;
-}
-
-const PIXELFORMATDESCRIPTOR Renderer::pixelFormatDescriptor = {
-			sizeof(PIXELFORMATDESCRIPTOR),				// Size Of This Pixel Format Descriptor
-			1,											// Version Number
-			PFD_DRAW_TO_WINDOW |						// Format Must Support Window
-			PFD_SUPPORT_OPENGL |						// Format Must Support OpenGL
-			PFD_DOUBLEBUFFER |							// Must Support Double Buffering
-			PFD_SWAP_EXCHANGE,							// Format should swap the buffers (faster)
-			PFD_TYPE_RGBA,								// Request An RGBA Format
-			16,										    // Select Our Color Depth
-			0, 0, 0, 0, 0, 0,							// Color Bits Ignored
-			0,											// No Alpha Buffer
-			0,											// Shift Bit Ignored
-			16,											// Accumulation Buffer
-			0, 0, 0, 0,									// Accumulation Bits Ignored
-			16,											// 16Bit Z-Buffer (Depth Buffer)  
-			0,											// No Stencil Buffer
-			0,											// No Auxiliary Buffer
-			PFD_MAIN_PLANE,								// Main Drawing Layer
-			0,											// Reserved
-			0, 0, 0										// Layer Masks Ignored
-		};
-
-bool Renderer::attachGlWindow()
-{
-	if (!(hDC = GetDC(appInstance->mainWindow))){
-		errorPopupWin32("Renderer failed to get a Device Context");
-		destroyGlWindow();
-		return false;
-	}
-
-	if (!multisampleEnabled){
-		if (!(pixelFormat = ChoosePixelFormat(hDC, &pixelFormatDescriptor))){
-			errorPopupWin32("Renderer can't find a suitable PixelFormat.");
-			destroyGlWindow();
-			return false;
-		}
-
-		PIXELFORMATDESCRIPTOR pfd;
-		DescribePixelFormat(hDC, pixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
-		if ((pfd.dwFlags & PFD_GENERIC_FORMAT) && !(pfd.dwFlags & PFD_GENERIC_ACCELERATED)){
-			errorPopupWin32("Renderer couldn't get a hardware accelerated PixelFormat.");
-			destroyGlWindow();
-			return false;
-		} else if ((pfd.dwFlags & PFD_GENERIC_FORMAT) || (pfd.dwFlags & PFD_GENERIC_ACCELERATED)){
-			pfc::string8 message("Foo_chronflow Problem: Rendering is not fully hardware accelerated. Details: ");
-			if (pfd.dwFlags & PFD_GENERIC_FORMAT)
-				message << "PFD_GENERIC_FORMAT ";
-			if (pfd.dwFlags & PFD_GENERIC_ACCELERATED)
-				message << "PFD_GENERIC_ACCELERATED";
-			console::print(message);
-		}
-	}
-
-	if(!SetPixelFormat(hDC,pixelFormat,&pixelFormatDescriptor)){
-		errorPopupWin32("Render failed to set PixelFormat");
-		destroyGlWindow();
-		return false;
-	}
-
-	if (!(hRC = wglCreateContext(hDC))){
-		errorPopupWin32("Renderer failed to create a Rendering Context");
-		destroyGlWindow();
-		return false;
-	}
-
-	if(!wglMakeCurrent(hDC, hRC)){
-		errorPopupWin32("Renderer failed to activate the Rendering Context");
-		destroyGlWindow();
-		return false;
-	}
-
-	vSyncEnabled = false;
-	return true;
-}
-
 
 void Renderer::initGlState()
 {
@@ -149,64 +68,10 @@ void Renderer::initGlState()
 }
 
 void Renderer::ensureVSync(bool enableVSync){
-	if (vSyncEnabled != enableVSync && wglSwapIntervalEXT){
+	if (vSyncEnabled != enableVSync){
 		vSyncEnabled = enableVSync;
-		wglSwapIntervalEXT(enableVSync ? 1 : 0);
+		glfwSwapInterval(enableVSync ? 1 : 0);
 	}
-}
-
-bool Renderer::initMultisampling(){
-	// See If The String Exists In WGL!
-	if (!isWglExtensionSupported("WGL_ARB_multisample")){
-		multisampleEnabled = false;
-		return false;
-	}
-
-	// Get Our Pixel Format
-	PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)wglGetProcAddress("wglChoosePixelFormatARB");	
-	if (!wglChoosePixelFormatARB){
-		multisampleEnabled = false;
-		return false;
-	}
-
-	int		valid;
-	UINT	numFormats;
-	float	fAttributes[] = {0,0};
-
-	// These Attributes Are The Bits We Want To Test For In Our Sample
-	// Everything Is Pretty Standard, The Only One We Want To 
-	// Really Focus On Is The SAMPLE BUFFERS ARB And WGL SAMPLES
-	// These Two Are Going To Do The Main Testing For Whether Or Not
-	// We Support Multisampling On This Hardware.
-	int iAttributes[] =
-	{
-		WGL_SAMPLES_ARB,0 /*must have index 1*/,
-		WGL_DRAW_TO_WINDOW_ARB,GL_TRUE,
-		WGL_SUPPORT_OPENGL_ARB,GL_TRUE,
-		WGL_ACCELERATION_ARB,WGL_FULL_ACCELERATION_ARB,
-		WGL_COLOR_BITS_ARB,24,
-		WGL_ALPHA_BITS_ARB,8,
-		WGL_DEPTH_BITS_ARB,16,
-		WGL_STENCIL_BITS_ARB,0,
-		WGL_DOUBLE_BUFFER_ARB,GL_TRUE,
-		WGL_SAMPLE_BUFFERS_ARB,GL_TRUE,
-		WGL_ACCUM_BITS_ARB,0,
-		0,0
-	};
-
-
-	int samples = cfgMultisamplingPasses;
-	while (samples > 1){
-		iAttributes[1] = samples;
-		valid = wglChoosePixelFormatARB(hDC,iAttributes,fAttributes,1,&pixelFormat,&numFormats);
-	 
-		if (valid && numFormats >= 1){
-			multisampleEnabled = true;
-			return true;
-		}
-		samples = samples >> 1;
-	}
-	return false;
 }
 
 void Renderer::loadExtensions(){
@@ -277,28 +142,6 @@ bool Renderer::isExtensionSupported(const char *extName){
 		p += (n + 1);
 	}
 	return false;
-}
-
-void Renderer::destroyGlWindow(void)
-{
-	if (hRC)											// Do We Have A Rendering Context?
-	{
-		if (!wglMakeCurrent(0, 0))					// Are We Able To Release The DC And RC Contexts?
-		{
-			console::print(pfc::string8("Foo_chronflow Error: Release Of RC Failed. (mainWin) Details:") << format_win32_error(GetLastError()));
-		}
-
-		if (!wglDeleteContext(hRC))						// Are We Able To Delete The RC?
-		{
-			MessageBox(NULL,L"Release Rendering Context Failed.",L"Foo_chronflow Error",MB_OK | MB_ICONINFORMATION);
-		}
-		hRC = 0;
-	}
-	if (hDC && !ReleaseDC(appInstance->mainWindow,hDC))					// Are We Able To Release The DC
-	{
-		MessageBox(NULL,L"Release Device Context Failed.",L"Foo_chronflow Error",MB_OK | MB_ICONINFORMATION);
-		hDC = 0;
-	}
 }
 
 void Renderer::resizeGlScene(int width, int height){
@@ -618,63 +461,8 @@ void Renderer::drawSceneAA()
 }
 
 
-/*
-Renderer::AAStuf(){
-  float i, j;
-  float min, max;
-  int count;
-  GLfloat invx, invy;
-  GLfloat scale, dx, dy;
-
-  min = 0;
-  max = 2;
-  count = 2;
-  scale = (0.9f / count) * 2;
-
-
-  computescale(&invx, &invy);
-  bool clearAccumBuffer = true;
-
-  count = 2;
-  for (i = min; i < max; i++) {
-	  if (i == 0){
-		  dx = -0.25 * invx;
-		  dy = -0.25 * invy;
-	  } else {
-		  dx = 0.25 * invx;
-		  dy = 0.25 * invy;
-	  }
-	  glMatrixMode(GL_PROJECTION);
-	  glPushMatrix();
-	  glTranslatef(dx, dy, 0);
-	  glMatrixMode(GL_MODELVIEW);
-	  drawFrame();
-	  glMatrixMode(GL_PROJECTION);
-	  glPopMatrix();
-	  glMatrixMode(GL_MODELVIEW);
-	  if (clearAccumBuffer){
-		  glAccum(GL_LOAD, 1.f / count);
-		  clearAccumBuffer = false;
-	  } else
-		  glAccum(GL_ACCUM, 1.f / count);
-  }
-  glAccum(GL_RETURN, 1.f);
-}
-*/
-bool Renderer::shareLists(HGLRC shareWith){
-	return 0 != wglShareLists(hRC, shareWith);
-}
-
-bool Renderer::takeRC(){
-	return 0 != wglMakeCurrent(hDC, hRC);
-}
-
-void Renderer::freeRC(){
-	wglMakeCurrent(0, 0);
-}
-
 void Renderer::swapBuffers(){
-	SwapBuffers(hDC);
+	glfwSwapBuffers(appInstance->glfwWindow);
 }
 
 void Renderer::drawCovers(bool showTarget){

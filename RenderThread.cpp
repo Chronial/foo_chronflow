@@ -33,26 +33,14 @@ void RenderThread::threadProc(){
 			collection_read_lock lock(appInstance);
 			displayPos.onTargetChange();
 			texLoader.send(make_shared<ATTargetChangedMessage>());
-		} else if (auto m = dynamic_pointer_cast<RTAttachMessage>(msg)){
-			bool result = renderer.attachGlWindow();
-			m->setAnswer(result);
-			if (result){
-				renderer.initGlState();
-			}
 		} else if (auto m = dynamic_pointer_cast<RTInitDoneMessage>(msg)){
+			glfwMakeContextCurrent(appInstance->glfwWindow);
+			renderer.initGlState();
 			// this blocks the mainthread till Texloader signals that he is done
 			initDoneMsg = m;
-			texLoader.start(renderer.getPixelFormat());
-		} else if (auto m = dynamic_pointer_cast<RTShareListDataMessage>(msg)){
-			renderer.freeRC();
-			auto answer = make_shared<RTShareListDataAnswer>();
-			m->setAnswer(answer);
-			answer->getAnswer();
-			renderer.takeRC();
+			texLoader.start();
 		} else if (auto m = dynamic_pointer_cast<RTTexLoaderStartedMessage>(msg)){
 			initDoneMsg->setAnswer(true);
-		} else if (auto m = dynamic_pointer_cast<RTMultiSamplingMessage>(msg)){
-			m->setAnswer(renderer.initMultisampling());
 		} else if (auto m = dynamic_pointer_cast<RTDeviceModeMessage>(msg)){
 			updateRefreshRate();
 		} else if (auto m = dynamic_pointer_cast<RTWindowResizeMessage>(msg)){
@@ -110,7 +98,6 @@ void RenderThread::threadProc(){
 			IF_DEBUG(__debugbreak());
 		}
 	}
-	renderer.destroyGlWindow();
 	CoUninitialize();
 }
 
@@ -217,13 +204,4 @@ void RenderThread::updateRefreshRate(){
 		if (refreshRate >= 100) // we do not need 100fps - 50 is enough
 			refreshRate /= 2;
 	}
-}
-
-bool RenderThread::shareLists(HGLRC shareWith){
-	auto msg = make_shared<RTShareListDataMessage>();
-	this->send(msg);
-	auto answer = msg->getAnswer();
-	bool res = renderer.shareLists(shareWith);
-	answer->setAnswer(true);
-	return res;
 }

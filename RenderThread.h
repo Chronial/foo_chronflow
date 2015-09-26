@@ -41,10 +41,8 @@ public:
 class RTPaintMessage : public RTMessage {};
 class RTRedrawMessage : public RTMessage {};
 class RTStopThreadMessage : public RTMessage {};
-class RTAttachMessage : public RTAnswerMessage <bool> {};
 class RTInitDoneMessage : public RTAnswerMessage <bool> {};
 class RTTexLoaderStartedMessage : public RTMessage {};
-class RTMultiSamplingMessage : public RTAnswerMessage <bool> {};
 class RTTextFormatChangedMessage : public RTMessage {};
 class RTDeviceModeMessage : public RTMessage {};
 class RTWindowResizeMessage : public RTMessage {
@@ -61,9 +59,6 @@ public:
 	const int x;
 	const int y;
 };
-
-class RTShareListDataAnswer : public RTAnswerMessage <bool> {};
-class RTShareListDataMessage : public RTAnswerMessage < shared_ptr<RTShareListDataAnswer> > {};
 
 class RTChangeCPScriptMessage : public RTMessage {
 public:
@@ -87,7 +82,6 @@ public:
 	RenderThread(AppInstance* appInstance);
 	~RenderThread();
 
-	bool shareLists(HGLRC shareWith); // frees RC in RenderThread, shares, retakes RC in RenderThread
 	void send(shared_ptr<RTMessage> msg);
 private:
 	int timerResolution;
