@@ -39,7 +39,6 @@ void ChronflowWindow::startup(HWND parent) {
 }
 
 ChronflowWindow::~ChronflowWindow(){
-	IF_DEBUG(Console::println(L"Destroying UiElement"));
 	if (appInstance)
 		DestroyWindow(appInstance->mainWindow);
 }

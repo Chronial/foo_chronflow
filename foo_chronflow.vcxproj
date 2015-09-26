@@ -137,6 +137,7 @@ del $(ProjectDir)\BUILD_IN_COVERCONFIGS.h
     </ClCompile>
     <ClCompile Include="CPScriptCompiler.cpp" />
     <ClCompile Include="CriticalSection.cpp" />
+    <ClCompile Include="CuiComponent.cpp" />
     <ClCompile Include="DbAlbumCollection.cpp" />
     <ClCompile Include="DbReloadWorker.cpp" />
     <ClCompile Include="DisplayPosition.cpp" />
@@ -207,6 +208,9 @@ del $(ProjectDir)\BUILD_IN_COVERCONFIGS.h
   <ItemGroup>
     <ProjectReference Include="..\..\pfc\pfc.vcxproj">
       <Project>{ebfffb4e-261d-44d3-b89c-957b31a0bf9c}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\columns_ui-sdk\columns_ui-sdk.vcxproj">
+      <Project>{93ec0ede-01cd-4fb0-b8e8-4f2a027e026e}</Project>
     </ProjectReference>
     <ProjectReference Include="..\foobar2000_component_client\foobar2000_component_client.vcxproj">
       <Project>{71ad2674-065b-48f5-b8b0-e1f9d3892081}</Project>
