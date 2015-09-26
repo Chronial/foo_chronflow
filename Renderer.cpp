@@ -26,7 +26,6 @@ PFNGLBLENDCOLORPROC glBlendColor = NULL;
 Renderer::Renderer(AppInstance* instance, DisplayPosition* displayPos)
 : appInstance(instance),
   displayPos(displayPos),
-  multisampleEnabled(false),
   textDisplay(this)
 {
 }
@@ -54,9 +53,6 @@ void Renderer::initGlState()
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
 	ImgTexture::setMaxGlTextureSize(maxTexSize);
 	
-	if (multisampleEnabled)
-		glEnable(GL_MULTISAMPLE_ARB);
-
 	if (isExtensionSupported("GL_EXT_fog_coord")){
 		glFogi(GL_FOG_MODE, GL_EXP);
 		glFogf(GL_FOG_DENSITY, 5);
@@ -180,27 +176,6 @@ void Renderer::setProjectionMatrix(bool pickMatrix, int x, int y){
 	glFrustum(-right, +right, -top, +top, zNear, zFar);
 	glMatrixMode(GL_MODELVIEW);
 }
-
-void Renderer::setProjectionMatrixJittered(double xoff, double yoff){
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-
-	double right, top, zNear, zFar;
-	getFrustrumSize(right, top, zNear, zFar);
-
-	double scalex, scaley;
-	scalex = (2*right)/winWidth;
-	scaley = (2*top)/winHeight;
-
-
-	glFrustum(	-right - xoff * scalex,
-				+right - xoff * scalex,
-				-top - yoff * scaley,
-				+top - yoff * scaley,
-				zNear, zFar);
-	glMatrixMode(GL_MODELVIEW);
-}
-
 
 void Renderer::glPushOrthoMatrix(){
 	glDisable(GL_DEPTH_TEST);
@@ -402,64 +377,10 @@ void Renderer::drawBg(){
 
 void Renderer::drawFrame()
 {
-	if (cfgSupersampling && !multisampleEnabled){
-		drawSceneAA();
-	} else {
-		drawBg();
-		drawScene(false);
-	}
-	
+	drawBg();
+	drawScene(false);
 	drawGui();
 }
-
-inline const Renderer::aaJitter* Renderer::getAAJitter (int passes){
-	// Data is from <http://www.opengl.org/resources/code/samples/advanced/advanced97/notes/node63.html>
-	
-	static const aaJitter p2[] = {{0.25f,0.75f}, {0.75f,0.25f}}; // 2-pass
-	static const aaJitter p3[] = {{0.5033922635f,0.8317967229f}, {0.7806016275f,0.2504380877f}, {0.2261828938f, 0.4131553612f}}; //3-pass
-	static const aaJitter p4[] = {{0.375f,0.25f}, {0.125f,0.75f}, {0.875f,0.25f}, {0.625f,0.75f}}; // 4-pass
-	static const aaJitter p5[] = {{0.5f,0.5f}, {0.3f,0.1f}, {0.7f,0.9f}, {0.9f,0.3f}, {0.1f,0.7f}}; // 5-pass
-	static const aaJitter p6[] = {{46/99.f,46/99.f}, {13/99.f,79/99.f}, {53/99.f,86/99.f}, {86/99.f,53/99.f}, {79/99.f,13/99.f}, {20/99.f,20/99.f}}; // 6-pass
-	static const aaJitter p8[] = {{ 9/16.f, 7/16.f}, { 1/16.f,15/16.f}, { 5/16.f,11/16.f}, {11/16.f,13/16.f}, 
-								  {13/16.f, 3/16.f}, {15/16.f, 9/16.f}, { 7/16.f, 1/16.f}, { 3/16.f, 5/16.f}}; // 8-pass
-	static const aaJitter p16[]= {{0.375f,0.4375f}, {0.625f,0.0625f}, {0.875f,0.1875f}, {0.125f,0.0625f}, 
-								  {0.375f,0.6875f}, {0.875f,0.4375f}, {0.625f,0.5625f}, {0.375f,0.9375f}, 
-								  {0.625f,0.3125f}, {0.125f,0.5625f}, {0.125f,0.8125f}, {0.375f,0.1875f}, 
-								  {0.875f,0.9375f}, {0.875f,0.6875f}, {0.125f,0.3125f}, {0.625f,0.8125f}};
-
-	static const aaJitter* table[17] = {0, 0, p2, p3, p4, p5, p6, 0, p8,
-									       0, 0,  0,  0,  0,  0,  0, p16};
-	PFC_ASSERT(table[passes] != 0);
-	return table[passes];
-}
-
-void Renderer::drawSceneAA()
-{
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-	glMatrixMode(GL_MODELVIEW);
-
-	int passes = cfgSupersamplingPasses;
-	const aaJitter* jitterTable = getAAJitter(passes);
-	bool clearAccumBuffer = true;
-	for (int i = 0; i < passes; i++) {
-		setProjectionMatrixJittered(jitterTable[i].x - 0.5, jitterTable[i].y - 0.5);
-		drawBg();
-		drawScene(false);
-		if (clearAccumBuffer){
-			glAccum(GL_LOAD, 1.f / passes);
-			clearAccumBuffer = false;
-		} else {
-			glAccum(GL_ACCUM, 1.f / passes);
-		}
-	}
-	glAccum(GL_RETURN, 1.f);
-
-	glMatrixMode(GL_PROJECTION);
-	glPopMatrix();
-	glMatrixMode(GL_MODELVIEW);
-}
-
 
 void Renderer::swapBuffers(){
 	glfwSwapBuffers(appInstance->glfwWindow);

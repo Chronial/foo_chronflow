@@ -10,7 +10,6 @@
 #define IDD_COVER_DISPLAY_TAB           107
 #define IDD_CONFIG_NAME                 108
 #define IDD_PERF_TAB                    109
-#define IDB_BAR                         111
 #define IDR_COVER_LOADING               122
 #define IDR_COVER_NO_IMG                123
 #define IDC_SOURCES                     1003

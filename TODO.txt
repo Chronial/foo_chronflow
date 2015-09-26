@@ -15,7 +15,9 @@
 * Fix Multisampling! http://www.glfw.org/index.html
   * Remove obsolete opengl header files
 
- * Improve timer handling, pass functionals or futures
+* Check that vsync works correctly
+
+* Improve timer handling, pass functionals or futures
 
 * Remove supersampling and activate Multisampling by default
 * Check what texloader spends its time on (output timestamps with the load messages)

@@ -40,8 +40,6 @@ extern cfg_string cfgCoverConfigSel;
 /*********************************************** Performance tab *********************************************************/
 extern cfg_bool cfgMultisampling;
 extern cfg_int cfgMultisamplingPasses;
-extern cfg_bool cfgSupersampling;
-extern cfg_int cfgSupersamplingPasses;
 
 extern cfg_int cfgTextureCacheSize;
 extern cfg_int cfgMaxTextureSize;

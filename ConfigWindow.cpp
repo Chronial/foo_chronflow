@@ -63,7 +63,6 @@ static struct {
 
 	// Performance
 	{ IDC_MULTI_SAMPLING, &cfgMultisampling },
-	{ IDC_SUPER_SAMPLING, &cfgSupersampling },
 	{ IDC_TEXTURE_COMPRESSION, &cfgTextureCompression },
 	{ IDC_EMPTY_ON_MINIMIZE, &cfgEmptyCacheOnMinimize },
 	{ IDC_SHOW_FPS, &cfgShowFps },
@@ -885,7 +884,6 @@ static struct {
 } mappedListVarMap[] =
 {
 	{IDC_MULTI_SAMPLING_PASSES, &cfgMultisamplingPasses, multisamplingMap, tabsize(multisamplingMap)},
-	{IDC_SUPER_SAMPLING_PASSES, &cfgSupersamplingPasses, supersamplingMap, tabsize(supersamplingMap)},
 	{IDC_TEXLOADER_PRIO, &cfgTexLoaderPrio, loaderPrioMap, tabsize(loaderPrioMap)},
 };
 

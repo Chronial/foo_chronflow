@@ -48,30 +48,17 @@ private:
 	bool isExtensionSupported(const char *name);
 	bool isWglExtensionSupported(const char *name);
 
-
 	void getFrustrumSize(double &right, double &top, double &zNear, double &zFar);
-	void setProjectionMatrixJittered(double xoff, double yoff);
-private:
-	static const PIXELFORMATDESCRIPTOR pixelFormatDescriptor;
 
 	AppInstance* appInstance;
 	int winWidth;
 	int winHeight;
 
-	bool multisampleEnabled;
 	bool vSyncEnabled;
 
 	void drawBg();
 	void drawGui();
 	void drawScene(bool selectionPass);
-	void drawSceneAA();
-
-	struct aaJitter {
-		float x;
-		float y;
-	};
-	static const aaJitter* getAAJitter (int passes);
-
 
 	pfc::array_t<double> getMirrorClipPlane();
 	void drawMirrorPass();

@@ -136,19 +136,11 @@ cfg_string cfgCoverConfigSel(guid_cfgCoverConfigSel, "Default (build-in)");
 
 // {11053387-12C8-4f16-8BD0-7C6FF1523252}
 static const GUID guid_cfgMultisampling = { 0x11053387, 0x12c8, 0x4f16, { 0x8b, 0xd0, 0x7c, 0x6f, 0xf1, 0x52, 0x32, 0x52 } };
-cfg_bool cfgMultisampling(guid_cfgMultisampling, false);
+cfg_bool cfgMultisampling(guid_cfgMultisampling, true);
 
 // {B5280C57-CC06-4ee9-A8A3-4F05E6925A62}
 static const GUID guid_cfgMultisamplingPasses = { 0xb5280c57, 0xcc06, 0x4ee9, { 0xa8, 0xa3, 0x4f, 0x5, 0xe6, 0x92, 0x5a, 0x62 } };
 cfg_int cfgMultisamplingPasses(guid_cfgMultisamplingPasses, 4);
-
-// {B98E61C9-534B-4957-B8B6-5C15D847C384}
-static const GUID guid_cfgSupersampling = { 0xb98e61c9, 0x534b, 0x4957, { 0xb8, 0xb6, 0x5c, 0x15, 0xd8, 0x47, 0xc3, 0x84 } };
-cfg_bool cfgSupersampling(guid_cfgSupersampling, true);
-
-// {B176CDF9-576E-4296-8A68-03FBC19A0330}
-static const GUID guid_cfgSupersamplingPasses = { 0xb176cdf9, 0x576e, 0x4296, { 0x8a, 0x68, 0x3, 0xfb, 0xc1, 0x9a, 0x3, 0x30 } };
-cfg_int cfgSupersamplingPasses(guid_cfgSupersamplingPasses, 2);
 
 
 // {036F84C3-B3F7-4aee-873C-DC0EFC46B0D3}

@@ -21,13 +21,6 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// Bitmap
-//
-
-IDB_BAR                 BITMAP                  "images\\config-window-bar.bmp"
-
-/////////////////////////////////////////////////////////////////////////////
-//
 // JPG
 //
 
@@ -211,11 +204,9 @@ STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 EXSTYLE WS_EX_CONTROLPARENT
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    GROUPBOX        "Rendering Quality",IDC_STATIC,7,7,210,45
-    COMBOBOX        IDC_SUPER_SAMPLING_PASSES,78,18,26,57,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Passes",IDC_STATIC,107,20,23,8
-    COMBOBOX        IDC_MULTI_SAMPLING_PASSES,78,33,26,57,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Passes",IDC_STATIC,107,35,23,8
+    GROUPBOX        "Rendering Quality",IDC_STATIC,7,7,210,28
+    COMBOBOX        IDC_MULTI_SAMPLING_PASSES,78,17,26,57,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Passes",IDC_STATIC,107,19,23,8
     GROUPBOX        "Texture Cache",IDC_STATIC,7,56,294,81
     LTEXT           "Cache Size:",IDC_STATIC,11,68,38,8
     EDITTEXT        IDC_CACHE_SIZE,55,66,33,12,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
@@ -241,9 +232,7 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,122,241,10
     LTEXT           "Do not change any settings on this page without having read the help pages.",IDC_STATIC,227,15,68,38
     GROUPBOX        "Warning",IDC_STATIC,221,7,80,45
-    CONTROL         "Multisampling:",IDC_MULTI_SAMPLING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,34,61,10
-    CONTROL         "Supersampling: ",IDC_SUPER_SAMPLING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,19,62,10
-    CONTROL         IDB_BAR,IDC_STATIC,"Static",SS_BITMAP | SS_REALSIZEIMAGE,15,29,1,4
+    CONTROL         "Multisampling:",IDC_MULTI_SAMPLING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,18,61,10
 END
 
 
@@ -329,33 +318,6 @@ BEGIN
     END
 END
 #endif    // APSTUDIO_INVOKED
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Dialog Info
-//
-
-IDD_PERF_TAB DLGINIT
-BEGIN
-    IDC_SUPER_SAMPLING_PASSES, 0x403, 2, 0
-0x0032, 
-    IDC_SUPER_SAMPLING_PASSES, 0x403, 2, 0
-0x0034, 
-    IDC_MULTI_SAMPLING_PASSES, 0x403, 4, 0
-0x2020, 0x0032, 
-    IDC_MULTI_SAMPLING_PASSES, 0x403, 4, 0
-0x2020, 0x0034, 
-    IDC_MULTI_SAMPLING_PASSES, 0x403, 4, 0
-0x2020, 0x0038, 
-    IDC_MULTI_SAMPLING_PASSES, 0x403, 3, 0
-0x3631, "\000" 
-    IDC_TEXLOADER_PRIO, 0x403, 13, 0
-0x6542, 0x6f6c, 0x2077, 0x6f4e, 0x6d72, 0x6c61, "\000" 
-    IDC_TEXLOADER_PRIO, 0x403, 5, 0
-0x6449, 0x656c, "\000" 
-    0
-END
 
 #endif    // English (United Kingdom) resources
 /////////////////////////////////////////////////////////////////////////////
