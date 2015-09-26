@@ -129,6 +129,7 @@ del $(ProjectDir)\BUILD_IN_COVERCONFIGS.h
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AsynchTexLoader.cpp" />
+    <ClCompile Include="ChronflowWindow.cpp" />
     <ClCompile Include="CoverConfig.cpp" />
     <ClCompile Include="ConfigWindow.cpp" />
     <ClCompile Include="Console.cpp">
@@ -147,7 +148,7 @@ del $(ProjectDir)\BUILD_IN_COVERCONFIGS.h
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="UIElement.cpp" />
+    <ClCompile Include="DuiComponent.cpp" />
     <ClCompile Include="MyActions.cpp" />
     <ClCompile Include="PlaybackTracer.cpp" />
     <ClCompile Include="Renderer.cpp" />
@@ -161,6 +162,7 @@ del $(ProjectDir)\BUILD_IN_COVERCONFIGS.h
     <ClInclude Include="AppInstance.h" />
     <ClInclude Include="AsynchTexLoader.h" />
     <ClInclude Include="base.h" />
+    <ClInclude Include="ChronflowWindow.h" />
     <ClInclude Include="CoverConfig.h" />
     <ClInclude Include="CGdiPlusBitmap.h" />
     <ClCompile Include="config.cpp" />
@@ -171,6 +173,8 @@ del $(ProjectDir)\BUILD_IN_COVERCONFIGS.h
     <ClInclude Include="DbReloadWorker.h" />
     <ClInclude Include="DisplayPosition.h" />
     <ClInclude Include="BlockingQueue.h" />
+    <ClInclude Include="FindAsYouType.h" />
+    <ClInclude Include="RenderWindow.h" />
     <ClInclude Include="shared_mutex.h" />
     <ClInclude Include="TimerOwner.h" />
     <ClInclude Include="TrackDropSource.h" />

@@ -1,118 +1,15 @@
 #include "stdafx.h"
-#include <set>
 #include "base.h"
 #include "config.h"
 
 #include "AppInstance.h"
 #include "Console.h"
 #include "DbAlbumCollection.h"
+#include "FindAsYouType.h"
 #include "MyActions.h"
 #include "PlaybackTracer.h"
 #include "RenderThread.h"
-#include "ScriptedCoverPositions.h"
 #include "TrackDropSource.h"
-#include "TimerOwner.h"
-
-#define MAINWINDOW_CLASSNAME L"foo_chronflow MainWindow"
-
-#define MINIMIZE_CHECK_TIMEOUT 10000 // milliseconds
-
-class FindAsYouType : TimerOwner {
-	static const int typeTimeout = 1000; // milliseconds
-	pfc::string8 enteredString;
-	AppInstance* appInstance;
-	bool playbackTracerLocked;
-public:
-	FindAsYouType(AppInstance* instance)
-		: TimerOwner(instance), appInstance(instance){
-		clearSearch();
-		playbackTracerLocked = false;
-	}
-	bool onChar(WPARAM wParam){
-		collection_read_lock lock(appInstance);
-		switch (wParam)
-		{
-			case 1: // any other nonchar character
-			case 0x09: // Process a tab. 
-				break;
-
-			case 0x08: // Process a backspace. 
-				removeChar();
-				break;
-
-
-			case 0x0A: // Process a linefeed. 
-			case 0x0D: // Process a carriage return. 
-			case 0x1B: // Process an escape. 
-				clear();
-				break;
-
-			default: // Process any writeable character
-				enterChar(wParam);
-				break;
-		}
-		return 0;
-
-	}
-	void enterChar(wchar_t c){
-		pfc::string8 newString(enteredString);
-		newString << pfc::stringcvt::string_utf8_from_wide(&c, 1);
-		if (doSearch(newString)){
-			enteredString = newString;
-		} else {
-			MessageBeep(-1);
-		}
-		lockPlaybackTracer();
-		setTimer(typeTimeout);
-	}
-	void removeChar(){
-		enteredString.truncate(enteredString.length() - 1);
-		if (enteredString.length() == 0){
-			unlockPlaybackTracer();
-		} else {
-			doSearch(enteredString);
-			lockPlaybackTracer();
-			setTimer(typeTimeout);
-		}
-	}
-	void clear(){
-		unlockPlaybackTracer();
-		killTimer();
-		clearSearch();
-	}
-	void timerProc(){
-		clear();
-	}
-
-private:
-	void lockPlaybackTracer(){
-		if (!playbackTracerLocked){
-			playbackTracerLocked = true;
-			appInstance->playbackTracer->lock();
-		}
-	}
-	void unlockPlaybackTracer(){
-		if (playbackTracerLocked){
-			playbackTracerLocked = false;
-			appInstance->playbackTracer->unlock();
-		}
-	}
-	bool doSearch(const char* searchFor){
-		//console::print(pfc::string_formatter() << "searching for: " << searchFor);
-		ASSERT_SHARED(appInstance->albumCollection);
-		CollectionPos pos;
-		if (appInstance->albumCollection->performFayt(searchFor, pos)){
-			appInstance->albumCollection->setTargetPos(pos);
-			return true;
-		} else {
-			return false;
-		}
-	}
-	void clearSearch(){
-		enteredString.reset();
-	}
-};
-
 
 class RenderWindow {
 	AppInstance* appInstance;
@@ -124,7 +21,7 @@ class RenderWindow {
 public:
 
 	RenderWindow(AppInstance* appInstance, ui_element_instance_callback_ptr defaultUiCallback)
-			: appInstance(appInstance), defaultUiCallback(defaultUiCallback){
+		: appInstance(appInstance), defaultUiCallback(defaultUiCallback){
 		findAsYouType = make_unique<FindAsYouType>(appInstance);
 
 		// TODO: handle window creation errors?
@@ -295,18 +192,18 @@ public:
 				return true;
 			}
 		} else if (!(cfgFindAsYouType && // disable hotkeys that interfere with find-as-you-type
-					 (uMsg == WM_KEYDOWN) &&
-					 ((wParam > 'A' && wParam < 'Z') || (wParam > '0' && wParam < '9') || (wParam == ' ')) &&
-					 ((GetKeyState(VK_CONTROL) & 0x8000) == 0))){
+			(uMsg == WM_KEYDOWN) &&
+			((wParam > 'A' && wParam < 'Z') || (wParam > '0' && wParam < '9') || (wParam == ' ')) &&
+			((GetKeyState(VK_CONTROL) & 0x8000) == 0))){
 			collection_read_lock lock(appInstance);
 			static_api_ptr_t<keyboard_shortcut_manager> ksm;
 			metadb_handle_list tracks;
 			if (appInstance->albumCollection->getCount() &&
 				appInstance->albumCollection->getTracks(appInstance->albumCollection->getTargetPos(), tracks)){
-				if(ksm->on_keydown_auto_context(tracks, wParam, contextmenu_item::caller_media_library_viewer))
+				if (ksm->on_keydown_auto_context(tracks, wParam, contextmenu_item::caller_media_library_viewer))
 					return true;
 			} else {
-				if(ksm->on_keydown_auto(wParam))
+				if (ksm->on_keydown_auto(wParam))
 					return true;
 			}
 		}
@@ -340,7 +237,7 @@ public:
 		appInstance->albumCollection->moveTargetBy(m);
 		appInstance->playbackTracer->userStartedMovement();
 	}
-	
+
 	void onContextMenu(const int x, const int y){
 		collection_read_lock lock(appInstance);
 		PlaybackTracerScopeLock tracerLock(*(appInstance->playbackTracer));
@@ -440,263 +337,3 @@ public:
 		}
 	}
 };
-
-
-class Chronflow : public ui_element_instance, message_filter_impl_base {
-public:
-	static GUID g_get_guid() {
-		// {1D56881C-CA24-470c-944A-DED830F9E95D}
-		static const GUID guid_foo_chronflow = { 0x1d56881c, 0xca24, 0x470c, { 0x94, 0x4a, 0xde, 0xd8, 0x30, 0xf9, 0xe9, 0x5d } };
-		return guid_foo_chronflow;
-	}
-	static GUID g_get_subclass() { return ui_element_subclass_media_library_viewers; }
-
-	GUID get_guid() { return Chronflow::g_get_guid(); }
-	GUID get_subclass() { return Chronflow::g_get_subclass(); }
-
-	static void g_get_name(pfc::string_base & out) { out = "Chronflow"; }
-	static const char * g_get_description() { return "Displays a 3D rendering of the Album Art in your Media Library"; }
-
-	static ui_element_config::ptr g_get_default_configuration() { return ui_element_config::g_create_empty(g_get_guid()); }
-
-	HWND get_wnd() {
-		return appInstance->mainWindow;
-	};
-
-private:
-	ULONG_PTR gdiplusToken;
-
-	bool mainWinMinimized = true;
-	ui_element_config::ptr config;
-	const ui_element_instance_callback_ptr callback;
-public:
-	AppInstance* appInstance;
-	static std::set<Chronflow*> instances;
-
-public:
-	Chronflow(HWND parent, ui_element_config::ptr config, ui_element_instance_callback_ptr p_callback)
-		: message_filter_impl_base(WM_SIZE, WM_SIZE), callback(p_callback), config(config) {
-		appInstance = new AppInstance();
-		IF_DEBUG(Console::create());
-
-		Gdiplus::GdiplusStartupInput gdiplusStartupInput;
-		// TODO: catch errors from this call
-		Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
-
-
-		appInstance->mainWindow = createWindow(parent);
-		appInstance->albumCollection = make_unique<DbAlbumCollection>(appInstance);
-
-		appInstance->renderWindow = make_unique<RenderWindow>(appInstance, callback);
-		appInstance->renderer = make_unique<RenderThread>(appInstance);
-		auto rendererInitMsg = make_shared<RTInitDoneMessage>();
-		appInstance->renderer->send(rendererInitMsg);
-		rendererInitMsg->getAnswer();
-
-		{
-			// Do we need this lock?
-			collection_read_lock lock(appInstance);
-			appInstance->playbackTracer = make_unique<PlaybackTracer>(appInstance);
-		}
-		appInstance->startCollectionReload();
-		instances.insert(this);
-	}
-	~Chronflow(){
-		IF_DEBUG(Console::println(L"Destroying UiElement"));
-		if (appInstance)
-			DestroyWindow(appInstance->mainWindow);
-	}
-
-	// Called on window destruction
-	void shutdown(){
-		instances.erase(this);
-		appInstance->reloadWorker.synchronize()->reset();
-		appInstance->playbackTracer.reset();
-		appInstance->renderer.reset();
-		appInstance->renderWindow.reset();
-		appInstance->albumCollection.reset();
-		appInstance->mainWindow = nullptr;
-		delete pfc::replace_null_t(appInstance);
-
-		Gdiplus::GdiplusShutdown(gdiplusToken);
-	}
-
-	void set_configuration(ui_element_config::ptr config) { this->config = config; }
-	ui_element_config::ptr get_configuration() { return config; }
-
-	static bool registerWindowClass(){
-		HINSTANCE myInstance = core_api::get_my_instance();
-
-		WNDCLASS wc = { 0 };
-		wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC | CS_DBLCLKS | CS_NOCLOSE;
-		wc.lpfnWndProc = (WNDPROC)Chronflow::WndProc;
-		wc.cbClsExtra = 0;
-		wc.cbWndExtra = sizeof(Chronflow *);
-		wc.hInstance = myInstance;
-		wc.hIcon = LoadIcon(NULL, IDI_HAND);
-		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-		wc.hbrBackground = NULL;
-		wc.lpszMenuName = NULL;
-		wc.lpszClassName = MAINWINDOW_CLASSNAME;
-
-		return RegisterClass(&wc) != 0;
-	}
-
-private:
-	LRESULT MessageHandler (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
-		if (!appInstance) // We are already shut down – do we need this? set a breakpoint here and check
-			return DefWindowProc(hWnd, uMsg, wParam, lParam);
-		switch (uMsg){
-			case WM_DESTROY:
-				shutdown();
-				return 0;
-			case WM_SIZE:
-			{
-				if (appInstance->glfwWindow){
-					glfwSetWindowSize(appInstance->glfwWindow, LOWORD(lParam), HIWORD(lParam));
-				}
-				return 0;
-			}
-			case WM_DISPLAYCHANGE:
-			case WM_DEVMODECHANGE:
-			{
-				if (appInstance->renderer)
-					appInstance->renderer->send(make_shared<RTDeviceModeMessage>());
-				return 0;
-			}
-			case WM_TIMER:
-				switch (wParam){
-					case IDT_CHECK_MINIMIZED:
-						onCheckMinimizeTimerHit();
-						break;
-				}
-				return 0;
-			case WM_ERASEBKGND:
-				return TRUE;
-			case WM_PAINT:
-			{
-				if (GetUpdateRect(hWnd, 0, FALSE)){
-					appInstance->renderWindow->onDamage();
-					if (mainWinMinimized){
-						mainWinMinimized = false;
-						appInstance->renderer->send(make_shared<RTWindowShowMessage>());
-					}
-					SetTimer(hWnd, IDT_CHECK_MINIMIZED, MINIMIZE_CHECK_TIMEOUT, 0);
-				}
-			}
-		}
-		return DefWindowProc(hWnd,uMsg,wParam,lParam);
-	}
-	static LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
-		Chronflow* chronflow = 0;
-		if (uMsg == WM_NCCREATE){
-			chronflow = reinterpret_cast<Chronflow*>(((CREATESTRUCT*)lParam)->lpCreateParams);
-			SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)chronflow);
-		} else {
-			chronflow = reinterpret_cast<Chronflow*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
-		}
-		if (chronflow == 0)
-			return DefWindowProc(hWnd,uMsg,wParam,lParam);
-		return chronflow->MessageHandler(hWnd, uMsg, wParam, lParam);
-	}
-	bool pretranslate_message(MSG * p_msg) {
-		return true;
-	}
-	void onCheckMinimizeTimerHit(){
-		if (appInstance->isMainWinMinimized()){
-			if (!mainWinMinimized){
-				mainWinMinimized = true;
-				appInstance->renderer->send(make_shared<RTWindowHideMessage>());
-				KillTimer(appInstance->mainWindow, IDT_CHECK_MINIMIZED);
-			}
-		}
-	}
-
-	HWND createWindow(HWND parent){
-		HWND		hWnd;
-
-		WIN32_OP(hWnd = CreateWindowEx(
-			0,									// Extended Style For The Window
-			MAINWINDOW_CLASSNAME,				// Class Name
-			L"ChronFlow MainWin",				// Window Title
-			WS_CHILD |							// Defined Window Style
-			WS_CLIPSIBLINGS |					// Required Window Style
-			WS_CLIPCHILDREN,					// Required Window Style*/
-			CW_USEDEFAULT, CW_USEDEFAULT,		// Window Position
-			CW_USEDEFAULT, CW_USEDEFAULT,		// Window Dimensions
-			parent,								// No Parent Window
-			NULL,								// No Menu
-			core_api::get_my_instance(),		// Instance
-			(void*)this));
-
-		return hWnd;
-	}
-};
-
-std::set<Chronflow*> Chronflow::instances = std::set<Chronflow*>();
-
-class UiElement : public ui_element {
-public:
-	GUID get_guid() { return Chronflow::g_get_guid(); }
-	GUID get_subclass() { return Chronflow::g_get_subclass(); }
-	void get_name(pfc::string_base & out) { Chronflow::g_get_name(out); }
-	ui_element_instance::ptr instantiate(HWND parent, ui_element_config::ptr cfg, ui_element_instance_callback::ptr callback) {
-		PFC_ASSERT(cfg->get_guid() == get_guid());
-		service_nnptr_t<Chronflow> item = new service_impl_t<Chronflow>(parent, cfg, callback);
-		return item;
-	}
-	ui_element_config::ptr get_default_configuration() { return Chronflow::g_get_default_configuration(); }
-	ui_element_children_enumerator_ptr enumerate_children(ui_element_config::ptr cfg) { return NULL; }
-	bool get_description(pfc::string_base & out) { out = Chronflow::g_get_description(); return true; }
-};
-
-static service_factory_single_t<UiElement> uiElement;
-
-void getAppInstances(pfc::array_t<AppInstance*> &instances){
-	instances.set_count(0);
-	for (Chronflow* i : Chronflow::instances){
-		instances.append_single_val(i->appInstance);
-	}
-}
-
-
-class InitHandler : public init_stage_callback {
-public:
-	void on_init_stage(t_uint32 stage){
-		if (stage == init_stages::after_library_init){
-			initGlfw();
-		} else if (stage == init_stages::before_ui_init){
-			registerWindowClasses();
-		}
-	}
-
-private:
-	void initGlfw(){
-		glfwSetErrorCallback([](int error, const char* description){
-			pfc::string8 msg = "foo_chronflow glfw error: ";
-			msg.add_string(description);
-			console::print(msg);
-		});
-		if (!glfwInit()){
-			console::print("foo_chronflow failed to initialize glfw.");
-			// TODO: Handle this somehow
-		}
-	}
-	void registerWindowClasses(){
-		// Note: We do not need to unregister these classes as it happens automatically when foobar quits
-		if (!Chronflow::registerWindowClass()){
-			errorPopupWin32("Failed to register MainWindow class");
-		}
-	}
-};
-
-static service_factory_single_t<InitHandler> initHandler;
-
-class QuitHandler : public initquit {
-public:
-	void on_quit(){
-		glfwTerminate();
-	}
-};
-
-static service_factory_single_t<QuitHandler> quitHandler;
