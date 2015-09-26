@@ -41,33 +41,18 @@
 
 
 
-== BUGS ==
-Fehler wenn instanz während reload beendet wird!
-	- das DB refreshen im texLoader thread machen (some kind of borrowThread(callback function) function?
-		oder: threaded_process.h  (wollen wir ein GUI Fenster, wenn der Reload lange dauert?)
-	- keine window message, sondern main_thread_callback (stellt sicher, dass cache geleert wird)
-Aufrufhäufigkeit von CleanupCache von Cache-Größe abhängig machen
-* Check if shutdown is orderly (probably is)
-
-
-
 == incomplete/bad implementations ==
 DbAlbumCollection - Handle illegal chars in titleformat strings (see titleformat_helper in uie_albumart)
 Custom Positions: Hillfelink zu JScript docu? Oder alles über wiki machen?
                   Check that upVector is not linear to view-vector
-Do not use Foobar Filesystem functions! (done?)
 Make a multiple-instance panel (sollte settings vereinfachen (wenn die settings offen sind, existiert auch eine instanz...) -- (achtung! alle static vars überprüfen!)
-We can catch minimize messages - see message_loop.h
 Contextmenu: use standard_config_objects::query_show_keyboard_shortcuts_in_menus()
-CompiledCPos nicht in die Settings Datei, sondern eigene Datei.
 Was passiert mit CoverRotation(30, 0, 0, 0)? (gradzahl angegeben, aber keine Achse)
 
 
 
 == Grafische Verbesserungen ==
 motion blur (generate a texture that contains the blur vector as (r,g) and use that to blur the scene via shader
-3d models
-Cover image overlay (so we can overlay "shine" effects or something like that)
 realisitisches Lighting mit blurry shadows (siehe <http://youtube.com/watch?v=54jmrrpLwVE>)
 
 		
@@ -77,8 +62,6 @@ Sorted rendering implementieren
 	->draw all opaque surfaces, preferably in front to back order
 	->turn off writing to the depth buffer but don't turn off depth testing
 	->draw all transparent surfaces, preferably in back to front order
-Beim Erstellen der Datenbank (DbAlbumCollection::RefreshWorker::generateData() nicht tausende von pfc::string8s erstellen, sondern in einen riesigen schreiben?
-Das zuletzt generierte Bild cachen und bei redraws durch windows einfach aus dem cache laden?
 Only make one glOrtho push/pop for whole GUI
 * Use libjpeg turbo? – texloading profilen!
 
@@ -89,7 +72,6 @@ Only make one glOrtho push/pop for whole GUI
 zooming
 Cover nach vorne holen -- nicht nach vorne holen, wenn nur an ihnen vorbeigescannt wird
 Fullscreen support
-Drag & Drop
 Cover follows cursor
 Title display: Add checkbox to UI "overwrite flow-config settings", and add function "titlePosition" (returns array([0-1],[0-1]) for position -- if it returns -1, titles are hidden)
 Add a function coverBrightness(coverId)
