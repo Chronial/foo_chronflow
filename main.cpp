@@ -2,7 +2,7 @@
 #include "Helpers.h"
 #include "ChronflowWindow.h"
 
-#define VERSION "0.4.2"
+#define VERSION "0.4.3"
 
 DECLARE_COMPONENT_VERSION("Chronial's Coverflow", VERSION,
 "Renders Album Art in a 3d environment\n"
