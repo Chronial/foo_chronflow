@@ -158,11 +158,9 @@ shared_ptr<ImgTexture> DbAlbumCollection::getImgTexture(CollectionPos pos){
 struct CompIUtf8Partial
 {
 	bool operator()(pfc::string8 a, const char * b)const{
-		console::printf("checking for %s", b);
 		return stricmp_utf8_partial(a, b) < 0;
 	}
 	bool operator()(const char * a, pfc::string8 b)const{
-		console::printf("checking for %s", a);
 		return stricmp_utf8_partial(b, a) > 0;
 	}
 };
