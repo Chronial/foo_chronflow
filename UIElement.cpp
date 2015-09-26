@@ -11,19 +11,20 @@
 #include "RenderThread.h"
 #include "ScriptedCoverPositions.h"
 #include "TrackDropSource.h"
+#include "TimerOwner.h"
 
 #define MAINWINDOW_CLASSNAME L"foo_chronflow MainWindow"
 
 #define MINIMIZE_CHECK_TIMEOUT 10000 // milliseconds
 
-class FindAsYouType {
+class FindAsYouType : TimerOwner {
 	static const int typeTimeout = 1000; // milliseconds
 	pfc::string8 enteredString;
 	AppInstance* appInstance;
 	bool playbackTracerLocked;
 public:
 	FindAsYouType(AppInstance* instance)
-		: appInstance(instance){
+		: TimerOwner(instance), appInstance(instance){
 		clearSearch();
 		playbackTracerLocked = false;
 	}
@@ -62,7 +63,7 @@ public:
 			MessageBeep(-1);
 		}
 		lockPlaybackTracer();
-		SetTimer(appInstance->mainWindow, IDT_FIND_AS_YOU_TYPE_RESET, typeTimeout, NULL);
+		setTimer(typeTimeout);
 	}
 	void removeChar(){
 		enteredString.truncate(enteredString.length() - 1);
@@ -71,13 +72,16 @@ public:
 		} else {
 			doSearch(enteredString);
 			lockPlaybackTracer();
-			SetTimer(appInstance->mainWindow, IDT_FIND_AS_YOU_TYPE_RESET, typeTimeout, NULL);
+			setTimer(typeTimeout);
 		}
 	}
 	void clear(){
 		unlockPlaybackTracer();
-		KillTimer(appInstance->mainWindow, IDT_FIND_AS_YOU_TYPE_RESET);
+		killTimer();
 		clearSearch();
+	}
+	void timerProc(){
+		clear();
 	}
 
 private:
@@ -115,8 +119,8 @@ class RenderWindow {
 	GLFWwindow* window;
 	HWND hWnd;
 	double scrollAggregator = 0;
-public:
 	std::unique_ptr<FindAsYouType> findAsYouType;
+public:
 
 	RenderWindow(AppInstance* appInstance) : appInstance(appInstance){
 		findAsYouType = make_unique<FindAsYouType>(appInstance);
@@ -555,16 +559,6 @@ private:
 			}
 			case WM_TIMER:
 				switch (wParam){
-					case IDT_PLAYBACK_TRACER:
-					{
-						collection_read_lock lock(appInstance);
-						appInstance->playbackTracer->timerHit();
-						break;
-					}
-					case IDT_FIND_AS_YOU_TYPE_RESET:
-						// TODO: findAsYouType should be private and this be passed on in a smarter way
-						appInstance->renderWindow->findAsYouType->clear();
-						break;
 					case IDT_CHECK_MINIMIZED:
 						onCheckMinimizeTimerHit();
 						break;
@@ -683,24 +677,6 @@ private:
 		// Note: We do not need to unregister these classes as it happens automatically when foobar quits
 		if (!Chronflow::registerWindowClass()){
 			errorPopupWin32("Failed to register MainWindow class");
-		}
-
-		HINSTANCE myInstance = core_api::get_my_instance();
-
-		WNDCLASS	wc = { 0 };
-		wc.style = CS_OWNDC | CS_NOCLOSE;
-		wc.lpfnWndProc = DefWindowProc;
-		wc.cbClsExtra = 0;
-		wc.cbWndExtra = 0;
-		wc.hInstance = myInstance;
-		wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-		wc.hCursor = NULL;
-		wc.hbrBackground = NULL;
-		wc.lpszMenuName = NULL;
-		wc.lpszClassName = L"Chronflow LoaderWindow";
-
-		if (!RegisterClass(&wc)){
-			errorPopupWin32("Failed to register Loader Window class");
 		}
 	}
 };

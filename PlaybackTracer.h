@@ -1,9 +1,11 @@
 #pragma once
 #include "stdafx.h"
 
+#include "TimerOwner.h"
+
 class AppInstance;
 
-class PlaybackTracer : public play_callback
+class PlaybackTracer : TimerOwner, public play_callback
 {
 private:
 	AppInstance* appInstance;
@@ -22,23 +24,17 @@ public:
 	void lock();
 	void unlock();
 
-	void userAction()
-	{
-		lock();
-		unlock();
-	}
-
 	void movementEnded();
-	void timerHit();
 	void followSettingsChanged();
 
 	void moveToNowPlaying();
+	void timerProc();
 
 private:
-	bool inMovement;
-	bool waitingForTimer;
-	bool callbackRegistered;
-	int lockCount;
+	bool inMovement = false;
+	bool waitingForTimer = false;
+	bool callbackRegistered = false;
+	int lockCount = 0;
 
 
 public:

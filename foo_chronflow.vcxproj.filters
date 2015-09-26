@@ -185,6 +185,9 @@
     <ClInclude Include="shared_mutex.h">
       <Filter>Header Files\Helpers</Filter>
     </ClInclude>
+    <ClInclude Include="TimerOwner.h">
+      <Filter>Header Files\Helpers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="images\config-window-bar.bmp">

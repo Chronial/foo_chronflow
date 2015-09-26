@@ -17,9 +17,7 @@
 
 * Check that vsync works correctly
 
-* Improve timer handling, pass functionals or futures
-
-* Remove supersampling and activate Multisampling by default
+* Syncronize PlaybackTracer!
 * Check what texloader spends its time on (output timestamps with the load messages)
 
 * Do not initialize targetPos on Collection construction and fix ensuing errors

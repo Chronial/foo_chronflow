@@ -172,6 +172,7 @@ del $(ProjectDir)\BUILD_IN_COVERCONFIGS.h
     <ClInclude Include="DisplayPosition.h" />
     <ClInclude Include="BlockingQueue.h" />
     <ClInclude Include="shared_mutex.h" />
+    <ClInclude Include="TimerOwner.h" />
     <ClInclude Include="TrackDropSource.h" />
     <ClInclude Include="glStructs.h" />
     <ClInclude Include="stdafx.h" />

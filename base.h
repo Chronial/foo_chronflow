@@ -25,8 +25,6 @@
 
 
 #define IDT_CHECK_MINIMIZED 665
-#define IDT_PLAYBACK_TRACER 666
-#define IDT_FIND_AS_YOU_TYPE_RESET 667
 
 // TODO: This is dirty, do it right
 class AppInstance;
