@@ -120,9 +120,11 @@ class RenderWindow {
 	HWND hWnd;
 	double scrollAggregator = 0;
 	std::unique_ptr<FindAsYouType> findAsYouType;
+	ui_element_instance_callback_ptr defaultUiCallback;
 public:
 
-	RenderWindow(AppInstance* appInstance) : appInstance(appInstance){
+	RenderWindow(AppInstance* appInstance, ui_element_instance_callback_ptr defaultUiCallback)
+			: appInstance(appInstance), defaultUiCallback(defaultUiCallback){
 		findAsYouType = make_unique<FindAsYouType>(appInstance);
 
 		// TODO: handle window creation errors?
@@ -196,10 +198,9 @@ public:
 			return DefWindowProc(hWnd, uMsg, wParam, lParam);
 
 		case WM_CONTEXTMENU:
-			// TODO / FIXME get this information
-			//if (callback->is_edit_mode_enabled()){
-			//	return DefWindowProc(hWnd, uMsg, wParam, lParam);
-			/*} else*/ {
+			if (defaultUiCallback.is_valid() && defaultUiCallback->is_edit_mode_enabled()){
+				return DefWindowProc(hWnd, uMsg, wParam, lParam);
+			} else {
 				onContextMenu(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
 			}
 			return 0;
@@ -486,7 +487,7 @@ public:
 		appInstance->mainWindow = createWindow(parent);
 		appInstance->albumCollection = make_unique<DbAlbumCollection>(appInstance);
 
-		appInstance->renderWindow = make_unique<RenderWindow>(appInstance);
+		appInstance->renderWindow = make_unique<RenderWindow>(appInstance, callback);
 		appInstance->renderer = make_unique<RenderThread>(appInstance);
 		auto rendererInitMsg = make_shared<RTInitDoneMessage>();
 		appInstance->renderer->send(rendererInitMsg);

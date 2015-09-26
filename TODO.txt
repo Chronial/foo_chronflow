@@ -12,9 +12,6 @@
 
 * On F5 and "Reload Sources" in Settings: appInstance->texLoader->loadSpecialTextures();
 
-* Fix Multisampling! http://www.glfw.org/index.html
-  * Remove obsolete opengl header files
-
 * Check that vsync works correctly
 
 * Syncronize PlaybackTracer!
