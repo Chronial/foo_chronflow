@@ -1,16 +1,10 @@
 
 
-* Rewrite AsynchTexLoader
-	* Window might be destroyed anytime!
-	* Bias loading of covers towards current position
 * Use built-in cover loader
     * cache covers?
 * Use default ui colors and font?
 * Highlight typed fayt text
-* Improve cover caching strategy
 
-
-* On F5 and "Reload Sources" in Settings: appInstance->texLoader->loadSpecialTextures();
 
 * Check that vsync works correctly
 
@@ -20,7 +14,6 @@
 * Do not initialize targetPos on Collection construction and fix ensuing errors
 
 * call glFinish after buffer swap https://www.opengl.org/wiki/Swap_Interval
-** Memory leak when jumping from t to k via fayt??
 
 
 // Future

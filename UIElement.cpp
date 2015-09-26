@@ -442,7 +442,7 @@ public:
 };
 
 
-class Chronflow : public ui_element_instance {
+class Chronflow : public ui_element_instance, message_filter_impl_base {
 public:
 	static GUID g_get_guid() {
 		// {1D56881C-CA24-470c-944A-DED830F9E95D}
@@ -475,7 +475,7 @@ public:
 
 public:
 	Chronflow(HWND parent, ui_element_config::ptr config, ui_element_instance_callback_ptr p_callback)
-			: callback(p_callback), config(config) {
+		: message_filter_impl_base(WM_SIZE, WM_SIZE), callback(p_callback), config(config) {
 		appInstance = new AppInstance();
 		IF_DEBUG(Console::create());
 
@@ -599,6 +599,9 @@ private:
 			return DefWindowProc(hWnd,uMsg,wParam,lParam);
 		return chronflow->MessageHandler(hWnd, uMsg, wParam, lParam);
 	}
+	bool pretranslate_message(MSG * p_msg) {
+		return true;
+	}
 	void onCheckMinimizeTimerHit(){
 		if (appInstance->isMainWinMinimized()){
 			if (!mainWinMinimized){
@@ -631,7 +634,6 @@ private:
 };
 
 std::set<Chronflow*> Chronflow::instances = std::set<Chronflow*>();
-
 
 class UiElement : public ui_element {
 public:

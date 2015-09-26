@@ -120,6 +120,7 @@ void AsynchTexLoader::threadProc()
 			loadSpecialTextures();
 		} else if (auto m = dynamic_pointer_cast<ATCollectionReloadMessage>(msg)){
 			m->haltThread();
+			loadSpecialTextures();
 			clearCache();
 			{
 				collection_read_lock lock(appInstance);
