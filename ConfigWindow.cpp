@@ -52,7 +52,7 @@ static struct {
 {
 	// Sources
 	{ IDC_SORT_GROUP, &cfgSortGroup },
-	{ IDC_PL_SORT_PL, &cfgPlSortPl },
+	{ IDC_EMBEDDED_ART, &cfgEmbeddedArt },
 
 	// Behaviour
 	{ IDC_FOLLOW_PLAYBACK, &cfgCoverFollowsPlayback },
@@ -75,15 +75,13 @@ static struct {
 {
 	// Sources
 	{ IDC_SORT_GROUP, -IDC_SORT },
+	{ IDC_EMBEDDED_ART, -IDC_SOURCES },
 
 	// Behaviour
 	{ IDC_FOLLOW_PLAYBACK, IDC_FOLLOW_DELAY },
 
 	// Performance
-	{ IDC_SUPER_SAMPLING, IDC_SUPER_SAMPLING_PASSES },
-	{ IDC_SUPER_SAMPLING, -IDC_MULTI_SAMPLING },
 	{ IDC_MULTI_SAMPLING, IDC_MULTI_SAMPLING_PASSES },
-	{ IDC_MULTI_SAMPLING, -IDC_SUPER_SAMPLING },
 };
 
 
@@ -250,10 +248,6 @@ public:
 		{
 		case WM_INITDIALOG:
 			loadConfig();
-			{
-				if (!cfgPlSortPl)
-					uButton_SetCheck(hWnd, IDC_PL_SORT_DB, true);
-			}
 			break;
 
 		case WM_COMMAND:
@@ -267,9 +261,6 @@ public:
 					{
 						FOR_EACH_INSTANCE(startCollectionReload());
 					}
-					break;
-				case IDC_PL_SORT_DB:
-					buttonClicked(IDC_PL_SORT_PL);
 					break;
 				case IDC_IMG_NO_COVER_BROWSE:
 					if(browseForImage(cfgImgNoCover, cfgImgNoCover))

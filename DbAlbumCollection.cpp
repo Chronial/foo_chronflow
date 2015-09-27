@@ -157,8 +157,6 @@ void DbAlbumCollection::getTitle(CollectionPos pos, pfc::string_base& out){
 }
 
 
-int totalTime = 0;
-int totalImages = 0;
 shared_ptr<ImgTexture> DbAlbumCollection::getImgTexture(CollectionPos pos){
 	IF_DEBUG(profiler(DbAlbumCollection__getImgTexture));
 	if (albums.empty())
@@ -166,24 +164,17 @@ shared_ptr<ImgTexture> DbAlbumCollection::getImgTexture(CollectionPos pos){
 
 	auto &sortedIndex = albums.get<1>();
 	double startTime = Helpers::getHighresTimer();
-#if 0
-	pfc::string8_fast_aggressive imgFile;
-	imgFile.prealloc(512);
-	if (getImageForTrack(pos->tracks[0], imgFile)){
-		auto out = make_shared<ImgTexture>(imgFile);
-#else
-	album_art_data::ptr art;
-	if (getArtForTrack(pos->tracks[0], art)){
-		auto out = make_shared<ImgTexture>(art);
-#endif
-		int thisTime = int((Helpers::getHighresTimer() - startTime) * 1000);
-		totalTime += thisTime;
-		totalImages += 1;
-		console::printf("Load: %d msec (%d msec avg)", thisTime, int(totalTime / totalImages));
-		return out;
+	if (cfgEmbeddedArt){
+		album_art_data::ptr art;
+		if (getArtForTrack(pos->tracks[0], art))
+			return make_shared<ImgTexture>(art);
 	} else {
-		return nullptr;
+		pfc::string8_fast_aggressive imgFile;
+		if (getImageForTrack(pos->tracks[0], imgFile))
+			return make_shared<ImgTexture>(imgFile);
 	}
+	// No Image found
+	return nullptr;
 }
 
 struct CompIUtf8Partial

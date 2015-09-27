@@ -19,8 +19,7 @@
 #define IDC_GROUP                       1019
 #define IDC_SORT_GROUP                  1020
 #define IDC_SORT                        1021
-#define IDC_PL_SORT_DB                  1023
-#define IDC_PL_SORT_PL                  1024
+#define IDC_EMBEDDED_ART                1022
 #define IDC_IMG_LOADING                 1026
 #define IDC_IMG_NO_COVER                1027
 #define IDC_IMG_NO_COVER_BROWSE         1028

@@ -205,9 +205,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="images\config-window-bar.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
     <Image Include="images\cover-loading.jpg">
       <Filter>Resource Files</Filter>
     </Image>

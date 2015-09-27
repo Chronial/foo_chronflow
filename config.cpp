@@ -23,13 +23,13 @@ cfg_string cfgSort(guid_cfgSort, "%album artist%|%date%|%album%");
 static const GUID guid_cfgSortGroup = { 0x36380415, 0x1665, 0x42b5, { 0xa2, 0xc1, 0xce, 0xe0, 0xf6, 0x60, 0xf5, 0xff } };
 cfg_bool cfgSortGroup(guid_cfgSortGroup, true);
 
-// {F1A0AFF9-A8EF-4b54-B4CB-54335FBCC7C9}
-static const GUID guid_cfgPlSortPl = { 0xf1a0aff9, 0xa8ef, 0x4b54, { 0xb4, 0xcb, 0x54, 0x33, 0x5f, 0xbc, 0xc7, 0xc9 } };
-cfg_bool cfgPlSortPl(guid_cfgPlSortPl, false);
-
 // {F7F9192E-09D8-477c-BEBE-DE73C085E0FE}
 static const GUID guid_cfgInnerSort = { 0xf7f9192e, 0x9d8, 0x477c, { 0xbe, 0xbe, 0xde, 0x73, 0xc0, 0x85, 0xe0, 0xfe } };
 cfg_string cfgInnerSort(guid_cfgInnerSort, "$num(%tracknumber%,3)");
+
+// {EEA355D5-8A50-4F9F-BD99-FBC23824BBA1}
+static const GUID guid_cfgEmbeddedArt = { 0xeea355d5, 0x8a50, 0x4f9f, { 0xbd, 0x99, 0xfb, 0xc2, 0x38, 0x24, 0xbb, 0xa1 } };
+cfg_bool cfgEmbeddedArt(guid_cfgEmbeddedArt, true);
 
 // {81395AF7-1CC7-4dbe-A390-938F4D5FF224}
 static const GUID guid_cfgSources = { 0x81395af7, 0x1cc7, 0x4dbe, { 0xa3, 0x90, 0x93, 0x8f, 0x4d, 0x5f, 0xf2, 0x24 } };

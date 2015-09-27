@@ -199,7 +199,6 @@
     <ClInclude Include="win32_helpers.h" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="images\config-window-bar.bmp" />
     <Image Include="images\cover-loading.jpg" />
     <Image Include="images\cover-no-img.jpg" />
   </ItemGroup>
