@@ -81,6 +81,7 @@ void DbAlbumCollection::onCollectionReload(DbReloadWorker& worker){
 }
 
 bool DbAlbumCollection::getImageForTrack(const metadb_handle_ptr &track, pfc::string_base &out){
+	IF_DEBUG(profiler(DbAlbumCollection__getImageForTrack));
 	bool imgFound = false;
 	//abort_callback_impl abortCallback;
 
@@ -142,6 +143,7 @@ void DbAlbumCollection::getTitle(CollectionPos pos, pfc::string_base& out){
 }
 
 shared_ptr<ImgTexture> DbAlbumCollection::getImgTexture(CollectionPos pos){
+	IF_DEBUG(profiler(DbAlbumCollection__getImgTexture));
 	if (albums.empty())
 		return 0;
 

@@ -74,6 +74,7 @@ unique_ptr<Bitmap> ImgTexture::getErrorBitmap(){
 
 void ImgTexture::glUpload(void)
 {
+	IF_DEBUG(profiler(ImgTexture__glUpload));
 	EnterCriticalSection(&uploadCS);
 	if ((status == STATUS_IMG_LOCKED) && bitmap && bitmapData){
 		glTexture = new GLuint[1];
@@ -150,6 +151,7 @@ int ImgTexture::getMaxSize(){
 
 void ImgTexture::loadImageFile(const char * imageFile)
 {
+	IF_DEBUG(profiler(ImgTexture__loadImageFile));
 	bitmap = make_unique<Bitmap>(pfc::stringcvt::string_wide_from_utf8(imageFile));
 	if ((bitmap->GetLastStatus() != Ok) ||
 		(1 > (bitmap->GetWidth())) ||
@@ -168,6 +170,7 @@ void ImgTexture::loadImageResource(WORD resource, LPCTSTR type)
 
 void ImgTexture::prepareUpload(void)
 {
+	IF_DEBUG(profiler(ImgTexture__prepareUpload));
 	int maxSize = getMaxSize();
 	int width = bitmap->GetWidth();;
 	int height = bitmap->GetHeight();;
