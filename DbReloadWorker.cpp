@@ -61,12 +61,12 @@ void DbReloadWorker::generateData(){
 
 	auto &groupIndex = albums.get<0>();
 	{
-		compiler->compile(albumMapper, cfgGroup);
+		compiler->compile_safe_ex(albumMapper, cfgGroup);
 		pfc::string8_fast_aggressive tmpSortString;
 		albums.reserve(library.get_size());
 		service_ptr_t<titleformat_object> sortFormatter;
 		if (!cfgSortGroup){
-			compiler->compile(sortFormatter, cfgSort);
+			compiler->compile_safe(sortFormatter, cfgSort);
 		}
 		for (t_size i = 0; i < library.get_size(); i++){
 			if (kill) return;

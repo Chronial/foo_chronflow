@@ -30,8 +30,8 @@ void DbAlbumCollection::reloadSourceScripts(){
 				pfc::string8_fastalloc src;
 				src.set_string(srcStart, srcEnd - srcStart + 1);
 				service_ptr_t<titleformat_object> srcScript;
-				compiler->compile(srcScript, src);
-				sourceScripts.add_item(srcScript);
+				if(compiler->compile(srcScript, src))
+					sourceScripts.add_item(srcScript);
 			}
 			srcStart = srcP+1;
 			if (*srcP == '\0')
@@ -46,7 +46,7 @@ DbAlbumCollection::DbAlbumCollection(AppInstance* instance):
 	InitializeCriticalSectionAndSpinCount(&sourceScriptsCS, 0x80000400);
 
 	static_api_ptr_t<titleformat_compiler> compiler;
-	compiler->compile(cfgAlbumTitleScript, cfgAlbumTitle);
+	compiler->compile_safe_ex(cfgAlbumTitleScript, cfgAlbumTitle);
 }
 
 void DbAlbumCollection::onCollectionReload(DbReloadWorker& worker){
@@ -110,7 +110,7 @@ bool DbAlbumCollection::getImageForTrack(const metadb_handle_ptr &track, pfc::st
 
 bool DbAlbumCollection::getTracks(CollectionPos pos, metadb_handle_list& out){
 	out = pos->tracks;
-	out.sort_by_format(cfgInnerSort, 0);
+	out.sort_by_format(cfgInnerSort, nullptr);
 	return true;
 }
 

@@ -435,7 +435,7 @@ public:
 					{
 						static_api_ptr_t<titleformat_compiler> compiler;
 						static_api_ptr_t<metadb> db;
-						compiler->compile(cfgAlbumTitleScript, cfgAlbumTitle);
+						compiler->compile_safe_ex(cfgAlbumTitleScript, cfgAlbumTitle);
 						pfc::string8 preview;
 						metadb_handle_ptr aTrack;
 						if (db->g_get_random_handle(aTrack)){
