@@ -43,8 +43,10 @@
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
     <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
-    <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
-    <CustomBuildAfterTargets>Link</CustomBuildAfterTargets>
+    <PostBuildEventUseInBuild>true</PostBuildEventUseInBuild>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
+    <CustomBuildBeforeTargets>PrepareForRun</CustomBuildBeforeTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
@@ -58,8 +60,10 @@
       <Command>php "$(ProjectDir)CoverPositionsCompile.php"</Command>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>copy Debug\foo_chronflow.dll C:\home\coding\foobar\bin\components\foo_chronflow.dll</Command>
-      <Outputs>C:\home\coding\foobar\bin\components\foo_chronflow.dll</Outputs>
+      <Command>
+      </Command>
+      <Outputs>
+      </Outputs>
     </CustomBuildStep>
     <ClCompile>
       <Optimization>Disabled</Optimization>
@@ -86,10 +90,8 @@
       <AdditionalLibraryDirectories>..\..\boost_1_59_0\stage\lib</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Message>Cleanup...</Message>
-      <Command>del $(ProjectDir)\COVER_CONFIG_DEF_CONTENT.h
-del $(ProjectDir)\BUILD_IN_COVERCONFIGS.h
-</Command>
+      <Message>Copying</Message>
+      <Command>copy Debug\foo_chronflow.dll C:\home\coding\foobar\bin\components\foo_chronflow.dll</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

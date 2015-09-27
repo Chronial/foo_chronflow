@@ -7,7 +7,6 @@
 
 #include "AppInstance.h"
 #include "Console.h"
-#include "ScriptedCoverPositions.h"
 #include "DbAlbumCollection.h"
 #include "ImgTexture.h"
 #include "RenderThread.h"
@@ -213,7 +212,7 @@ bool AsynchTexLoader::loadNextTexture(){
 
 	{
 		auto lockedCache = textureCache.synchronize();
-		for (; lockedCache->count(loadNext->groupString); ++loaded){
+		for (; lockedCache->count(loadNext->groupString); ){
 			// make sure the cache contains the right distances
 			auto cacheEntry = lockedCache->find(loadNext->groupString);
 			if (cacheEntry->priority.first != cacheGeneration){
@@ -222,8 +221,9 @@ bool AsynchTexLoader::loadNextTexture(){
 				});
 			}
 
-			if (loaded >= maxLoad)
+			if (++loaded >= maxLoad)
 				return false;
+
 			if ((loaded % 2 || leftLoaded == appInstance->albumCollection->begin()) &&
 				++CollectionPos(rightLoaded) != appInstance->albumCollection->end()){
 				++rightLoaded;
