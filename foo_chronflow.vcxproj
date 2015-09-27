@@ -44,6 +44,7 @@
     <IntDir>$(Configuration)\</IntDir>
     <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
     <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
+    <CustomBuildAfterTargets>Link</CustomBuildAfterTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
@@ -57,7 +58,8 @@
       <Command>php "$(ProjectDir)CoverPositionsCompile.php"</Command>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command />
+      <Command>copy Debug\foo_chronflow.dll C:\home\coding\foobar\bin\components\foo_chronflow.dll</Command>
+      <Outputs>C:\home\coding\foobar\bin\components\foo_chronflow.dll</Outputs>
     </CustomBuildStep>
     <ClCompile>
       <Optimization>Disabled</Optimization>
