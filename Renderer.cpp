@@ -349,12 +349,14 @@ void Renderer::drawBg(){
 
 void Renderer::drawFrame()
 {
+	TRACK_CALL_TEXT("Renderer::drawFrame");
 	drawBg();
 	drawScene(false);
 	drawGui();
 }
 
 void Renderer::swapBuffers(){
+	TRACK_CALL_TEXT("Renderer::swapBuffers");
 	glfwSwapBuffers(appInstance->glfwWindow);
 }
 

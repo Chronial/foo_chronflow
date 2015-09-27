@@ -23,12 +23,12 @@
 
 # Release Steps
 * make sure CoverConfigs are in sync
-* Extensively test config Window!
 * Bump version number
 * Build with new version number
 * tag version
 * safe dll AND pdb
-* Add glfw3.dll to pack!
+* Add glfw3.dll to pack
+* Upgrade own foobar
 * upload to github
 * update forum post
 

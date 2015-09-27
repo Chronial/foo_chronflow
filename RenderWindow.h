@@ -22,6 +22,7 @@ public:
 
 	RenderWindow(AppInstance* appInstance, ui_element_instance_callback_ptr defaultUiCallback)
 		: appInstance(appInstance), defaultUiCallback(defaultUiCallback){
+		TRACK_CALL_TEXT("RenderWindow::RenderWindow");
 		findAsYouType = make_unique<FindAsYouType>(appInstance);
 
 		// TODO: handle window creation errors?

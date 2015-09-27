@@ -34,6 +34,7 @@ DbReloadWorker::~DbReloadWorker(){
 }
 
 void DbReloadWorker::threadProc(){
+	TRACK_CALL_TEXT("Chronflow DbReloadWorker");
 	this->generateData();
 	if (!kill)
 		appInstance->renderer->send(make_shared<RTCollectionReloadedMessage>());
@@ -41,7 +42,7 @@ void DbReloadWorker::threadProc(){
 };
 
 void DbReloadWorker::generateData(){
-	console::timer_scope timer("foo_chronflow Collection Generation");
+	console::timer_scope timer("foo_chronflow collection generated in");
 	static_api_ptr_t<titleformat_compiler> compiler;
 	static_api_ptr_t<metadb> db;
 

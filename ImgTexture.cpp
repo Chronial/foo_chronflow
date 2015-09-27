@@ -74,6 +74,7 @@ unique_ptr<Bitmap> ImgTexture::getErrorBitmap(){
 
 void ImgTexture::glUpload(void)
 {
+	TRACK_CALL_TEXT("ImgTexture::glUpload");
 	IF_DEBUG(profiler(ImgTexture__glUpload));
 	EnterCriticalSection(&uploadCS);
 	if ((status == STATUS_IMG_LOCKED) && bitmap && bitmapData){

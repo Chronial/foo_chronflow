@@ -12,6 +12,7 @@
 #define MINIMIZE_CHECK_TIMEOUT 10000 // milliseconds
 
 void ChronflowWindow::startup(HWND parent) {
+	TRACK_CALL_TEXT("ChronflowWindow::startup");
 	appInstance = new AppInstance();
 	IF_DEBUG(Console::create());
 

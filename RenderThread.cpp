@@ -12,6 +12,7 @@
 
 
 void RenderThread::threadProc(){
+	TRACK_CALL_TEXT("Chronflow RenderThread");
 	// Required that we can compile CoverPos Scripts
 	CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
 	std::shared_ptr<RTInitDoneMessage> initDoneMsg;
@@ -106,6 +107,7 @@ void RenderThread::send(shared_ptr<RTMessage> msg){
 }
 
 void RenderThread::onPaint(){
+	TRACK_CALL_TEXT("RenderThread::onPaint");
 	collection_read_lock lock(appInstance);
 	std::unique_lock<std::mutex> openglLock(texLoader.openglAccess);
 	double frameStart = Helpers::getHighresTimer();

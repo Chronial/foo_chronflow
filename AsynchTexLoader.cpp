@@ -97,6 +97,7 @@ void AsynchTexLoader::send(shared_ptr<ATMessage> msg){
 
 void AsynchTexLoader::threadProc()
 {
+	TRACK_CALL_TEXT("Chronflow AsynchTexLoader");
 	glfwMakeContextCurrent(appInstance->glfwLoaderWindow);
 	loadSpecialTextures();
 	appInstance->renderer->send(std::make_shared<RTTexLoaderStartedMessage>());
@@ -169,6 +170,7 @@ void AsynchTexLoader::clearCache(){
 }
 
 void AsynchTexLoader::tryGlStuff(){
+	TRACK_CALL_TEXT("AsynchTexLoader::tryGlStuff");
 	auto lockedCache = textureCache.synchronize();
 	while (lockedCache->size() > (size_t)cfgTextureCacheSize){
 		std::unique_lock<std::mutex> uploadLock(openglAccess, std::try_to_lock);
