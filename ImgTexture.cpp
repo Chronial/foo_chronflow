@@ -188,14 +188,9 @@ void ImgTexture::prepareUpload(void)
 	int width = bitmap->GetWidth();;
 	int height = bitmap->GetHeight();;
 
-	{
-		IF_DEBUG(profiler(ImgTexture__prepareUpload__rotateflip));
-		bitmap->RotateFlip(RotateNoneFlipY);
-	}
-
 	aspect = float(width)/height;
-	bool resize = false;
 
+	// scale textures to maxSize
 	if ((width > maxSize) || (height > maxSize)){
 		if (width > height){
 			height = int(maxSize / aspect);
@@ -204,28 +199,28 @@ void ImgTexture::prepareUpload(void)
 			width  = int(aspect * maxSize);
 			height = maxSize;
 		}
-		resize = true;
 	}
 	
 	// turn texture sizes into powers of two
 	int p2w = 1;
-	int p2h = 1;
 	while (p2w < width)
 		p2w = p2w << 1;
+	width = p2w;
+	int p2h = 1;
 	while (p2h < height)
 		p2h = p2h << 1;
-	if (p2h != height || p2w != width){
-		height = p2h;
-		width = p2w;
-		resize = true;
-	}
+	height = p2h;
 
-	if (resize){
+	{
 		IF_DEBUG(profiler(ImgTexture__prepareUpload__resize));
 		unique_ptr<Bitmap> oldBitmap = std::move(bitmap);
 		bitmap = make_unique<Bitmap>(width,height);
 		Graphics resizer(bitmap.get());
-		//resizer.SetInterpolationMode(InterpolationModeHighQualityBicubic);
+		auto ip = resizer.GetInterpolationMode();
+		resizer.SetTransform(&Gdiplus::Matrix( // Flip Y coordinates for OpenGL
+			1, 0, 
+			0, -1,
+			0, float(height)));
 		resizer.DrawImage(oldBitmap.get(),0,0,width,height);
 		resizer.Flush();
 	}
