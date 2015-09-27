@@ -188,7 +188,10 @@ void ImgTexture::prepareUpload(void)
 	int width = bitmap->GetWidth();;
 	int height = bitmap->GetHeight();;
 
-	bitmap->RotateFlip(RotateNoneFlipY);
+	{
+		IF_DEBUG(profiler(ImgTexture__prepareUpload__rotateflip));
+		bitmap->RotateFlip(RotateNoneFlipY);
+	}
 
 	aspect = float(width)/height;
 	bool resize = false;
@@ -218,6 +221,7 @@ void ImgTexture::prepareUpload(void)
 	}
 
 	if (resize){
+		IF_DEBUG(profiler(ImgTexture__prepareUpload__resize));
 		unique_ptr<Bitmap> oldBitmap = std::move(bitmap);
 		bitmap = make_unique<Bitmap>(width,height);
 		Graphics resizer(bitmap.get());
@@ -241,8 +245,11 @@ void ImgTexture::prepareUpload(void)
 	bitmapDataFormat = GL_BGR_EXT;
 #endif
 
-	Rect rc(0,0,bitmap->GetWidth(),bitmap->GetHeight());
-	bitmapData = make_unique<BitmapData>();
-	bitmap->LockBits(&rc, ImageLockModeRead, texFmt, bitmapData.get());
+	{
+		IF_DEBUG(profiler(ImgTexture__prepareUpload__lockBits));
+		Rect rc(0, 0, bitmap->GetWidth(), bitmap->GetHeight());
+		bitmapData = make_unique<BitmapData>();
+		bitmap->LockBits(&rc, ImageLockModeRead, texFmt, bitmapData.get());
+	}
 	status = STATUS_IMG_LOCKED;
 }
