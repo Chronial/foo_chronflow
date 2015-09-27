@@ -41,6 +41,8 @@ public:
 		SetParent(hWnd, appInstance->mainWindow);
 		LONG nNewStyle = GetWindowLong(hWnd, GWL_STYLE) & ~WS_POPUP | WS_CHILDWINDOW;
 		SetWindowLong(hWnd, GWL_STYLE, nNewStyle);
+		ULONG_PTR cNewStyle = GetClassLongPtr(hWnd, GCL_STYLE) | CS_DBLCLKS;
+		SetClassLongPtr(hWnd, GCL_STYLE, cNewStyle);
 		SetWindowSubclass(hWnd, &RenderWindow::WndProc, 0, reinterpret_cast<DWORD_PTR>(this));
 
 

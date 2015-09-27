@@ -9,6 +9,8 @@
 * Syncronize PlaybackTracer!
 * Check what texloader spends its time on (output timestamps with the load messages)
 
+* Why do preferences open so slowly?
+
 * Do not initialize targetPos on Collection construction and fix ensuing errors
 
 * call glFinish after buffer swap https://www.opengl.org/wiki/Swap_Interval
