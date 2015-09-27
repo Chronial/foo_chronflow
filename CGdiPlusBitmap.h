@@ -112,3 +112,70 @@ bool CGdiPlusBitmapResource::Load(LPCTSTR pName, LPCTSTR pType, HMODULE hInst)
 	}
 	return false;
 }
+
+
+
+
+class CGdiPlusBitmapMemory : public CGdiPlusBitmap
+{
+protected:
+	HGLOBAL m_hBuffer;
+
+public:
+	CGdiPlusBitmapMemory()					{ m_hBuffer = NULL; }
+	CGdiPlusBitmapMemory(const void * ptr, size_t size)
+	{
+		m_hBuffer = NULL; Load(ptr, size);
+	}
+	virtual ~CGdiPlusBitmapMemory()			{ Empty(); }
+
+	void Empty();
+
+	bool Load(const void * ptr, size_t size);
+};
+
+inline
+void CGdiPlusBitmapMemory::Empty()
+{
+	CGdiPlusBitmap::Empty();
+	if (m_hBuffer)
+	{
+		::GlobalUnlock(m_hBuffer);
+		::GlobalFree(m_hBuffer);
+		m_hBuffer = NULL;
+	}
+}
+
+inline
+bool CGdiPlusBitmapMemory::Load(const void * ptr, size_t size)
+{
+	Empty();
+
+	m_hBuffer = ::GlobalAlloc(GMEM_MOVEABLE, size);
+	if (m_hBuffer)
+	{
+		void* pBuffer = ::GlobalLock(m_hBuffer);
+		if (pBuffer)
+		{
+			CopyMemory(pBuffer, ptr, size);
+
+			IStream* pStream = NULL;
+			if (::CreateStreamOnHGlobal(m_hBuffer, FALSE, &pStream) == S_OK)
+			{
+				m_pBitmap = unique_ptr<Gdiplus::Bitmap>(Gdiplus::Bitmap::FromStream(pStream));
+				pStream->Release();
+				if (m_pBitmap)
+				{
+					if (m_pBitmap->GetLastStatus() == Gdiplus::Ok)
+						return true;
+
+					m_pBitmap.reset();
+				}
+			}
+			::GlobalUnlock(m_hBuffer);
+		}
+		::GlobalFree(m_hBuffer);
+		m_hBuffer = NULL;
+	}
+	return false;
+}

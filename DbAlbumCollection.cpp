@@ -108,6 +108,20 @@ bool DbAlbumCollection::getImageForTrack(const metadb_handle_ptr &track, pfc::st
 	return imgFound;
 }
 
+
+
+bool DbAlbumCollection::getArtForTrack(const metadb_handle_ptr &track, album_art_data::ptr &out){
+	
+	static_api_ptr_t<album_art_manager_v2> aam;
+	pfc::list_t<GUID> guids;
+	guids.add_item(album_art_ids::cover_front);
+	metadb_handle_list tracks;
+	tracks.add_item(track);
+	abort_callback_impl abortCallback;
+	album_art_extractor_instance_v2::ptr extractor = aam->open(tracks, guids, abortCallback);
+	return extractor->query(album_art_ids::cover_front, out, abortCallback);
+}
+
 bool DbAlbumCollection::getTracks(CollectionPos pos, metadb_handle_list& out){
 	out = pos->tracks;
 	out.sort_by_format(cfgInnerSort, nullptr);
@@ -142,16 +156,31 @@ void DbAlbumCollection::getTitle(CollectionPos pos, pfc::string_base& out){
 	pos->tracks[0]->format_title(0, out, cfgAlbumTitleScript, 0);
 }
 
+
+int totalTime = 0;
+int totalImages = 0;
 shared_ptr<ImgTexture> DbAlbumCollection::getImgTexture(CollectionPos pos){
 	IF_DEBUG(profiler(DbAlbumCollection__getImgTexture));
 	if (albums.empty())
 		return 0;
 
 	auto &sortedIndex = albums.get<1>();
+	double startTime = Helpers::getHighresTimer();
+#if 0
 	pfc::string8_fast_aggressive imgFile;
 	imgFile.prealloc(512);
 	if (getImageForTrack(pos->tracks[0], imgFile)){
-		return make_shared<ImgTexture>(imgFile);
+		auto out = make_shared<ImgTexture>(imgFile);
+#else
+	album_art_data::ptr art;
+	if (getArtForTrack(pos->tracks[0], art)){
+		auto out = make_shared<ImgTexture>(art);
+#endif
+		int thisTime = int((Helpers::getHighresTimer() - startTime) * 1000);
+		totalTime += thisTime;
+		totalImages += 1;
+		console::printf("Load: %d msec (%d msec avg)", thisTime, int(totalTime / totalImages));
+		return out;
 	} else {
 		return nullptr;
 	}

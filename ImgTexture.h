@@ -16,6 +16,7 @@ private:
 public:
 	ImgTexture(const char* imageFile);
 	ImgTexture(WORD resource, LPCTSTR type);
+	ImgTexture(const album_art_data::ptr &art);
 	~ImgTexture(void);
 
 	void glBind(void);
@@ -33,6 +34,7 @@ private:
 	static int maxGlTextureSize;
 	unique_ptr<Gdiplus::Bitmap> bitmap;
 	CGdiPlusBitmapResource bitmapResource;
+	CGdiPlusBitmapMemory bitmapMemory;
 	GLuint* glTexture = 0;
 	unique_ptr<Gdiplus::BitmapData> bitmapData;
 	GLenum bitmapDataFormat; 
@@ -44,6 +46,7 @@ private:
 	CRITICAL_SECTION uploadCS;
 	void prepareUpload(void);
 
+	void loadImageFromArt(const album_art_data::ptr &art);
 	void loadImageFile(const char * imageFile);
 	void loadImageResource(WORD resource, LPCTSTR type);
 	pfc::string8 name;

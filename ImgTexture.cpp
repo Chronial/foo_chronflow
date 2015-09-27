@@ -31,6 +31,11 @@ ImgTexture::ImgTexture(WORD resource, LPCTSTR type) : ImgTexture()
 	loadImageResource(resource, type);
 }
 
+ImgTexture::ImgTexture(const album_art_data::ptr &art) : ImgTexture()
+{
+	this->name = "Album Art";
+	loadImageFromArt(art);
+}
 
 ImgTexture::~ImgTexture(void)
 {
@@ -148,6 +153,13 @@ void ImgTexture::setMaxGlTextureSize(int size)
 
 int ImgTexture::getMaxSize(){
 	return std::min((int)cfgMaxTextureSize, maxGlTextureSize);
+}
+
+void ImgTexture::loadImageFromArt(const album_art_data::ptr &art)
+{
+	bitmapMemory.Load(art->get_ptr(), art->get_size());
+	bitmap = bitmapMemory.stealBitmap();
+	prepareUpload();
 }
 
 void ImgTexture::loadImageFile(const char * imageFile)

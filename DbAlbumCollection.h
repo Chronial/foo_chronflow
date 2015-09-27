@@ -97,6 +97,7 @@ public:
 
 private:
 	bool getImageForTrack(const metadb_handle_ptr &track, pfc::string_base &out);
+	bool getArtForTrack(const metadb_handle_ptr &track, album_art_data::ptr &out);
 
 	void reloadSourceScripts();
 	pfc::list_t< service_ptr_t<titleformat_object> > sourceScripts;
