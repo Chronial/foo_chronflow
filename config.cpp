@@ -25,7 +25,7 @@ cfg_bool cfgSortGroup(guid_cfgSortGroup, true);
 
 // {F7F9192E-09D8-477c-BEBE-DE73C085E0FE}
 static const GUID guid_cfgInnerSort = { 0xf7f9192e, 0x9d8, 0x477c, { 0xbe, 0xbe, 0xde, 0x73, 0xc0, 0x85, 0xe0, 0xfe } };
-cfg_string cfgInnerSort(guid_cfgInnerSort, "$num(%tracknumber%,3)");
+cfg_string cfgInnerSort(guid_cfgInnerSort, "%discnumber%|$num(%tracknumber%,3)");
 
 // {EEA355D5-8A50-4F9F-BD99-FBC23824BBA1}
 static const GUID guid_cfgEmbeddedArt = { 0xeea355d5, 0x8a50, 0x4f9f, { 0xbd, 0x99, 0xfb, 0xc2, 0x38, 0x24, 0xbb, 0xa1 } };
@@ -52,7 +52,7 @@ cfg_bool cfgCoverFollowsPlayback(guid_cfgCoverFollowsPlayback, true);
 
 // {7AA69C60-1528-4ce3-86ED-D413A8A93CE1}
 static const GUID guid_cfgCoverFollowDelay = { 0x7aa69c60, 0x1528, 0x4ce3, { 0x86, 0xed, 0xd4, 0x13, 0xa8, 0xa9, 0x3c, 0xe1 } };
-cfg_int cfgCoverFollowDelay(guid_cfgCoverFollowDelay, 60);
+cfg_int cfgCoverFollowDelay(guid_cfgCoverFollowDelay, 15);
 
 // {53BF0A95-12E2-440a-B2FB-F75BE90764E2}
 static const GUID guid_cfgFindAsYouType = { 0x53bf0a95, 0x12e2, 0x440a, { 0xb2, 0xfb, 0xf7, 0x5b, 0xe9, 0x7, 0x64, 0xe2 } };
