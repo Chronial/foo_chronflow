@@ -31,6 +31,7 @@ public:
 		glfwWindowHint(GLFW_SAMPLES, cfgMultisampling ? cfgMultisamplingPasses : 0);
 		glfwWindowHint(GLFW_FOCUSED, false);
 		glfwWindowHint(GLFW_RESIZABLE, false);
+		glfwWindowHint(GLFW_VISIBLE, false);
 		window = glfwCreateWindow(640, 480, "foo_chronflow render window", NULL, NULL);
 		if (!window){
 			throw std::runtime_error("Failed to create opengl window");
@@ -44,9 +45,9 @@ public:
 		ULONG_PTR cNewStyle = GetClassLongPtr(hWnd, GCL_STYLE) | CS_DBLCLKS;
 		SetClassLongPtr(hWnd, GCL_STYLE, cNewStyle);
 		SetWindowSubclass(hWnd, &RenderWindow::WndProc, 0, reinterpret_cast<DWORD_PTR>(this));
+		glfwShowWindow(window);
 
 
-		glfwWindowHint(GLFW_VISIBLE, false);
 		appInstance->glfwLoaderWindow = glfwCreateWindow(10, 10, "foo_chronflow texloader window", NULL, appInstance->glfwWindow);
 		if (!appInstance->glfwLoaderWindow){
 			glfwDestroyWindow(window);
