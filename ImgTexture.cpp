@@ -73,7 +73,9 @@ unique_ptr<Bitmap> ImgTexture::getErrorBitmap(){
 	StringFormat format;
 	format.SetAlignment(StringAlignmentCenter);
 	format.SetLineAlignment(StringAlignmentCenter);
-	drawer.DrawString(pfc::stringcvt::string_wide_from_utf8(name),-1,&font,RectF(0,0,256,256),&format,&whiteBrush);
+	pfc::string_formatter message;
+	message << "Failed to load \n" << name;
+	drawer.DrawString(pfc::stringcvt::string_wide_from_utf8(message),-1,&font,RectF(0,0,256,256),&format,&whiteBrush);
 	return bitmap;
 }
 
@@ -157,8 +159,11 @@ int ImgTexture::getMaxSize(){
 
 void ImgTexture::loadImageFromArt(const album_art_data::ptr &art)
 {
-	bitmapMemory.Load(art->get_ptr(), art->get_size());
-	bitmap = bitmapMemory.stealBitmap();
+	if (bitmapMemory.Load(art->get_ptr(), art->get_size())){
+		bitmap = bitmapMemory.stealBitmap();
+	} else {
+		bitmap = getErrorBitmap();
+	}
 	prepareUpload();
 }
 
@@ -176,8 +181,11 @@ void ImgTexture::loadImageFile(const char * imageFile)
 
 void ImgTexture::loadImageResource(WORD resource, LPCTSTR type)
 {
-	bitmapResource.Load(resource, type, core_api::get_my_instance());
-	bitmap = bitmapResource.stealBitmap();
+	if (bitmapResource.Load(resource, type, core_api::get_my_instance())){
+		bitmap = bitmapResource.stealBitmap();
+	} else {
+		bitmap = getErrorBitmap();
+	}
 	prepareUpload();
 }
 
