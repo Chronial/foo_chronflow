@@ -94,15 +94,6 @@ bool DbAlbumCollection::getImageForTrack(const metadb_handle_ptr &track, pfc::st
 			imgFound = true;
 			break;
 		}
-		/*try {
-			if (filesystem::g_exists(out, abortCallback) &&
-				!filesystem::g_is_valid_directory(out, abortCallback) &&
-				!filesystem::g_is_remote_or_unrecognized(out)){
-					imgFound = true;
-					break;
-			}
-		} catch (exception_io_no_handler_for_path){
-		}*/
 	}
 	LeaveCriticalSection(&sourceScriptsCS);
 	return imgFound;

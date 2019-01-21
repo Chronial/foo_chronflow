@@ -16,9 +16,8 @@ public:
 	std::unique_ptr<PlaybackTracer> playbackTracer;
 	boost::synchronized_value<std::unique_ptr<DbReloadWorker>> reloadWorker;
 
-	// TODO: Get rid of these pointers?
+	// TODO: Get rid of this pointer?
 	GLFWwindow* glfwWindow = nullptr;
-	GLFWwindow* glfwLoaderWindow = nullptr;
 	HWND mainWindow = nullptr;
 
 	inline void redrawMainWin(){

@@ -83,6 +83,7 @@ void ImgTexture::glUpload(void)
 {
 	TRACK_CALL_TEXT("ImgTexture::glUpload");
 	IF_DEBUG(profiler(ImgTexture__glUpload));
+	IF_DEBUG(double preLoad = Helpers::getHighresTimer());
 	EnterCriticalSection(&uploadCS);
 	if ((status == STATUS_IMG_LOCKED) && bitmap && bitmapData){
 		glTexture = new GLuint[1];
@@ -119,7 +120,7 @@ void ImgTexture::glUpload(void)
 			glInternalFormat = GL_RGB;
 #endif
 
-		IF_DEBUG(Console::println(L"                                     UPLOAD"));
+		IF_DEBUG(Console::printf(L"                                     UPLOAD (%d ms)\n", int((Helpers::getHighresTimer() - preLoad) * 1000)));
 		
 		glTexImage2D(GL_TEXTURE_2D, 0, glInternalFormat, width, height, 0, bitmapDataFormat, GL_UNSIGNED_BYTE, data);
 		bitmap->UnlockBits(bitmapData.get());

@@ -47,25 +47,12 @@ public:
 		SetWindowSubclass(hWnd, &RenderWindow::WndProc, 0, reinterpret_cast<DWORD_PTR>(this));
 		glfwShowWindow(window);
 
-
-		appInstance->glfwLoaderWindow = glfwCreateWindow(10, 10, "foo_chronflow texloader window", NULL, appInstance->glfwWindow);
-		if (!appInstance->glfwLoaderWindow){
-			glfwDestroyWindow(window);
-			appInstance->glfwWindow = nullptr;
-			throw std::runtime_error("Failed to create opengl loader window");
-		}
-		HWND glfwLoaderHwnd = glfwGetWin32Window(appInstance->glfwLoaderWindow);
-		SetParent(glfwLoaderHwnd, appInstance->mainWindow);
-
-
 		glfwSetWindowUserPointer(window, this);
 		glfwSetScrollCallback(window, &RenderWindow::onScroll);
 		glfwSetWindowRefreshCallback(window, &RenderWindow::onDamage);
 		glfwSetWindowSizeCallback(window, &RenderWindow::onWindowSize);
 	};
 	~RenderWindow(){
-		glfwDestroyWindow(appInstance->glfwLoaderWindow);
-		appInstance->glfwLoaderWindow = nullptr;
 		glfwDestroyWindow(appInstance->glfwWindow);
 		appInstance->glfwWindow = nullptr;
 	}

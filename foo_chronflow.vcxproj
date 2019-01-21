@@ -57,7 +57,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <PreBuildEvent>
       <Message>Compiling default Configs...</Message>
-      <Command>php "$(ProjectDir)CoverPositionsCompile.php"</Command>
+      <Command>py -3 "$(ProjectDir)CoverPositionsCompile.py"</Command>
     </PreBuildEvent>
     <CustomBuildStep>
       <Command>
@@ -132,7 +132,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="AsynchTexLoader.cpp" />
+    <ClCompile Include="TextureCache.cpp" />
     <ClCompile Include="ChronflowWindow.cpp" />
     <ClCompile Include="CoverConfig.cpp" />
     <ClCompile Include="ConfigWindow.cpp" />
@@ -165,7 +165,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AppInstance.h" />
-    <ClInclude Include="AsynchTexLoader.h" />
+    <ClInclude Include="TextureCache.h" />
     <ClInclude Include="base.h" />
     <ClInclude Include="ChronflowWindow.h" />
     <ClInclude Include="CoverConfig.h" />

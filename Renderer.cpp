@@ -3,7 +3,7 @@
 
 #include "Renderer.h"
 
-#include "AsynchTexLoader.h"
+#include "TextureCache.h"
 #include "AppInstance.h"
 #include "DisplayPosition.h"
 #include "DbAlbumCollection.h"
@@ -386,7 +386,7 @@ void Renderer::drawCovers(bool showTarget){
 	for (CollectionPos p = firstCover; p != lastCover; ++p, ++offset){
 		float co = -centerOffset + offset;
 
-		shared_ptr<ImgTexture> tex = texLoader->getLoadedImgTexture(p);
+		shared_ptr<ImgTexture> tex = texCache->getLoadedImgTexture(p);
 		tex->glBind();
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 

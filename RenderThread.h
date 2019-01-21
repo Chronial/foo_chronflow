@@ -1,5 +1,5 @@
 #pragma once
-#include "AsynchTexLoader.h"
+#include "TextureCache.h"
 #include "DisplayPosition.h"
 #include "DbAlbumCollection.h"
 #include "DbReloadWorker.h"
@@ -42,7 +42,6 @@ class RTPaintMessage : public RTMessage {};
 class RTRedrawMessage : public RTMessage {};
 class RTStopThreadMessage : public RTMessage {};
 class RTInitDoneMessage : public RTAnswerMessage <bool> {};
-class RTTexLoaderStartedMessage : public RTMessage {};
 class RTTextFormatChangedMessage : public RTMessage {};
 class RTDeviceModeMessage : public RTMessage {};
 class RTWindowResizeMessage : public RTMessage {
@@ -75,7 +74,7 @@ class RTWindowShowMessage : public RTMessage {};
 
 class RenderThread {
 	DisplayPosition displayPos;
-	AsynchTexLoader texLoader;
+	TextureCache texCache;
 	Renderer renderer;
 	AppInstance* appInstance;
 public:
@@ -100,5 +99,3 @@ private:
 
 	BlockingQueue<shared_ptr<RTMessage>> messageQueue;
 };
-
-
