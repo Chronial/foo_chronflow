@@ -43,7 +43,6 @@ private:
 		STATUS_IMG_LOCKED = 1,
 		STATUS_UPLOADED = 2
 	} status = STATUS_NONE;
-	CRITICAL_SECTION uploadCS;
 	void prepareUpload(void);
 
 	void loadImageFromArt(const album_art_data::ptr &art);

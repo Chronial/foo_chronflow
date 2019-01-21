@@ -15,7 +15,6 @@ int  ImgTexture::maxGlTextureSize = 512;
 
 ImgTexture::ImgTexture()
 {
-	InitializeCriticalSectionAndSpinCount(&uploadCS, 0x80000400);
 }
 
 
@@ -42,7 +41,6 @@ ImgTexture::~ImgTexture(void)
 	if (glTexture){
 		IF_DEBUG(__debugbreak());
 	}
-	DeleteCriticalSection(&uploadCS);
 }
 
 void ImgTexture::glBind(void)
@@ -84,7 +82,6 @@ void ImgTexture::glUpload(void)
 	TRACK_CALL_TEXT("ImgTexture::glUpload");
 	IF_DEBUG(profiler(ImgTexture__glUpload));
 	IF_DEBUG(double preLoad = Helpers::getHighresTimer());
-	EnterCriticalSection(&uploadCS);
 	if ((status == STATUS_IMG_LOCKED) && bitmap && bitmapData){
 		glTexture = new GLuint[1];
 		glGenTextures(1,glTexture);
@@ -128,7 +125,6 @@ void ImgTexture::glUpload(void)
 		bitmap.reset();
 		status = STATUS_UPLOADED;
 	}
-	LeaveCriticalSection(&uploadCS);
 }
 
 void ImgTexture::glDelete(void)
