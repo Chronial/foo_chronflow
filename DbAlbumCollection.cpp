@@ -9,8 +9,11 @@
 
 #include "DbReloadWorker.h"
 
+collection_read_lock::collection_read_lock(AppInstance& appInstance) :
+	boost::shared_lock<DbAlbumCollection>(*(appInstance.albumCollection)){};
+
 collection_read_lock::collection_read_lock(AppInstance* appInstance) :
-	boost::shared_lock<DbAlbumCollection>(*(appInstance->albumCollection)){};
+	collection_read_lock(*appInstance){};
 
 void DbAlbumCollection::reloadSourceScripts(){
 	ASSERT_EXCLUSIVE(this);
@@ -148,20 +151,17 @@ void DbAlbumCollection::getTitle(CollectionPos pos, pfc::string_base& out){
 }
 
 
-shared_ptr<ImgTexture> DbAlbumCollection::getImgTexture(CollectionPos pos){
+shared_ptr<ImgTexture> DbAlbumCollection::getImgTexture(const std::string& albumName){
 	IF_DEBUG(profiler(DbAlbumCollection__getImgTexture));
-	if (albums.empty())
-		return 0;
-
-	auto &sortedIndex = albums.get<1>();
-	double startTime = Helpers::getHighresTimer();
+	auto& albumIndex = albums.get<0>();
+	auto& album = albumIndex.find(albumName);
 	if (cfgEmbeddedArt){
 		album_art_data::ptr art;
-		if (getArtForTrack(pos->tracks[0], art))
+		if (getArtForTrack(album->tracks[0], art))
 			return make_shared<ImgTexture>(art);
 	} else {
 		pfc::string8_fast_aggressive imgFile;
-		if (getImageForTrack(pos->tracks[0], imgFile))
+		if (getImageForTrack(album->tracks[0], imgFile))
 			return make_shared<ImgTexture>(imgFile);
 	}
 	// No Image found

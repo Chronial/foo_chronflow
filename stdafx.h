@@ -33,6 +33,7 @@
 #include <mutex>
 #include <memory>
 #include <atomic>
+#include <thread>
 
 using std::unique_ptr;
 using std::make_unique;
@@ -49,6 +50,8 @@ using std::dynamic_pointer_cast;
 #include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/synchronized_value.hpp>
 
+#include <boost/optional.hpp>
+
 using boost::shared_lock;
 
 #ifdef _DEBUG
@@ -62,6 +65,7 @@ using boost::shared_lock;
 #include <boost/multi_index/ranked_index.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/sequenced_index.hpp>
+#include <boost/multi_index/composite_key.hpp>
 
 
 // Get rid of these macros

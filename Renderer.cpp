@@ -386,7 +386,7 @@ void Renderer::drawCovers(bool showTarget){
 	for (CollectionPos p = firstCover; p != lastCover; ++p, ++offset){
 		float co = -centerOffset + offset;
 
-		shared_ptr<ImgTexture> tex = texCache->getLoadedImgTexture(p);
+		shared_ptr<ImgTexture> tex = texCache->getLoadedImgTexture(*p);
 		tex->glBind();
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 

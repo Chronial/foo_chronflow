@@ -54,8 +54,8 @@ class DbAlbumCollection : public shared_mutex
 public:
 	DbAlbumCollection(AppInstance* instance);
 	~DbAlbumCollection(void);
-	inline int getCount() { return albums.size(); };
-	shared_ptr<ImgTexture> getImgTexture(CollectionPos pos);
+	inline size_t getCount() { return albums.size(); };
+	shared_ptr<ImgTexture> getImgTexture(const std::string& album);
 	void getTitle(CollectionPos pos, pfc::string_base& out);
 	bool getTracks(CollectionPos pos, metadb_handle_list& out);
 	bool getAlbumForTrack(const metadb_handle_ptr& track, CollectionPos& out);
@@ -114,5 +114,6 @@ private:
 
 class collection_read_lock : public boost::shared_lock < DbAlbumCollection > {
 public:
+	collection_read_lock(AppInstance& appInstance);
 	collection_read_lock(AppInstance* appInstance);
 };

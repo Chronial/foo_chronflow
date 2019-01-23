@@ -12,10 +12,8 @@
 #include "RenderThread.h"
 
 
-TextureCache::TextureCache(AppInstance* instance) :
-appInstance(instance)
-{
-}
+TextureCache::TextureCache(AppInstance* instance)
+	: appInstance(instance), loaderThread(*instance) {}
 
 void TextureCache::loadSpecialTextures(){
 	if (loadingTexture){
@@ -45,10 +43,10 @@ void TextureCache::loadSpecialTextures(){
 	}
 }
 
-shared_ptr<ImgTexture> TextureCache::getLoadedImgTexture(CollectionPos pos)
+shared_ptr<ImgTexture> TextureCache::getLoadedImgTexture(const DbAlbum& pos)
 {
 	shared_ptr<ImgTexture> tex;
-	auto entry = textureCache.find(pos->groupString);
+	auto entry = textureCache.find(pos.groupString);
 	if (entry != textureCache.end()){
 		if (entry->texture)
 			return entry->texture;
@@ -65,124 +63,143 @@ void TextureCache::init(){
 }
 
 TextureCache::~TextureCache(){
+	// TODO: These might be nullpointers
 	loadingTexture->glDelete();
 	noCoverTexture->glDelete();
+
 	clearCache();
 }
 
 void TextureCache::onTargetChange(){
 	collection_read_lock lock(appInstance);
-	cacheGeneration++;
+	cacheGeneration += 1;
 	// wrap around
 	if (cacheGeneration > std::numeric_limits<unsigned int>::max() - 100){
 		cacheGeneration = 1;
 		for (auto it = textureCache.begin(); it != textureCache.end(); ++it){
-			textureCache.modify(it, [&](CacheItem& x) {
+			textureCache.modify(it, [&](TextureCacheItem& x) {
 				x.priority.first = 0;
 			});
 		}
 	}
-	queueCenter = appInstance->albumCollection->getTargetPos();
-	allLoaded = false;
+	updateLoadingQueue(appInstance->albumCollection->getTargetPos());
 }
 
 void TextureCache::onCollectionReload(){
+	collectionVersion += 1;
 	loadSpecialTextures();
-	clearCache();
 	{
 		collection_read_lock lock(appInstance);
-		queueCenter = appInstance->albumCollection->getTargetPos();
+		updateLoadingQueue(appInstance->albumCollection->getTargetPos());
 	}
-	allLoaded = false;
 }
+
+void TextureCache::trimCache(){
+	while (textureCache.size() > (size_t)cfgTextureCacheSize){
+		auto& prorityIndex = textureCache.get<1>();
+		auto oldestEntry = prorityIndex.begin();
+		if (oldestEntry->texture)
+			oldestEntry->texture->glDelete();
+		prorityIndex.erase(oldestEntry);
+	}
+}
+
 
 void TextureCache::clearCache(){
 	for (auto &e : textureCache){
-		if (e.texture){
+		if (e.texture)
 			e.texture->glDelete();
-		}
 	}
 	textureCache.clear();
+	loaderThread.flushQueue();
 }
 
-void TextureCache::tryGlStuff(){
-	TRACK_CALL_TEXT("TextureCache::tryGlStuff");
-	while (textureCache.size() > (size_t)cfgTextureCacheSize){
-		auto &prorityIndex = textureCache.get<1>();
-		auto deleteTexture = prorityIndex.begin()->texture;
-		prorityIndex.erase(prorityIndex.begin());
-		if (deleteTexture)
-			deleteTexture->glDelete();
+void TextureCache::uploadTextures(){
+	bool redraw = false;
+	while (boost::optional<TextureCacheItem> item = loaderThread.getLoaded()){
+		redraw = true;
+		auto existing = textureCache.find(item.get().groupString);
+		if (existing != textureCache.end()) {
+			if (existing->texture)
+				existing->texture->glDelete();
+			textureCache.erase(existing);
+		}
+		if (item->texture)
+			item->texture->glUpload();
+		textureCache.insert(std::move(item.get()));
 	}
-	auto &uploadedIndex = textureCache.get<2>();
-	while (int c = uploadedIndex.count(false)){
-		auto toUpload = uploadedIndex.find(false);
-		if (toUpload->texture)
-			toUpload->texture->glUpload();
-		uploadedIndex.modify_key(toUpload, [](bool &isUploaded) {isUploaded = true; });
+	if (redraw){
+		IF_DEBUG(Console::println(L"Refresh MainWin."));
+		appInstance->redrawMainWin();
 	}
 }
 
-bool TextureCache::loadNextTexture(){
+void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter){
 	collection_read_lock lock(appInstance);
 
-	int collectionSize = appInstance->albumCollection->getCount();
-	if (collectionSize == 0){
-		allLoaded = true;
-		return false;
-	}
-	unsigned int maxLoad = min(collectionSize, int(cfgTextureCacheSize*0.8));
-	unsigned int loaded = 0;
+	loaderThread.flushQueue();
+
+	size_t collectionSize = appInstance->albumCollection->getCount();
+	size_t maxLoad = min(collectionSize, size_t(cfgTextureCacheSize*0.8));
 
 	CollectionPos leftLoaded = queueCenter;
 	CollectionPos rightLoaded = queueCenter;
 	CollectionPos loadNext = queueCenter;
 
-	{
-		while(textureCache.count(loadNext->groupString)){
-			// make sure the cache contains the right distances
-			auto cacheEntry = textureCache.find(loadNext->groupString);
-			if (cacheEntry->priority.first != cacheGeneration){
-				textureCache.modify(cacheEntry, [=](CacheItem &x) {
-					x.priority = std::make_pair(cacheGeneration, -(int)loaded);
-				});
-			}
+	for (size_t i = 0; i < maxLoad; i++){
+		auto cacheEntry = textureCache.find(loadNext->groupString);
+		auto priority = std::make_pair(cacheGeneration, -(int)i);
+		if (cacheEntry != textureCache.end() && cacheEntry->collectionVersion == collectionVersion){
+			textureCache.modify(cacheEntry, [=](TextureCacheItem &x) {
+				x.priority = priority;
+			});
+		} else {
+			loaderThread.enqueue(TextureCacheItem{
+				loadNext->groupString, collectionVersion, priority, nullptr });
+		}
 
-			if (++loaded >= maxLoad){
-				allLoaded = true;
-				return false;
-			}
-
-			if ((loaded % 2 || leftLoaded == appInstance->albumCollection->begin()) &&
+		if ((i % 2 || leftLoaded == appInstance->albumCollection->begin()) &&
 				++CollectionPos(rightLoaded) != appInstance->albumCollection->end()){
-				++rightLoaded;
-				loadNext = rightLoaded;
-				ASSERT(loadNext != appInstance->albumCollection->end());
-			} else {
-				--leftLoaded;
-				loadNext = leftLoaded;
-			}
+			++rightLoaded;
+			loadNext = rightLoaded;
+			ASSERT(loadNext != appInstance->albumCollection->end());
+		} else {
+			--leftLoaded;
+			loadNext = leftLoaded;
 		}
 	}
-
-	auto texture = loadTexImage(loadNext);
-
-	// update TextureCache
-	textureCache.insert({ loadNext->groupString, { cacheGeneration, -(int)loaded }, texture, false });
-
-	bool nearCenter = loaded < 16;
-
-	if ((nearCenter && (loaded % 2)) ||
-		!(loaded % 8)){
-		IF_DEBUG(Console::println(L"Refresh MainWin."));
-		appInstance->redrawMainWin();
-	}
-	return true;
 }
 
-shared_ptr<ImgTexture> TextureCache::loadTexImage(CollectionPos pos){
+TextureLoadingThread::TextureLoadingThread(AppInstance& appInstance) :
+	appInstance(appInstance)
+{
+	thread = std::thread(&TextureLoadingThread::run, this);
+}
+
+TextureLoadingThread::~TextureLoadingThread() {
+	if (thread.joinable()){
+		shouldStop = true;
+		// TODO: This is hacky
+		inQueue.push(TextureCacheItem{});
+		thread.join();
+	}
+}
+
+void TextureLoadingThread::run(){
+	while (!shouldStop) {
+		auto item = inQueue.pop();
+		if (shouldStop) break;
+		item.texture = loadImage(item.groupString);
+		if (shouldStop) break;
+		outQueue.push(std::move(item));
+	}
+}
+
+
+shared_ptr<ImgTexture> TextureLoadingThread::loadImage(const std::string& albumName){
+	collection_read_lock lock(appInstance);
 	IF_DEBUG(double preLoad = Helpers::getHighresTimer());
-	shared_ptr<ImgTexture> tex = appInstance->albumCollection->getImgTexture(pos);
+	shared_ptr<ImgTexture> tex = appInstance.albumCollection->getImgTexture(albumName);
 #ifdef _DEBUG
 	if (tex){
 		Console::printf(L"Load image file in %d ms\n", int((Helpers::getHighresTimer() - preLoad) * 1000));
@@ -193,13 +210,15 @@ shared_ptr<ImgTexture> TextureCache::loadTexImage(CollectionPos pos){
 	return tex;
 }
 
-void TextureCache::trimCache(){
-	while (textureCache.size() > (size_t)cfgTextureCacheSize){
-		auto &prorityIndex = textureCache.get<1>();
 
-		auto deleteTexture = prorityIndex.begin()->texture;
-		prorityIndex.erase(prorityIndex.begin());
-		if (deleteTexture)
-			deleteTexture->glDelete();
-	}
+boost::optional<TextureCacheItem> TextureLoadingThread::getLoaded() {
+	return outQueue.popMaybe();
+}
+
+void TextureLoadingThread::flushQueue() {
+	inQueue.clear();
+}
+
+void TextureLoadingThread::enqueue(TextureCacheItem item){
+	inQueue.push(item);
 }

@@ -19,8 +19,9 @@ void RenderThread::threadProc(){
 	for (;;){
 		// TODO: Improve this loop – separate this into startup and normal processing
 		if (messageQueue.size() == 0 && doPaint){
+			texCache.uploadTextures();
+			texCache.trimCache();
 			onPaint();
-			while (texCache.loadNextTexture()){}
 			continue;
 		}
 		auto msg = messageQueue.pop();
@@ -120,9 +121,6 @@ void RenderThread::onPaint(){
 	double frameEnd = Helpers::getHighresTimer();
 	renderer.fpsCounter.recordFrame(frameStart, frameEnd);
 
-	// TODO: this should not happen unconditionally, but only for as long as we have time
-	texCache.tryGlStuff();
-
 	renderer.ensureVSync(cfgVSyncMode != VSYNC_SLEEP_ONLY);
 	if (cfgVSyncMode == VSYNC_AND_SLEEP || cfgVSyncMode == VSYNC_SLEEP_ONLY){
 		double currentTime = Helpers::getHighresTimer();
@@ -144,7 +142,6 @@ void RenderThread::onPaint(){
 	renderer.swapBuffers();
 	afterLastSwap = Helpers::getHighresTimer();
 
-	texCache.trimCache();
 	if (doPaint){
 		this->send(make_shared<RTPaintMessage>());
 	} else {
@@ -152,7 +149,6 @@ void RenderThread::onPaint(){
 			timeEndPeriod(timerResolution);
 			timerInPeriod = false;
 		}
-		// TODO: texCache.send(make_shared<ATRenderingDoneMessage>());
 	}
 }
 

@@ -10,6 +10,35 @@ using namespace boost::multi_index;
 class AppInstance;
 class ImgTexture;
 
+struct TextureCacheItem {
+	std::string groupString;
+	unsigned int collectionVersion;
+	// (generation, -distance to center)
+	std::pair<unsigned int, int> priority;
+	shared_ptr<ImgTexture> texture;
+};
+
+
+class TextureLoadingThread {
+public:
+	TextureLoadingThread(AppInstance& appInstance);
+	~TextureLoadingThread();
+
+	void flushQueue();
+	void enqueue(TextureCacheItem item);
+	boost::optional<TextureCacheItem> getLoaded();
+private:
+	AppInstance& appInstance;
+	std::thread thread;
+	std::atomic<bool> shouldStop = false;
+
+	BlockingQueue<TextureCacheItem> inQueue;
+	BlockingQueue<TextureCacheItem> outQueue;
+
+	void run();
+	shared_ptr<ImgTexture> loadImage(const std::string& albumName);
+};
+
 class TextureCache
 {
 	AppInstance* appInstance;
@@ -17,48 +46,44 @@ class TextureCache
 public:
 	TextureCache(AppInstance* instance);
 	~TextureCache();
+	void init();
 
-	shared_ptr<ImgTexture> getLoadedImgTexture(CollectionPos pos);
+	shared_ptr<ImgTexture> getLoadedImgTexture(const DbAlbum& pos);
 
 	void trimCache();
 	void clearCache();
 	void onTargetChange();
 	void onCollectionReload();
-	bool loadNextTexture();
-	void tryGlStuff();
+	void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter);
+	void uploadTextures();
 
-	void init();
 
 
 private:
 	GLFWwindow* glfwWindow = nullptr;
-	bool allLoaded = true;
-	CollectionPos queueCenter;
+	unsigned int collectionVersion = 0;
 
 	void loadSpecialTextures();
 	shared_ptr<ImgTexture> noCoverTexture;
 	shared_ptr<ImgTexture> loadingTexture;
 
-
-	void createLoaderWindow();
-	shared_ptr<ImgTexture> loadTexImage(CollectionPos pos);
-
 	unsigned int cacheGeneration = 0;
-	struct CacheItem {
-		std::string groupString;
-		// generation, -distance to center
-		std::pair<unsigned int, int> priority;
-		shared_ptr<ImgTexture> texture;
-		bool isUploaded;
-	};
+
 	typedef multi_index_container <
-		CacheItem,
+		TextureCacheItem,
 		indexed_by<
-			hashed_unique<member<CacheItem, std::string, &CacheItem::groupString>>,
-			ordered_non_unique<member<CacheItem, std::pair<unsigned int, int>, &CacheItem::priority>>,
-			hashed_non_unique<member<CacheItem, bool, &CacheItem::isUploaded>>
+			hashed_unique<member<TextureCacheItem, std::string, &TextureCacheItem::groupString>>,
+			ordered_non_unique<composite_key<
+				TextureCacheItem,
+				member<TextureCacheItem, unsigned int, &TextureCacheItem::collectionVersion>,
+				member<TextureCacheItem, std::pair<unsigned int, int>, &TextureCacheItem::priority>
+			>>
 		>
 	> t_textureCache;
 
 	t_textureCache textureCache;
+
+	TextureLoadingThread loaderThread;
+
+	friend class TextureLoadingThread;
 };

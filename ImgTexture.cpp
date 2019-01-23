@@ -117,6 +117,7 @@ void ImgTexture::glUpload(void)
 			glInternalFormat = GL_RGB;
 #endif
 
+		IF_DEBUG(glFinish());
 		IF_DEBUG(Console::printf(L"                                     UPLOAD (%d ms)\n", int((Helpers::getHighresTimer() - preLoad) * 1000)));
 		
 		glTexImage2D(GL_TEXTURE_2D, 0, glInternalFormat, width, height, 0, bitmapDataFormat, GL_UNSIGNED_BYTE, data);
