@@ -99,6 +99,7 @@ void RenderThread::threadProc(){
 			IF_DEBUG(__debugbreak());
 		}
 	}
+	glFinish();
 	CoUninitialize();
 }
 
