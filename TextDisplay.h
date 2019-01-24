@@ -32,8 +32,9 @@ private:
 
 private:
 	struct DisplayTexture {
-		GLuint glTex;
-		char * text;
+		unsigned int age;
+		GLuint glTex = 0;
+		std::string text;
 		COLORREF color;
 		int textWidth;
 		int textHeight;
@@ -43,22 +44,6 @@ private:
 
 private:
 	DisplayTexture createTexture(const char * text);
-	struct CacheElement : public DisplayTexture {
-		unsigned int age;
-		CacheElement(){
-			age = ~0;
-			text = 0;
-		};
-		CacheElement(const DisplayTexture& tex){
-			text = tex.text;
-			glTex = tex.glTex;
-			color = tex.color;
-			textWidth = tex.textWidth;
-			textHeight = tex.textHeight;
-			texWidth = tex.texWidth;
-			texHeight = tex.texHeight;
-		}
-	};
-	static const int CACHE_SIZE = 10;
-	CacheElement texCache[CACHE_SIZE];
+	static const int CACHE_SIZE = 20;
+	DisplayTexture texCache[CACHE_SIZE];
 };

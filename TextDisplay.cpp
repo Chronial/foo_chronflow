@@ -5,7 +5,6 @@
 
 #include "ImgTexture.h"
 #include "Renderer.h"
-
 using namespace Gdiplus;
 
 
@@ -68,11 +67,9 @@ void TextDisplay::displayBitmapText(const char* text, int x, int y){
 void TextDisplay::clearCache()
 {
 	for (int i=0; i < CACHE_SIZE; i++){
-		if (texCache[i].text) {
+		if (texCache[i].glTex) {
 			glDeleteTextures(i, &texCache[i].glTex);
-			delete texCache[i].text;
 		}
-		texCache[i].text = 0;
 		texCache[i].age = ~0;
 	}
 }
@@ -86,9 +83,9 @@ void TextDisplay::displayText(const char* text, int x, int y, HAlignment hAlign,
 	int oldestElem = 0;
 	unsigned int maxAge = 0;
 	for (int i=0; i < CACHE_SIZE; i++){
-		if (texCache[i].text
-			&& texCache[i].color == cfgTitleColor
-			&& (strcmp(texCache[i].text, text) == 0)){
+		if (texCache[i].glTex &&
+				texCache[i].text == text &&
+				texCache[i].color == cfgTitleColor){
 			dTex = &texCache[i];
 			texCache[i].age = 0;
 		} else {
@@ -101,9 +98,9 @@ void TextDisplay::displayText(const char* text, int x, int y, HAlignment hAlign,
 		}
 	}
 	if (!dTex) { // not in cache
-		if (texCache[oldestElem].text) { // is oldest Element initialized?
+		if (texCache[oldestElem].glTex) { // is oldest Element initialized?
 			glDeleteTextures(1, &texCache[oldestElem].glTex);
-			delete texCache[oldestElem].text;
+			texCache[oldestElem].glTex = 0;
 		}
 		texCache[oldestElem] = createTexture(text);
 		texCache[oldestElem].age = 0;
@@ -145,15 +142,13 @@ void TextDisplay::displayText(const char* text, int x, int y, HAlignment hAlign,
 TextDisplay::DisplayTexture TextDisplay::createTexture(const char* text)
 {
 	DisplayTexture displayTex;
-	size_t textLen = strlen(text);
-	displayTex.text = new char[textLen+1];
-	strcpy_s(displayTex.text, textLen+1, text);
-	Bitmap* bitmap;
-	Gdiplus::Font* font;
+	displayTex.text = std::string(text);
+	unique_ptr<Bitmap> bitmap;
 
 	{
 		pfc::stringcvt::string_wide_from_utf8 w_text(text);
 		StringFormat strFormat;
+		unique_ptr<Gdiplus::Font> font;
 		strFormat.SetAlignment(StringAlignmentCenter);
 		strFormat.SetTrimming(StringTrimmingNone);
 		strFormat.SetFormatFlags(StringFormatFlagsNoFitBlackBox |
@@ -166,15 +161,14 @@ TextDisplay::DisplayTexture TextDisplay::createTexture(const char* text)
 			Graphics graphics(&calcBitmap);
 
 			HDC fontDC = graphics.GetHDC();
-			font = new Gdiplus::Font(fontDC, &(cfgTitleFont.get_value()));
+			font = make_unique<Gdiplus::Font>(fontDC, &(cfgTitleFont.get_value()));
 			graphics.ReleaseHDC(fontDC);
 			if (!font->IsAvailable()){
-				delete font;
-				font = new Gdiplus::Font(L"Verdana", 8.0f);
+				font = make_unique<Gdiplus::Font>(L"Verdana", 8.0f);
 			}
-
-			graphics.MeasureString(w_text, -1, font, PointF(), &stringSize);
+			graphics.MeasureString(w_text, -1, font.get(), PointF(), &stringSize);
 		}
+
 		// round to multiples of two, so centering is consistent
 		stringSize.Width = ceil(stringSize.Width / 2.0f) * 2;
 		stringSize.Height = ceil(stringSize.Height);
@@ -190,8 +184,8 @@ TextDisplay::DisplayTexture TextDisplay::createTexture(const char* text)
 		while (displayTex.texHeight < displayTex.textHeight)
 			displayTex.texHeight = displayTex.texHeight << 1;
 
-		bitmap = new Bitmap(displayTex.texWidth, displayTex.texHeight, PixelFormat32bppARGB);
-		Graphics drawer(bitmap);
+		bitmap = make_unique<Bitmap>(displayTex.texWidth, displayTex.texHeight, PixelFormat32bppARGB);
+		Graphics drawer(bitmap.get());
 		drawer.SetTextRenderingHint(TextRenderingHintAntiAliasGridFit);
 
 		Color textColor(255, 255, 255);
@@ -199,9 +193,8 @@ TextDisplay::DisplayTexture TextDisplay::createTexture(const char* text)
 		SolidBrush textBrush(textColor);
 		displayTex.color = cfgTitleColor;
 
-		drawer.DrawString(w_text, -1, font, stringSize, &strFormat, &textBrush);
+		drawer.DrawString(w_text, -1, font.get(), stringSize, &strFormat, &textBrush);
 	}
-
 	{
 		bitmap->RotateFlip(RotateNoneFlipY);
 		Rect rc(0,0,bitmap->GetWidth(),bitmap->GetHeight());
@@ -219,8 +212,5 @@ TextDisplay::DisplayTexture TextDisplay::createTexture(const char* text)
 		bitmap->UnlockBits(&bitmapData);
 
 	}
-	delete bitmap;
-	delete font;
-
 	return displayTex;
 }
