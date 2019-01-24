@@ -79,7 +79,7 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>..\..\boost_1_59_0;..\..\glfw-3.1.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\GSL-2013\include;..\..\boost_1_59_0;..\..\glfw-3.1.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>..\..\glfw-3.1.1\lib-vc2013\glfw3dll.lib;..\shared\shared.lib;Comctl32.lib;Winmm.lib;Shlwapi.lib;gdiplus.lib;opengl32.lib;glu32.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -114,7 +114,7 @@
       <WarningLevel>Level3</WarningLevel>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <AdditionalIncludeDirectories>..\..\boost_1_59_0;..\..\glfw-3.1.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\GSL-2013\include;..\..\boost_1_59_0;..\..\glfw-3.1.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>..\..\glfw-3.1.1\lib-vc2013\glfw3dll.lib;..\shared\shared.lib;Comctl32.lib;Winmm.lib;Shlwapi.lib;gdiplus.lib;opengl32.lib;glu32.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -132,6 +132,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Image.cpp" />
     <ClCompile Include="TextureCache.cpp" />
     <ClCompile Include="ChronflowWindow.cpp" />
     <ClCompile Include="CoverConfig.cpp" />
@@ -165,11 +166,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AppInstance.h" />
+    <ClInclude Include="Image.h" />
+    <ClInclude Include="stb_image.h" />
+    <ClInclude Include="stb_image_resize.h" />
     <ClInclude Include="TextureCache.h" />
     <ClInclude Include="base.h" />
     <ClInclude Include="ChronflowWindow.h" />
     <ClInclude Include="CoverConfig.h" />
-    <ClInclude Include="CGdiPlusBitmap.h" />
     <ClCompile Include="config.cpp" />
     <ClInclude Include="config.h" />
     <ClInclude Include="Console.h" />

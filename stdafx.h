@@ -68,6 +68,8 @@ using boost::shared_lock;
 #include <boost/multi_index/composite_key.hpp>
 
 
+#include <gsl/gsl>
+
 // Get rid of these macros
 #undef min
 #undef max
