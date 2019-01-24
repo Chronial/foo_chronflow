@@ -13,7 +13,7 @@
 
 
 TextureCache::TextureCache(AppInstance* instance)
-	: appInstance(instance), loaderThread(*instance) {}
+	: appInstance(instance), bgLoader(*instance) {}
 
 void TextureCache::loadSpecialTextures(){
 	if (loadingTexture){
@@ -45,7 +45,6 @@ void TextureCache::loadSpecialTextures(){
 
 shared_ptr<ImgTexture> TextureCache::getLoadedImgTexture(const DbAlbum& pos)
 {
-	shared_ptr<ImgTexture> tex;
 	auto entry = textureCache.find(pos.groupString);
 	if (entry != textureCache.end()){
 		if (entry->texture)
@@ -111,12 +110,12 @@ void TextureCache::clearCache(){
 			e.texture->glDelete();
 	}
 	textureCache.clear();
-	loaderThread.flushQueue();
+	bgLoader.flushQueue();
 }
 
 void TextureCache::uploadTextures(){
 	bool redraw = false;
-	while (boost::optional<TextureCacheItem> item = loaderThread.getLoaded()){
+	while (boost::optional<TextureCacheItem> item = bgLoader.getLoaded()){
 		redraw = true;
 		auto existing = textureCache.find(item.get().groupString);
 		if (existing != textureCache.end()) {
@@ -137,7 +136,7 @@ void TextureCache::uploadTextures(){
 void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter){
 	collection_read_lock lock(appInstance);
 
-	loaderThread.flushQueue();
+	bgLoader.flushQueue();
 
 	size_t collectionSize = appInstance->albumCollection->getCount();
 	size_t maxLoad = min(collectionSize, size_t(cfgTextureCacheSize*0.8));
@@ -154,7 +153,7 @@ void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter){
 				x.priority = priority;
 			});
 		} else {
-			loaderThread.enqueue(TextureCacheItem{
+			bgLoader.enqueue(TextureCacheItem{
 				loadNext->groupString, collectionVersion, priority, nullptr });
 		}
 
@@ -170,22 +169,30 @@ void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter){
 	}
 }
 
-TextureLoadingThread::TextureLoadingThread(AppInstance& appInstance) :
+TextureLoadingThreads::TextureLoadingThreads(AppInstance& appInstance) :
 	appInstance(appInstance)
 {
-	thread = std::thread(&TextureLoadingThread::run, this);
-}
-
-TextureLoadingThread::~TextureLoadingThread() {
-	if (thread.joinable()){
-		shouldStop = true;
-		// TODO: This is hacky
-		inQueue.push(TextureCacheItem{});
-		thread.join();
+	unsigned int threadCount = std::thread::hardware_concurrency();
+	for (unsigned int i = 0; i < threadCount; i++){
+		threads.push_back(std::thread(&TextureLoadingThreads::run, this));
+		SetThreadPriority(threads.back().native_handle(), cfgTexLoaderPrio);
 	}
 }
 
-void TextureLoadingThread::run(){
+TextureLoadingThreads::~TextureLoadingThreads() {
+	shouldStop = true;
+	for (auto& thread : threads){
+		// TODO: This is hacky
+		inQueue.push(TextureCacheItem{});
+	}
+	for (auto& thread : threads){
+		if (thread.joinable()){
+			thread.join();
+		}
+	}
+}
+
+void TextureLoadingThreads::run(){
 	while (!shouldStop) {
 		auto item = inQueue.pop();
 		if (shouldStop) break;
@@ -196,7 +203,7 @@ void TextureLoadingThread::run(){
 }
 
 
-shared_ptr<ImgTexture> TextureLoadingThread::loadImage(const std::string& albumName){
+shared_ptr<ImgTexture> TextureLoadingThreads::loadImage(const std::string& albumName){
 	collection_read_lock lock(appInstance);
 	IF_DEBUG(double preLoad = Helpers::getHighresTimer());
 	shared_ptr<ImgTexture> tex = appInstance.albumCollection->getImgTexture(albumName);
@@ -211,14 +218,14 @@ shared_ptr<ImgTexture> TextureLoadingThread::loadImage(const std::string& albumN
 }
 
 
-boost::optional<TextureCacheItem> TextureLoadingThread::getLoaded() {
+boost::optional<TextureCacheItem> TextureLoadingThreads::getLoaded() {
 	return outQueue.popMaybe();
 }
 
-void TextureLoadingThread::flushQueue() {
+void TextureLoadingThreads::flushQueue() {
 	inQueue.clear();
 }
 
-void TextureLoadingThread::enqueue(TextureCacheItem item){
+void TextureLoadingThreads::enqueue(TextureCacheItem item){
 	inQueue.push(item);
 }

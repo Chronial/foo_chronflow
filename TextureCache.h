@@ -19,17 +19,17 @@ struct TextureCacheItem {
 };
 
 
-class TextureLoadingThread {
+class TextureLoadingThreads {
 public:
-	TextureLoadingThread(AppInstance& appInstance);
-	~TextureLoadingThread();
+	TextureLoadingThreads(AppInstance& appInstance);
+	~TextureLoadingThreads();
 
 	void flushQueue();
 	void enqueue(TextureCacheItem item);
 	boost::optional<TextureCacheItem> getLoaded();
 private:
 	AppInstance& appInstance;
-	std::thread thread;
+	std::vector<std::thread> threads;
 	std::atomic<bool> shouldStop = false;
 
 	BlockingQueue<TextureCacheItem> inQueue;
@@ -57,8 +57,6 @@ public:
 	void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter);
 	void uploadTextures();
 
-
-
 private:
 	GLFWwindow* glfwWindow = nullptr;
 	unsigned int collectionVersion = 0;
@@ -83,7 +81,7 @@ private:
 
 	t_textureCache textureCache;
 
-	TextureLoadingThread loaderThread;
+	TextureLoadingThreads bgLoader;
 
-	friend class TextureLoadingThread;
+	friend class TextureLoadingThreads;
 };
