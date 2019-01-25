@@ -104,8 +104,9 @@ bool DbAlbumCollection::getImageForTrack(const metadb_handle_ptr &track, pfc::st
 
 
 
-bool DbAlbumCollection::getArtForTrack(const metadb_handle_ptr &track, album_art_data::ptr &out){
-	
+bool DbAlbumCollection::getArtForTrack(
+		const metadb_handle_ptr &track,
+		album_art_data::ptr &out){
 	static_api_ptr_t<album_art_manager_v2> aam;
 	pfc::list_t<GUID> guids;
 	guids.add_item(album_art_ids::cover_front);

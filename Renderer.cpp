@@ -327,7 +327,7 @@ void Renderer::drawGui(){
 		}
 		textDisplay.displayText(albumTitle, int(winWidth*cfgTitlePosH), int(winHeight*(1-cfgTitlePosV)), TextDisplay::center, TextDisplay::middle);
 	}
-
+	
 	if (cfgShowFps){
 		double fps, msPerFrame, longestFrame, minFPS;
 		fpsCounter.getFPS(fps, msPerFrame, longestFrame, minFPS);
@@ -361,13 +361,6 @@ void Renderer::swapBuffers(){
 }
 
 void Renderer::drawCovers(bool showTarget){
-#ifdef COVER_ALPHA
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_ALPHA_TEST);
-	glAlphaFunc(GL_GREATER,0.1f);
-#endif
-	
 	if (cfgHighlightWidth == 0)
 		showTarget = false;
 
@@ -458,9 +451,4 @@ void Renderer::drawCovers(bool showTarget){
 			}
 		}
 	}
-
-#ifdef COVER_ALPHA
-	glDisable(GL_BLEND);
-	glDisable(GL_ALPHA_TEST);
-#endif
 }
