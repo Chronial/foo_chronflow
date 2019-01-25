@@ -15,7 +15,6 @@ static struct {
 } stringVarMap[] = 
 {
 	// Sources
-	{ IDC_SOURCES, &cfgSources },
 	{ IDC_FILTER, &cfgFilter },
 	{ IDC_GROUP, &cfgGroup },
 	{ IDC_SORT, &cfgSort },
@@ -52,7 +51,6 @@ static struct {
 {
 	// Sources
 	{ IDC_SORT_GROUP, &cfgSortGroup },
-	{ IDC_EMBEDDED_ART, &cfgEmbeddedArt },
 
 	// Behaviour
 	{ IDC_FOLLOW_PLAYBACK, &cfgCoverFollowsPlayback },
@@ -75,7 +73,6 @@ static struct {
 {
 	// Sources
 	{ IDC_SORT_GROUP, -IDC_SORT },
-	{ IDC_EMBEDDED_ART, -IDC_SOURCES },
 
 	// Behaviour
 	{ IDC_FOLLOW_PLAYBACK, IDC_FOLLOW_DELAY },

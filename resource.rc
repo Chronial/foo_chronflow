@@ -98,8 +98,6 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,63,121,10
     LTEXT           "Sort By:",IDC_STATIC,7,76,27,8
     EDITTEXT        IDC_SORT,7,86,294,14,ES_AUTOHSCROLL
-    LTEXT           "Sources (Enter one source per line)",IDC_STATIC,7,171,114,8
-    EDITTEXT        IDC_SOURCES,7,181,294,29,ES_MULTILINE | ES_AUTOHSCROLL | ES_WANTRETURN | WS_VSCROLL
     EDITTEXT        IDC_IMG_LOADING,92,234,162,14,ES_AUTOHSCROLL
     LTEXT           "No Cover Image:",IDC_STATIC,35,216,57,8
     LTEXT           """Cover is loading"" Image:",IDC_STATIC,10,235,82,8
@@ -109,8 +107,6 @@ BEGIN
     LTEXT           "Sort Tracks within Album By:",IDC_STATIC,7,106,92,8
     EDITTEXT        IDC_INNER_SORT,7,116,294,14,ES_AUTOHSCROLL
     DEFPUSHBUTTON   "Reload\nSources",IDC_BTN_REFRESH,265,7,36,25,BS_CENTER | BS_VCENTER | BS_MULTILINE,WS_EX_STATICEDGE
-    CONTROL         "Ignore sources and use foobar's cover image lookup",IDC_EMBEDDED_ART,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,158,183,10
 END
 
 IDD_DISPLAY_TAB DIALOGEX 0, 0, 308, 255

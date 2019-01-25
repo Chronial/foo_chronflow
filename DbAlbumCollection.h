@@ -53,7 +53,7 @@ class DbAlbumCollection : public shared_mutex
 	AppInstance* appInstance;
 public:
 	DbAlbumCollection(AppInstance* instance);
-	~DbAlbumCollection(void);
+
 	inline size_t getCount() { return albums.size(); };
 	shared_ptr<ImgTexture> getImgTexture(const std::string& album);
 	void getTitle(CollectionPos pos, pfc::string_base& out);
@@ -96,14 +96,8 @@ public:
 	}
 
 private:
-	bool getImageForTrack(const metadb_handle_ptr &track, pfc::string_base &out);
 	bool getArtForTrack(const metadb_handle_ptr &track, album_art_data::ptr &out);
 
-	void reloadSourceScripts();
-	pfc::list_t< service_ptr_t<titleformat_object> > sourceScripts;
-	CRITICAL_SECTION sourceScriptsCS;
-
-	
 
 	/******************************* INTERN DATABASE ***************************/
 	DbAlbums albums;

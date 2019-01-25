@@ -27,14 +27,6 @@ cfg_bool cfgSortGroup(guid_cfgSortGroup, true);
 static const GUID guid_cfgInnerSort = { 0xf7f9192e, 0x9d8, 0x477c, { 0xbe, 0xbe, 0xde, 0x73, 0xc0, 0x85, 0xe0, 0xfe } };
 cfg_string cfgInnerSort(guid_cfgInnerSort, "%discnumber%|$num(%tracknumber%,3)");
 
-// {EEA355D5-8A50-4F9F-BD99-FBC23824BBA1}
-static const GUID guid_cfgEmbeddedArt = { 0xeea355d5, 0x8a50, 0x4f9f, { 0xbd, 0x99, 0xfb, 0xc2, 0x38, 0x24, 0xbb, 0xa1 } };
-cfg_bool cfgEmbeddedArt(guid_cfgEmbeddedArt, true);
-
-// {81395AF7-1CC7-4dbe-A390-938F4D5FF224}
-static const GUID guid_cfgSources = { 0x81395af7, 0x1cc7, 0x4dbe, { 0xa3, 0x90, 0x93, 0x8f, 0x4d, 0x5f, 0xf2, 0x24 } };
-cfg_string cfgSources(guid_cfgSources, "$replace(%path%,%filename_ext%,)folder.jpg");
-
 // {3D438A94-7B49-41af-8F39-BE76E6BF47F0}
 static const GUID guid_cfgImgNoCover = { 0x3d438a94, 0x7b49, 0x41af, { 0x8f, 0x39, 0xbe, 0x76, 0xe6, 0xbf, 0x47, 0xf0 } };
 cfg_string cfgImgNoCover(guid_cfgImgNoCover, "");

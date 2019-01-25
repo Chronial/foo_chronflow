@@ -7,8 +7,6 @@ extern cfg_string cfgGroup;
 extern cfg_string cfgSort;
 extern cfg_bool cfgSortGroup;
 extern cfg_string cfgInnerSort;
-extern cfg_bool cfgEmbeddedArt;
-extern cfg_string cfgSources;
 extern cfg_string cfgImgNoCover;
 extern cfg_string cfgImgLoading;
 

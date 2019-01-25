@@ -15,38 +15,8 @@ collection_read_lock::collection_read_lock(AppInstance& appInstance) :
 collection_read_lock::collection_read_lock(AppInstance* appInstance) :
 	collection_read_lock(*appInstance){};
 
-void DbAlbumCollection::reloadSourceScripts(){
-	ASSERT_EXCLUSIVE(this);
-	static_api_ptr_t<titleformat_compiler> compiler;
-	EnterCriticalSection(&sourceScriptsCS);
-	sourceScripts.remove_all();
-
-	const char * srcStart = cfgSources.get_ptr();
-	const char * srcP = srcStart;
-	const char * srcEnd;
-	for (;; srcP++){
-		if (*srcP == '\r' || *srcP == '\n' || *srcP == '\0'){
-			srcEnd = (srcP-1);
-			while (*(srcEnd) == ' ')
-				srcEnd--;
-			if (srcEnd > srcStart){
-				pfc::string8_fastalloc src;
-				src.set_string(srcStart, srcEnd - srcStart + 1);
-				service_ptr_t<titleformat_object> srcScript;
-				if(compiler->compile(srcScript, src))
-					sourceScripts.add_item(srcScript);
-			}
-			srcStart = srcP+1;
-			if (*srcP == '\0')
-				break;
-		}
-	}
-	LeaveCriticalSection(&sourceScriptsCS);
-}
-
 DbAlbumCollection::DbAlbumCollection(AppInstance* instance):
 		appInstance(instance), targetPos(albums.get<1>().end()){
-	InitializeCriticalSectionAndSpinCount(&sourceScriptsCS, 0x80000400);
 
 	static_api_ptr_t<titleformat_compiler> compiler;
 	compiler->compile_safe_ex(cfgAlbumTitleScript, cfgAlbumTitle);
@@ -54,7 +24,6 @@ DbAlbumCollection::DbAlbumCollection(AppInstance* instance):
 
 void DbAlbumCollection::onCollectionReload(DbReloadWorker& worker){
 	ASSERT_EXCLUSIVE(this);
-	this->reloadSourceScripts();
 	
 	// Synchronize TargetPos
 	CollectionPos newTargetPos;
@@ -82,27 +51,6 @@ void DbAlbumCollection::onCollectionReload(DbReloadWorker& worker){
 
 	setTargetPos(newTargetPos);
 }
-
-bool DbAlbumCollection::getImageForTrack(const metadb_handle_ptr &track, pfc::string_base &out){
-	IF_DEBUG(profiler(DbAlbumCollection__getImageForTrack));
-	bool imgFound = false;
-	//abort_callback_impl abortCallback;
-
-	EnterCriticalSection(&sourceScriptsCS);
-	int sourceCount = sourceScripts.get_count();
-	for (int j=0; j < sourceCount; j++){
-		track->format_title(0, out, sourceScripts.get_item_ref(j), 0);
-		Helpers::fixPath(out);
-		if (uFileExists(out)){
-			imgFound = true;
-			break;
-		}
-	}
-	LeaveCriticalSection(&sourceScriptsCS);
-	return imgFound;
-}
-
-
 
 bool DbAlbumCollection::getArtForTrack(
 		const metadb_handle_ptr &track,
@@ -140,12 +88,6 @@ bool DbAlbumCollection::getAlbumForTrack(const metadb_handle_ptr& track, Collect
 	}
 }
 
-
-DbAlbumCollection::~DbAlbumCollection(void)
-{
-	DeleteCriticalSection(&sourceScriptsCS);
-}
-
 void DbAlbumCollection::getTitle(CollectionPos pos, pfc::string_base& out){
 	auto &sortedIndex = albums.get<1>();
 	pos->tracks[0]->format_title(0, out, cfgAlbumTitleScript, 0);
@@ -156,15 +98,9 @@ shared_ptr<ImgTexture> DbAlbumCollection::getImgTexture(const std::string& album
 	IF_DEBUG(profiler(DbAlbumCollection__getImgTexture));
 	auto& albumIndex = albums.get<0>();
 	auto& album = albumIndex.find(albumName);
-	if (cfgEmbeddedArt){
-		album_art_data::ptr art;
-		if (getArtForTrack(album->tracks[0], art))
-			return make_shared<ImgTexture>(art);
-	} else {
-		pfc::string8_fast_aggressive imgFile;
-		if (getImageForTrack(album->tracks[0], imgFile))
-			return make_shared<ImgTexture>(imgFile);
-	}
+	album_art_data::ptr art;
+	if (getArtForTrack(album->tracks[0], art))
+		return make_shared<ImgTexture>(art);
 	// No Image found
 	return nullptr;
 }

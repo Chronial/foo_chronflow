@@ -12,14 +12,12 @@
 #define IDD_PERF_TAB                    109
 #define IDR_COVER_LOADING               122
 #define IDR_COVER_NO_IMG                123
-#define IDC_SOURCES                     1003
 #define IDC_FILTER                      1004
 #define IDC_BTN_REFRESH                 1016
 #define IDC_TABS                        1017
 #define IDC_GROUP                       1019
 #define IDC_SORT_GROUP                  1020
 #define IDC_SORT                        1021
-#define IDC_EMBEDDED_ART                1022
 #define IDC_IMG_LOADING                 1026
 #define IDC_IMG_NO_COVER                1027
 #define IDC_IMG_NO_COVER_BROWSE         1028
