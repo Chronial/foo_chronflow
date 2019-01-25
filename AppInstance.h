@@ -11,9 +11,9 @@ class AppInstance
 {
 public:
 	std::unique_ptr<DbAlbumCollection> albumCollection;
+	std::unique_ptr<PlaybackTracer> playbackTracer;
 	std::unique_ptr<RenderWindow> renderWindow;
 	std::unique_ptr<RenderThread> renderer;
-	std::unique_ptr<PlaybackTracer> playbackTracer;
 	boost::synchronized_value<std::unique_ptr<DbReloadWorker>> reloadWorker;
 
 	// TODO: Get rid of this pointer?

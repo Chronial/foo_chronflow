@@ -51,9 +51,9 @@ ChronflowWindow::~ChronflowWindow(){
 void ChronflowWindow::shutdown(){
 	instances.erase(this);
 	appInstance->reloadWorker.synchronize()->reset();
-	appInstance->playbackTracer.reset();
 	appInstance->renderer.reset();
 	appInstance->renderWindow.reset();
+	appInstance->playbackTracer.reset();
 	appInstance->albumCollection.reset();
 	appInstance->mainWindow = nullptr;
 	delete pfc::replace_null_t(appInstance);
