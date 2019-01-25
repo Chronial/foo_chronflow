@@ -86,6 +86,7 @@ void RenderThread::threadProc(){
 					CollectionPos newTargetPos = appInstance->albumCollection->getTargetPos();
 					displayPos.hardSetCenteredPos(newTargetPos);
 					reloadWorker->reset();
+					collection_reloaded = true;
 				} else {
 					// looks like a deadlock, retry at the end of the messageQueue
 					this->send(msg);
