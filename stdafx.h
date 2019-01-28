@@ -3,7 +3,6 @@
 #define _WIN32_WINNT 0x501
 #define WIN32_LEAN_AND_MEAN
 
-#define GLFW_DLL
 #define GLFW_INCLUDE_GLU
 #define GLFW_EXPOSE_NATIVE_WIN32
 #define GLFW_EXPOSE_NATIVE_WGL
@@ -19,8 +18,13 @@
 #include <Shlwapi.h>
 #include <process.h>
 
-#include "../SDK/foobar2000.h"
-#include "../helpers/helpers.h"
+
+// Get rid of these macros
+#undef min
+#undef max
+
+#include "../foobar2000/SDK/foobar2000.h"
+#include "../foobar2000/helpers/helpers.h"
 
 
 //#define APIENTRY
@@ -69,7 +73,3 @@ using boost::shared_lock;
 
 
 #include <gsl/gsl>
-
-// Get rid of these macros
-#undef min
-#undef max

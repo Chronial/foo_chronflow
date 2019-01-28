@@ -1,5 +1,7 @@
 # Do not track solution file
-*.sln
+#*.sln
+
+.vs/
 
 # Ignore Releases folder
 [Rr]eleases/

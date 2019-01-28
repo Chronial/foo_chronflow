@@ -6,8 +6,7 @@
 #include "ScriptedCoverPositions.h"
 #include "SafeArrayHelper.h"
 
-#undef max
-#undef min
+using namespace pfc;
 
 CPScriptCompiler::CPScriptCompiler()
 {
