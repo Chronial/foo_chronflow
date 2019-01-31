@@ -31,10 +31,10 @@ public:
 		std::unique_lock<std::mutex> lock(this->d_mutex);
 		this->d_queue.clear();
 	}
-	boost::optional<T> popMaybe(){
+	std::optional<T> popMaybe(){
 		std::unique_lock<std::mutex> lock(this->d_mutex);
 		if (this->d_queue.size() == 0)
-			return boost::none;
+			return std::nullopt;
 		T rc(std::move(this->d_queue.back()));
 		this->d_queue.pop_back();
 		return {std::move(rc)};

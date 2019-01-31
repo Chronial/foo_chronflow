@@ -82,7 +82,7 @@ void TextureCache::uploadTextures(){
 		if (existing != textureCache.end()) {
 			textureCache.erase(existing);
 		}
-		boost::optional<GLTexture> texture = boost::none;
+		std::optional<GLTexture> texture{};
 		if (loaded->image)
 			texture = loaded->image->upload();
 		textureCache.emplace(loaded->meta, std::move(texture));
@@ -163,7 +163,7 @@ void TextureLoadingThreads::run(){
 	}
 }
 
-boost::optional<TextureLoadingThreads::LoadResponse> TextureLoadingThreads::getLoaded() {
+std::optional<TextureLoadingThreads::LoadResponse> TextureLoadingThreads::getLoaded() {
 	return outQueue.popMaybe();
 }
 

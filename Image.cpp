@@ -117,7 +117,7 @@ Image Image::resize(int width, int height) const {
 
 
 
-boost::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_list& tracks){
+std::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_list& tracks){
 	IF_DEBUG(double preLoad = Helpers::getHighresTimer());
 
 	static_api_ptr_t<album_art_manager_v2> aam;
@@ -134,11 +134,11 @@ boost::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_list& tracks)
 	} catch (const exception_album_art_not_found&) {
 		IF_DEBUG(Console::printf(
 			L"Missing image file in %.2f ms\n", (Helpers::getHighresTimer() - preLoad) * 1000));
-		return boost::none;
+		return std::nullopt;
 	} catch (...) {
 		IF_DEBUG(Console::printf(
 			L"Failed to load image in %.2f ms\n", (Helpers::getHighresTimer() - preLoad) * 1000));
-		return boost::none;
+		return std::nullopt;
 	}
 }
 

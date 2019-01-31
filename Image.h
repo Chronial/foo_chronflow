@@ -57,5 +57,5 @@ private:
 	Image image;
 };
 
-boost::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_list& tracks);
+std::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_list& tracks);
 UploadReadyImage loadSpecialArt(WORD resource, pfc::string8 userImage);

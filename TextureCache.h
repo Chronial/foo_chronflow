@@ -31,17 +31,17 @@ public:
 
 	struct LoadResponse {
 		TextureCacheMeta meta;
-		boost::optional<UploadReadyImage> image;
+		std::optional<UploadReadyImage> image;
 
 		LoadResponse(LoadResponse&& other)
 			: meta(other.meta), image(std::move(other.image)) {};
-		LoadResponse(const TextureCacheMeta& meta, boost::optional<UploadReadyImage>&& image)
+		LoadResponse(const TextureCacheMeta& meta, std::optional<UploadReadyImage>&& image)
 			: meta(meta), image(std::move(image)) {};
 	};
 
 	void flushQueue();
 	void enqueue(const metadb_handle_list& tracks, const TextureCacheMeta& meta);
-	boost::optional<LoadResponse> getLoaded();
+	std::optional<LoadResponse> getLoaded();
 private:
 	std::vector<std::thread> threads;
 	std::atomic<bool> shouldStop = false;
@@ -76,15 +76,15 @@ private:
 	unsigned int collectionVersion = 0;
 
 	void loadSpecialTextures();
-	boost::optional<GLTexture> noCoverTexture;
-	boost::optional<GLTexture> loadingTexture;
+	std::optional<GLTexture> noCoverTexture;
+	std::optional<GLTexture> loadingTexture;
 
 	unsigned int cacheGeneration = 0;
 
 	struct CacheItem : TextureCacheMeta {
-		CacheItem(const TextureCacheMeta& meta, boost::optional<GLTexture>&& texture)
+		CacheItem(const TextureCacheMeta& meta, std::optional<GLTexture>&& texture)
 			: TextureCacheMeta(meta), texture(std::move(texture)) {};
-		boost::optional<GLTexture> texture;
+		std::optional<GLTexture> texture;
 	};
 	typedef multi_index_container <
 		CacheItem,
