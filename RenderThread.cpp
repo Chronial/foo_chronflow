@@ -15,7 +15,6 @@ void RenderThread::threadProc(){
 	TRACK_CALL_TEXT("Chronflow RenderThread");
 	// Required that we can compile CoverPos Scripts
 	CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
-	std::shared_ptr<RTInitDoneMessage> initDoneMsg;
 	for (;;){
 		// TODO: Improve this loop – separate this into startup and normal processing
 		if (messageQueue.size() == 0 && doPaint){
@@ -39,10 +38,8 @@ void RenderThread::threadProc(){
 		} else if (auto m = dynamic_pointer_cast<RTInitDoneMessage>(msg)){
 			glfwMakeContextCurrent(appInstance->glfwWindow);
 			renderer.initGlState();
-			// this blocks the mainthread till Texloader signals that he is done
-			initDoneMsg = m;
 			texCache.init();
-			initDoneMsg->setAnswer(true);
+			m->setAnswer(true);
 		} else if (auto m = dynamic_pointer_cast<RTDeviceModeMessage>(msg)){
 			updateRefreshRate();
 		} else if (auto m = dynamic_pointer_cast<RTWindowResizeMessage>(msg)){
