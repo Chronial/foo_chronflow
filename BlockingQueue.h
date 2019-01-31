@@ -12,10 +12,11 @@ private:
 	std::condition_variable d_condition;
 	std::deque<T>           d_queue;
 public:
-	void push(T const& value) {
+	template<typename U>
+	void push(U&& value) {
 		{
 			std::unique_lock<std::mutex> lock(this->d_mutex);
-			d_queue.push_front(value);
+			d_queue.push_front(std::forward<U>(value));
 		}
 		this->d_condition.notify_one();
 	}
@@ -36,7 +37,7 @@ public:
 			return boost::none;
 		T rc(std::move(this->d_queue.back()));
 		this->d_queue.pop_back();
-		return rc;
+		return {std::move(rc)};
 	}
 	size_t size() {
 		std::unique_lock<std::mutex> lock(this->d_mutex);

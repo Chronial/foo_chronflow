@@ -8,7 +8,6 @@
 #include "DisplayPosition.h"
 #include "DbAlbumCollection.h"
 #include "Helpers.h"
-#include "ImgTexture.h"
 #include "ScriptedCoverPositions.h"
 #include "glStructs.h"
 
@@ -46,10 +45,6 @@ void Renderer::initGlState()
 	glHint(GL_TEXTURE_COMPRESSION_HINT,GL_FASTEST);
 	glEnable(GL_TEXTURE_2D);
 
-	GLint maxTexSize;
-	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
-	ImgTexture::setMaxGlTextureSize(maxTexSize);
-	
 	if (isExtensionSupported("GL_EXT_fog_coord")){
 		glFogi(GL_FOG_MODE, GL_EXP);
 		glFogf(GL_FOG_DENSITY, 5);
@@ -379,8 +374,8 @@ void Renderer::drawCovers(bool showTarget){
 	for (CollectionPos p = firstCover; p != lastCover; ++p, ++offset){
 		float co = -centerOffset + offset;
 
-		shared_ptr<ImgTexture> tex = texCache->getLoadedImgTexture(*p);
-		tex->glBind();
+		const GLTexture& tex = texCache->getLoadedImgTexture(p->groupString);
+		tex.bind();
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		// calculate darkening
@@ -395,7 +390,7 @@ void Renderer::drawCovers(bool showTarget){
 		glColor3f( g, g, g);
 		glVectord origin(0, 0.5, 0);
 
-		glQuad coverQuad = coverPos.getCoverQuad(co, tex->getAspect());
+		glQuad coverQuad = coverPos.getCoverQuad(co, tex.getAspect());
 		
 		glPushName(SELECTION_CENTER + offset);
 

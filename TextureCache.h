@@ -4,51 +4,65 @@
 #include "DbAlbumCollection.h"
 #include "Helpers.h"
 #include "BlockingQueue.h"
+#include "Image.h"
 
 using namespace boost::multi_index;
 
 class AppInstance;
 class ImgTexture;
 
-struct TextureCacheItem {
+struct TextureCacheMeta {
 	std::string groupString;
 	unsigned int collectionVersion;
 	// (generation, -distance to center)
 	std::pair<unsigned int, int> priority;
-	shared_ptr<ImgTexture> texture;
 };
 
 
 class TextureLoadingThreads {
 public:
-	TextureLoadingThreads(AppInstance& appInstance);
+	TextureLoadingThreads();
 	~TextureLoadingThreads();
 
+	struct LoadRequest {
+		TextureCacheMeta meta;
+		metadb_handle_list tracks;
+	};
+
+	struct LoadResponse {
+		TextureCacheMeta meta;
+		boost::optional<UploadReadyImage> image;
+
+		LoadResponse(LoadResponse&& other)
+			: meta(other.meta), image(std::move(other.image)) {};
+		LoadResponse(const TextureCacheMeta& meta, boost::optional<UploadReadyImage>&& image)
+			: meta(meta), image(std::move(image)) {};
+	};
+
 	void flushQueue();
-	void enqueue(TextureCacheItem item);
-	boost::optional<TextureCacheItem> getLoaded();
+	void enqueue(const metadb_handle_list& tracks, const TextureCacheMeta& meta);
+	boost::optional<LoadResponse> getLoaded();
 private:
-	AppInstance& appInstance;
 	std::vector<std::thread> threads;
 	std::atomic<bool> shouldStop = false;
 
-	BlockingQueue<TextureCacheItem> inQueue;
-	BlockingQueue<TextureCacheItem> outQueue;
+	BlockingQueue<LoadRequest> inQueue;
+	BlockingQueue<LoadResponse> outQueue;
 
 	void run();
-	shared_ptr<ImgTexture> loadImage(const std::string& albumName);
 };
 
+// Warning: This class may only be created and destroyed in an OpenGL context
 class TextureCache
 {
 	AppInstance* appInstance;
 
 public:
-	TextureCache(AppInstance* instance);
-	~TextureCache();
+	TextureCache(AppInstance* instance) : appInstance(instance) {};
+
 	void init();
 
-	shared_ptr<ImgTexture> getLoadedImgTexture(const DbAlbum& pos);
+	const GLTexture& getLoadedImgTexture(const std::string& albumName);
 
 	void trimCache();
 	void clearCache();
@@ -62,19 +76,24 @@ private:
 	unsigned int collectionVersion = 0;
 
 	void loadSpecialTextures();
-	shared_ptr<ImgTexture> noCoverTexture;
-	shared_ptr<ImgTexture> loadingTexture;
+	boost::optional<GLTexture> noCoverTexture;
+	boost::optional<GLTexture> loadingTexture;
 
 	unsigned int cacheGeneration = 0;
 
+	struct CacheItem : TextureCacheMeta {
+		CacheItem(const TextureCacheMeta& meta, boost::optional<GLTexture>&& texture)
+			: TextureCacheMeta(meta), texture(std::move(texture)) {};
+		boost::optional<GLTexture> texture;
+	};
 	typedef multi_index_container <
-		TextureCacheItem,
+		CacheItem,
 		indexed_by<
-			hashed_unique<member<TextureCacheItem, std::string, &TextureCacheItem::groupString>>,
+			hashed_unique<member<TextureCacheMeta, std::string, &CacheItem::groupString>>,
 			ordered_non_unique<composite_key<
-				TextureCacheItem,
-				member<TextureCacheItem, unsigned int, &TextureCacheItem::collectionVersion>,
-				member<TextureCacheItem, std::pair<unsigned int, int>, &TextureCacheItem::priority>
+				CacheItem,
+				member<TextureCacheMeta, unsigned int, &CacheItem::collectionVersion>,
+				member<TextureCacheMeta, std::pair<unsigned int, int>, &CacheItem::priority>
 			>>
 		>
 	> t_textureCache;

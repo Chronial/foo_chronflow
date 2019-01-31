@@ -8,65 +8,32 @@
 #include "AppInstance.h"
 #include "Console.h"
 #include "DbAlbumCollection.h"
-#include "ImgTexture.h"
 #include "RenderThread.h"
+#include "Image.h"
 
-
-TextureCache::TextureCache(AppInstance* instance)
-	: appInstance(instance), bgLoader(*instance) {}
 
 void TextureCache::loadSpecialTextures(){
-	if (loadingTexture){
-		loadingTexture->glDelete();
-	}
-	pfc::string8 loadingTexPath(cfgImgLoading);
-	loadingTexPath.skip_trailing_char(' ');
-	if (loadingTexPath.get_length() > 0){
-		Helpers::fixPath(loadingTexPath);
-		loadingTexture = make_shared<ImgTexture>(loadingTexPath);
-	}
-	else {
-		loadingTexture = make_shared<ImgTexture>(IDR_COVER_LOADING, L"JPG");
-	}
-
-	if (noCoverTexture){
-		noCoverTexture->glDelete();
-	}
-	pfc::string8 noCoverTexPath(cfgImgNoCover);
-	noCoverTexPath.skip_trailing_char(' ');
-	if (noCoverTexPath.get_length() > 0){
-		Helpers::fixPath(noCoverTexPath);
-		noCoverTexture = make_shared<ImgTexture>(noCoverTexPath);
-	}
-	else {
-		noCoverTexture = make_shared<ImgTexture>(IDR_COVER_NO_IMG, L"JPG");
-	}
+	loadingTexture = loadSpecialArt(IDR_COVER_LOADING, cfgImgLoading).upload();
+	noCoverTexture = loadSpecialArt(IDR_COVER_NO_IMG, cfgImgNoCover).upload();
 }
 
-shared_ptr<ImgTexture> TextureCache::getLoadedImgTexture(const DbAlbum& pos)
+const GLTexture& TextureCache::getLoadedImgTexture(const std::string& albumName)
 {
-	auto entry = textureCache.find(pos.groupString);
+	auto entry = textureCache.find(albumName);
 	if (entry != textureCache.end()){
 		if (entry->texture)
-			return entry->texture;
+			return entry->texture.value();
 		else
-			return noCoverTexture;
+			return noCoverTexture.value();
 	} else {
-		return loadingTexture;
+		return loadingTexture.value();
 	}
+	return loadingTexture.value();
 }
 
 
 void TextureCache::init(){
 	loadSpecialTextures();
-}
-
-TextureCache::~TextureCache(){
-	// TODO: These might be nullpointers
-	loadingTexture->glDelete();
-	noCoverTexture->glDelete();
-
-	clearCache();
 }
 
 void TextureCache::onTargetChange(){
@@ -76,7 +43,7 @@ void TextureCache::onTargetChange(){
 	if (cacheGeneration > std::numeric_limits<unsigned int>::max() - 100){
 		cacheGeneration = 1;
 		for (auto it = textureCache.begin(); it != textureCache.end(); ++it){
-			textureCache.modify(it, [&](TextureCacheItem& x) {
+			textureCache.modify(it, [&](CacheItem& x) {
 				x.priority.first = 0;
 			});
 		}
@@ -97,35 +64,28 @@ void TextureCache::trimCache(){
 	while (textureCache.size() > (size_t)cfgTextureCacheSize){
 		auto& prorityIndex = textureCache.get<1>();
 		auto oldestEntry = prorityIndex.begin();
-		if (oldestEntry->texture)
-			oldestEntry->texture->glDelete();
 		prorityIndex.erase(oldestEntry);
 	}
 }
 
 
 void TextureCache::clearCache(){
-	for (auto &e : textureCache){
-		if (e.texture)
-			e.texture->glDelete();
-	}
 	textureCache.clear();
 	bgLoader.flushQueue();
 }
 
 void TextureCache::uploadTextures(){
 	bool redraw = false;
-	while (boost::optional<TextureCacheItem> item = bgLoader.getLoaded()){
+	while (auto loaded = bgLoader.getLoaded()){
 		redraw = true;
-		auto existing = textureCache.find(item.get().groupString);
+		auto existing = textureCache.find(loaded->meta.groupString);
 		if (existing != textureCache.end()) {
-			if (existing->texture)
-				existing->texture->glDelete();
 			textureCache.erase(existing);
 		}
-		if (item->texture)
-			item->texture->glUpload();
-		textureCache.insert(std::move(item.get()));
+		boost::optional<GLTexture> texture = boost::none;
+		if (loaded->image)
+			texture = loaded->image->upload();
+		textureCache.emplace(loaded->meta, std::move(texture));
 	}
 	if (redraw){
 		IF_DEBUG(Console::println(L"Refresh MainWin."));
@@ -149,12 +109,13 @@ void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter){
 		auto cacheEntry = textureCache.find(loadNext->groupString);
 		auto priority = std::make_pair(cacheGeneration, -(int)i);
 		if (cacheEntry != textureCache.end() && cacheEntry->collectionVersion == collectionVersion){
-			textureCache.modify(cacheEntry, [=](TextureCacheItem &x) {
+			textureCache.modify(cacheEntry, [=](CacheItem &x) {
 				x.priority = priority;
 			});
 		} else {
-			bgLoader.enqueue(TextureCacheItem{
-				loadNext->groupString, collectionVersion, priority, nullptr });
+			bgLoader.enqueue(
+				loadNext->tracks,
+				TextureCacheMeta{loadNext->groupString, collectionVersion, priority});
 		}
 
 		if ((i % 2 || leftLoaded == appInstance->albumCollection->begin()) &&
@@ -169,9 +130,8 @@ void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter){
 	}
 }
 
-TextureLoadingThreads::TextureLoadingThreads(AppInstance& appInstance) :
-	appInstance(appInstance)
-{
+
+TextureLoadingThreads::TextureLoadingThreads() {
 	unsigned int threadCount = std::thread::hardware_concurrency();
 	for (unsigned int i = 0; i < threadCount; i++){
 		threads.push_back(std::thread(&TextureLoadingThreads::run, this));
@@ -183,7 +143,7 @@ TextureLoadingThreads::~TextureLoadingThreads() {
 	shouldStop = true;
 	for (auto& thread : threads){
 		// TODO: This is hacky
-		inQueue.push(TextureCacheItem{});
+		inQueue.push(LoadRequest{});
 	}
 	for (auto& thread : threads){
 		if (thread.joinable()){
@@ -194,31 +154,16 @@ TextureLoadingThreads::~TextureLoadingThreads() {
 
 void TextureLoadingThreads::run(){
 	while (!shouldStop) {
-		auto item = inQueue.pop();
+		auto request = inQueue.pop();
 		if (shouldStop) break;
-		item.texture = loadImage(item.groupString);
+		auto art = loadAlbumArt(request.tracks);
 		if (shouldStop) break;
-		outQueue.push(std::move(item));
+		outQueue.push(LoadResponse{
+			request.meta, std::move(art)});
 	}
 }
 
-
-shared_ptr<ImgTexture> TextureLoadingThreads::loadImage(const std::string& albumName){
-	collection_read_lock lock(appInstance);
-	IF_DEBUG(double preLoad = Helpers::getHighresTimer());
-	shared_ptr<ImgTexture> tex = appInstance.albumCollection->getImgTexture(albumName);
-#ifdef _DEBUG
-	if (tex){
-		Console::printf(L"Load image file in %d ms\n", int((Helpers::getHighresTimer() - preLoad) * 1000));
-	} else {
-		Console::printf(L"Detect missing file in %d ms\n", int((Helpers::getHighresTimer() - preLoad) * 1000));
-	}
-#endif
-	return tex;
-}
-
-
-boost::optional<TextureCacheItem> TextureLoadingThreads::getLoaded() {
+boost::optional<TextureLoadingThreads::LoadResponse> TextureLoadingThreads::getLoaded() {
 	return outQueue.popMaybe();
 }
 
@@ -226,6 +171,6 @@ void TextureLoadingThreads::flushQueue() {
 	inQueue.clear();
 }
 
-void TextureLoadingThreads::enqueue(TextureCacheItem item){
-	inQueue.push(item);
+void TextureLoadingThreads::enqueue(const metadb_handle_list& tracks, const TextureCacheMeta& meta){
+	inQueue.push(LoadRequest{meta, tracks});
 }

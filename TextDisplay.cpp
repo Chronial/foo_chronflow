@@ -3,7 +3,6 @@
 
 #include "TextDisplay.h"
 
-#include "ImgTexture.h"
 #include "Renderer.h"
 using namespace Gdiplus;
 

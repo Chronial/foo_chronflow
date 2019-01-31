@@ -36,9 +36,6 @@
     <ClCompile Include="DisplayPosition.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ImgTexture.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="PlaybackTracer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -117,9 +114,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DisplayPosition.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ImgTexture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MyActions.h">

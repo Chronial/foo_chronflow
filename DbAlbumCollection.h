@@ -55,7 +55,6 @@ public:
 	DbAlbumCollection(AppInstance* instance);
 
 	inline size_t getCount() { return albums.size(); };
-	shared_ptr<ImgTexture> getImgTexture(const std::string& album);
 	void getTitle(CollectionPos pos, pfc::string_base& out);
 	bool getTracks(CollectionPos pos, metadb_handle_list& out);
 	bool getAlbumForTrack(const metadb_handle_ptr& track, CollectionPos& out);
@@ -96,9 +95,6 @@ public:
 	}
 
 private:
-	bool getArtForTrack(const metadb_handle_ptr &track, album_art_data::ptr &out);
-
-
 	/******************************* INTERN DATABASE ***************************/
 	DbAlbums albums;
 	boost::synchronized_value<CollectionPos> targetPos;

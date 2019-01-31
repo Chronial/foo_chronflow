@@ -133,3 +133,13 @@ public:
 		return WaitForMultipleObjects(2, handles, waitForAll, milliseconds);
 	}
 };
+
+template<typename T>
+inline pfc::list_t<T> pfc_list(std::initializer_list<T> elems){
+	pfc::list_t<T> out;
+	out.prealloc(elems.size());
+	for (auto& e : elems){
+		out.add_item(e);
+	}
+	return out;
+}

@@ -4,7 +4,6 @@
 #include "DbAlbumCollection.h"
 
 #include "AppInstance.h"
-#include "ImgTexture.h"
 #include "RenderThread.h"
 
 #include "DbReloadWorker.h"
@@ -52,19 +51,6 @@ void DbAlbumCollection::onCollectionReload(DbReloadWorker& worker){
 	setTargetPos(newTargetPos);
 }
 
-bool DbAlbumCollection::getArtForTrack(
-		const metadb_handle_ptr &track,
-		album_art_data::ptr &out){
-	static_api_ptr_t<album_art_manager_v2> aam;
-	pfc::list_t<GUID> guids;
-	guids.add_item(album_art_ids::cover_front);
-	metadb_handle_list tracks;
-	tracks.add_item(track);
-	abort_callback_impl abortCallback;
-	album_art_extractor_instance_v2::ptr extractor = aam->open(tracks, guids, abortCallback);
-	return extractor->query(album_art_ids::cover_front, out, abortCallback);
-}
-
 bool DbAlbumCollection::getTracks(CollectionPos pos, metadb_handle_list& out){
 	out = pos->tracks;
 	out.sort_by_format(cfgInnerSort, nullptr);
@@ -91,18 +77,6 @@ bool DbAlbumCollection::getAlbumForTrack(const metadb_handle_ptr& track, Collect
 void DbAlbumCollection::getTitle(CollectionPos pos, pfc::string_base& out){
 	auto &sortedIndex = albums.get<1>();
 	pos->tracks[0]->format_title(0, out, cfgAlbumTitleScript, 0);
-}
-
-
-shared_ptr<ImgTexture> DbAlbumCollection::getImgTexture(const std::string& albumName){
-	IF_DEBUG(profiler(DbAlbumCollection__getImgTexture));
-	auto& albumIndex = albums.get<0>();
-	auto& album = albumIndex.find(albumName);
-	album_art_data::ptr art;
-	if (getArtForTrack(album->tracks[0], art))
-		return make_shared<ImgTexture>(art);
-	// No Image found
-	return nullptr;
 }
 
 struct CompIUtf8Partial
