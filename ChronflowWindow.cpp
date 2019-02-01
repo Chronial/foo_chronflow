@@ -30,10 +30,8 @@ void ChronflowWindow::startup(HWND parent) {
 		return;
 	}
 	appInstance->renderer = make_unique<RenderThread>(appInstance);
-	auto rendererInitMsg = make_shared<RTInitDoneMessage>();
-	appInstance->renderer->send(rendererInitMsg);
-	rendererInitMsg->getAnswer();
-
+	auto future = appInstance->renderer->sendSync<RenderThread::InitDoneMessage>();
+	future.wait();
 	{
 		// TODO: Do we need this lock?
 		collection_read_lock lock(appInstance);
@@ -98,7 +96,7 @@ LRESULT ChronflowWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 	case WM_DEVMODECHANGE:
 	{
 		if (appInstance->renderer)
-			appInstance->renderer->send(make_shared<RTDeviceModeMessage>());
+			appInstance->renderer->send<RenderThread::DeviceModeMessage>();
 		return 0;
 	}
 	case WM_TIMER:
@@ -108,7 +106,7 @@ LRESULT ChronflowWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 				if (!mainWinMinimized){
 					mainWinMinimized = true;
 					if (appInstance->renderer)
-						appInstance->renderer->send(make_shared<RTWindowHideMessage>());
+						appInstance->renderer->send<RenderThread::WindowHideMessage>();
 					KillTimer(appInstance->mainWindow, IDT_CHECK_MINIMIZED);
 				}
 			}
@@ -138,7 +136,7 @@ LRESULT ChronflowWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 			if (mainWinMinimized){
 				mainWinMinimized = false;
 				if (appInstance->renderer)
-					appInstance->renderer->send(make_shared<RTWindowShowMessage>());
+					appInstance->renderer->send<RenderThread::WindowShowMessage>();
 			}
 			SetTimer(hWnd, IDT_CHECK_MINIMIZED, MINIMIZE_CHECK_TIMEOUT, 0);
 		}

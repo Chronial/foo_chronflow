@@ -470,8 +470,7 @@ public:
 						if (selectFont(titleFont)){
 							cfgTitleFont = titleFont;
 							uSendDlgItemMessage(hWnd, IDC_FONT_PREV, WM_SETTEXT, 0, (LPARAM)cfgTitleFont.get_value().lfFaceName);
-							auto msg = make_shared<RTTextFormatChangedMessage>();
-							FOR_EACH_INSTANCE(renderer->send(msg));
+							FOR_EACH_INSTANCE(renderer->send<RenderThread::TextFormatChangedMessage>());
 						}
 					}
 				}
@@ -609,8 +608,7 @@ public:
 			return;
 		}
 
-		auto msg = make_shared<RTChangeCPScriptMessage>(script);
-		FOR_EACH_INSTANCE(renderer->send(msg));
+		FOR_EACH_INSTANCE(renderer->send<RenderThread::ChangeCPScriptMessage>(script));
 	}
 	void setUpEditBox(){
 		int tabstops[1] = {14};

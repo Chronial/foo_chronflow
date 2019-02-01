@@ -133,7 +133,7 @@ void DbAlbumCollection::setTargetPos(CollectionPos newTarget) {
 	ASSERT_SHARED(this);
 	*targetPos = newTarget;
 	sessionSelectedCover = this->rank(newTarget);
-	appInstance->renderer->send(make_shared<RTTargetChangedMessage>());
+	appInstance->renderer->send<RenderThread::TargetChangedMessage>();
 }
 
 void DbAlbumCollection::moveTargetBy(int n)
@@ -141,5 +141,5 @@ void DbAlbumCollection::moveTargetBy(int n)
 	auto target = targetPos.synchronize();
 	movePosBy(*target, n);
 	sessionSelectedCover = this->rank(*target);
-	appInstance->renderer->send(make_shared<RTTargetChangedMessage>());
+	appInstance->renderer->send<RenderThread::TargetChangedMessage>();
 }

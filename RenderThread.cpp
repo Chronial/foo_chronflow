@@ -10,6 +10,85 @@
 #include "ScriptedCoverPositions.h"
 #include "DisplayPosition.h"
 
+void RenderThread::TargetChangedMessage::execute(RenderThread& rt) {
+	collection_read_lock lock(rt.appInstance);
+	rt.displayPos.onTargetChange();
+	rt.texCache.onTargetChange();
+}
+
+void RenderThread::RedrawMessage::execute(RenderThread& rt) {
+	rt.doPaint = true;
+}
+
+void RenderThread::DeviceModeMessage::execute(RenderThread& rt) {
+	rt.updateRefreshRate();
+}
+
+void RenderThread::WindowResizeMessage::execute(RenderThread& rt) {
+	rt.renderer.resizeGlScene(this->width, this->height);
+}
+
+void RenderThread::ChangeCPScriptMessage::execute(RenderThread& rt) {
+	pfc::string8 tmp;
+	rt.renderer.coverPos.setScript(this->script, tmp);
+	rt.renderer.setProjectionMatrix();
+	rt.doPaint = true;
+}
+
+
+void RenderThread::WindowHideMessage::execute(RenderThread& rt) {
+	//texCache.isPaused = true;
+	if (cfgEmptyCacheOnMinimize) {
+		rt.texCache.clearCache();
+	}
+}
+
+void RenderThread::WindowShowMessage::execute(RenderThread& rt) {
+	//texCache.isPaused = false;
+}
+
+void RenderThread::TextFormatChangedMessage::execute(RenderThread& rt) {
+	rt.renderer.textDisplay.clearCache();
+}
+
+void RenderThread::GetPosAtCoordsMessage::execute(RenderThread& rt) {
+	collection_read_lock lock(rt.appInstance);
+	int offset;
+	if (rt.renderer.offsetOnPoint(this->x, this->y, offset)) {
+		CollectionPos pos = rt.displayPos.getOffsetPos(offset);
+		this->promise.set_value(std::move(pos));
+	} else {
+		this->promise.set_value(std::nullopt);
+	}
+}
+
+void RenderThread::CollectionReloadedMessage::execute(RenderThread& rt) {
+	bool collection_reloaded = false;
+	{
+		// mainthread might be waiting for this thread (Message.getAnswer()) and be holding a readlock
+		// detect these cases by only trying for a short time
+		// Maybe we can do this better, but that is difficult as we pass CollectionPos
+		// pointers across thread boundaries and need to make sure they are valid
+		boost::unique_lock<DbAlbumCollection> lock(*(rt.appInstance->albumCollection), boost::defer_lock);
+		// There is a race condition here, so use this only as a guess
+		int waitTime = rt.messageQueue.size() ? 10 : 100;
+		if (lock.try_lock_for(boost::chrono::milliseconds(waitTime))) {
+			auto reloadWorker = rt.appInstance->reloadWorker.synchronize();
+			rt.appInstance->albumCollection->onCollectionReload(**reloadWorker);
+			CollectionPos newTargetPos = rt.appInstance->albumCollection->getTargetPos();
+			rt.displayPos.hardSetCenteredPos(newTargetPos);
+			reloadWorker->reset();
+			collection_reloaded = true;
+		} else {
+			// looks like a deadlock, retry at the end of the messageQueue
+			rt.send<CollectionReloadedMessage>();
+		}
+	}
+	if (collection_reloaded) {
+		rt.texCache.onCollectionReload();
+	}
+	rt.appInstance->redrawMainWin();
+}
 
 void RenderThread::threadProc(){
 	TRACK_CALL_TEXT("Chronflow RenderThread");
@@ -23,85 +102,26 @@ void RenderThread::threadProc(){
 			onPaint();
 			continue;
 		}
-		auto msg = messageQueue.pop();
+		std::unique_ptr<Message> msg = messageQueue.pop();
 
-		if (auto m = dynamic_pointer_cast<RTStopThreadMessage>(msg)){
+		if (auto m = dynamic_cast<const StopThreadMessage*>(msg.get())){
 			break;
-		} else if (auto m = dynamic_pointer_cast<RTPaintMessage>(msg)){
+		} else if (auto m = dynamic_cast<PaintMessage*>(msg.get())){
 			// do nothing, this is just here so that onPaint may run
-		} else if (auto m = dynamic_pointer_cast<RTRedrawMessage>(msg)){
-			doPaint = true;
-		} else if (auto m = dynamic_pointer_cast<RTTargetChangedMessage>(msg)){
-			collection_read_lock lock(appInstance);
-			displayPos.onTargetChange();
-			texCache.onTargetChange();
-		} else if (auto m = dynamic_pointer_cast<RTInitDoneMessage>(msg)){
+		} else if (auto m = dynamic_cast<InitDoneMessage*>(msg.get())) {
 			glfwMakeContextCurrent(appInstance->glfwWindow);
 			renderer.initGlState();
 			texCache.init();
-			m->setAnswer(true);
-		} else if (auto m = dynamic_pointer_cast<RTDeviceModeMessage>(msg)){
-			updateRefreshRate();
-		} else if (auto m = dynamic_pointer_cast<RTWindowResizeMessage>(msg)){
-			renderer.resizeGlScene(m->width, m->height);
-		} else if (auto m = dynamic_pointer_cast<RTWindowHideMessage>(msg)){
-			//texCache.isPaused = true;
-			if (cfgEmptyCacheOnMinimize){
-				texCache.clearCache();
-			}
-		} else if (auto m = dynamic_pointer_cast<RTWindowShowMessage>(msg)){
-			//texCache.isPaused = false;
-		} else if (auto m = dynamic_pointer_cast<RTTextFormatChangedMessage>(msg)){
-			renderer.textDisplay.clearCache();
-		} else if (auto m = dynamic_pointer_cast<RTGetPosAtCoordsMessage>(msg)){
-			collection_read_lock lock(appInstance);
-			int offset;
-			if (renderer.offsetOnPoint(m->x, m->y, offset)){
-				CollectionPos pos = displayPos.getOffsetPos(offset);
-				m->setAnswer(make_shared<CollectionPos>(pos));
-			} else {
-				m->setAnswer(nullptr);
-			}
-		} else if (auto m = dynamic_pointer_cast<RTChangeCPScriptMessage>(msg)){
-			pfc::string8 tmp;
-			renderer.coverPos.setScript(m->script, tmp);
-			renderer.setProjectionMatrix();
-			doPaint = true;
-		} else if (auto m = dynamic_pointer_cast<RTCollectionReloadedMessage>(msg)){
-			bool collection_reloaded = false;
-			{
-				// mainthread might be waiting for this thread (RTMessage.getAnswer()) and be holding a readlock
-				// detect these cases by only trying for a short time
-				// Maybe we can do this better, but that is difficult as we pass CollectionPos
-				// pointers across thread boundaries and need to make sure they are valid
-				boost::unique_lock<DbAlbumCollection> lock(*(appInstance->albumCollection), boost::defer_lock);
-				// There is a race condition here, so use this only as a guess
-				int waitTime = messageQueue.size() ? 10 : 100;
-				if (lock.try_lock_for(boost::chrono::milliseconds(waitTime))){
-					auto reloadWorker = appInstance->reloadWorker.synchronize();
-					appInstance->albumCollection->onCollectionReload(**reloadWorker);
-					CollectionPos newTargetPos = appInstance->albumCollection->getTargetPos();
-					displayPos.hardSetCenteredPos(newTargetPos);
-					reloadWorker->reset();
-					collection_reloaded = true;
-				} else {
-					// looks like a deadlock, retry at the end of the messageQueue
-					this->send(msg);
-				}
-			}
-			if (collection_reloaded){
-				texCache.onCollectionReload();
-			}
-			appInstance->redrawMainWin();
+			m->promise.set_value(true);
 		} else {
-			IF_DEBUG(__debugbreak());
+			msg->execute(*this);
 		}
 	}
 	glFinish();
 }
 
-void RenderThread::send(shared_ptr<RTMessage> msg){
-	messageQueue.push(msg);
+void RenderThread::sendMessage(unique_ptr<Message>&& msg){
+	messageQueue.push(std::move(msg));
 }
 
 void RenderThread::onPaint(){
@@ -112,6 +132,7 @@ void RenderThread::onPaint(){
 	displayPos.update();
 	// continue animation if we are not done
 	doPaint = displayPos.isMoving();
+	//doPaint = true;
 
 	renderer.drawFrame();
 
@@ -141,7 +162,7 @@ void RenderThread::onPaint(){
 	afterLastSwap = Helpers::getHighresTimer();
 
 	if (doPaint){
-		this->send(make_shared<RTPaintMessage>());
+		this->send<PaintMessage>();
 	} else {
 		if (timerInPeriod){
 			timeEndPeriod(timerResolution);
@@ -175,7 +196,7 @@ RenderThread::RenderThread(AppInstance* appInstance)
 
 RenderThread::~RenderThread(){
 	IF_DEBUG(Console::println(L"Destroying RenderThread"));
-	this->send(make_shared<RTStopThreadMessage>());
+	this->send<StopThreadMessage>();
 	WaitForSingleObject(renderThread, INFINITE);
 	CloseHandle(renderThread);
 }

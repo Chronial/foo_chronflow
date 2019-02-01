@@ -37,7 +37,7 @@ void DbReloadWorker::threadProc(){
 	TRACK_CALL_TEXT("Chronflow DbReloadWorker");
 	this->generateData();
 	if (!kill)
-		appInstance->renderer->send(make_shared<RTCollectionReloadedMessage>());
+		appInstance->renderer->send<RenderThread::CollectionReloadedMessage>();
 	// Notify renderer to copy data, after copying, refresh AsynchTexloader + start Loading
 };
 

@@ -38,6 +38,7 @@
 #include <memory>
 #include <atomic>
 #include <thread>
+#include <future>
 
 using std::unique_ptr;
 using std::make_unique;

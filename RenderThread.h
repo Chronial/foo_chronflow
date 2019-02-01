@@ -9,70 +9,67 @@
 class AppInstance;
 class DbReloadWorker;
 
-class RTMessage {
-public:
-	virtual ~RTMessage(){};
-};
+template<typename T, typename... _Types>
+static std::tuple<std::unique_ptr<T>, std::future<typename T::ValueType>> build_msg(_Types&&... _Args) {
+	const unique_ptr<T> msg = make_unique<T>(std::forward<_Types>(_Args)...);
+	const std::future<typename T::ValueType> future = msg->promise.get_future();
+	return make_tuple(std::move(msg), std::move(future));
+}
 
-template <typename T>
-class RTAnswerMessage : public RTMessage {
-private:
-	std::mutex mtx;
-	std::condition_variable condition;
-	bool isAnswered;
-	T answer;
-
-public:
-	RTAnswerMessage() : isAnswered(false) {}
-
-	T getAnswer(){
-		std::unique_lock<std::mutex> lock(this->mtx);
-		this->condition.wait(lock, [=] { return isAnswered; });
-		return answer;
-	}
-	void setAnswer(T const& value) {
-		std::unique_lock<std::mutex> lock(this->mtx);
-		answer = value;
-		isAnswered = true;
-		this->condition.notify_one();
-	}
-};
-
-class RTPaintMessage : public RTMessage {};
-class RTRedrawMessage : public RTMessage {};
-class RTStopThreadMessage : public RTMessage {};
-class RTInitDoneMessage : public RTAnswerMessage <bool> {};
-class RTTextFormatChangedMessage : public RTMessage {};
-class RTDeviceModeMessage : public RTMessage {};
-class RTWindowResizeMessage : public RTMessage {
-public:
-	RTWindowResizeMessage(int width, int height) : width(width), height(height) {};
-	const int width;
-	const int height;
-};
-class RTTargetChangedMessage : public RTMessage {};
-
-class RTGetPosAtCoordsMessage : public RTAnswerMessage <shared_ptr<CollectionPos>> {
-public:
-	RTGetPosAtCoordsMessage(int x, int y) : x(x), y(y) {};
-	const int x;
-	const int y;
-};
-
-class RTChangeCPScriptMessage : public RTMessage {
-public:
-	RTChangeCPScriptMessage(const pfc::string_base &script) : script(script) {};
-	const pfc::string8 script;
-};
-
-class RTCollectionReloadedMessage : public RTMessage {};
-
-
-class RTWindowHideMessage : public RTMessage {};
-class RTWindowShowMessage : public RTMessage {};
 
 
 class RenderThread {
+public:
+	class Message {
+	public:
+		virtual ~Message() {};
+		virtual void execute(RenderThread&) {};
+	};
+
+	template <typename T>
+	class AnswerMessage : public Message {
+	public:
+		typedef T ValueType;
+		std::promise<T> promise;
+	};
+
+	class PaintMessage : public Message {};
+	class StopThreadMessage : public Message {};
+	class InitDoneMessage : public AnswerMessage <bool> {};
+	class RedrawMessage : public Message { void execute(RenderThread&); };
+	class TextFormatChangedMessage : public Message { void execute(RenderThread&); };
+	class DeviceModeMessage : public Message { void execute(RenderThread&); };
+	class WindowResizeMessage : public Message {
+	public:
+		WindowResizeMessage(int width, int height) : width(width), height(height) {};
+		void execute(RenderThread&);
+		const int width;
+		const int height;
+	};
+	class TargetChangedMessage : public Message { void execute(RenderThread&); };
+
+	class GetPosAtCoordsMessage : public AnswerMessage <std::optional<CollectionPos>> {
+	public:
+		GetPosAtCoordsMessage(int x, int y) : x(x), y(y) {};
+		void execute(RenderThread&);
+		const int x;
+		const int y;
+	};
+
+	class ChangeCPScriptMessage : public Message {
+	public:
+		ChangeCPScriptMessage(const pfc::string_base &script) : script(script) {};
+		void execute(RenderThread&);
+		const pfc::string8 script;
+	};
+
+	class CollectionReloadedMessage : public Message { void execute(RenderThread&); };
+	class WindowHideMessage : public Message { void execute(RenderThread&); };
+	class WindowShowMessage : public Message { void execute(RenderThread&); };
+
+
+
+private:
 	DisplayPosition displayPos;
 	TextureCache texCache;
 	Renderer renderer;
@@ -81,7 +78,19 @@ public:
 	RenderThread(AppInstance* appInstance);
 	~RenderThread();
 
-	void send(shared_ptr<RTMessage> msg);
+	void sendMessage(unique_ptr<Message>&& msg);
+
+	template<typename T, typename... _Types>
+	std::future<typename T::ValueType> sendSync(_Types&&... _Args) {
+		unique_ptr<T> msg = make_unique<T>(std::forward<_Types>(_Args)...);
+		std::future<typename T::ValueType> future = msg->promise.get_future();
+		sendMessage(std::move(msg));
+		return std::move(future);
+	}
+	template<typename T, typename... _Types>
+	void send(_Types&&... _Args) {
+		sendMessage(make_unique<T>(std::forward<_Types>(_Args)...));
+	}
 private:
 	int timerResolution;
 	bool timerInPeriod;
@@ -97,5 +106,5 @@ private:
 
 	HANDLE renderThread;
 
-	BlockingQueue<shared_ptr<RTMessage>> messageQueue;
+	BlockingQueue<unique_ptr<Message>> messageQueue;
 };
