@@ -14,7 +14,7 @@
 void RenderThread::threadProc(){
 	TRACK_CALL_TEXT("Chronflow RenderThread");
 	// Required that we can compile CoverPos Scripts
-	CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+	CoInitializeScope com_enable{};
 	for (;;){
 		// TODO: Improve this loop – separate this into startup and normal processing
 		if (messageQueue.size() == 0 && doPaint){
@@ -98,7 +98,6 @@ void RenderThread::threadProc(){
 		}
 	}
 	glFinish();
-	CoUninitialize();
 }
 
 void RenderThread::send(shared_ptr<RTMessage> msg){

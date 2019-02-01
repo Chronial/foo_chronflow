@@ -61,92 +61,103 @@ public:
 		RenderWindow* self = reinterpret_cast<RenderWindow*>(dwRefData);
 		return self->messageHandler(uMsg, wParam, lParam);
 	}
-
-
 	LRESULT messageHandler(UINT uMsg, WPARAM wParam, LPARAM lParam){
 		switch (uMsg){
 		case WM_MOUSEACTIVATE:
 			SetFocus(hWnd);
 			return MA_ACTIVATE;
-
 		case WM_GETDLGCODE:
 			return DLGC_WANTALLKEYS;
-
-
 		case WM_LBUTTONDOWN:
 		case WM_LBUTTONDBLCLK:
 		case WM_MBUTTONDOWN:
-		{
-			collection_read_lock l(appInstance);
-			auto msg = make_shared<RTGetPosAtCoordsMessage>(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-			appInstance->renderer->send(msg);
-			auto posPtr = msg->getAnswer();
-			if (posPtr){
-				onClickOnCover(*posPtr, uMsg);
-			}
+			onMouseClick(uMsg, wParam, lParam);
 			return 0;
-		}
-
 		case WM_RBUTTONDOWN:
 		case WM_NCRBUTTONDOWN:
 		case WM_RBUTTONUP:
 		case WM_NCRBUTTONUP:
 			// Generate WM_CONTEXTMENU messages
 			return DefWindowProc(hWnd, uMsg, wParam, lParam);
-
 		case WM_CONTEXTMENU:
 			if (defaultUiCallback.is_valid() && defaultUiCallback->is_edit_mode_enabled()){
 				return DefWindowProc(hWnd, uMsg, wParam, lParam);
 			} else {
 				onContextMenu(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+				return 0;
 			}
-			return 0;
 		case WM_KEYDOWN:
 		case WM_SYSKEYDOWN:
-			if (onKEYDOWN(uMsg, wParam, lParam))
+			if (onKeyDown(uMsg, wParam, lParam))
 				return 0;
 			break;
 		case WM_CHAR:
-			if (cfgFindAsYouType){
-				findAsYouType->onChar(wParam);
+			if (onChar(wParam))
 				return 0;
-			}
 			break;
 		}
 
 		return DefSubclassProc(hWnd, uMsg, wParam, lParam);
 	}
+	static void onDamage(GLFWwindow* window) {
+		reinterpret_cast<RenderWindow*>(glfwGetWindowUserPointer(window))->onDamage();
+	}
+	static void onWindowSize(GLFWwindow* window, int width, int height) {
+		reinterpret_cast<RenderWindow*>(glfwGetWindowUserPointer(window))->onWindowSize(width, height);
+	}
+	static void onScroll(GLFWwindow* window, double xoffset, double yoffset) {
+		reinterpret_cast<RenderWindow*>(glfwGetWindowUserPointer(window))->onScroll(xoffset, yoffset);
+	}
+
+
+	bool onChar(WPARAM wParam) {
+		if (cfgFindAsYouType) {
+			findAsYouType->onChar(wParam);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	void onMouseClick(UINT uMsg, WPARAM wParam, LPARAM lParam) {
+		collection_read_lock l(appInstance);
+		auto msg = make_shared<RTGetPosAtCoordsMessage>(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		appInstance->renderer->send(msg);
+		auto posPtr = msg->getAnswer();
+		if (posPtr) {
+			if (uMsg == WM_LBUTTONDOWN) {
+				POINT pt;
+				GetCursorPos(&pt);
+				if (DragDetect(hWnd, pt)) {
+					metadb_handle_list tracks;
+					appInstance->albumCollection->getTracks(*posPtr, tracks);
+
+					static_api_ptr_t<playlist_incoming_item_filter> piif;
+					pfc::com_ptr_t<IDataObject> pDataObject = piif->create_dataobject_ex(tracks);
+					pfc::com_ptr_t<IDropSource> pDropSource = TrackDropSource::g_create(hWnd);
+
+					DWORD effect;
+					DoDragDrop(pDataObject.get_ptr(), pDropSource.get_ptr(), DROPEFFECT_COPY, &effect);
+					return;
+				}
+			}
+			onClickOnCover(*posPtr, uMsg);
+		}
+	}
 
 	void onClickOnCover(CollectionPos clickedCover, UINT uMsg){
+		ASSERT_SHARED(appInstance->albumCollection);
 		if (uMsg == WM_MBUTTONDOWN){
-			appInstance->albumCollection->setTargetPos(clickedCover);
-			appInstance->playbackTracer->userStartedMovement();
 			executeAction(cfgMiddleClick, clickedCover);
 		} else if (uMsg == WM_LBUTTONDOWN){
-			POINT pt;
-			GetCursorPos(&pt);
-			if (DragDetect(hWnd, pt)) {
-				metadb_handle_list tracks;
-				appInstance->albumCollection->getTracks(clickedCover, tracks);
-
-				static_api_ptr_t<playlist_incoming_item_filter> piif;
-				pfc::com_ptr_t<IDataObject> pDataObject = piif->create_dataobject_ex(tracks);
-				pfc::com_ptr_t<IDropSource> pDropSource = TrackDropSource::g_create(hWnd);
-
-				DWORD effect;
-				DoDragDrop(pDataObject.get_ptr(), pDropSource.get_ptr(), DROPEFFECT_COPY, &effect);
-			} else {
-				appInstance->albumCollection->setTargetPos(clickedCover);
-				appInstance->playbackTracer->userStartedMovement();
-			}
-		} else if (uMsg == WM_LBUTTONDBLCLK){
 			appInstance->albumCollection->setTargetPos(clickedCover);
 			appInstance->playbackTracer->userStartedMovement();
+		} else if (uMsg == WM_LBUTTONDBLCLK){
 			executeAction(cfgDoubleClick, clickedCover);
 		}
 	}
 
-	bool onKEYDOWN(UINT uMsg, WPARAM wParam, LPARAM lParam){
+	bool onKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam){
 		if (wParam == VK_RETURN){
 			collection_read_lock lock(appInstance);
 			if (appInstance->albumCollection->getCount()){
@@ -211,24 +222,15 @@ public:
 	}
 
 
-	static void onDamage(GLFWwindow* window){
-		reinterpret_cast<RenderWindow*>(glfwGetWindowUserPointer(window))->onDamage();
-	}
 	void onDamage(){
 		appInstance->renderer->send(make_shared<RTRedrawMessage>());
 	}
 
-	static void onWindowSize(GLFWwindow* window, int width, int height){
-		reinterpret_cast<RenderWindow*>(glfwGetWindowUserPointer(window))->onWindowSize(width, height);
-	}
 	void onWindowSize(int width, int height){
 		auto msg = make_shared<RTWindowResizeMessage>(width, height);
 		appInstance->renderer->send(msg);
 	}
 
-	static void onScroll(GLFWwindow* window, double xoffset, double yoffset){
-		reinterpret_cast<RenderWindow*>(glfwGetWindowUserPointer(window))->onScroll(xoffset, yoffset);
-	}
 	void onScroll(double xoffset, double yoffset){
 		collection_read_lock l(appInstance);
 		scrollAggregator -= yoffset;
