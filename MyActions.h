@@ -1,6 +1,8 @@
 #pragma once
 #include "stdafx.h"
 
+#include "DbAlbumCollection.h"
+
 class CustomAction abstract {
 protected:
 	CustomAction(const char * actionName){
@@ -12,3 +14,5 @@ public:
 };
 
 extern CustomAction* g_customActions[4];
+
+void executeAction(const char * action, const AlbumInfo& album);

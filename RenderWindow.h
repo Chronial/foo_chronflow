@@ -4,8 +4,6 @@
 
 #include "AppInstance.h"
 #include "Console.h"
-#include "DbAlbumCollection.h"
-#include "FindAsYouType.h"
 #include "MyActions.h"
 #include "PlaybackTracer.h"
 #include "RenderThread.h"
@@ -16,14 +14,12 @@ class RenderWindow {
 	GLFWwindow* window;
 	HWND hWnd;
 	double scrollAggregator = 0;
-	std::unique_ptr<FindAsYouType> findAsYouType;
 	ui_element_instance_callback_ptr defaultUiCallback;
 public:
 
 	RenderWindow(AppInstance* appInstance, ui_element_instance_callback_ptr defaultUiCallback)
 		: appInstance(appInstance), defaultUiCallback(defaultUiCallback){
 		TRACK_CALL_TEXT("RenderWindow::RenderWindow");
-		findAsYouType = make_unique<FindAsYouType>(appInstance);
 
 		// TODO: handle window creation errors?
 		glfwDefaultWindowHints();
@@ -112,7 +108,7 @@ public:
 
 	bool onChar(WPARAM wParam) {
 		if (cfgFindAsYouType) {
-			findAsYouType->onChar(wParam);
+			appInstance->renderer->send<RenderThread::CharEntered>(wParam);
 			return true;
 		} else {
 			return false;
@@ -120,57 +116,54 @@ public:
 	}
 
 	void onMouseClick(UINT uMsg, WPARAM wParam, LPARAM lParam) {
-		collection_read_lock l(appInstance);
 		auto future = appInstance->renderer->sendSync
-			<RenderThread::GetPosAtCoordsMessage>(
+			<RenderThread::GetAlbumAtCoords>(
 				GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-		auto posPtr = future.get();
-		if (posPtr) {
-			if (uMsg == WM_LBUTTONDOWN) {
-				POINT pt;
-				GetCursorPos(&pt);
-				if (DragDetect(hWnd, pt)) {
-					metadb_handle_list tracks;
-					appInstance->albumCollection->getTracks(*posPtr, tracks);
-
-					static_api_ptr_t<playlist_incoming_item_filter> piif;
-					pfc::com_ptr_t<IDataObject> pDataObject = piif->create_dataobject_ex(tracks);
-					pfc::com_ptr_t<IDropSource> pDropSource = TrackDropSource::g_create(hWnd);
-
-					DWORD effect;
-					DoDragDrop(pDataObject.get_ptr(), pDropSource.get_ptr(), DROPEFFECT_COPY, &effect);
-					return;
-				}
+		auto clickedAlbum = future.get();
+		if (!clickedAlbum)
+			return;
+		
+		if (uMsg == WM_LBUTTONDOWN) {
+			POINT pt;
+			GetCursorPos(&pt);
+			if (DragDetect(hWnd, pt)) {
+				doDragStart(clickedAlbum.value());
+				return;
 			}
-			onClickOnCover(*posPtr, uMsg);
 		}
+		onClickOnAlbum(clickedAlbum.value(), uMsg);
 	}
 
-	void onClickOnCover(CollectionPos clickedCover, UINT uMsg){
-		ASSERT_SHARED(appInstance->albumCollection);
-		if (uMsg == WM_MBUTTONDOWN){
-			executeAction(cfgMiddleClick, clickedCover);
-		} else if (uMsg == WM_LBUTTONDOWN){
-			appInstance->albumCollection->setTargetPos(clickedCover);
-			appInstance->playbackTracer->userStartedMovement();
+	void doDragStart(AlbumInfo album) {
+		static_api_ptr_t<playlist_incoming_item_filter> piif;
+		pfc::com_ptr_t<IDataObject> pDataObject = piif->create_dataobject_ex(album.tracks);
+		pfc::com_ptr_t<IDropSource> pDropSource = TrackDropSource::g_create(hWnd);
+
+		DWORD effect;
+		DoDragDrop(pDataObject.get_ptr(), pDropSource.get_ptr(), DROPEFFECT_COPY, &effect);
+	}
+
+	void onClickOnAlbum(AlbumInfo album, UINT uMsg){
+		if (uMsg == WM_LBUTTONDOWN) {
+			appInstance->renderer->send<RenderThread::MoveToAlbumMessage>(album.groupString);
+		} else if (uMsg == WM_MBUTTONDOWN){
+			executeAction(cfgMiddleClick, album);
 		} else if (uMsg == WM_LBUTTONDBLCLK){
-			executeAction(cfgDoubleClick, clickedCover);
+			executeAction(cfgDoubleClick, album);
 		}
 	}
 
 	bool onKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam){
 		if (wParam == VK_RETURN){
-			collection_read_lock lock(appInstance);
-			if (appInstance->albumCollection->getCount()){
-				executeAction(cfgEnterKey, appInstance->albumCollection->getTargetPos());
-				return true;
-			}
+			auto targetAlbum = appInstance->renderer->sendSync<RenderThread::GetTargetAlbum>().get();
+			if (targetAlbum)
+				executeAction(cfgEnterKey, targetAlbum.value());
+			return true;
 		} else if (wParam == VK_F5){
-			appInstance->startCollectionReload();
+			appInstance->renderer->send<RenderThread::ReloadCollectionMessage>();
 			return true;
 		} else if (wParam == VK_F6){
-			collection_read_lock lock(appInstance);
-			appInstance->playbackTracer->moveToNowPlaying();
+			appInstance->renderer->send<RenderThread::MoveToNowPlayingMessage>();
 			return true;
 		} else if (wParam == VK_RIGHT || wParam == VK_LEFT || wParam == VK_NEXT || wParam == VK_PRIOR){
 			int move = 0;
@@ -184,39 +177,24 @@ public:
 				move = -10;
 			}
 			move *= LOWORD(lParam);
-			collection_read_lock lock(appInstance);
-			if (appInstance->albumCollection->getCount()){
-				appInstance->albumCollection->moveTargetBy(move);
-				appInstance->playbackTracer->userStartedMovement();
-			}
+			appInstance->renderer->send<RenderThread::MoveTargetMessage>(move, false);
 			return true;
-		} else if (wParam == VK_HOME || wParam == VK_END) {
-			collection_read_lock lock(appInstance);
-			if (appInstance->albumCollection->getCount()){
-				CollectionPos newTarget;
-				if (wParam == VK_END){
-					newTarget = --appInstance->albumCollection->end();
-				} else if (wParam == VK_HOME){
-					newTarget = appInstance->albumCollection->begin();
-				}
-				appInstance->albumCollection->setTargetPos(newTarget);
-				appInstance->playbackTracer->userStartedMovement();
-				return true;
-			}
+		} else if (wParam == VK_HOME) {
+			appInstance->renderer->send<RenderThread::MoveTargetMessage>(-1, true);
+			return true;
+		} else if (wParam == VK_END) {
+			appInstance->renderer->send<RenderThread::MoveTargetMessage>(1, true);
+			return true;
 		} else if (!(cfgFindAsYouType && // disable hotkeys that interfere with find-as-you-type
-			(uMsg == WM_KEYDOWN) &&
-			((wParam > 'A' && wParam < 'Z') || (wParam > '0' && wParam < '9') || (wParam == ' ')) &&
-			((GetKeyState(VK_CONTROL) & 0x8000) == 0))){
-			collection_read_lock lock(appInstance);
+					 (uMsg == WM_KEYDOWN) &&
+					 ((wParam > 'A' && wParam < 'Z') || (wParam > '0' && wParam < '9') || (wParam == ' ')) &&
+					 ((GetKeyState(VK_CONTROL) & 0x8000) == 0))){
+			auto targetAlbum = appInstance->renderer->sendSync<RenderThread::GetTargetAlbum>().get();
 			static_api_ptr_t<keyboard_shortcut_manager> ksm;
-			metadb_handle_list tracks;
-			if (appInstance->albumCollection->getCount() &&
-				appInstance->albumCollection->getTracks(appInstance->albumCollection->getTargetPos(), tracks)){
-				if (ksm->on_keydown_auto_context(tracks, wParam, contextmenu_item::caller_media_library_viewer))
-					return true;
+			if (targetAlbum){
+				return ksm->on_keydown_auto_context(targetAlbum->tracks, wParam, contextmenu_item::caller_media_library_viewer);
 			} else {
-				if (ksm->on_keydown_auto(wParam))
-					return true;
+				return ksm->on_keydown_auto(wParam);
 			}
 		}
 		return false;
@@ -233,20 +211,16 @@ public:
 	}
 
 	void onScroll(double xoffset, double yoffset){
-		collection_read_lock l(appInstance);
 		scrollAggregator -= yoffset;
 		int m = int(scrollAggregator);
 		scrollAggregator -= m;
-		appInstance->albumCollection->moveTargetBy(m);
-		appInstance->playbackTracer->userStartedMovement();
+		appInstance->renderer->send<RenderThread::MoveTargetMessage>(m, false);
 	}
 
 	void onContextMenu(const int x, const int y){
-		collection_read_lock lock(appInstance);
 		PlaybackTracerScopeLock tracerLock(*(appInstance->playbackTracer));
 		POINT pt;
-		metadb_handle_list tracks;
-		std::optional<CollectionPos> target;
+		std::optional<AlbumInfo> target;
 
 		if (x == -1){ // Message generated by keyboard
 			pt.x = 0;
@@ -257,12 +231,12 @@ public:
 			pt.y = y;
 			POINT clientPt = pt;
 			ScreenToClient(hWnd, &clientPt);
-			auto future = appInstance->renderer->sendSync<RenderThread::GetPosAtCoordsMessage>(
+			auto future = appInstance->renderer->sendSync<RenderThread::GetAlbumAtCoords>(
 				pt.x, pt.y);
 			target = future.get();
 		}
-		if (!target && appInstance->albumCollection->getCount()){
-			target = appInstance->albumCollection->getTargetPos();
+		if (!target){
+			target = appInstance->renderer->sendSync<RenderThread::GetTargetAlbum>().get();
 		}
 
 		enum {
@@ -278,8 +252,6 @@ public:
 		contextmenu_manager::g_create(cmm);
 		HMENU hMenu = CreatePopupMenu();
 		if (target){
-			appInstance->albumCollection->getTracks(target.value(), tracks);
-
 			if ((cfgEnterKey.length() > 0) && (strcmp(cfgEnterKey, cfgDoubleClick) != 0))
 				uAppendMenu(hMenu, MF_STRING, ID_ENTER, pfc::string8(cfgEnterKey) << "\tEnter");
 			if (cfgDoubleClick.length() > 0)
@@ -287,7 +259,7 @@ public:
 			if ((cfgMiddleClick.length() > 0) && (strcmp(cfgMiddleClick, cfgDoubleClick) != 0) && (strcmp(cfgMiddleClick, cfgEnterKey) != 0))
 				uAppendMenu(hMenu, MF_STRING, ID_MIDDLECLICK, pfc::string8(cfgMiddleClick) << "\tMiddle Click");
 
-			cmm->init_context(tracks, contextmenu_manager::FLAG_SHOW_SHORTCUTS);
+			cmm->init_context(target->tracks, contextmenu_manager::FLAG_SHOW_SHORTCUTS);
 			if (cmm->get_root()){
 				if (GetMenuItemCount(hMenu) > 0)
 					uAppendMenu(hMenu, MF_SEPARATOR, 0, 0);
@@ -304,34 +276,13 @@ public:
 		if (cmd == ID_PREFERENCES){
 			static_api_ptr_t<ui_control>()->show_preferences(guid_configWindow);
 		} else if (cmd == ID_ENTER){
-			executeAction(cfgEnterKey, *target, tracks);
+			executeAction(cfgEnterKey, target.value());
 		} else if (cmd == ID_DOUBLECLICK){
-			executeAction(cfgDoubleClick, *target, tracks);
+			executeAction(cfgDoubleClick, target.value());
 		} else if (cmd == ID_MIDDLECLICK){
-			executeAction(cfgMiddleClick, *target, tracks);
+			executeAction(cfgMiddleClick, target.value());
 		} else if (cmd >= ID_CONTEXT_FIRST && cmd <= ID_CONTEXT_LAST){
 			cmm->execute_by_id(cmd - ID_CONTEXT_FIRST);
-		}
-	}
-
-
-	inline void executeAction(const char * action, CollectionPos forCover){
-		metadb_handle_list tracks;
-		appInstance->albumCollection->getTracks(forCover, tracks);
-		executeAction(action, forCover, tracks);
-	}
-	void executeAction(const char * action, CollectionPos forCover, const metadb_handle_list& tracks){
-		pfc::string8 albumTitle;
-		appInstance->albumCollection->getTitle(forCover, albumTitle);
-		for (int i = 0; i < tabsize(g_customActions); i++){
-			if (stricmp_utf8(action, g_customActions[i]->actionName) == 0){
-				g_customActions[i]->run(tracks, albumTitle);
-				return;
-			}
-		}
-		GUID commandGuid;
-		if (menu_helpers::find_command_by_name(action, commandGuid)){
-			menu_helpers::run_command_context(commandGuid, pfc::guid_null, tracks);
 		}
 	}
 };

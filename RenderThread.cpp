@@ -9,60 +9,130 @@
 #include "Console.h"
 #include "ScriptedCoverPositions.h"
 #include "DisplayPosition.h"
+#include "PlaybackTracer.h"
+#include "MyActions.h"
 
-void RenderThread::TargetChangedMessage::execute(RenderThread& rt) {
+
+
+
+void RenderThread::TargetChangedMessage::run(RenderThread& rt) {
 	collection_read_lock lock(rt.appInstance);
 	rt.displayPos.onTargetChange();
 	rt.texCache.onTargetChange();
 }
 
-void RenderThread::RedrawMessage::execute(RenderThread& rt) {
+void RenderThread::RedrawMessage::run(RenderThread& rt) {
 	rt.doPaint = true;
 }
 
-void RenderThread::DeviceModeMessage::execute(RenderThread& rt) {
+void RenderThread::DeviceModeMessage::run(RenderThread& rt) {
 	rt.updateRefreshRate();
 }
 
-void RenderThread::WindowResizeMessage::execute(RenderThread& rt) {
-	rt.renderer.resizeGlScene(this->width, this->height);
+void RenderThread::WindowResizeMessage::run(RenderThread& rt, int width, int height) {
+	rt.renderer.resizeGlScene(width, height);
 }
 
-void RenderThread::ChangeCPScriptMessage::execute(RenderThread& rt) {
+void RenderThread::ChangeCPScriptMessage::run(RenderThread& rt, pfc::string8 script) {
 	pfc::string8 tmp;
-	rt.renderer.coverPos.setScript(this->script, tmp);
+	rt.renderer.coverPos.setScript(script, tmp);
 	rt.renderer.setProjectionMatrix();
 	rt.doPaint = true;
 }
 
 
-void RenderThread::WindowHideMessage::execute(RenderThread& rt) {
+void RenderThread::WindowHideMessage::run(RenderThread& rt) {
 	//texCache.isPaused = true;
 	if (cfgEmptyCacheOnMinimize) {
 		rt.texCache.clearCache();
 	}
 }
 
-void RenderThread::WindowShowMessage::execute(RenderThread& rt) {
+void RenderThread::WindowShowMessage::run(RenderThread& rt) {
 	//texCache.isPaused = false;
 }
 
-void RenderThread::TextFormatChangedMessage::execute(RenderThread& rt) {
+void RenderThread::TextFormatChangedMessage::run(RenderThread& rt) {
 	rt.renderer.textDisplay.clearCache();
 }
 
-void RenderThread::GetPosAtCoordsMessage::execute(RenderThread& rt) {
+void RenderThread::CharEntered::run(RenderThread& rt, WPARAM wParam) {
+	rt.findAsYouType.onChar(wParam);
+}
+
+
+void RenderThread::Run::run(RenderThread& rt, std::function<void()> f) {
+	f();
+}
+
+void RenderThread::MoveToNowPlayingMessage::run(RenderThread& rt) {
 	collection_read_lock lock(rt.appInstance);
-	int offset;
-	if (rt.renderer.offsetOnPoint(this->x, this->y, offset)) {
-		CollectionPos pos = rt.displayPos.getOffsetPos(offset);
-		this->promise.set_value(std::move(pos));
+	rt.appInstance->playbackTracer->moveToNowPlaying();
+}
+
+void RenderThread::MoveTargetMessage::run(RenderThread& rt, int moveBy, bool moveToEnd) {
+	collection_read_lock lock(rt.appInstance);
+	if (!rt.appInstance->albumCollection->getCount())
+		return;
+	
+	if (!moveToEnd) {
+		rt.appInstance->albumCollection->moveTargetBy(moveBy);
+		rt.appInstance->playbackTracer->userStartedMovement();
 	} else {
-		this->promise.set_value(std::nullopt);
+		CollectionPos newTarget;
+		if (moveBy > 0) {
+			newTarget = --rt.appInstance->albumCollection->end();
+		} else {
+			newTarget = rt.appInstance->albumCollection->begin();
+		}
+		rt.appInstance->albumCollection->setTargetPos(newTarget);
+		rt.appInstance->playbackTracer->userStartedMovement();
 	}
 }
 
-void RenderThread::CollectionReloadedMessage::execute(RenderThread& rt) {
+void RenderThread::MoveToTrack::run(RenderThread& rt, metadb_handle_ptr track) {
+	collection_read_lock lock(rt.appInstance);
+	CollectionPos target;
+	if (rt.appInstance->albumCollection->getAlbumForTrack(track, target)) {
+		rt.appInstance->albumCollection->setTargetPos(target);
+	}
+}
+
+
+
+void RenderThread::MoveToAlbumMessage::run(RenderThread& rt, std::string groupString) {
+	collection_read_lock lock(rt.appInstance);
+	if (!rt.appInstance->albumCollection->getCount())
+		return;
+
+	rt.appInstance->albumCollection->setTargetByName(groupString);
+	rt.appInstance->playbackTracer->userStartedMovement();
+}
+
+std::optional<AlbumInfo> RenderThread::GetAlbumAtCoords::run(RenderThread& rt, int x, int y) {
+	collection_read_lock lock(rt.appInstance);
+	int offset;
+	if (!rt.renderer.offsetOnPoint(x, y, offset)) {
+		return std::nullopt;
+	}
+	CollectionPos pos = rt.displayPos.getOffsetPos(offset);
+	return rt.appInstance->albumCollection->getAlbumInfo(pos);
+}
+
+std::optional<AlbumInfo> RenderThread::GetTargetAlbum::run(RenderThread& rt)
+{
+	collection_read_lock lock(rt.appInstance);
+	if (!rt.appInstance->albumCollection->getCount())
+		return std::nullopt;
+	auto pos = rt.appInstance->albumCollection->getTargetPos();
+	return rt.appInstance->albumCollection->getAlbumInfo(pos);
+}
+
+void RenderThread::ReloadCollectionMessage::run(RenderThread& rt) {
+	rt.appInstance->startCollectionReload();
+}
+
+void RenderThread::CollectionReloadedMessage::run(RenderThread& rt) {
 	bool collection_reloaded = false;
 	{
 		// mainthread might be waiting for this thread (Message.getAnswer()) and be holding a readlock
@@ -178,6 +248,7 @@ RenderThread::RenderThread(AppInstance* appInstance)
 	  displayPos(appInstance, appInstance->albumCollection->begin()),
 	  renderer(appInstance, &displayPos),
 	  texCache(appInstance),
+	  findAsYouType(appInstance),
 	  afterLastSwap(0){
 	renderer.texCache = &texCache;
 

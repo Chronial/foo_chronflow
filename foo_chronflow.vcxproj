@@ -137,6 +137,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="FindAsYouType.cpp" />
     <ClCompile Include="Image.cpp" />
     <ClCompile Include="TextureCache.cpp" />
     <ClCompile Include="ChronflowWindow.cpp" />

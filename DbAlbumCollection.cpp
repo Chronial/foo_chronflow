@@ -74,6 +74,15 @@ bool DbAlbumCollection::getAlbumForTrack(const metadb_handle_ptr& track, Collect
 	}
 }
 
+AlbumInfo DbAlbumCollection::getAlbumInfo(CollectionPos pos)
+{
+	metadb_handle_list tracks;
+	pfc::string8 title;
+	getTracks(pos, tracks);
+	getTitle(pos, title);
+	return AlbumInfo{title, pos->groupString, tracks};
+}
+
 void DbAlbumCollection::getTitle(CollectionPos pos, pfc::string_base& out){
 	auto &sortedIndex = albums.get<1>();
 	pos->tracks[0]->format_title(0, out, cfgAlbumTitleScript, 0);
@@ -133,6 +142,15 @@ void DbAlbumCollection::setTargetPos(CollectionPos newTarget) {
 	ASSERT_SHARED(this);
 	*targetPos = newTarget;
 	sessionSelectedCover = this->rank(newTarget);
+	appInstance->renderer->send<RenderThread::TargetChangedMessage>();
+}
+
+void DbAlbumCollection::setTargetByName(const std::string& groupString)
+{
+	ASSERT_SHARED(this);
+	auto groupAlbum = albums.find(groupString);
+	if (groupAlbum != albums.end())
+		*targetPos = albums.project<1>(groupAlbum);
 	appInstance->renderer->send<RenderThread::TargetChangedMessage>();
 }
 

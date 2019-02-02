@@ -5,18 +5,20 @@
 #include "DbReloadWorker.h"
 #include "BlockingQueue.h"
 #include "Renderer.h"
+#include "FindAsYouType.h"
 
 class AppInstance;
 class DbReloadWorker;
 
-template<typename T, typename... _Types>
-static std::tuple<std::unique_ptr<T>, std::future<typename T::ValueType>> build_msg(_Types&&... _Args) {
-	const unique_ptr<T> msg = make_unique<T>(std::forward<_Types>(_Args)...);
-	const std::future<typename T::ValueType> future = msg->promise.get_future();
-	return make_tuple(std::move(msg), std::move(future));
+#define RT_MSG(NAME, ...) struct NAME : public DataMessage<__VA_ARGS__> { \
+	using DataMessage::DataMessage; \
+	void run(RenderThread&, __VA_ARGS__); \
 }
 
-
+#define RT_ANSWER_MSG(NAME, T, ...)  struct NAME : public AnswerMessage<T, __VA_ARGS__> { \
+	using AnswerMessage::AnswerMessage; \
+	T run(RenderThread&, __VA_ARGS__); \
+}
 
 class RenderThread {
 public:
@@ -26,50 +28,61 @@ public:
 		virtual void execute(RenderThread&) {};
 	};
 
-	template <typename T>
+	template <typename... Types>
+	class DataMessage : public Message {
+	public:
+		DataMessage(Types... Args) { data = make_tuple(Args...); }
+		virtual void run(RenderThread&, Types...) {};
+		void execute(RenderThread& rt) {
+			std::apply(&DataMessage::run, std::tuple_cat(std::tie(*this, rt), data));
+		}
+		std::tuple<Types...> data;
+	};
+
+	template <typename T, typename... Types>
 	class AnswerMessage : public Message {
 	public:
 		typedef T ValueType;
+		AnswerMessage(Types... Args) { data = make_tuple(Args...); }
+		virtual T run(RenderThread& rt, Types...) = 0;
+		void execute(RenderThread& rt) {
+			promise.set_value(
+				std::apply(&AnswerMessage::run, std::tuple_cat(std::tie(*this, rt), data)));
+		}
 		std::promise<T> promise;
+		std::tuple<Types...> data;
 	};
 
 	class PaintMessage : public Message {};
 	class StopThreadMessage : public Message {};
-	class InitDoneMessage : public AnswerMessage <bool> {};
-	class RedrawMessage : public Message { void execute(RenderThread&); };
-	class TextFormatChangedMessage : public Message { void execute(RenderThread&); };
-	class DeviceModeMessage : public Message { void execute(RenderThread&); };
-	class WindowResizeMessage : public Message {
-	public:
-		WindowResizeMessage(int width, int height) : width(width), height(height) {};
-		void execute(RenderThread&);
-		const int width;
-		const int height;
-	};
-	class TargetChangedMessage : public Message { void execute(RenderThread&); };
 
-	class GetPosAtCoordsMessage : public AnswerMessage <std::optional<CollectionPos>> {
-	public:
-		GetPosAtCoordsMessage(int x, int y) : x(x), y(y) {};
-		void execute(RenderThread&);
-		const int x;
-		const int y;
+	class InitDoneMessage : public AnswerMessage <bool> {
+		void execute(RenderThread&) {};
+		bool run(RenderThread&) { return false; };
 	};
 
-	class ChangeCPScriptMessage : public Message {
-	public:
-		ChangeCPScriptMessage(const pfc::string_base &script) : script(script) {};
-		void execute(RenderThread&);
-		const pfc::string8 script;
-	};
-
-	class CollectionReloadedMessage : public Message { void execute(RenderThread&); };
-	class WindowHideMessage : public Message { void execute(RenderThread&); };
-	class WindowShowMessage : public Message { void execute(RenderThread&); };
-
+	RT_MSG(RedrawMessage);
+	RT_MSG(TextFormatChangedMessage);
+	RT_MSG(DeviceModeMessage);
+	RT_MSG(CharEntered, WPARAM);
+	RT_MSG(TargetChangedMessage);
+	RT_MSG(MoveToNowPlayingMessage);
+	RT_MSG(ReloadCollectionMessage);
+	RT_MSG(CollectionReloadedMessage);
+	RT_MSG(WindowHideMessage);
+	RT_MSG(WindowShowMessage);
+	RT_MSG(WindowResizeMessage, int, int);
+	RT_MSG(MoveTargetMessage, int, bool);
+	RT_MSG(MoveToAlbumMessage, std::string);
+	RT_MSG(MoveToTrack, metadb_handle_ptr);
+	RT_MSG(ChangeCPScriptMessage, pfc::string8);
+	RT_ANSWER_MSG(GetAlbumAtCoords, std::optional<AlbumInfo>, int, int);
+	RT_ANSWER_MSG(GetTargetAlbum, std::optional<AlbumInfo>);
+	RT_MSG(Run, std::function<void()>);
 
 
 private:
+	FindAsYouType findAsYouType;
 	DisplayPosition displayPos;
 	TextureCache texCache;
 	Renderer renderer;
@@ -91,6 +104,7 @@ public:
 	void send(_Types&&... _Args) {
 		sendMessage(make_unique<T>(std::forward<_Types>(_Args)...));
 	}
+
 private:
 	int timerResolution;
 	bool timerInPeriod;

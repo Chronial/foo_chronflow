@@ -6,6 +6,7 @@
 
 #include "AppInstance.h"
 #include "DbAlbumCollection.h"
+#include "RenderThread.h"
 
 
 PlaybackTracer::PlaybackTracer(AppInstance* appInstance) :
@@ -47,7 +48,6 @@ void PlaybackTracer::unlock()
 void PlaybackTracer::timerProc()
 {
 	if (lockCount == 0 && cfgCoverFollowsPlayback){
-		collection_read_lock lock(appInstance);
 		moveToNowPlaying();
 	}
 	waitingForTimer = false;
@@ -56,15 +56,14 @@ void PlaybackTracer::timerProc()
 
 void PlaybackTracer::moveToNowPlaying()
 {
-	ASSERT_SHARED(appInstance->albumCollection);
-	static_api_ptr_t<playback_control_v2> pc;
-	metadb_handle_ptr nowPlaying;
-	if (pc->get_now_playing(nowPlaying)){
-		CollectionPos target;
-		if (appInstance->albumCollection->getAlbumForTrack(nowPlaying, target)){
-			appInstance->albumCollection->setTargetPos(target);
+	fb2k::inMainThread2([&]{
+		static_api_ptr_t<playback_control_v2> pc;
+		metadb_handle_ptr nowPlaying;
+		if (pc->get_now_playing(nowPlaying)){
+			CollectionPos target;
+			appInstance->renderer->send<RenderThread::MoveToTrack>(nowPlaying);
 		}
-	}
+	});
 }
 
 void PlaybackTracer::followSettingsChanged()
@@ -76,7 +75,6 @@ void PlaybackTracer::followSettingsChanged()
 			callbackRegistered = true;
 		}
 		if (lockCount == 0){
-			collection_read_lock lock(appInstance);
 			moveToNowPlaying();
 		}
 	} else {
@@ -92,7 +90,6 @@ void PlaybackTracer::followSettingsChanged()
 void PlaybackTracer::on_playback_new_track(metadb_handle_ptr p_track)
 {
 	if (lockCount == 0 && !waitingForTimer){
-		collection_read_lock lock(appInstance);
 		moveToNowPlaying();
 	}
 }

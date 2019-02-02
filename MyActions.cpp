@@ -77,3 +77,18 @@ CustomAction* g_customActions[4] = {new AddToPlaylist,
 									new ReplacePlaylist,
 									new TargetPlaylist,
 									new NewPlaylist};
+
+
+
+void executeAction(const char * action, const AlbumInfo& album) {
+	for (int i = 0; i < tabsize(g_customActions); i++) {
+		if (stricmp_utf8(action, g_customActions[i]->actionName) == 0) {
+			g_customActions[i]->run(album.tracks, album.title.c_str());
+			return;
+		}
+	}
+	GUID commandGuid;
+	if (menu_helpers::find_command_by_name(action, commandGuid)) {
+		menu_helpers::run_command_context(commandGuid, pfc::guid_null, album.tracks);
+	}
+}

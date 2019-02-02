@@ -16,6 +16,12 @@ struct DbAlbum
 	mutable metadb_handle_list tracks;
 };
 
+struct AlbumInfo {
+	std::string title;
+	std::string groupString;
+	metadb_handle_list tracks;
+};
+
 struct CompWLogical
 {
 	bool operator()(std::wstring a, std::wstring b)const{
@@ -55,6 +61,7 @@ public:
 	DbAlbumCollection(AppInstance* instance);
 
 	inline size_t getCount() { return albums.size(); };
+	AlbumInfo getAlbumInfo(CollectionPos pos);
 	void getTitle(CollectionPos pos, pfc::string_base& out);
 	bool getTracks(CollectionPos pos, metadb_handle_list& out);
 	bool getAlbumForTrack(const metadb_handle_ptr& track, CollectionPos& out);
@@ -74,6 +81,7 @@ public:
 		return *targetPos;
 	}
 	void setTargetPos(CollectionPos newTarget);
+	void setTargetByName(const std::string& groupString);
 	void moveTargetBy(int n);
 	inline void movePosBy(CollectionPos& p, int n) const
 	{
