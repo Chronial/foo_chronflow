@@ -1,6 +1,7 @@
 #pragma once
 
-#define _WIN32_WINNT 0x501
+// Require windows vista
+#define _WIN32_WINNT 0x600
 #define WIN32_LEAN_AND_MEAN
 
 #define GLFW_INCLUDE_GLU
