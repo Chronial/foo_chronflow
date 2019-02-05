@@ -31,6 +31,9 @@ public:
 
 	void sendMessage(unique_ptr<engine_messages::Message>&& msg);
 
+	/// Sends a message and get a future to wait for the response.
+	/// You should only wait in the mainthread, as waiting in other threads
+	/// will deadlock if the Engine is shut down while you're waiting.
 	template<typename T, typename... _Types>
 	std::future<typename T::ValueType> sendSync(_Types&&... _Args) {
 		unique_ptr<T> msg = make_unique<T>(std::forward<_Types>(_Args)...);
