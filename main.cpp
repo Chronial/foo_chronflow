@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "Helpers.h"
-#include "ChronflowWindow.h"
+#include "ContainerWindow.h"
 
 #define VERSION "0.4.5"
 
@@ -37,7 +37,7 @@ private:
 	}
 	void registerWindowClasses(){
 		// Note: We do not need to unregister these classes as it happens automatically when foobar quits
-		if (!ChronflowWindow::registerWindowClass()){
+		if (!ContainerWindow::registerWindowClass()){
 			errorPopupWin32("Failed to register MainWindow class");
 		}
 	}

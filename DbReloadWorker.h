@@ -2,17 +2,17 @@
 #include "Helpers.h"
 #include "DbAlbumCollection.h"
 
-class RenderThread;
+class EngineThread;
 
 class DbReloadWorker {
 	metadb_handle_list library;
-	RenderThread& renderThread;
+	EngineThread& engineThread;
 	std::thread thread;
 	std::promise<void> copyDone;
 	std::atomic<bool> kill = false;
 
 public:
-	explicit DbReloadWorker(RenderThread& renderThread);
+	explicit DbReloadWorker(EngineThread& engineThread);
 	DbReloadWorker(DbReloadWorker&) = delete;
 	DbReloadWorker(DbReloadWorker&&) = delete;
 	DbReloadWorker& operator=(DbReloadWorker&) = delete;

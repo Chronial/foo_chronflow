@@ -7,11 +7,11 @@
 
 #include "Console.h"
 #include "DbAlbumCollection.h"
-#include "RenderThread.h"
+#include "EngineThread.h"
 #include "Image.h"
 
 
-TextureCache::TextureCache(RenderThread& thread, DbAlbumCollection& db) :
+TextureCache::TextureCache(EngineThread& thread, DbAlbumCollection& db) :
 	thread(thread), db(db),
 	loadingTexture(loadSpecialArt(IDR_COVER_LOADING, cfgImgLoading).upload()),
 	noCoverTexture(loadSpecialArt(IDR_COVER_NO_IMG, cfgImgNoCover).upload())

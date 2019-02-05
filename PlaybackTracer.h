@@ -5,10 +5,10 @@
 
 class PlaybackTracer
 {
-	class RenderThread& thread;
+	class EngineThread& thread;
 
 public:
-	PlaybackTracer(RenderThread&);
+	PlaybackTracer(EngineThread&);
 	void delay(double extra_time);
 	void moveToNowPlaying();
 	void onPlaybackNewTrack(metadb_handle_ptr p_track);

@@ -2,12 +2,12 @@
 #include "base.h"
 
 #include "DbReloadWorker.h"
-#include "RenderThread.h"
+#include "EngineThread.h"
 #include "Engine.h"
 
 
-DbReloadWorker::DbReloadWorker(RenderThread& renderThread) :
-	renderThread(renderThread),
+DbReloadWorker::DbReloadWorker(EngineThread& engineThread) :
+	engineThread(engineThread),
 	thread(&DbReloadWorker::threadProc, this)
 {
 	SetThreadPriority(thread.native_handle(), THREAD_PRIORITY_BELOW_NORMAL);
@@ -27,7 +27,7 @@ DbReloadWorker::~DbReloadWorker(){
 void DbReloadWorker::threadProc(){
 	TRACK_CALL_TEXT("Chronflow DbReloadWorker");
 	
-	renderThread.runInMainThread([&] {
+	engineThread.runInMainThread([&] {
 		// copy whole library
 		library_manager::get()->get_all_items(library);
 		try {
@@ -40,7 +40,7 @@ void DbReloadWorker::threadProc(){
 	this->generateData(); // TODO: handle exception?
 	if (kill) return;
 
-	renderThread.send<EM::CollectionReloadedMessage>();
+	engineThread.send<EM::CollectionReloadedMessage>();
 };
 
 void DbReloadWorker::generateData(){

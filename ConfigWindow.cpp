@@ -5,7 +5,7 @@
 #include "DbAlbumCollection.h"
 #include "MyActions.h"
 #include "PlaybackTracer.h"
-#include "RenderThread.h"
+#include "EngineThread.h"
 #include "Engine.h"
 #include "ScriptedCoverPositions.h"
 
@@ -204,7 +204,7 @@ public:
 
 protected:
 	void redrawMainWin(){
-		RenderThread::forEach([](auto& t) {
+		EngineThread::forEach([](auto& t) {
 			t.invalidateWindow();
 		});
 	}
@@ -257,7 +257,7 @@ public:
 				switch (LOWORD(wParam))
 				{
 				case IDC_BTN_REFRESH:
-					RenderThread::forEach([](RenderThread& t) {
+					EngineThread::forEach([](EngineThread& t) {
 						t.send<EM::ReloadCollection>();
 					});
 					break;
@@ -468,7 +468,7 @@ public:
 						if (selectFont(titleFont)){
 							cfgTitleFont = titleFont;
 							uSendDlgItemMessage(hWnd, IDC_FONT_PREV, WM_SETTEXT, 0, (LPARAM)cfgTitleFont.get_value().lfFaceName);
-							RenderThread::forEach([](RenderThread& t) {
+							EngineThread::forEach([](EngineThread& t) {
 								t.send<EM::TextFormatChangedMessage>();
 							});
 						}
@@ -607,7 +607,7 @@ public:
 			uSetDlgItemText(hWnd, IDC_COMPILE_STATUS, message);
 			return;
 		}
-		RenderThread::forEach([script](RenderThread& t) {
+		EngineThread::forEach([script](EngineThread& t) {
 			t.send<EM::ChangeCPScriptMessage>(script);
 		});
 	}

@@ -7,7 +7,7 @@
 #include "DisplayPosition.h"
 #include "PlaybackTracer.h"
 #include "MyActions.h"
-#include "RenderWindow.h"
+#include "EngineWindow.h"
 
 
 bool isExtensionSupported(const char *extName){
@@ -46,7 +46,7 @@ void loadExtensions(){
 		glBlendColor = 0;
 }
 
-GLContext::GLContext(RenderWindow& window)
+GLContext::GLContext(EngineWindow& window)
 {
 	window.makeContextCurrent();
 	loadExtensions();
@@ -70,7 +70,7 @@ GLContext::GLContext(RenderWindow& window)
 }
 
 
-Engine::Engine(RenderThread& thread, RenderWindow& window) :
+Engine::Engine(EngineThread& thread, EngineWindow& window) :
 	thread(thread),
 	window(window),
 	glContext(window),
@@ -113,7 +113,7 @@ void Engine::mainLoop(){
 }
 
 void Engine::onPaint(){
-	TRACK_CALL_TEXT("RenderThread::onPaint");
+	TRACK_CALL_TEXT("EngineThread::onPaint");
 	double frameStart = Helpers::getHighresTimer();
 
 	displayPos.update();

@@ -1,12 +1,12 @@
 #include "stdafx.h"
 
-#include "ChronflowWindow.h"
+#include "ContainerWindow.h"
 
 
 
 class dui_chronflow : public ui_element_instance {
 	ui_element_config::ptr config;
-	ChronflowWindow window;
+	ContainerWindow window;
 public:
 	dui_chronflow(HWND parent, ui_element_config::ptr config, ui_element_instance_callback_ptr p_callback)
 		: config(config), window(parent, p_callback) {

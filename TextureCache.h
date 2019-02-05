@@ -9,7 +9,7 @@
 using namespace boost::multi_index;
 
 class ImgTexture;
-class RenderThread;
+class EngineThread;
 
 struct TextureCacheMeta {
 	std::string groupString;
@@ -55,9 +55,9 @@ private:
 class TextureCache
 {
 	DbAlbumCollection& db;
-	RenderThread& thread;
+	EngineThread& thread;
 public:
-	TextureCache(RenderThread&, DbAlbumCollection&);
+	TextureCache(EngineThread&, DbAlbumCollection&);
 
 	const GLTexture& getLoadedImgTexture(const std::string& albumName);
 

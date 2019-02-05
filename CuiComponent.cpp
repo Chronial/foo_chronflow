@@ -1,12 +1,12 @@
 #include "stdafx.h"
 #include "../columns_ui-sdk/ui_extension.h"
 
-#include "ChronflowWindow.h"
+#include "ContainerWindow.h"
 
 
 class cui_chronflow : public ui_extension::window {
 	ui_extension::window_host_ptr m_host;
-	std::optional<ChronflowWindow> window;
+	std::optional<ContainerWindow> window;
 
 public:
 	cui_chronflow(){};

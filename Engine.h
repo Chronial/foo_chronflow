@@ -10,7 +10,7 @@
 
 class GLContext {
 public:
-	GLContext(class RenderWindow&);
+	GLContext(class EngineWindow&);
 };
 
 
@@ -25,10 +25,10 @@ public:
 	PlaybackTracer playbackTracer;
 	unique_ptr<DbReloadWorker> reloadWorker;
 
-	RenderWindow& window;
-	class RenderThread& thread;
+	EngineWindow& window;
+	class EngineThread& thread;
 
-	Engine(RenderThread&, RenderWindow&);
+	Engine(EngineThread&, EngineWindow&);
 	void mainLoop();
 	void onPaint();
 	void updateRefreshRate();

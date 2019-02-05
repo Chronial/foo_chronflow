@@ -1,6 +1,6 @@
 #pragma once
 #include "stdafx.h"
-#include "RenderWindow.h"
+#include "EngineWindow.h"
 
 struct GdiContext {
 	ULONG_PTR token;
@@ -13,19 +13,19 @@ struct GdiContext {
 	}
 };
 
-class ChronflowWindow {
+class ContainerWindow {
 	GdiContext gdiContext;
 	bool mainWinMinimized = true;
 
 public:
 	HWND hwnd = nullptr;
 
-	ChronflowWindow(HWND parent, ui_element_instance_callback_ptr duiCallback=nullptr);
-	~ChronflowWindow();
+	ContainerWindow(HWND parent, ui_element_instance_callback_ptr duiCallback=nullptr);
+	~ContainerWindow();
 
 	static bool registerWindowClass();
 
-	std::optional<RenderWindow> renderWindow;
+	std::optional<EngineWindow> engineWindow;
 
 private:
 	HWND createWindow(HWND parent);

@@ -138,11 +138,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Engine.cpp" />
+    <ClCompile Include="EngineWindow.cpp" />
     <ClCompile Include="engine_messages.cpp" />
     <ClCompile Include="FindAsYouType.cpp" />
     <ClCompile Include="Image.cpp" />
     <ClCompile Include="TextureCache.cpp" />
-    <ClCompile Include="ChronflowWindow.cpp" />
+    <ClCompile Include="ContainerWindow.cpp" />
     <ClCompile Include="CoverConfig.cpp" />
     <ClCompile Include="ConfigWindow.cpp" />
     <ClCompile Include="Console.cpp">
@@ -165,7 +166,7 @@
     <ClCompile Include="MyActions.cpp" />
     <ClCompile Include="PlaybackTracer.cpp" />
     <ClCompile Include="Renderer.cpp" />
-    <ClCompile Include="RenderThread.cpp" />
+    <ClCompile Include="EngineThread.cpp" />
     <ClCompile Include="SafeArrayHelper.cpp" />
     <ClCompile Include="ScriptObject.cpp" />
     <ClCompile Include="TextDisplay.cpp" />
@@ -179,7 +180,7 @@
     <ClInclude Include="stb_image_resize.h" />
     <ClInclude Include="TextureCache.h" />
     <ClInclude Include="base.h" />
-    <ClInclude Include="ChronflowWindow.h" />
+    <ClInclude Include="ContainerWindow.h" />
     <ClInclude Include="CoverConfig.h" />
     <ClCompile Include="config.cpp" />
     <ClInclude Include="config.h" />
@@ -190,7 +191,7 @@
     <ClInclude Include="DisplayPosition.h" />
     <ClInclude Include="BlockingQueue.h" />
     <ClInclude Include="FindAsYouType.h" />
-    <ClInclude Include="RenderWindow.h" />
+    <ClInclude Include="EngineWindow.h" />
     <ClInclude Include="TrackDropSource.h" />
     <ClInclude Include="glStructs.h" />
     <ClInclude Include="stdafx.h" />
@@ -198,7 +199,7 @@
     <ClInclude Include="MyActions.h" />
     <ClInclude Include="PlaybackTracer.h" />
     <ClInclude Include="Renderer.h" />
-    <ClInclude Include="RenderThread.h" />
+    <ClInclude Include="EngineThread.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SafeArrayHelper.h" />
     <ClInclude Include="ScriptedCoverPositions.h" />

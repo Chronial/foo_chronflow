@@ -1,7 +1,7 @@
 #pragma once
 #include "BlockingQueue.h"
 
-class RenderWindow;
+class EngineWindow;
 
 namespace engine_messages {
 struct Message;
@@ -20,14 +20,14 @@ public:
 	void addCallback(std::function<void()> f);
 };
 
-class RenderThread : public play_callback_impl_base {
+class EngineThread : public play_callback_impl_base {
 public:
-	explicit RenderThread(RenderWindow& renderWindow);
-	RenderThread(RenderThread&) = delete;
-	RenderThread& operator=(RenderThread&) = delete;
-	RenderThread(RenderThread&&) = delete;
-	RenderThread& operator=(RenderThread&&) = delete;
-	~RenderThread();
+	explicit EngineThread(EngineWindow& engineWindow);
+	EngineThread(EngineThread&) = delete;
+	EngineThread& operator=(EngineThread&) = delete;
+	EngineThread(EngineThread&&) = delete;
+	EngineThread& operator=(EngineThread&&) = delete;
+	~EngineThread();
 
 	void sendMessage(unique_ptr<engine_messages::Message>&& msg);
 
@@ -55,15 +55,15 @@ public:
 	/// Guarantees that the callback runs only if this thread is still alive.
 	void runInMainThread(std::function<void()> f);
 
-	static void forEach(std::function<void(RenderThread&)>);
+	static void forEach(std::function<void(EngineThread&)>);
 
 private:
 	void run();
-	RenderWindow& renderWindow;
+	EngineWindow& engineWindow;
 	BlockingQueue<unique_ptr<engine_messages::Message>> messageQueue;
 	CallbackHolder callbackHolder;
 	std::thread thread;
 
-	static std::unordered_set<RenderThread*> instances;
+	static std::unordered_set<EngineThread*> instances;
 	friend class Engine;
 };

@@ -5,11 +5,11 @@
 #include "PlaybackTracer.h"
 
 #include "DbAlbumCollection.h"
-#include "RenderThread.h"
+#include "EngineThread.h"
 #include "Engine.h"
 
 
-PlaybackTracer::PlaybackTracer(RenderThread& thread) : thread(thread) {};
+PlaybackTracer::PlaybackTracer(EngineThread& thread) : thread(thread) {};
 
 void PlaybackTracer::delay(double extra_time)
 {

@@ -3,7 +3,7 @@
 
 #include "DbAlbumCollection.h"
 
-#include "RenderThread.h"
+#include "EngineThread.h"
 
 #include "DbReloadWorker.h"
 #include "Engine.h"

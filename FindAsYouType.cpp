@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "FindAsYouType.h"
-#include "RenderThread.h"
+#include "EngineThread.h"
 #include "DbAlbumCollection.h"
 #include "Engine.h"
 #include "PlaybackTracer.h"

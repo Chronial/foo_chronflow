@@ -1,58 +1,58 @@
 #include "stdafx.h"
 #include "Helpers.h"
 
-#include "RenderThread.h"
+#include "EngineThread.h"
 #include "Engine.h"
-#include "RenderWindow.h"
+#include "EngineWindow.h"
 
 
 
-void RenderThread::run(){
-	TRACK_CALL_TEXT("Chronflow RenderThread");
+void EngineThread::run(){
+	TRACK_CALL_TEXT("Chronflow EngineThread");
 	CoInitializeScope com_enable{}; // Required for compiling CoverPos Scripts
-	renderWindow.makeContextCurrent();
-	Engine engine(*this, renderWindow);
+	engineWindow.makeContextCurrent();
+	Engine engine(*this, engineWindow);
 	engine.mainLoop();
 }
 
-void RenderThread::sendMessage(unique_ptr<engine_messages::Message>&& msg){
+void EngineThread::sendMessage(unique_ptr<engine_messages::Message>&& msg){
 	messageQueue.push(std::move(msg));
 }
 
 
-RenderThread::RenderThread(RenderWindow& renderWindow) : 
-	renderWindow(renderWindow),
-	thread(&RenderThread::run, this)
+EngineThread::EngineThread(EngineWindow& engineWindow) : 
+	engineWindow(engineWindow),
+	thread(&EngineThread::run, this)
 {
 	instances.insert(this);
 	play_callback_reregister(flag_on_playback_new_track, true);
 }
 
-RenderThread::~RenderThread(){
+EngineThread::~EngineThread(){
 	instances.erase(this);
 	this->send<EM::StopThreadMessage>();
 	if (thread.joinable())
 		thread.join();
 }
 
-void RenderThread::invalidateWindow() {
-	RedrawWindow(renderWindow.hWnd, NULL, NULL, RDW_INVALIDATE);
+void EngineThread::invalidateWindow() {
+	RedrawWindow(engineWindow.hWnd, NULL, NULL, RDW_INVALIDATE);
 }
 
-std::unordered_set<RenderThread*> RenderThread::instances{};
+std::unordered_set<EngineThread*> EngineThread::instances{};
 
-void RenderThread::forEach(std::function<void(RenderThread&)> f){
+void EngineThread::forEach(std::function<void(EngineThread&)> f){
 	for (auto instance : instances) {
 		f(*instance);
 	}
 }
 
-void RenderThread::on_playback_new_track(metadb_handle_ptr p_track)
+void EngineThread::on_playback_new_track(metadb_handle_ptr p_track)
 {
 	send<EM::PlaybackNewTrack>(p_track);
 }
 
-void RenderThread::runInMainThread(std::function<void()> f) {
+void EngineThread::runInMainThread(std::function<void()> f) {
 	callbackHolder.addCallback(f);
 }
 

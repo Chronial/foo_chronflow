@@ -1,40 +1,40 @@
 #include "stdafx.h"
 #include "base.h"
-#include "ChronflowWindow.h"
+#include "ContainerWindow.h"
 
 #include "Console.h"
-#include "RenderThread.h"
-#include "RenderWindow.h"
+#include "EngineThread.h"
+#include "EngineWindow.h"
 #include "Engine.h"
 
 #define MAINWINDOW_CLASSNAME L"foo_chronflow MainWindow"
 
 #define MINIMIZE_CHECK_TIMEOUT 10000 // milliseconds
 
-ChronflowWindow::ChronflowWindow(HWND parent, ui_element_instance_callback_ptr duiCallback) {
-	TRACK_CALL_TEXT("ChronflowWindow::startup");
+ContainerWindow::ContainerWindow(HWND parent, ui_element_instance_callback_ptr duiCallback) {
+	TRACK_CALL_TEXT("ContainerWindow::startup");
 	IF_DEBUG(Console::create());
 
 	hwnd = createWindow(parent);
 	try {
-		renderWindow.emplace(hwnd, duiCallback);
+		engineWindow.emplace(hwnd, duiCallback);
 	} catch (std::runtime_error&){
 		// We live on without the render window, so we can display the error
 	}
 }
 
-ChronflowWindow::~ChronflowWindow() {
+ContainerWindow::~ContainerWindow() {
 	DestroyWindow(hwnd);
 }
 
-bool ChronflowWindow::registerWindowClass(){
+bool ContainerWindow::registerWindowClass(){
 	HINSTANCE myInstance = core_api::get_my_instance();
 
 	WNDCLASS wc = { 0 };
 	wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC | CS_DBLCLKS | CS_NOCLOSE;
-	wc.lpfnWndProc = (WNDPROC)ChronflowWindow::WndProc;
+	wc.lpfnWndProc = (WNDPROC)ContainerWindow::WndProc;
 	wc.cbClsExtra = 0;
-	wc.cbWndExtra = sizeof(ChronflowWindow *);
+	wc.cbWndExtra = sizeof(ContainerWindow *);
 	wc.hInstance = myInstance;
 	wc.hIcon = LoadIcon(NULL, IDI_HAND);
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
@@ -45,20 +45,20 @@ bool ChronflowWindow::registerWindowClass(){
 	return RegisterClass(&wc) != 0;
 }
 
-LRESULT ChronflowWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
+LRESULT ContainerWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 	switch (uMsg){
 	case WM_SIZE:
 	{
-		if (renderWindow){
-			renderWindow->setWindowSize(LOWORD(lParam), HIWORD(lParam));
+		if (engineWindow){
+			engineWindow->setWindowSize(LOWORD(lParam), HIWORD(lParam));
 		}
 		return 0;
 	}
 	case WM_DISPLAYCHANGE:
 	case WM_DEVMODECHANGE:
 	{
-		if (renderWindow)
-			renderWindow->renderThread->send<EM::DeviceModeMessage>();
+		if (engineWindow)
+			engineWindow->engineThread->send<EM::DeviceModeMessage>();
 		return 0;
 	}
 	case WM_TIMER:
@@ -67,8 +67,8 @@ LRESULT ChronflowWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 			if (!static_api_ptr_t<ui_control>()->is_visible()){
 				if (!mainWinMinimized){
 					mainWinMinimized = true;
-					if (renderWindow)
-						renderWindow->renderThread->send<EM::WindowHideMessage>();
+					if (engineWindow)
+						engineWindow->engineThread->send<EM::WindowHideMessage>();
 					KillTimer(hWnd, IDT_CHECK_MINIMIZED);
 				}
 			}
@@ -80,8 +80,8 @@ LRESULT ChronflowWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 	case WM_PAINT:
 	{
 		if (GetUpdateRect(hWnd, 0, FALSE)){
-			if (renderWindow){
-				renderWindow->onDamage();
+			if (engineWindow){
+				engineWindow->onDamage();
 			} else {
 				PAINTSTRUCT ps;
 				HDC hdc;
@@ -97,8 +97,8 @@ LRESULT ChronflowWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 			}
 			if (mainWinMinimized){
 				mainWinMinimized = false;
-				if (renderWindow)
-					renderWindow->renderThread->send<EM::WindowShowMessage>();
+				if (engineWindow)
+					engineWindow->engineThread->send<EM::WindowShowMessage>();
 			}
 			SetTimer(hWnd, IDT_CHECK_MINIMIZED, MINIMIZE_CHECK_TIMEOUT, 0);
 		}
@@ -107,20 +107,20 @@ LRESULT ChronflowWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 	return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
 
-LRESULT CALLBACK ChronflowWindow::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
-	ChronflowWindow* chronflow = nullptr;
+LRESULT CALLBACK ContainerWindow::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
+	ContainerWindow* chronflow = nullptr;
 	if (uMsg == WM_NCCREATE){
-		chronflow = reinterpret_cast<ChronflowWindow*>(((CREATESTRUCT*)lParam)->lpCreateParams);
+		chronflow = reinterpret_cast<ContainerWindow*>(((CREATESTRUCT*)lParam)->lpCreateParams);
 		SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)chronflow);
 	} else {
-		chronflow = reinterpret_cast<ChronflowWindow*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+		chronflow = reinterpret_cast<ContainerWindow*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 	}
 	if (chronflow == 0)
 		return DefWindowProc(hWnd, uMsg, wParam, lParam);
 	return chronflow->MessageHandler(hWnd, uMsg, wParam, lParam);
 }
 
-HWND  ChronflowWindow::createWindow(HWND parent){
+HWND  ContainerWindow::createWindow(HWND parent){
 	HWND		hWnd;
 
 	WIN32_OP(hWnd = CreateWindowEx(
