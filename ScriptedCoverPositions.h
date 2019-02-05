@@ -132,7 +132,6 @@ public:
 private:
 	CScriptObject scriptObj;
 	bool scShowMirrorPlane(bool& res, pfc::string_base& message);
-	bool scMirrorSize(double& res, pfc::string_base& message);
 	bool scCallDArrayFunction(const wchar_t* func, pfc::list_t<double>& res, pfc::string_base& message);
 	bool scCallDArrayFunction(const wchar_t* func, pfc::list_t<double>& res, pfc::string_base& message, double param);
 	bool scCallDArrayFunction(const wchar_t* func, pfc::list_t<double>& res, pfc::string_base& message, LPSAFEARRAY sa);
@@ -142,10 +141,10 @@ private:
 
 class cfg_compiledCPInfoPtr : public cfg_var {
 private:
-	CompiledCPInfo * data;
+	shared_ptr<CompiledCPInfo> data_;
 protected:
 	void get_data_raw(stream_writer * p_stream,abort_callback & p_abort) {
-
+		auto data = this->get();
 		if (data){
 			p_stream->write_lendian_t(true, p_abort);
 			data->serialize(p_stream, p_abort);
@@ -157,26 +156,26 @@ protected:
 		bool configNotEmpty;
 		p_stream->read_lendian_t(configNotEmpty, p_abort);
 		if (configNotEmpty){
-			data = new CompiledCPInfo;
+			auto data = make_shared<CompiledCPInfo>();
 			CompiledCPInfo::unserialize(*data, p_stream, p_abort);
+			this->set(data);
 		} else {
-			data = 0;
+			this->reset();
 		}
 	}
 public:
-	inline cfg_compiledCPInfoPtr(const GUID & p_guid, CompiledCPInfo* p_val)
-		: cfg_var(p_guid), data(p_val) {}
-	
-	inline const cfg_compiledCPInfoPtr & operator=(CompiledCPInfo* p_val) {
-		data = p_val;
-		return *this;
+	shared_ptr<CompiledCPInfo> get() const {
+		return std::atomic_load(&this->data_);
+	}
+	void set(shared_ptr<CompiledCPInfo> value) {
+		std::atomic_store(&this->data_, std::move(value));
+	}
+	void reset() {
+		std::atomic_store(&this->data_, {});
 	}
 
-	inline bool isEmpty() const {
-		return data == 0;
-	}
-
-	inline operator CompiledCPInfo*() {return data;}
+	inline cfg_compiledCPInfoPtr(const GUID & p_guid)
+		: cfg_var(p_guid) {}
 };
 
 extern cfg_compiledCPInfoPtr sessionCompiledCPInfo;
@@ -185,12 +184,10 @@ class ScriptedCoverPositions
 {
 public:
 	ScriptedCoverPositions(){
-		if (!sessionCompiledCPInfo.isEmpty()){
-			cInfo = new CompiledCPInfo(*sessionCompiledCPInfo);
-		} else {
+		cInfo = sessionCompiledCPInfo.get();
+		if (!cInfo){
 			const CoverConfig* config = cfgCoverConfigs.getPtrByName(cfgCoverConfigSel);
 			pfc::string8 errorMsg;
-			cInfo = 0;
 			if (!config || !setScript(config->script, errorMsg)){
 				if(!setScript(COVER_CONFIG_DEF_CONTENT, errorMsg)){
 					popup_message::g_show(errorMsg, "JScript Compile Error", popup_message::icon_error);
@@ -199,30 +196,19 @@ public:
 			}
 		}
 	}
-	~ScriptedCoverPositions(){
-		delete cInfo;
-	}
 
 	bool setScript(const char* script, pfc::string_base& errorMsg){
-		CompiledCPInfo* compiled = new CompiledCPInfo;
 		try {
+			auto compiled = make_shared<CompiledCPInfo>();
 			CPScriptCompiler compiler;
 			if (compiler.compileScript(script, *compiled, errorMsg)){
-				CompiledCPInfo* oldInfo = cInfo;
-				cInfo = compiled;
-				delete oldInfo;
-
-				CompiledCPInfo* oldSessInfo = sessionCompiledCPInfo;
-				sessionCompiledCPInfo = new CompiledCPInfo(*compiled);
-				delete oldSessInfo;
+				sessionCompiledCPInfo.set(compiled);
+				cInfo = std::move(compiled);
 				return true;
 			} else {
-				delete compiled;
 				return false;
 			}
-		}  catch (_com_error){
-			delete compiled;
-
+		} catch (_com_error){
 			errorMsg = "Windows Script Control not installed. Download it from <http://www.microsoft.com/downloads/details.aspx?FamilyId=D7E31492-2595-49E6-8C02-1426FEC693AC>.";
 			return false;
 		}
@@ -317,5 +303,5 @@ public:
 	}
 
 private:
-	CompiledCPInfo* cInfo;
+	shared_ptr<CompiledCPInfo> cInfo;
 };
