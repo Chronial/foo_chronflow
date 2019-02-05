@@ -5,9 +5,14 @@
 #include "TextDisplay.h"
 #include "ScriptedCoverPositions.h"
 
-class AppInstance;
 class TextureCache;
 class DisplayPosition;
+class Engine;
+
+
+// TODO: use extension loader instead
+extern PFNGLFOGCOORDFPROC glFogCoordf;
+extern PFNGLBLENDCOLORPROC glBlendColor;
 
 enum VSyncMode {
 	VSYNC_SLEEP_ONLY = 1,
@@ -18,10 +23,7 @@ enum VSyncMode {
 class Renderer
 {
 public:
-	Renderer(AppInstance* instance, DisplayPosition* displayPos);
-	~Renderer(void);
-
-	void initGlState();
+	Renderer(Engine& engine);
 
 	void resizeGlScene(int width, int height);
 	void setProjectionMatrix(bool pickMatrix = false, int x = 0, int y = 0);
@@ -29,8 +31,6 @@ public:
 	bool offsetOnPoint(int x, int y, int& out);
 
 	void drawFrame();
-
-	void swapBuffers();
 
 	void ensureVSync(bool enableVSync);
 
@@ -40,17 +40,11 @@ public:
 	TextDisplay textDisplay;
 	FpsCounter fpsCounter;
 	ScriptedCoverPositions coverPos;
-	DisplayPosition *const displayPos;
-	TextureCache* texCache;
+	class Engine& engine;
 
 private:
-	void loadExtensions(void);
-	bool isExtensionSupported(const char *name);
-	bool isWglExtensionSupported(const char *name);
-
 	void getFrustrumSize(double &right, double &top, double &zNear, double &zFar);
 
-	AppInstance* appInstance;
 	int winWidth;
 	int winHeight;
 

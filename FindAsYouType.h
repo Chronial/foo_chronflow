@@ -4,32 +4,23 @@
 #include "base.h"
 #include "config.h"
 
-#include "AppInstance.h"
-#include "DbAlbumCollection.h"
-#include "PlaybackTracer.h"
-#include "TimerOwner.h"
+#include "Helpers.h"
 
 
-class FindAsYouType : TimerOwner {
-	static const int typeTimeout = 1000; // milliseconds
+class FindAsYouType {
+	inline static const double typeTimeout = 1.0;
 	pfc::string8 enteredString;
-	AppInstance* appInstance;
-	bool playbackTracerLocked;
+	std::optional<Timer> timeoutTimer;
+
+	class Engine& engine;
 public:
-	FindAsYouType(AppInstance* instance)
-		: TimerOwner(instance), appInstance(instance){
-		clearSearch();
-		playbackTracerLocked = false;
-	}
+	FindAsYouType(Engine& engine)
+		: engine(engine) {};
 	bool onChar(WPARAM wParam);
-	void enterChar(wchar_t c);
-	void removeChar();
-	void clear();
-	void timerProc();
 
 private:
-	void lockPlaybackTracer();
-	void unlockPlaybackTracer();
-	bool doSearch(const char* searchFor);
-	void clearSearch();
+	void enterChar(wchar_t c);
+	void removeChar();
+	void reset();
+	bool updateSearch(const char* searchFor);
 };

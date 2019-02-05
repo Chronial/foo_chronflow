@@ -40,6 +40,7 @@
 #include <atomic>
 #include <thread>
 #include <future>
+#include <shared_mutex>
 
 using std::unique_ptr;
 using std::make_unique;

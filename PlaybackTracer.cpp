@@ -4,92 +4,37 @@
 
 #include "PlaybackTracer.h"
 
-#include "AppInstance.h"
 #include "DbAlbumCollection.h"
 #include "RenderThread.h"
+#include "Engine.h"
 
 
-PlaybackTracer::PlaybackTracer(AppInstance* appInstance) :
-TimerOwner(appInstance),
-appInstance(appInstance)
+PlaybackTracer::PlaybackTracer(RenderThread& thread) : thread(thread) {};
+
+void PlaybackTracer::delay(double extra_time)
 {
-	followSettingsChanged();
-}
-
-PlaybackTracer::~PlaybackTracer() {
-	if (callbackRegistered){
-		static_api_ptr_t<play_callback_manager> pcm;
-		pcm->unregister_callback(this);
-	}
-}
-
-void PlaybackTracer::movementEnded()
-{
-	if (inMovement){
-		inMovement = false;
-		unlock();
-	}
-}
-void PlaybackTracer::lock()
-{
-	lockCount++;
-}
-
-void PlaybackTracer::unlock()
-{
-	lockCount--;
-	PFC_ASSERT(lockCount >= 0);
-	if (lockCount == 0 && cfgCoverFollowsPlayback){
-		setTimer(cfgCoverFollowDelay * 1000);
-		waitingForTimer = true;
-	}
-}
-
-void PlaybackTracer::timerProc()
-{
-	if (lockCount == 0 && cfgCoverFollowsPlayback){
-		moveToNowPlaying();
-	}
-	waitingForTimer = false;
-	killTimer();
+	delayTimer.emplace(cfgCoverFollowDelay + extra_time, [&] {
+		this->thread.send<EM::Run>([&] {
+			if (cfgCoverFollowsPlayback)
+				moveToNowPlaying();
+			delayTimer.reset();
+		});
+	});
 }
 
 void PlaybackTracer::moveToNowPlaying()
 {
-	fb2k::inMainThread2([&]{
-		static_api_ptr_t<playback_control_v2> pc;
+	this->thread.runInMainThread([&]{
 		metadb_handle_ptr nowPlaying;
-		if (pc->get_now_playing(nowPlaying)){
-			CollectionPos target;
-			appInstance->renderer->send<RenderThread::MoveToTrack>(nowPlaying);
+		if (playback_control_v2::get()->get_now_playing(nowPlaying)){
+			this->thread.send<EM::MoveToCurrentTrack>(nowPlaying);
 		}
 	});
 }
 
-void PlaybackTracer::followSettingsChanged()
+void PlaybackTracer::onPlaybackNewTrack(metadb_handle_ptr p_track)
 {
-	if (cfgCoverFollowsPlayback){
-		if (!callbackRegistered){
-			static_api_ptr_t<play_callback_manager> pcm;
-			pcm->register_callback(this, flag_on_playback_new_track, true);
-			callbackRegistered = true;
-		}
-		if (lockCount == 0){
-			moveToNowPlaying();
-		}
-	} else {
-		killTimer();
-		if (callbackRegistered){
-			static_api_ptr_t<play_callback_manager> pcm;
-			pcm->unregister_callback(this);
-			callbackRegistered = false;
-		}
-	}
-}
-
-void PlaybackTracer::on_playback_new_track(metadb_handle_ptr p_track)
-{
-	if (lockCount == 0 && !waitingForTimer){
-		moveToNowPlaying();
-	}
+	if (!cfgCoverFollowsPlayback || delayTimer.has_value())
+		return;
+	moveToNowPlaying();
 }

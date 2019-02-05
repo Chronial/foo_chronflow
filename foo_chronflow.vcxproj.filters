@@ -108,11 +108,14 @@
     <ClCompile Include="FindAsYouType.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Engine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="engine_messages.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AppInstance.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="DbAlbumCollection.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -185,9 +188,6 @@
     <ClInclude Include="shared_mutex.h">
       <Filter>Header Files\Helpers</Filter>
     </ClInclude>
-    <ClInclude Include="TimerOwner.h">
-      <Filter>Header Files\Helpers</Filter>
-    </ClInclude>
     <ClInclude Include="FindAsYouType.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -209,6 +209,12 @@
     <ClInclude Include="Image.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Engine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="engine_messages.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="images\cover-loading.jpg">
@@ -225,5 +231,8 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="TODO.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
   </ItemGroup>
 </Project>

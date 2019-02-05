@@ -4,59 +4,30 @@
 #include "Renderer.h"
 
 #include "TextureCache.h"
-#include "AppInstance.h"
 #include "DisplayPosition.h"
 #include "DbAlbumCollection.h"
 #include "Helpers.h"
 #include "ScriptedCoverPositions.h"
 #include "glStructs.h"
+#include "Engine.h"
 
-
-// Extensions
-PFNGLFOGCOORDFPROC glFogCoordf = NULL;
-PFNGLBLENDCOLORPROC glBlendColor = NULL;
+// TODO: Use extension loader instead
+extern PFNGLFOGCOORDFPROC glFogCoordf = nullptr;
+extern PFNGLBLENDCOLORPROC glBlendColor = nullptr;
 
 
 #define SELECTION_CENTER INT_MAX //Selection is an unsigned int, so this is center
 #define SELECTION_COVERS 1
 #define SELECTION_MIRROR 2
 
-Renderer::Renderer(AppInstance* instance, DisplayPosition* displayPos)
-: appInstance(instance),
-  displayPos(displayPos),
-  textDisplay(this)
+Renderer::Renderer(Engine& engine) :
+	engine(engine),
+	textDisplay(this)
 {
-}
-
-Renderer::~Renderer(void)
-{
-}
-
-void Renderer::initGlState()
-{
-	// move this to an extra function - otherwice it's called twice due to mulitsampling
-	loadExtensions();
-
-	glShadeModel(GL_SMOOTH);							// Enable Smooth Shading
-	glClearDepth(1.0f);									// Depth Buffer Setup
-	glEnable(GL_DEPTH_TEST);							// Enables Depth Testing
-	glDepthFunc(GL_LEQUAL);								// The Type Of Depth Testing To Do
-	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);	// Really Nice Perspective Calculations
-	glHint(GL_TEXTURE_COMPRESSION_HINT,GL_FASTEST);
-	glEnable(GL_TEXTURE_2D);
-
-	if (isExtensionSupported("GL_EXT_fog_coord")){
-		glFogi(GL_FOG_MODE, GL_EXP);
-		glFogf(GL_FOG_DENSITY, 5);
-		GLfloat	fogColor[4] = {0.0f, 0.0f, 0.0f, 1.0f};     // Fog Color - should be BG color
-		glFogfv(GL_FOG_COLOR, fogColor);					// Set The Fog Color
-		glHint(GL_FOG_HINT, GL_NICEST);						// Per-Pixel Fog Calculation
-		glFogi(GL_FOG_COORD_SRC, GL_FOG_COORD);		// Set Fog Based On Vertice Coordinates
-	}
-
 	glfwSwapInterval(0);
 	vSyncEnabled = false;
 }
+
 
 void Renderer::ensureVSync(bool enableVSync){
 	if (vSyncEnabled != enableVSync){
@@ -65,41 +36,6 @@ void Renderer::ensureVSync(bool enableVSync){
 	}
 }
 
-void Renderer::loadExtensions(){
-	if(isExtensionSupported("GL_EXT_fog_coord"))
-		glFogCoordf = (PFNGLFOGCOORDFPROC) wglGetProcAddress("glFogCoordf");
-	else
-		glFogCoordf = 0;
-
-	if(isExtensionSupported("GL_EXT_blend_color"))
-		glBlendColor = (PFNGLBLENDCOLORPROC)wglGetProcAddress("glBlendColor");
-	else
-		glBlendColor = 0;
-}
-
-bool Renderer::isExtensionSupported(const char *extName){
-	char *p;
-	char *end;
-	int extNameLen;
-
-	extNameLen = strlen(extName);
-
-	p = (char *)glGetString(GL_EXTENSIONS);
-	if (!p) {
-		return false;
-	}
-
-	end = p + strlen(p);
-
-	while (p < end) {
-		int n = strcspn(p, " ");
-		if ((extNameLen == n) && (strncmp(extName, p, n) == 0)) {
-			return true;
-		}
-		p += (n + 1);
-	}
-	return false;
-}
 
 void Renderer::resizeGlScene(int width, int height){
 	if (height == 0)
@@ -311,11 +247,11 @@ void Renderer::drawScene(bool selectionPass)
 }
 
 void Renderer::drawGui(){
-	if (cfgShowAlbumTitle || appInstance->albumCollection->getCount() == 0){
+	if (cfgShowAlbumTitle || engine.db.getCount() == 0){
 		pfc::string8 albumTitle;
-		if (appInstance->albumCollection->getCount()){
-			appInstance->albumCollection->getTitle(appInstance->albumCollection->getTargetPos(), albumTitle);
-		} else if (*(appInstance->reloadWorker.synchronize())){
+		if (engine.db.getCount()){
+			engine.db.getTitle(engine.db.getTargetPos(), albumTitle);
+		} else if (engine.reloadWorker){
 			albumTitle = "Generating Cover Display ...";
 		} else {
 			albumTitle = "No Covers to Display";
@@ -350,31 +286,26 @@ void Renderer::drawFrame()
 	drawGui();
 }
 
-void Renderer::swapBuffers(){
-	TRACK_CALL_TEXT("Renderer::swapBuffers");
-	glfwSwapBuffers(appInstance->glfwWindow);
-}
-
 void Renderer::drawCovers(bool showTarget){
 	if (cfgHighlightWidth == 0)
 		showTarget = false;
 
-	if (appInstance->albumCollection->getCount() == 0)
+	if (engine.db.getCount() == 0)
 		return;
 
-	float centerOffset = displayPos->getCenteredOffset();
-	CollectionPos centerCover = displayPos->getCenteredPos();
-	CollectionPos firstCover = displayPos->getOffsetPos(coverPos.getFirstCover() + 1);
-	CollectionPos lastCover = displayPos->getOffsetPos(coverPos.getLastCover());
+	float centerOffset = engine.displayPos.getCenteredOffset();
+	CollectionPos centerCover = engine.displayPos.getCenteredPos();
+	CollectionPos firstCover = engine.displayPos.getOffsetPos(coverPos.getFirstCover() + 1);
+	CollectionPos lastCover = engine.displayPos.getOffsetPos(coverPos.getLastCover());
 	lastCover++; // getOffsetPos does not return the end() element
-	CollectionPos targetCover = appInstance->albumCollection->getTargetPos();
+	CollectionPos targetCover = engine.db.getTargetPos();
 
-	int offset = appInstance->albumCollection->rank(firstCover) - appInstance->albumCollection->rank(centerCover);
+	int offset = engine.db.rank(firstCover) - engine.db.rank(centerCover);
 	
 	for (CollectionPos p = firstCover; p != lastCover; ++p, ++offset){
 		float co = -centerOffset + offset;
 
-		const GLTexture& tex = texCache->getLoadedImgTexture(p->groupString);
+		const GLTexture& tex = engine.texCache.getLoadedImgTexture(p->groupString);
 		tex.bind();
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 

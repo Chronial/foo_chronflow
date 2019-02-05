@@ -1,24 +1,12 @@
 #include "stdafx.h"
 #include "base.h"
 
-#include "AppInstance.h"
 #include "DbReloadWorker.h"
 #include "RenderThread.h"
+#include "Engine.h"
 
 
-void DbReloadWorker::startNew(AppInstance* instance){
-	auto worker = instance->reloadWorker.synchronize();
-	if (*worker) // already running
-		return;
-	(*worker) = unique_ptr<DbReloadWorker>(new DbReloadWorker(instance));
-}
-
-DbReloadWorker::DbReloadWorker(AppInstance* instance) : appInstance(instance){
-	// copy whole library
-	static_api_ptr_t<library_manager> lm;
-	lm->get_all_items(library);
-
-	//workerThread = (HANDLE)_beginthreadex(0, 0, &(this->runWorkerThread), (void*)this, 0, 0);
+DbReloadWorker::DbReloadWorker(RenderThread& renderThread) : renderThread(renderThread){
 	thread = (HANDLE)_beginthreadex(0, 0, [](void* self)  -> unsigned int {
 		static_cast<DbReloadWorker*>(self)->threadProc();
 		return 0;
@@ -29,16 +17,31 @@ DbReloadWorker::DbReloadWorker(AppInstance* instance) : appInstance(instance){
 
 DbReloadWorker::~DbReloadWorker(){
 	kill = true;
+	try {
+		// Interrupt waiting for copy
+		copyDone.set_value();
+	} catch (std::future_error&) {} // Copy was already done
 	WaitForSingleObject(thread, INFINITE);
 	CloseHandle(thread);
 }
 
 void DbReloadWorker::threadProc(){
 	TRACK_CALL_TEXT("Chronflow DbReloadWorker");
-	this->generateData();
-	if (!kill)
-		appInstance->renderer->send<RenderThread::CollectionReloadedMessage>();
-	// Notify renderer to copy data, after copying, refresh AsynchTexloader + start Loading
+	
+	renderThread.runInMainThread([&] {
+		// copy whole library
+		library_manager::get()->get_all_items(library);
+		try {
+			copyDone.set_value();
+		} catch (std::future_error&) {}
+	});
+	copyDone.get_future().wait();
+	if (kill) return;
+
+	this->generateData(); // TODO: handle exception?
+	if (kill) return;
+
+	renderThread.send<EM::CollectionReloadedMessage>();
 };
 
 void DbReloadWorker::generateData(){

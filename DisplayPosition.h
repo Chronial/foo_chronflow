@@ -1,17 +1,12 @@
 #pragma once
-#include "CriticalSection.h"
 #include "DbAlbumCollection.h"
-
-class AppInstance;
-//class CriticalSection;
 
 class DisplayPosition
 {
-	AppInstance* appInstance;
+	DbAlbumCollection& db;
 public:
-	DisplayPosition(AppInstance* instance, CollectionPos startingPos);
+	DisplayPosition(DbAlbumCollection& db);
 	~DisplayPosition(void);
-	void moveTargetBy(int n);
 	void update(void);
 
 	bool isMoving(void);

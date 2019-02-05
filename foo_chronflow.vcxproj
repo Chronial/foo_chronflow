@@ -137,6 +137,8 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Engine.cpp" />
+    <ClCompile Include="engine_messages.cpp" />
     <ClCompile Include="FindAsYouType.cpp" />
     <ClCompile Include="Image.cpp" />
     <ClCompile Include="TextureCache.cpp" />
@@ -170,7 +172,8 @@
     <ClCompile Include="win32_helpers.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AppInstance.h" />
+    <ClInclude Include="Engine.h" />
+    <ClInclude Include="engine_messages.h" />
     <ClInclude Include="Image.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="stb_image_resize.h" />
@@ -189,7 +192,6 @@
     <ClInclude Include="FindAsYouType.h" />
     <ClInclude Include="RenderWindow.h" />
     <ClInclude Include="shared_mutex.h" />
-    <ClInclude Include="TimerOwner.h" />
     <ClInclude Include="TrackDropSource.h" />
     <ClInclude Include="glStructs.h" />
     <ClInclude Include="stdafx.h" />
@@ -231,6 +233,9 @@
     <ProjectReference Include="..\pfc\pfc.vcxproj">
       <Project>{ebfffb4e-261d-44d3-b89c-957b31a0bf9c}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

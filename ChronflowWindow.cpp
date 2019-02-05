@@ -2,63 +2,30 @@
 #include "base.h"
 #include "ChronflowWindow.h"
 
-#include "AppInstance.h"
 #include "Console.h"
 #include "RenderThread.h"
 #include "RenderWindow.h"
+#include "Engine.h"
 
 #define MAINWINDOW_CLASSNAME L"foo_chronflow MainWindow"
 
 #define MINIMIZE_CHECK_TIMEOUT 10000 // milliseconds
 
-void ChronflowWindow::startup(HWND parent) {
+ChronflowWindow::ChronflowWindow(HWND parent, ui_element_instance_callback_ptr duiCallback) {
 	TRACK_CALL_TEXT("ChronflowWindow::startup");
-	appInstance = new AppInstance();
 	IF_DEBUG(Console::create());
 
-	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
-	Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
-
-	appInstance->mainWindow = createWindow(parent);
-	appInstance->albumCollection = make_unique<DbAlbumCollection>(appInstance);
-
+	hwnd = createWindow(parent);
 	try {
-		appInstance->renderWindow = make_unique<RenderWindow>(appInstance, getDuiCallback());
+		renderWindow.emplace(hwnd, duiCallback);
+	} catch (std::runtime_error&){
+		// We live on without the render window, so we can display the error
 	}
-	catch (std::runtime_error&){
-		appInstance->albumCollection.reset();
-		return;
-	}
-	appInstance->renderer = make_unique<RenderThread>(appInstance);
-	auto future = appInstance->renderer->sendSync<RenderThread::InitDoneMessage>();
-	future.wait();
-	{
-		// TODO: Do we need this lock?
-		collection_read_lock lock(appInstance);
-		appInstance->playbackTracer = make_unique<PlaybackTracer>(appInstance);
-	}
-	appInstance->startCollectionReload();
-	instances.insert(this);
 }
 
-ChronflowWindow::~ChronflowWindow(){
-	if (appInstance)
-		DestroyWindow(appInstance->mainWindow);
+ChronflowWindow::~ChronflowWindow() {
+	DestroyWindow(hwnd);
 }
-
-void ChronflowWindow::shutdown(){
-	instances.erase(this);
-	appInstance->reloadWorker.synchronize()->reset();
-	appInstance->renderer.reset();
-	appInstance->renderWindow.reset();
-	appInstance->playbackTracer.reset();
-	appInstance->albumCollection.reset();
-	appInstance->mainWindow = nullptr;
-	delete pfc::replace_null_t(appInstance);
-
-	Gdiplus::GdiplusShutdown(gdiplusToken);
-}
-
 
 bool ChronflowWindow::registerWindowClass(){
 	HINSTANCE myInstance = core_api::get_my_instance();
@@ -79,24 +46,19 @@ bool ChronflowWindow::registerWindowClass(){
 }
 
 LRESULT ChronflowWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
-	if (!appInstance) // We are already shut down – do we need this? set a breakpoint here and check
-		return DefWindowProc(hWnd, uMsg, wParam, lParam);
 	switch (uMsg){
-	case WM_DESTROY:
-		shutdown();
-		return 0;
 	case WM_SIZE:
 	{
-		if (appInstance->glfwWindow){
-			glfwSetWindowSize(appInstance->glfwWindow, LOWORD(lParam), HIWORD(lParam));
+		if (renderWindow){
+			renderWindow->setWindowSize(LOWORD(lParam), HIWORD(lParam));
 		}
 		return 0;
 	}
 	case WM_DISPLAYCHANGE:
 	case WM_DEVMODECHANGE:
 	{
-		if (appInstance->renderer)
-			appInstance->renderer->send<RenderThread::DeviceModeMessage>();
+		if (renderWindow)
+			renderWindow->renderThread->send<EM::DeviceModeMessage>();
 		return 0;
 	}
 	case WM_TIMER:
@@ -105,9 +67,9 @@ LRESULT ChronflowWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 			if (!static_api_ptr_t<ui_control>()->is_visible()){
 				if (!mainWinMinimized){
 					mainWinMinimized = true;
-					if (appInstance->renderer)
-						appInstance->renderer->send<RenderThread::WindowHideMessage>();
-					KillTimer(appInstance->mainWindow, IDT_CHECK_MINIMIZED);
+					if (renderWindow)
+						renderWindow->renderThread->send<EM::WindowHideMessage>();
+					KillTimer(hWnd, IDT_CHECK_MINIMIZED);
 				}
 			}
 			break;
@@ -118,8 +80,8 @@ LRESULT ChronflowWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 	case WM_PAINT:
 	{
 		if (GetUpdateRect(hWnd, 0, FALSE)){
-			if (appInstance->renderWindow){
-				appInstance->renderWindow->onDamage();
+			if (renderWindow){
+				renderWindow->onDamage();
 			} else {
 				PAINTSTRUCT ps;
 				HDC hdc;
@@ -135,8 +97,8 @@ LRESULT ChronflowWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 			}
 			if (mainWinMinimized){
 				mainWinMinimized = false;
-				if (appInstance->renderer)
-					appInstance->renderer->send<RenderThread::WindowShowMessage>();
+				if (renderWindow)
+					renderWindow->renderThread->send<EM::WindowShowMessage>();
 			}
 			SetTimer(hWnd, IDT_CHECK_MINIMIZED, MINIMIZE_CHECK_TIMEOUT, 0);
 		}
@@ -177,12 +139,3 @@ HWND  ChronflowWindow::createWindow(HWND parent){
 
 	return hWnd;
 };
-
-std::unordered_set<ChronflowWindow*> ChronflowWindow::instances = std::unordered_set<ChronflowWindow*>();
-
-void getAppInstances(pfc::array_t<AppInstance*> &instances){
-	instances.set_count(0);
-	for (ChronflowWindow* i : ChronflowWindow::instances){
-		instances.append_single_val(i->appInstance);
-	}
-}

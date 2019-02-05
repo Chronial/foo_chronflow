@@ -1,13 +1,10 @@
 #pragma once
 #include "stdafx.h"
-
-struct free_delete {
-	void operator()(void* x) { free(x); }
-};
+#include "base.h"
 
 class Image {
 public:
-	typedef unique_ptr<void, free_delete> malloc_ptr;
+	typedef unique_ptr_del<void, &free> malloc_ptr;
 	int width;
 	int height;
 	malloc_ptr data;

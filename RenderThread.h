@@ -1,97 +1,35 @@
 #pragma once
-#include "TextureCache.h"
-#include "DisplayPosition.h"
-#include "DbAlbumCollection.h"
-#include "DbReloadWorker.h"
 #include "BlockingQueue.h"
-#include "Renderer.h"
-#include "FindAsYouType.h"
 
-class AppInstance;
-class DbReloadWorker;
+class RenderWindow;
 
-#define RT_MSG(NAME, ...) struct NAME : public DataMessage<__VA_ARGS__> { \
-	using DataMessage::DataMessage; \
-	void run(RenderThread&, __VA_ARGS__); \
+namespace engine_messages {
+struct Message;
 }
 
-#define RT_ANSWER_MSG(NAME, T, ...)  struct NAME : public AnswerMessage<T, __VA_ARGS__> { \
-	using AnswerMessage::AnswerMessage; \
-	T run(RenderThread&, __VA_ARGS__); \
-}
+class CallbackHolder {
+	struct Data {
+		bool dead = false;
+		std::shared_mutex mutex;
+	};
+	std::shared_ptr<Data> data;
 
-class RenderThread {
 public:
-	class Message {
-	public:
-		virtual ~Message() {};
-		virtual void execute(RenderThread&) {};
-	};
+	CallbackHolder();
+	~CallbackHolder() noexcept;
+	void addCallback(std::function<void()> f);
+};
 
-	template <typename... Types>
-	class DataMessage : public Message {
-	public:
-		DataMessage(Types... Args) { data = make_tuple(Args...); }
-		virtual void run(RenderThread&, Types...) {};
-		void execute(RenderThread& rt) {
-			std::apply(&DataMessage::run, std::tuple_cat(std::tie(*this, rt), data));
-		}
-		std::tuple<Types...> data;
-	};
-
-	template <typename T, typename... Types>
-	class AnswerMessage : public Message {
-	public:
-		typedef T ValueType;
-		AnswerMessage(Types... Args) { data = make_tuple(Args...); }
-		virtual T run(RenderThread& rt, Types...) = 0;
-		void execute(RenderThread& rt) {
-			promise.set_value(
-				std::apply(&AnswerMessage::run, std::tuple_cat(std::tie(*this, rt), data)));
-		}
-		std::promise<T> promise;
-		std::tuple<Types...> data;
-	};
-
-	class PaintMessage : public Message {};
-	class StopThreadMessage : public Message {};
-
-	class InitDoneMessage : public AnswerMessage <bool> {
-		void execute(RenderThread&) {};
-		bool run(RenderThread&) { return false; };
-	};
-
-	RT_MSG(RedrawMessage);
-	RT_MSG(TextFormatChangedMessage);
-	RT_MSG(DeviceModeMessage);
-	RT_MSG(CharEntered, WPARAM);
-	RT_MSG(TargetChangedMessage);
-	RT_MSG(MoveToNowPlayingMessage);
-	RT_MSG(ReloadCollectionMessage);
-	RT_MSG(CollectionReloadedMessage);
-	RT_MSG(WindowHideMessage);
-	RT_MSG(WindowShowMessage);
-	RT_MSG(WindowResizeMessage, int, int);
-	RT_MSG(MoveTargetMessage, int, bool);
-	RT_MSG(MoveToAlbumMessage, std::string);
-	RT_MSG(MoveToTrack, metadb_handle_ptr);
-	RT_MSG(ChangeCPScriptMessage, pfc::string8);
-	RT_ANSWER_MSG(GetAlbumAtCoords, std::optional<AlbumInfo>, int, int);
-	RT_ANSWER_MSG(GetTargetAlbum, std::optional<AlbumInfo>);
-	RT_MSG(Run, std::function<void()>);
-
-
-private:
-	FindAsYouType findAsYouType;
-	DisplayPosition displayPos;
-	TextureCache texCache;
-	Renderer renderer;
-	AppInstance* appInstance;
+class RenderThread : public play_callback_impl_base {
 public:
-	RenderThread(AppInstance* appInstance);
+	explicit RenderThread(RenderWindow& renderWindow);
+	RenderThread(RenderThread&) = delete;
+	RenderThread& operator=(RenderThread&) = delete;
+	RenderThread(RenderThread&&) = delete;
+	RenderThread& operator=(RenderThread&&) = delete;
 	~RenderThread();
 
-	void sendMessage(unique_ptr<Message>&& msg);
+	void sendMessage(unique_ptr<engine_messages::Message>&& msg);
 
 	template<typename T, typename... _Types>
 	std::future<typename T::ValueType> sendSync(_Types&&... _Args) {
@@ -99,26 +37,30 @@ public:
 		std::future<typename T::ValueType> future = msg->promise.get_future();
 		sendMessage(std::move(msg));
 		return std::move(future);
-	}
+	};
+
 	template<typename T, typename... _Types>
 	void send(_Types&&... _Args) {
 		sendMessage(make_unique<T>(std::forward<_Types>(_Args)...));
-	}
+	};
+
+	void invalidateWindow();
+
+	void on_playback_new_track(metadb_handle_ptr p_track);
+
+	/// Runs a function in the foobar2000 mainthread
+	/// Guarantees that the callback runs only if this thread is still alive.
+	void runInMainThread(std::function<void()> f);
+
+	static void forEach(std::function<void(RenderThread&)>);
 
 private:
-	int timerResolution;
-	bool timerInPeriod;
-	int refreshRate;
-	double afterLastSwap;
+	void run();
+	RenderWindow& renderWindow;
+	BlockingQueue<unique_ptr<engine_messages::Message>> messageQueue;
+	CallbackHolder callbackHolder;
+	std::thread thread;
 
-	void updateRefreshRate();
-
-	static unsigned int WINAPI runRenderThread(void* lpParameter);
-	void threadProc();
-	void onPaint();
-	bool doPaint;
-
-	HANDLE renderThread;
-
-	BlockingQueue<unique_ptr<Message>> messageQueue;
+	static std::unordered_set<RenderThread*> instances;
+	friend class Engine;
 };

@@ -4,17 +4,15 @@
 #include "Helpers.h"
 
 #include "DisplayPosition.h"
-
-#include "AppInstance.h"
 #include "PlaybackTracer.h"
 
 
-DisplayPosition::DisplayPosition(AppInstance* instance, CollectionPos startingPos)
+DisplayPosition::DisplayPosition(DbAlbumCollection& db)
 	: centeredOffset(0.0f),
-	  appInstance(instance),
-	  centeredPos(startingPos),
+	  centeredPos(db.begin()),
 	  lastSpeed(0.0f),
-	  rendering(false)
+	  rendering(false),
+	  db(db)
 {
 }
 
@@ -25,32 +23,29 @@ DisplayPosition::~DisplayPosition(void)
 
 void DisplayPosition::onTargetChange()
 {
-	ASSERT_SHARED(appInstance->albumCollection);
 	if (!rendering){
 		lastMovement = Helpers::getHighresTimer();
 		rendering = true;
 	}
-	CollectionPos targetPos = appInstance->albumCollection->getTargetPos();
-	appInstance->redrawMainWin();
+	CollectionPos targetPos = db.getTargetPos();
 }
 
 
 CollectionPos DisplayPosition::getOffsetPos(int n) const
 {
-	ASSERT_SHARED(appInstance->albumCollection);
 	CollectionPos p = centeredPos;
-	appInstance->albumCollection->movePosBy(p, n);
+	db.movePosBy(p, n);
 	return p;
 }
 
 void DisplayPosition::update(void)
 {
 	double currentTime = Helpers::getHighresTimer();
-	CollectionPos targetPos = appInstance->albumCollection->getTargetPos();
+	CollectionPos targetPos = db.getTargetPos();
 	// do this here because of concurrency – isMoving might see a different targetPos
 	if (centeredPos != targetPos || centeredOffset != 0){
-		int targetRank = appInstance->albumCollection->rank(targetPos);
-		int centeredRank = appInstance->albumCollection->rank(centeredPos);
+		int targetRank = db.rank(targetPos);
+		int centeredRank = db.rank(centeredPos);
 		float dist = (targetRank - centeredRank) - centeredOffset;
 		float dTime = float(currentTime - lastMovement);
 		float speed = abs(targetDist2moveDist(dist));
@@ -86,7 +81,6 @@ void DisplayPosition::update(void)
 	}
 	if (!isMoving()){
 		rendering = false;
-		appInstance->playbackTracer->movementEnded();
 	}
 	lastMovement = currentTime;
 }
@@ -99,7 +93,7 @@ float DisplayPosition::targetDist2moveDist(float targetDist){
 
 bool DisplayPosition::isMoving(void)
 {
-	return !((centeredPos == appInstance->albumCollection->getTargetPos()) && (centeredOffset == 0));
+	return !((centeredPos == db.getTargetPos()) && (centeredOffset == 0));
 }
 
 CollectionPos DisplayPosition::getCenteredPos(void) const

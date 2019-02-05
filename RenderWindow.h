@@ -1,56 +1,69 @@
+#pragma once
+
 #include "stdafx.h"
 #include "base.h"
 #include "config.h"
 
-#include "AppInstance.h"
 #include "Console.h"
 #include "MyActions.h"
 #include "PlaybackTracer.h"
 #include "RenderThread.h"
 #include "TrackDropSource.h"
+#include "Engine.h"
+
 
 class RenderWindow {
-	AppInstance* appInstance;
-	GLFWwindow* window;
-	HWND hWnd;
+	unique_ptr_del<GLFWwindow, glfwDestroyWindow> glfwWindow;
 	double scrollAggregator = 0;
 	ui_element_instance_callback_ptr defaultUiCallback;
-public:
 
-	RenderWindow(AppInstance* appInstance, ui_element_instance_callback_ptr defaultUiCallback)
-		: appInstance(appInstance), defaultUiCallback(defaultUiCallback){
+public:
+	std::optional<RenderThread> renderThread;
+	HWND hWnd = nullptr;
+
+	RenderWindow(HWND parent, ui_element_instance_callback_ptr defaultUiCallback)
+		: defaultUiCallback(defaultUiCallback) {
 		TRACK_CALL_TEXT("RenderWindow::RenderWindow");
 
-		// TODO: handle window creation errors?
 		glfwDefaultWindowHints();
 		glfwWindowHint(GLFW_DECORATED, false);
 		glfwWindowHint(GLFW_SAMPLES, cfgMultisampling ? cfgMultisamplingPasses : 0);
 		glfwWindowHint(GLFW_FOCUSED, false);
 		glfwWindowHint(GLFW_RESIZABLE, false);
 		glfwWindowHint(GLFW_VISIBLE, false);
-		window = glfwCreateWindow(640, 480, "foo_chronflow render window", NULL, NULL);
-		if (!window){
+
+		glfwWindow.reset(glfwCreateWindow(640, 480, "foo_chronflow render window", NULL, NULL));
+		if (!glfwWindow){
 			throw std::runtime_error("Failed to create opengl window");
 		}
-		appInstance->glfwWindow = window;
+		hWnd = glfwGetWin32Window(glfwWindow.get());
 
-		hWnd = glfwGetWin32Window(window);
-		SetParent(hWnd, appInstance->mainWindow);
+		SetParent(hWnd, parent);
 		LONG nNewStyle = GetWindowLong(hWnd, GWL_STYLE) & ~WS_POPUP | WS_CHILDWINDOW;
 		SetWindowLong(hWnd, GWL_STYLE, nNewStyle);
 		ULONG_PTR cNewStyle = GetClassLongPtr(hWnd, GCL_STYLE) | CS_DBLCLKS;
 		SetClassLongPtr(hWnd, GCL_STYLE, cNewStyle);
 		SetWindowSubclass(hWnd, &RenderWindow::WndProc, 0, reinterpret_cast<DWORD_PTR>(this));
-		glfwShowWindow(window);
 
-		glfwSetWindowUserPointer(window, this);
-		glfwSetScrollCallback(window, &RenderWindow::onScroll);
-		glfwSetWindowRefreshCallback(window, &RenderWindow::onDamage);
-		glfwSetWindowSizeCallback(window, &RenderWindow::onWindowSize);
+		glfwSetWindowUserPointer(glfwWindow.get(), this);
+		glfwSetScrollCallback(glfwWindow.get(), &RenderWindow::onScroll);
+		glfwSetWindowRefreshCallback(glfwWindow.get(), &RenderWindow::onDamage);
+		glfwSetWindowSizeCallback(glfwWindow.get(), &RenderWindow::onWindowSize);
+
+		renderThread.emplace(*this);
+		glfwShowWindow(glfwWindow.get());
 	};
-	~RenderWindow(){
-		glfwDestroyWindow(appInstance->glfwWindow);
-		appInstance->glfwWindow = nullptr;
+
+	void setWindowSize(int width, int height) {
+		glfwSetWindowSize(glfwWindow.get(), width, height);
+	}
+
+	void makeContextCurrent() {
+		glfwMakeContextCurrent(glfwWindow.get());
+	}
+
+	void swapBuffers() {
+		glfwSwapBuffers(glfwWindow.get());
 	}
 
 	static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR  uIdSubclass, DWORD_PTR dwRefData){
@@ -108,7 +121,7 @@ public:
 
 	bool onChar(WPARAM wParam) {
 		if (cfgFindAsYouType) {
-			appInstance->renderer->send<RenderThread::CharEntered>(wParam);
+			renderThread->send<EM::CharEntered>(wParam);
 			return true;
 		} else {
 			return false;
@@ -116,8 +129,7 @@ public:
 	}
 
 	void onMouseClick(UINT uMsg, WPARAM wParam, LPARAM lParam) {
-		auto future = appInstance->renderer->sendSync
-			<RenderThread::GetAlbumAtCoords>(
+		auto future = renderThread->sendSync<EM::GetAlbumAtCoords>(
 				GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
 		auto clickedAlbum = future.get();
 		if (!clickedAlbum)
@@ -145,7 +157,7 @@ public:
 
 	void onClickOnAlbum(AlbumInfo album, UINT uMsg){
 		if (uMsg == WM_LBUTTONDOWN) {
-			appInstance->renderer->send<RenderThread::MoveToAlbumMessage>(album.groupString);
+			renderThread->send<EM::MoveToAlbumMessage>(album.groupString);
 		} else if (uMsg == WM_MBUTTONDOWN){
 			executeAction(cfgMiddleClick, album);
 		} else if (uMsg == WM_LBUTTONDBLCLK){
@@ -155,15 +167,15 @@ public:
 
 	bool onKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam){
 		if (wParam == VK_RETURN){
-			auto targetAlbum = appInstance->renderer->sendSync<RenderThread::GetTargetAlbum>().get();
+			auto targetAlbum = renderThread->sendSync<EM::GetTargetAlbum>().get();
 			if (targetAlbum)
 				executeAction(cfgEnterKey, targetAlbum.value());
 			return true;
 		} else if (wParam == VK_F5){
-			appInstance->renderer->send<RenderThread::ReloadCollectionMessage>();
+			renderThread->send<EM::ReloadCollection>();
 			return true;
 		} else if (wParam == VK_F6){
-			appInstance->renderer->send<RenderThread::MoveToNowPlayingMessage>();
+			renderThread->send<EM::MoveToNowPlayingMessage>();
 			return true;
 		} else if (wParam == VK_RIGHT || wParam == VK_LEFT || wParam == VK_NEXT || wParam == VK_PRIOR){
 			int move = 0;
@@ -177,19 +189,19 @@ public:
 				move = -10;
 			}
 			move *= LOWORD(lParam);
-			appInstance->renderer->send<RenderThread::MoveTargetMessage>(move, false);
+			renderThread->send<EM::MoveTargetMessage>(move, false);
 			return true;
 		} else if (wParam == VK_HOME) {
-			appInstance->renderer->send<RenderThread::MoveTargetMessage>(-1, true);
+			renderThread->send<EM::MoveTargetMessage>(-1, true);
 			return true;
 		} else if (wParam == VK_END) {
-			appInstance->renderer->send<RenderThread::MoveTargetMessage>(1, true);
+			renderThread->send<EM::MoveTargetMessage>(1, true);
 			return true;
 		} else if (!(cfgFindAsYouType && // disable hotkeys that interfere with find-as-you-type
 					 (uMsg == WM_KEYDOWN) &&
 					 ((wParam > 'A' && wParam < 'Z') || (wParam > '0' && wParam < '9') || (wParam == ' ')) &&
 					 ((GetKeyState(VK_CONTROL) & 0x8000) == 0))){
-			auto targetAlbum = appInstance->renderer->sendSync<RenderThread::GetTargetAlbum>().get();
+			auto targetAlbum = renderThread->sendSync<EM::GetTargetAlbum>().get();
 			static_api_ptr_t<keyboard_shortcut_manager> ksm;
 			if (targetAlbum){
 				return ksm->on_keydown_auto_context(targetAlbum->tracks, wParam, contextmenu_item::caller_media_library_viewer);
@@ -202,23 +214,21 @@ public:
 
 
 	void onDamage(){
-		appInstance->renderer->send<RenderThread::RedrawMessage>();
+		renderThread->send<EM::RedrawMessage>();
 	}
 
 	void onWindowSize(int width, int height){
-		appInstance->renderer->send<RenderThread::WindowResizeMessage>(
-			width, height);
+		renderThread->send<EM::WindowResizeMessage>(width, height);
 	}
 
 	void onScroll(double xoffset, double yoffset){
 		scrollAggregator -= yoffset;
 		int m = int(scrollAggregator);
 		scrollAggregator -= m;
-		appInstance->renderer->send<RenderThread::MoveTargetMessage>(m, false);
+		renderThread->send<EM::MoveTargetMessage>(m, false);
 	}
 
 	void onContextMenu(const int x, const int y){
-		PlaybackTracerScopeLock tracerLock(*(appInstance->playbackTracer));
 		POINT pt;
 		std::optional<AlbumInfo> target;
 
@@ -231,12 +241,12 @@ public:
 			pt.y = y;
 			POINT clientPt = pt;
 			ScreenToClient(hWnd, &clientPt);
-			auto future = appInstance->renderer->sendSync<RenderThread::GetAlbumAtCoords>(
+			auto future = renderThread->sendSync<EM::GetAlbumAtCoords>(
 				pt.x, pt.y);
 			target = future.get();
 		}
 		if (!target){
-			target = appInstance->renderer->sendSync<RenderThread::GetTargetAlbum>().get();
+			target = renderThread->sendSync<EM::GetTargetAlbum>().get();
 		}
 
 		enum {

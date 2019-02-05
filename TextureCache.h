@@ -8,8 +8,8 @@
 
 using namespace boost::multi_index;
 
-class AppInstance;
 class ImgTexture;
+class RenderThread;
 
 struct TextureCacheMeta {
 	std::string groupString;
@@ -52,15 +52,12 @@ private:
 	void run();
 };
 
-// Warning: This class may only be created and destroyed in an OpenGL context
 class TextureCache
 {
-	AppInstance* appInstance;
-
+	DbAlbumCollection& db;
+	RenderThread& thread;
 public:
-	TextureCache(AppInstance* instance) : appInstance(instance) {};
-
-	void init();
+	TextureCache(RenderThread&, DbAlbumCollection&);
 
 	const GLTexture& getLoadedImgTexture(const std::string& albumName);
 
@@ -75,9 +72,9 @@ private:
 	GLFWwindow* glfwWindow = nullptr;
 	unsigned int collectionVersion = 0;
 
-	void loadSpecialTextures();
-	std::optional<GLTexture> noCoverTexture;
-	std::optional<GLTexture> loadingTexture;
+	void reloadSpecialTextures();
+	GLTexture noCoverTexture;
+	GLTexture loadingTexture;
 
 	unsigned int cacheGeneration = 0;
 

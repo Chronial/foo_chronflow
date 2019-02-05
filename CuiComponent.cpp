@@ -1,12 +1,12 @@
 #include "stdafx.h"
 #include "../columns_ui-sdk/ui_extension.h"
 
-#include "AppInstance.h"
 #include "ChronflowWindow.h"
 
 
-class cui_chronflow : public ui_extension::window, ChronflowWindow {
+class cui_chronflow : public ui_extension::window {
 	ui_extension::window_host_ptr m_host;
+	std::optional<ChronflowWindow> window;
 
 public:
 	cui_chronflow(){};
@@ -29,32 +29,30 @@ public:
 	}
 
 	HWND create_or_transfer_window(HWND wnd_parent, const ui_extension::window_host_ptr &p_host, const ui_helpers::window_position_t &p_position){
-		if (appInstance == nullptr) {
+		if (!window) {
 			m_host = p_host;
-			startup(wnd_parent);
-			ShowWindow(appInstance->mainWindow, SW_HIDE);
-			SetWindowPos(appInstance->mainWindow, NULL, p_position.x, p_position.y, p_position.cx, p_position.cy, SWP_NOZORDER);
+			window.emplace(wnd_parent);
+			ShowWindow(window->hwnd, SW_HIDE);
+			SetWindowPos(window->hwnd, NULL, p_position.x, p_position.y, p_position.cx, p_position.cy, SWP_NOZORDER);
 		} else {
-			ShowWindow(appInstance->mainWindow, SW_HIDE);
-			SetParent(appInstance->mainWindow, wnd_parent);
-			SetWindowPos(appInstance->mainWindow, NULL, p_position.x, p_position.y, p_position.cx, p_position.cy, SWP_NOZORDER);
-			m_host->relinquish_ownership(appInstance->mainWindow);
+			ShowWindow(window->hwnd, SW_HIDE);
+			SetParent(window->hwnd, wnd_parent);
+			SetWindowPos(window->hwnd, NULL, p_position.x, p_position.y, p_position.cx, p_position.cy, SWP_NOZORDER);
+			m_host->relinquish_ownership(window->hwnd);
 			m_host = p_host;
 		}
 
-		return appInstance->mainWindow;
+		return window->hwnd;
 	}
 
 
 	void destroy_window(){
-		if (appInstance != nullptr) {
-			DestroyWindow(appInstance->mainWindow);
-		}
+		window.reset();
 		m_host.release();
 	}
 
 	HWND get_wnd() const {
-		return appInstance->mainWindow;
+		return window->hwnd;
 	}
 	const bool get_is_single_instance(void) const {
 		return true;

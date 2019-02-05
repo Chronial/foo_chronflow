@@ -1,20 +1,17 @@
 #include "stdafx.h"
 
-#include "AppInstance.h"
 #include "ChronflowWindow.h"
 
 
 
-class dui_chronflow : public ui_element_instance, ChronflowWindow {
+class dui_chronflow : public ui_element_instance {
 	ui_element_config::ptr config;
-	const ui_element_instance_callback_ptr callback;
+	ChronflowWindow window;
 public:
 	dui_chronflow(HWND parent, ui_element_config::ptr config, ui_element_instance_callback_ptr p_callback)
-		: callback(p_callback), config(config) {
-		startup(parent);
+		: config(config), window(parent, p_callback) {
+		
 	}
-
-	virtual ui_element_instance_callback_ptr getDuiCallback(){ return callback; }
 
 	static GUID g_get_guid() {
 		// {1D56881C-CA24-470c-944A-DED830F9E95D}
@@ -32,7 +29,7 @@ public:
 	static ui_element_config::ptr g_get_default_configuration() { return ui_element_config::g_create_empty(g_get_guid()); }
 
 	HWND get_wnd() {
-		return appInstance->mainWindow;
+		return window.hwnd;
 	};
 
 	void set_configuration(ui_element_config::ptr config) { this->config = config; }

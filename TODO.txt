@@ -1,19 +1,7 @@
 
 
-* Use built-in cover loader
-    * cache covers?
-* Use default ui colors and font?
-* Highlight typed fayt text
-
-
-* Syncronize PlaybackTracer!
-* Check what texloader spends its time on (output timestamps with the load messages)
-
-* Why do preferences open so slowly?
 
 * Do not initialize targetPos on Collection construction and fix ensuing errors
-
-* call glFinish after buffer swap https://www.opengl.org/wiki/Swap_Interval
 
 * Synchronize config vars boost::synchronized_value? or: https://www.hydrogenaud.io/forums/index.php?showtopic=76882
 
@@ -29,7 +17,7 @@
 * Build with new version number
 * tag version
 * safe dll AND pdb
-* Add glfw3.dll to pack
+* [Add glfw3.dll to pack] – Obsolete due to static link
 * Upgrade own foobar
 * upload to github
 * update forum post
@@ -47,10 +35,7 @@
 DbAlbumCollection - Handle illegal chars in titleformat strings (see titleformat_helper in uie_albumart)
 Custom Positions: Hillfelink zu JScript docu? Oder alles über wiki machen?
                   Check that upVector is not linear to view-vector
-Make a multiple-instance panel (sollte settings vereinfachen (wenn die settings offen sind, existiert auch eine instanz...) -- (achtung! alle static vars überprüfen!)
-Contextmenu: use standard_config_objects::query_show_keyboard_shortcuts_in_menus()
 Was passiert mit CoverRotation(30, 0, 0, 0)? (gradzahl angegeben, aber keine Achse)
-
 
 
 == Grafische Verbesserungen ==

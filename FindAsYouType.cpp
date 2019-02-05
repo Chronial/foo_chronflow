@@ -1,10 +1,12 @@
 #include "stdafx.h"
 #include "FindAsYouType.h"
 #include "RenderThread.h"
+#include "DbAlbumCollection.h"
+#include "Engine.h"
+#include "PlaybackTracer.h"
 
 
 bool FindAsYouType::onChar(WPARAM wParam) {
-	collection_read_lock lock(appInstance);
 	switch (wParam)
 	{
 	case 1: // any other nonchar character
@@ -19,7 +21,7 @@ bool FindAsYouType::onChar(WPARAM wParam) {
 	case 0x0A: // Process a linefeed. 
 	case 0x0D: // Process a carriage return. 
 	case 0x1B: // Process an escape. 
-		clear();
+		reset();
 		break;
 
 	default: // Process any writeable character
@@ -33,64 +35,41 @@ bool FindAsYouType::onChar(WPARAM wParam) {
 void FindAsYouType::enterChar(wchar_t c) {
 	pfc::string8 newString(enteredString);
 	newString << pfc::stringcvt::string_utf8_from_wide(&c, 1);
-	if (doSearch(newString)) {
+	if (updateSearch(newString)) {
 		enteredString = newString;
 	} else {
 		MessageBeep(-1);
 	}
-	lockPlaybackTracer();
-	setTimer(typeTimeout);
 }
 
 void FindAsYouType::removeChar() {
 	enteredString.truncate(enteredString.length() - 1);
-	if (enteredString.length() == 0) {
-		unlockPlaybackTracer();
-	} else {
-		doSearch(enteredString);
-		lockPlaybackTracer();
-		setTimer(typeTimeout);
+	if (enteredString.length() > 0) {
+		updateSearch(enteredString);
 	}
 }
 
-void FindAsYouType::clear() {
-	unlockPlaybackTracer();
-	killTimer();
-	clearSearch();
-}
-
-void FindAsYouType::timerProc() {
-	appInstance->renderer->send<RenderThread::Run>([&] {
-		clear();
-	});
-}
-
-void FindAsYouType::lockPlaybackTracer() {
-	if (!playbackTracerLocked) {
-		playbackTracerLocked = true;
-		appInstance->playbackTracer->lock();
-	}
-}
-
-void FindAsYouType::unlockPlaybackTracer() {
-	if (playbackTracerLocked) {
-		playbackTracerLocked = false;
-		appInstance->playbackTracer->unlock();
-	}
-}
-
-bool FindAsYouType::doSearch(const char * searchFor) {
-	//console::print(pfc::string_formatter() << "searching for: " << searchFor);
-	ASSERT_SHARED(appInstance->albumCollection);
-	CollectionPos pos;
-	if (appInstance->albumCollection->performFayt(searchFor, pos)) {
-		appInstance->albumCollection->setTargetPos(pos);
-		return true;
-	} else {
-		return false;
-	}
-}
-
-void FindAsYouType::clearSearch() {
+void FindAsYouType::reset() {
+	timeoutTimer.reset();
 	enteredString.reset();
+}
+
+bool FindAsYouType::updateSearch(const char * searchFor) {
+	//console::print(pfc::string_formatter() << "searching for: " << searchFor);
+	timeoutTimer.reset();
+	engine.playbackTracer.delay(typeTimeout);
+	CollectionPos pos;
+	bool result = engine.db.performFayt(searchFor, pos);
+	if (result) {
+		engine.db.setTargetPos(pos);
+		engine.onTargetChange(true);
+	}
+
+	timeoutTimer.emplace(typeTimeout, [&] {
+		engine.thread.send<EM::Run>([&] {
+			reset();
+		});
+	});
+
+	return result;
 }

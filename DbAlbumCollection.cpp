@@ -3,28 +3,19 @@
 
 #include "DbAlbumCollection.h"
 
-#include "AppInstance.h"
 #include "RenderThread.h"
 
 #include "DbReloadWorker.h"
+#include "Engine.h"
 
-collection_read_lock::collection_read_lock(AppInstance& appInstance) :
-	boost::shared_lock<DbAlbumCollection>(*(appInstance.albumCollection)){};
-
-collection_read_lock::collection_read_lock(AppInstance* appInstance) :
-	collection_read_lock(*appInstance){};
-
-DbAlbumCollection::DbAlbumCollection(AppInstance* instance):
-		appInstance(instance), targetPos(albums.get<1>().end()){
-
+DbAlbumCollection::DbAlbumCollection() :
+	targetPos(albums.get<1>().end())
+{
 	static_api_ptr_t<titleformat_compiler> compiler;
 	compiler->compile_safe_ex(cfgAlbumTitleScript, cfgAlbumTitle);
 }
 
-void DbAlbumCollection::onCollectionReload(DbReloadWorker& worker){
-	ASSERT_EXCLUSIVE(this);
-	
-	// Synchronize TargetPos
+void DbAlbumCollection::onCollectionReload(DbReloadWorker&& worker){
 	CollectionPos newTargetPos;
 	auto &newSortedIndex = worker.albums.get<1>();
 	if (albums.size() == 0){
@@ -35,7 +26,7 @@ void DbAlbumCollection::onCollectionReload(DbReloadWorker& worker){
 		}
 	} else {
 		newTargetPos = newSortedIndex.begin();
-		CollectionPos oldTargetPos = *targetPos;
+		CollectionPos oldTargetPos = targetPos;
 		pfc::string8_fast_aggressive albumKey;
 		for (t_size i = 0; i < oldTargetPos->tracks.get_size(); i++){
 			oldTargetPos->tracks[i]->format_title(0, albumKey, worker.albumMapper, 0);
@@ -139,25 +130,20 @@ t_size DbAlbumCollection::rank(CollectionPos p) {
 
 
 void DbAlbumCollection::setTargetPos(CollectionPos newTarget) {
-	ASSERT_SHARED(this);
-	*targetPos = newTarget;
+	targetPos = newTarget;
 	sessionSelectedCover = this->rank(newTarget);
-	appInstance->renderer->send<RenderThread::TargetChangedMessage>();
 }
 
-void DbAlbumCollection::setTargetByName(const std::string& groupString)
-{
-	ASSERT_SHARED(this);
+void DbAlbumCollection::setTargetByName(const std::string& groupString){
 	auto groupAlbum = albums.find(groupString);
-	if (groupAlbum != albums.end())
-		*targetPos = albums.project<1>(groupAlbum);
-	appInstance->renderer->send<RenderThread::TargetChangedMessage>();
+	if (groupAlbum != albums.end()) {
+		targetPos = albums.project<1>(groupAlbum);
+		sessionSelectedCover = this->rank(targetPos);
+	}
 }
 
 void DbAlbumCollection::moveTargetBy(int n)
 {
-	auto target = targetPos.synchronize();
-	movePosBy(*target, n);
-	sessionSelectedCover = this->rank(*target);
-	appInstance->renderer->send<RenderThread::TargetChangedMessage>();
+	movePosBy(targetPos, n);
+	sessionSelectedCover = this->rank(targetPos);
 }

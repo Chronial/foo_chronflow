@@ -80,8 +80,6 @@ public:
 	}
 };
 
-class AppInstance;
-
 
 #ifdef _DEBUG
 #define CS_ASSERT(X) X.assertOwnage()
@@ -143,3 +141,40 @@ inline pfc::list_t<T> pfc_list(std::initializer_list<T> elems){
 	}
 	return out;
 }
+
+// Wrapper for win32 api calls to raise an exception on failure
+template<typename T>
+inline T check(T a) {
+	if (a != NULL) {
+		return a;
+	} else {
+		WIN32_OP_FAIL();
+	}
+}
+
+class Timer {
+public:
+	Timer( double delay_s, std::function<void()> f) : f(f) {
+		timer = check(CreateThreadpoolTimer(Timer::callback, this, NULL));
+		int64_t delay_ns = static_cast<int>(-delay_s * 1000 * 1000 * 1000);
+		FILETIME ftime = {(DWORD)delay_ns, (DWORD)(delay_ns >> 32)};
+		SetThreadpoolTimer(timer, &ftime, 0, 0);
+	}
+	Timer(Timer&) = delete;
+	Timer& operator=(Timer&) = delete;
+	Timer(Timer&&) = delete;
+	Timer& operator=(Timer&&) = delete;
+	~Timer() {
+		SetThreadpoolTimer(timer, NULL, 0, 0);
+		WaitForThreadpoolTimerCallbacks(timer, true);
+		CloseThreadpoolTimer(timer);
+	}
+
+private:
+	static VOID CALLBACK callback(PTP_CALLBACK_INSTANCE instance, PVOID context, PTP_TIMER timer){
+		reinterpret_cast<Timer*>(context)->f();
+	}
+
+	PTP_TIMER timer;
+	std::function<void()> f;
+};

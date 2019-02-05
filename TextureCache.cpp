@@ -5,14 +5,20 @@
 
 #include "TextureCache.h"
 
-#include "AppInstance.h"
 #include "Console.h"
 #include "DbAlbumCollection.h"
 #include "RenderThread.h"
 #include "Image.h"
 
 
-void TextureCache::loadSpecialTextures(){
+TextureCache::TextureCache(RenderThread& thread, DbAlbumCollection& db) :
+	thread(thread), db(db),
+	loadingTexture(loadSpecialArt(IDR_COVER_LOADING, cfgImgLoading).upload()),
+	noCoverTexture(loadSpecialArt(IDR_COVER_NO_IMG, cfgImgNoCover).upload())
+{
+}
+
+void TextureCache::reloadSpecialTextures() {
 	loadingTexture = loadSpecialArt(IDR_COVER_LOADING, cfgImgLoading).upload();
 	noCoverTexture = loadSpecialArt(IDR_COVER_NO_IMG, cfgImgNoCover).upload();
 }
@@ -24,20 +30,14 @@ const GLTexture& TextureCache::getLoadedImgTexture(const std::string& albumName)
 		if (entry->texture)
 			return entry->texture.value();
 		else
-			return noCoverTexture.value();
+			return noCoverTexture;
 	} else {
-		return loadingTexture.value();
+		return loadingTexture;
 	}
-	return loadingTexture.value();
-}
-
-
-void TextureCache::init(){
-	loadSpecialTextures();
+	return loadingTexture;
 }
 
 void TextureCache::onTargetChange(){
-	collection_read_lock lock(appInstance);
 	cacheGeneration += 1;
 	// wrap around
 	if (cacheGeneration > std::numeric_limits<unsigned int>::max() - 100){
@@ -48,16 +48,13 @@ void TextureCache::onTargetChange(){
 			});
 		}
 	}
-	updateLoadingQueue(appInstance->albumCollection->getTargetPos());
+	updateLoadingQueue(db.getTargetPos());
 }
 
 void TextureCache::onCollectionReload(){
 	collectionVersion += 1;
-	loadSpecialTextures();
-	{
-		collection_read_lock lock(appInstance);
-		updateLoadingQueue(appInstance->albumCollection->getTargetPos());
-	}
+	reloadSpecialTextures();
+	updateLoadingQueue(db.getTargetPos());
 }
 
 void TextureCache::trimCache(){
@@ -89,17 +86,15 @@ void TextureCache::uploadTextures(){
 	}
 	if (redraw){
 		IF_DEBUG(Console::println(L"Refresh MainWin."));
-		appInstance->redrawMainWin();
+		thread.invalidateWindow();
 	}
 }
 
 void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter){
-	collection_read_lock lock(appInstance);
-
 	bgLoader.flushQueue();
 
-	size_t collectionSize = appInstance->albumCollection->getCount();
-	size_t maxLoad = min(collectionSize, size_t(cfgTextureCacheSize*0.8));
+	size_t collectionSize = db.getCount();
+	size_t maxLoad = std::min(collectionSize, size_t(cfgTextureCacheSize*0.8));
 
 	CollectionPos leftLoaded = queueCenter;
 	CollectionPos rightLoaded = queueCenter;
@@ -118,11 +113,11 @@ void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter){
 				TextureCacheMeta{loadNext->groupString, collectionVersion, priority});
 		}
 
-		if ((i % 2 || leftLoaded == appInstance->albumCollection->begin()) &&
-				++CollectionPos(rightLoaded) != appInstance->albumCollection->end()){
+		if ((i % 2 || leftLoaded == db.begin()) &&
+				++CollectionPos(rightLoaded) != db.end()){
 			++rightLoaded;
 			loadNext = rightLoaded;
-			ASSERT(loadNext != appInstance->albumCollection->end());
+			PFC_ASSERT(loadNext != db.end());
 		} else {
 			--leftLoaded;
 			loadNext = leftLoaded;

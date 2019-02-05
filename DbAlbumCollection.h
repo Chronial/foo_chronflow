@@ -4,8 +4,6 @@
 
 using namespace boost::multi_index;
 
-class AppInstance;
-class ImgTexture;
 class DbReloadWorker;
 
 struct DbAlbum
@@ -54,11 +52,9 @@ typedef multi_index_container<
 
 typedef DbAlbums::nth_index<1>::type::iterator CollectionPos;
 
-class DbAlbumCollection : public shared_mutex
-{
-	AppInstance* appInstance;
+class DbAlbumCollection {
 public:
-	DbAlbumCollection(AppInstance* instance);
+	DbAlbumCollection();
 
 	inline size_t getCount() { return albums.size(); };
 	AlbumInfo getAlbumInfo(CollectionPos pos);
@@ -70,15 +66,14 @@ public:
 	// Returns whether any results have been found
 	bool performFayt(const char * title, CollectionPos& out);
 
-	void onCollectionReload(DbReloadWorker& worker);
+	void onCollectionReload(DbReloadWorker && worker);
 
 	CollectionPos begin() const;
 	CollectionPos end() const;
 	t_size rank(CollectionPos p);
 
 	CollectionPos getTargetPos() {
-		ASSERT_SHARED(this);
-		return *targetPos;
+		return targetPos;
 	}
 	void setTargetPos(CollectionPos newTarget);
 	void setTargetByName(const std::string& groupString);
@@ -105,13 +100,6 @@ public:
 private:
 	/******************************* INTERN DATABASE ***************************/
 	DbAlbums albums;
-	boost::synchronized_value<CollectionPos> targetPos;
+	CollectionPos targetPos;
 	service_ptr_t<titleformat_object> albumMapper;
-};
-
-
-class collection_read_lock : public boost::shared_lock < DbAlbumCollection > {
-public:
-	collection_read_lock(AppInstance& appInstance);
-	collection_read_lock(AppInstance* appInstance);
 };

@@ -2,11 +2,11 @@
 #include "base.h"
 #include "config.h"
 
-#include "AppInstance.h"
 #include "DbAlbumCollection.h"
 #include "MyActions.h"
 #include "PlaybackTracer.h"
 #include "RenderThread.h"
+#include "Engine.h"
 #include "ScriptedCoverPositions.h"
 
 static struct {
@@ -204,7 +204,9 @@ public:
 
 protected:
 	void redrawMainWin(){
-		FOR_EACH_INSTANCE(redrawMainWin());
+		RenderThread::forEach([](auto& t) {
+			t.invalidateWindow();
+		});
 	}
 };
 
@@ -255,9 +257,9 @@ public:
 				switch (LOWORD(wParam))
 				{
 				case IDC_BTN_REFRESH:
-					{
-						FOR_EACH_INSTANCE(startCollectionReload());
-					}
+					RenderThread::forEach([](RenderThread& t) {
+						t.send<EM::ReloadCollection>();
+					});
 					break;
 				case IDC_IMG_NO_COVER_BROWSE:
 					if(browseForImage(cfgImgNoCover, cfgImgNoCover))
@@ -314,13 +316,9 @@ public:
 				textChanged(LOWORD(wParam));
 				if (LOWORD(wParam) == IDC_FOLLOW_DELAY){
 					cfgCoverFollowDelay = max(1, min(999, int(uGetDlgItemInt(hWnd, IDC_FOLLOW_DELAY, 0, 1))));
-					FOR_EACH_INSTANCE(playbackTracer->followSettingsChanged());
 				}
 			} else if (HIWORD(wParam) == BN_CLICKED) {
 				buttonClicked(LOWORD(wParam));
-				if (LOWORD(wParam) == IDC_FOLLOW_PLAYBACK){
-					FOR_EACH_INSTANCE(playbackTracer->followSettingsChanged());
-				}
 			} else if (HIWORD(wParam) == CBN_SELCHANGE){
 				listSelChanged(LOWORD(wParam));
 			}
@@ -470,7 +468,9 @@ public:
 						if (selectFont(titleFont)){
 							cfgTitleFont = titleFont;
 							uSendDlgItemMessage(hWnd, IDC_FONT_PREV, WM_SETTEXT, 0, (LPARAM)cfgTitleFont.get_value().lfFaceName);
-							FOR_EACH_INSTANCE(renderer->send<RenderThread::TextFormatChangedMessage>());
+							RenderThread::forEach([](RenderThread& t) {
+								t.send<EM::TextFormatChangedMessage>();
+							});
 						}
 					}
 				}
@@ -607,8 +607,9 @@ public:
 			uSetDlgItemText(hWnd, IDC_COMPILE_STATUS, message);
 			return;
 		}
-
-		FOR_EACH_INSTANCE(renderer->send<RenderThread::ChangeCPScriptMessage>(script));
+		RenderThread::forEach([script](RenderThread& t) {
+			t.send<EM::ChangeCPScriptMessage>(script);
+		});
 	}
 	void setUpEditBox(){
 		int tabstops[1] = {14};

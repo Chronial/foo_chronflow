@@ -2,22 +2,24 @@
 #include "Helpers.h"
 #include "DbAlbumCollection.h"
 
-class AppInstance;
+class RenderThread;
 
 class DbReloadWorker {
 	metadb_handle_list library;
-	AppInstance *const appInstance;
+	RenderThread& renderThread;
 	HANDLE thread = nullptr;
+	std::promise<void> copyDone;
 	std::atomic<bool> kill = false;
-	DbReloadWorker(AppInstance* instance);
 
 public:
+	explicit DbReloadWorker(RenderThread& renderThread);
+	DbReloadWorker(DbReloadWorker&) = delete;
+	DbReloadWorker(DbReloadWorker&&) = delete;
+	DbReloadWorker& operator=(DbReloadWorker&) = delete;
+	DbReloadWorker& operator=(DbReloadWorker&&) = delete;
+	~DbReloadWorker();
 	DbAlbums albums;
 	service_ptr_t<titleformat_object> albumMapper;
-
-	// call only from mainthread
-	static void startNew(AppInstance* instance);
-	~DbReloadWorker();
 
 private:
 	void threadProc();
