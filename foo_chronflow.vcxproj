@@ -191,7 +191,6 @@
     <ClInclude Include="BlockingQueue.h" />
     <ClInclude Include="FindAsYouType.h" />
     <ClInclude Include="RenderWindow.h" />
-    <ClInclude Include="shared_mutex.h" />
     <ClInclude Include="TrackDropSource.h" />
     <ClInclude Include="glStructs.h" />
     <ClInclude Include="stdafx.h" />

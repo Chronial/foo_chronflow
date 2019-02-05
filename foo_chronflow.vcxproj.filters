@@ -185,9 +185,6 @@
     <ClInclude Include="DbReloadWorker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="shared_mutex.h">
-      <Filter>Header Files\Helpers</Filter>
-    </ClInclude>
     <ClInclude Include="FindAsYouType.h">
       <Filter>Header Files</Filter>
     </ClInclude>

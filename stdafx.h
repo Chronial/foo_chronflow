@@ -46,20 +46,9 @@ using std::unique_ptr;
 using std::make_unique;
 using std::shared_ptr;
 using std::make_shared;
-using std::dynamic_pointer_cast;
 
 // copied from colums_ui TODO: strip this down
 #include "win32_helpers.h"
-
-
-#include <boost/thread/lock_types.hpp> 
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/shared_mutex.hpp>
-#include <boost/thread/synchronized_value.hpp>
-
-#include <boost/optional.hpp>
-
-using boost::shared_lock;
 
 #ifdef _DEBUG
 #define BOOST_MULTI_INDEX_ENABLE_SAFE_MODE
