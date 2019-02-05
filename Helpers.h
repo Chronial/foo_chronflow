@@ -1,6 +1,5 @@
 #pragma once
 #include "base.h"
-#include "CriticalSection.h"
 
 #define TEST_BIT_PTR(BITSET_PTR, BIT) _bittest(BITSET_PTR, BIT)
 #ifdef _DEBUG
@@ -81,56 +80,6 @@ public:
 };
 
 
-#ifdef _DEBUG
-#define CS_ASSERT(X) X.assertOwnage()
-#else
-#define CS_ASSERT(X)
-#endif
-
-
-volatile class ScopeCS {
-	CriticalSection* criticalSection;
-public:
-	ScopeCS(CriticalSection& CS) {
-		criticalSection = &CS;
-		criticalSection->enter();
-	}
-	ScopeCS(CriticalSection* CS) {
-		criticalSection = CS;
-		criticalSection->enter();
-	}
-	~ScopeCS(){
-		criticalSection->leave();
-	}
-};
-
-class Event {
-	HANDLE e;
-public:
-	Event(bool initialState = false, bool manualReset = false){
-		e = CreateEvent(NULL,initialState,manualReset,NULL);
-	}
-	~Event(){
-		CloseHandle(e);
-	}
-	inline bool waitForSignal(DWORD milliseconds = INFINITE){
-		if (WAIT_OBJECT_0 == WaitForSingleObject(e, milliseconds)){
-			return true;
-		} else {
-			return false;
-		}
-	}
-	void setSignal(){
-		SetEvent(e);
-	}
-	void resetSignal(){
-		ResetEvent(e);
-	}
-	int waitForTwo(Event& other, bool waitForAll, DWORD milliseconds = INFINITE){
-		HANDLE handles[2] = {this->e, other.e};
-		return WaitForMultipleObjects(2, handles, waitForAll, milliseconds);
-	}
-};
 
 template<typename T>
 inline pfc::list_t<T> pfc_list(std::initializer_list<T> elems){

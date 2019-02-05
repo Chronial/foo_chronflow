@@ -48,9 +48,6 @@
     <ClCompile Include="CPScriptCompiler.cpp">
       <Filter>Source Files\Helpers</Filter>
     </ClCompile>
-    <ClCompile Include="CriticalSection.cpp">
-      <Filter>Source Files\Helpers</Filter>
-    </ClCompile>
     <ClCompile Include="CoverConfig.cpp">
       <Filter>Source Files\Helpers</Filter>
     </ClCompile>
@@ -139,9 +136,6 @@
     </ClInclude>
     <ClInclude Include="TextDisplay.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CriticalSection.h">
-      <Filter>Header Files\Helpers</Filter>
     </ClInclude>
     <ClInclude Include="CoverConfig.h">
       <Filter>Header Files\Helpers</Filter>

@@ -3,7 +3,6 @@
 #include "config.h"
 
 #include "CoverConfig.h"
-#include "CriticalSection.h"
 #include "Helpers.h"
 #include "ScriptObject.h"
 #include "glStructs.h"
