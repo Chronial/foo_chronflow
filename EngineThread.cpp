@@ -56,17 +56,16 @@ void EngineThread::runInMainThread(std::function<void()> f) {
 	callbackHolder.addCallback(f);
 }
 
-CallbackHolder::CallbackHolder() : data(make_shared<Data>()) {}
+CallbackHolder::CallbackHolder() : deadPtr(make_shared<bool>(false)) {}
 
 CallbackHolder::~CallbackHolder() noexcept {
-	std::unique_lock<std::shared_mutex> lock(data->mutex);
-	data->dead = true;
+	PFC_ASSERT(core_api::is_main_thread());
+	*deadPtr = true;
 }
 
 void CallbackHolder::addCallback(std::function<void()> f) {
-	fb2k::inMainThread([f, data = this->data]{
-		std::shared_lock<std::shared_mutex> lock(data->mutex);
-		if (!data->dead) {
+	fb2k::inMainThread([f, deadPtr = this->deadPtr]{
+		if (!*deadPtr) {
 			f();
 		}
 	 });

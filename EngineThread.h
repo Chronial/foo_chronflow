@@ -8,11 +8,7 @@ struct Message;
 }
 
 class CallbackHolder {
-	struct Data {
-		bool dead = false;
-		std::shared_mutex mutex;
-	};
-	std::shared_ptr<Data> data;
+	std::shared_ptr<bool> deadPtr;
 
 public:
 	CallbackHolder();
