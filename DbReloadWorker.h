@@ -7,7 +7,7 @@ class RenderThread;
 class DbReloadWorker {
 	metadb_handle_list library;
 	RenderThread& renderThread;
-	HANDLE thread = nullptr;
+	std::thread thread;
 	std::promise<void> copyDone;
 	std::atomic<bool> kill = false;
 

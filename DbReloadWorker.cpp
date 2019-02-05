@@ -6,23 +6,22 @@
 #include "Engine.h"
 
 
-DbReloadWorker::DbReloadWorker(RenderThread& renderThread) : renderThread(renderThread){
-	thread = (HANDLE)_beginthreadex(0, 0, [](void* self)  -> unsigned int {
-		static_cast<DbReloadWorker*>(self)->threadProc();
-		return 0;
-	}, (void*)this, 0, 0);
-	SetThreadPriority(thread, THREAD_PRIORITY_BELOW_NORMAL);
-	SetThreadPriorityBoost(thread, true);
+DbReloadWorker::DbReloadWorker(RenderThread& renderThread) :
+	renderThread(renderThread),
+	thread(&DbReloadWorker::threadProc, this)
+{
+	SetThreadPriority(thread.native_handle(), THREAD_PRIORITY_BELOW_NORMAL);
+	SetThreadPriorityBoost(thread.native_handle(), true);
 };
 
 DbReloadWorker::~DbReloadWorker(){
 	kill = true;
 	try {
-		// Interrupt waiting for copy
+		// interrupt waiting for copy
 		copyDone.set_value();
-	} catch (std::future_error&) {} // Copy was already done
-	WaitForSingleObject(thread, INFINITE);
-	CloseHandle(thread);
+	} catch (std::future_error&) {} // copy was already done
+	if (thread.joinable())
+		thread.join();
 }
 
 void DbReloadWorker::threadProc(){
