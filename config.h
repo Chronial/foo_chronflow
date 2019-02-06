@@ -26,7 +26,7 @@ extern cfg_string cfgAlbumTitle;
 extern service_ptr_t<titleformat_object> cfgAlbumTitleScript;
 extern cfg_struct_t<double> cfgTitlePosH;
 extern cfg_struct_t<double> cfgTitlePosV;
-extern cfg_int cfgTitleColor;
+extern cfg_int_t<COLORREF> cfgTitleColor;
 extern cfg_struct_t<LOGFONT> cfgTitleFont;
 extern cfg_int cfgPanelBg;
 extern cfg_int cfgHighlightWidth;

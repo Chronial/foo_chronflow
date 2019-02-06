@@ -89,7 +89,7 @@ cfg_struct_t<double> cfgTitlePosV(guid_cfgTitlePosV, 0.92);
 
 // {10820ADB-EAC6-403f-89B3-A33E2F800DD7}
 static const GUID guid_cfgTitleColor = { 0x10820adb, 0xeac6, 0x403f, { 0x89, 0xb3, 0xa3, 0x3e, 0x2f, 0x80, 0xd, 0xd7 } };
-cfg_int cfgTitleColor(guid_cfgTitleColor, RGB(0, 0, 0));
+cfg_int_t<COLORREF> cfgTitleColor(guid_cfgTitleColor, RGB(0, 0, 0));
 
 // {3BBA50BD-207E-43b2-95F1-44B67B898C26}
 static const GUID guid_cfgTitleFont = { 0x3bba50bd, 0x207e, 0x43b2, { 0x95, 0xf1, 0x44, 0xb6, 0x7b, 0x89, 0x8c, 0x26 } };
@@ -173,7 +173,7 @@ cfg_int sessionSelectedCover(guid_sessionSelectedCover, 0);
 
 // {6DDC4C81-7525-46d0-B9B8-0E8DE36957A8}
 static const GUID guid_sessionCompiledCPInfo = { 0x6ddc4c81, 0x7525, 0x46d0, { 0xb9, 0xb8, 0xe, 0x8d, 0xe3, 0x69, 0x57, 0xa8 } };
-cfg_compiledCPInfoPtr sessionCompiledCPInfo(guid_sessionCompiledCPInfo, 0);
+cfg_compiledCPInfoPtr sessionCompiledCPInfo(guid_sessionCompiledCPInfo);
 
 // {85744FC7-38A3-47e7-8080-3744431211E6}
 static const GUID guid_sessionSelectedConfigTab = { 0x85744fc7, 0x38a3, 0x47e7, { 0x80, 0x80, 0x37, 0x44, 0x43, 0x12, 0x11, 0xe6 } };

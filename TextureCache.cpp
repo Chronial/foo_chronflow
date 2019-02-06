@@ -34,7 +34,6 @@ const GLTexture& TextureCache::getLoadedImgTexture(const std::string& albumName)
 	} else {
 		return loadingTexture;
 	}
-	return loadingTexture;
 }
 
 void TextureCache::onTargetChange(){
@@ -136,7 +135,8 @@ TextureLoadingThreads::TextureLoadingThreads() {
 
 TextureLoadingThreads::~TextureLoadingThreads() {
 	shouldStop = true;
-	for (auto& thread : threads){
+#pragma warning(suppress: 4189)
+	for (auto& _ : threads){
 		// TODO: This is hacky
 		inQueue.push(LoadRequest{});
 	}

@@ -306,11 +306,11 @@ bool CScriptObject::AddScript(LPCTSTR szCode)
 	try {
 		if (m_pScript != NULL)
 		{
-			ULONG ref = m_pScript->AddRef();
+			m_pScript->AddRef();
 			_bstr_t strCode = szCode;
 			m_pScript->AddCode( strCode );
 			GetMethodsName();
-			ref = m_pScript->Release();
+			m_pScript->Release();
 			return true;
 		}
 	}
@@ -318,7 +318,7 @@ bool CScriptObject::AddScript(LPCTSTR szCode)
 	{
 		// Just catch the exception, call GetErrorString()
 		// to retreive last error
-		ULONG ref = m_pScript->Release();
+		m_pScript->Release();
 	}
 	return false;
 }
@@ -333,9 +333,9 @@ bool CScriptObject::ExecuteStatement(LPCTSTR szStatement)
 	try {
 		if (m_pScript != NULL)
 		{
-			ULONG ref = m_pScript->AddRef();
+			m_pScript->AddRef();
 			m_pScript->ExecuteStatement( _bstr_t(szStatement) );
-			ref = m_pScript->Release();
+			m_pScript->Release();
 			return true;
 		}
 	}
@@ -343,7 +343,7 @@ bool CScriptObject::ExecuteStatement(LPCTSTR szStatement)
 	{
 		// Just catch the exception, call GetErrorString()
 		// to retreive last error
-		ULONG ref = m_pScript->Release();
+		m_pScript->Release();
 	}
 	
 	return false;
@@ -363,7 +363,7 @@ bool CScriptObject::RunProcedure(LPCTSTR szProcName, SAFEARRAY** saParameters, V
 	try {
 		if (m_pScript != NULL)
 		{
-			ULONG ref = m_pScript->AddRef();
+			m_pScript->AddRef();
 			bool  bResult = false;
 			_bstr_t szFunc  = GetScriptFunction(szProcName);
 			if (szFunc.length() > 0)
@@ -371,7 +371,7 @@ bool CScriptObject::RunProcedure(LPCTSTR szProcName, SAFEARRAY** saParameters, V
 				*varRet = m_pScript->Run(szFunc, saParameters);
 				bResult = true;
 			} 
-			ref = m_pScript->Release();
+			m_pScript->Release();
 			return bResult;
 		}
 	}
@@ -379,7 +379,7 @@ bool CScriptObject::RunProcedure(LPCTSTR szProcName, SAFEARRAY** saParameters, V
 	{
 		// Just catch the exception, call GetErrorString()
 		// to retreive last error
-		ULONG ref = m_pScript->Release();
+		m_pScript->Release();
 	}
 	return false;
 }

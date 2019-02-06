@@ -25,7 +25,7 @@ bool FindAsYouType::onChar(WPARAM wParam) {
 		break;
 
 	default: // Process any writeable character
-		enterChar(wParam);
+		enterChar(static_cast<wchar_t>(wParam));
 		break;
 	}
 	return 0;
@@ -38,7 +38,7 @@ void FindAsYouType::enterChar(wchar_t c) {
 	if (updateSearch(newString)) {
 		enteredString = newString;
 	} else {
-		MessageBeep(-1);
+		MessageBeep(0xFFFFFFFF);
 	}
 }
 

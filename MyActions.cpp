@@ -37,12 +37,12 @@ namespace {
 		NewPlaylist() : CustomAction("Add to Album Playlist "){}
 		void run(const pfc::list_base_const_t<metadb_handle_ptr> & tracks, const char * albumTitle){
 			static_api_ptr_t<playlist_manager> pm;
-			t_size playlist = pm->find_playlist(albumTitle,~0);
+			t_size playlist = pm->find_playlist(albumTitle);
 			if (playlist != ~0){
 				pm->playlist_undo_backup(playlist);
 				pm->playlist_clear(playlist);
 			} else {
-				playlist = pm->create_playlist(albumTitle,~0,~0);
+				playlist = pm->create_playlist(albumTitle, ~0u, ~0u);
 			}
 			pm->playlist_add_items(playlist,tracks,bit_array_true());
 			pm->set_active_playlist(playlist);
@@ -56,12 +56,12 @@ namespace {
 		TargetPlaylist() : CustomAction("Replace Default Playlist "){}
 		void run(const pfc::list_base_const_t<metadb_handle_ptr> & tracks, const char * albumTitle){
 			static_api_ptr_t<playlist_manager> pm;
-			t_size playlist = pm->find_playlist(cfgTargetPlaylist,~0);
+			t_size playlist = pm->find_playlist(cfgTargetPlaylist);
 			if (playlist != ~0){
 				pm->playlist_undo_backup(playlist);
 				pm->playlist_clear(playlist);
 			} else {
-				playlist = pm->create_playlist(cfgTargetPlaylist,~0,~0);
+				playlist = pm->create_playlist(cfgTargetPlaylist, ~0u, ~0u);
 			}
 			pm->playlist_add_items(playlist,tracks,bit_array_true());
 			pm->set_active_playlist(playlist);

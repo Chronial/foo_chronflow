@@ -48,7 +48,6 @@ public:
 	
 	void getFPS(double& fps, double& msPerFrame, double& longestFrame, double& minFps){
 		double frameDurSum = 0;
-		double frameTimesSum = 0;
 		longestFrame = -1;
 		double longestFrameTime = -1;
 		double thisFrameTime;

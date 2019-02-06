@@ -101,9 +101,9 @@ void Engine::mainLoop(){
 		}
 		std::unique_ptr<engine_messages::Message> msg = thread.messageQueue.pop();
 
-		if (auto m = dynamic_cast<EM::StopThreadMessage*>(msg.get())){
+		if (dynamic_cast<EM::StopThreadMessage*>(msg.get())){
 			break;
-		} else if (auto m = dynamic_cast<EM::PaintMessage*>(msg.get())){
+		} else if (dynamic_cast<EM::PaintMessage*>(msg.get())){
 			// do nothing, this is just here so that onPaint may run
 		} else {
 			msg->execute(*this);

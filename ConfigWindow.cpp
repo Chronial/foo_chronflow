@@ -10,7 +10,7 @@
 #include "ScriptedCoverPositions.h"
 
 static struct {
-   int id;
+   UINT id;
    cfg_string *var;
 } stringVarMap[] = 
 {
@@ -30,7 +30,7 @@ static struct {
 };
 
 static struct {
-   int id;
+   UINT id;
    cfg_string *var;
 } textListVarMap[] = 
 {
@@ -45,7 +45,7 @@ static struct {
 
 
 static struct {
-	int id;
+	UINT id;
 	cfg_bool *var;
 } boolVarMap[] =
 {
@@ -67,7 +67,7 @@ static struct {
 };
 
 static struct {
-	int checkboxId;
+	UINT checkboxId;
 	int itemToDisable;
 } disableMap[] =
 {
@@ -89,7 +89,7 @@ protected:
 	char * title;
 	bool initializing;
 public:
-	const int idx;
+	const t_size idx;
 	HWND hWnd;
 	ConfigTab(char * title, UINT id, HWND parent, int& i)
 		: idx(i)
@@ -278,7 +278,7 @@ public:
 	bool browseForImage(const char * oldImg, pfc::string_base &out){
 		OPENFILENAME ofn;
 		wchar_t fileName[1024];
-		pfc::stringcvt::convert_utf8_to_wide(fileName, 1024, oldImg, ~0);
+		pfc::stringcvt::convert_utf8_to_wide(fileName, 1024, oldImg, ~0u);
 		ZeroMemory(&ofn, sizeof(ofn));
 		ofn.lStructSize = sizeof(ofn);
 		ofn.hwndOwner = hWnd;
@@ -350,7 +350,7 @@ public:
 		for (int i = (tabsize(g_customActions)-1); i >= 0; i--){
 			uSendDlgItemMessageText(hWnd, id, CB_INSERTSTRING, 0, g_customActions[i]->actionName);
 		}
-		uSendDlgItemMessageText(hWnd, id, CB_SELECTSTRING, -1, selectedItem);
+		uSendDlgItemMessageText(hWnd, id, CB_SELECTSTRING, 1, selectedItem);
 	}
 };
 
@@ -369,17 +369,17 @@ public:
 				uSendDlgItemMessage(hWnd, IDC_TPOS_H, TBM_SETRANGE, FALSE, MAKELONG(0, 100));
 				uSendDlgItemMessage(hWnd, IDC_TPOS_H, TBM_SETTIC, 0, 50);
 				uSendDlgItemMessage(hWnd, IDC_TPOS_H, TBM_SETPOS, TRUE, titlePosH);
-				uSendDlgItemMessageText(hWnd, IDC_TPOS_H_P, WM_SETTEXT, 0, pfc::string_fixed_t<16>() << titlePosH);
+				uSendDlgItemMessageText(hWnd, IDC_TPOS_H_P, WM_SETTEXT, 0, std::to_string(titlePosH).data());
 
 				uSendDlgItemMessage(hWnd, IDC_TPOS_V, TBM_SETRANGE, TRUE, MAKELONG(0, 100));
 				uSendDlgItemMessage(hWnd, IDC_TPOS_V, TBM_SETTIC, 0, 50);
 				uSendDlgItemMessage(hWnd, IDC_TPOS_V, TBM_SETPOS, TRUE, titlePosV);
-				uSendDlgItemMessageText(hWnd, IDC_TPOS_V_P, WM_SETTEXT, 0, pfc::string_fixed_t<16>() << titlePosV);
+				uSendDlgItemMessageText(hWnd, IDC_TPOS_V_P, WM_SETTEXT, 0, std::to_string(titlePosV).data());
 
 				uSendDlgItemMessage(hWnd, IDC_FONT_PREV, WM_SETTEXT, 0, (LPARAM)cfgTitleFont.get_value().lfFaceName);
 
 				uSendDlgItemMessage(hWnd, IDC_FRAME_WIDTH_SPIN, UDM_SETRANGE, 0, MAKELONG(short(30),short(0)));
-				uSetDlgItemText(hWnd, IDC_FRAME_WIDTH, pfc::string_fixed_t<16>() << cfgHighlightWidth);
+				uSetDlgItemText(hWnd, IDC_FRAME_WIDTH, std::to_string(cfgHighlightWidth).data());
 			}
 			break;
 		case WM_HSCROLL:
@@ -388,8 +388,8 @@ public:
 				int titlePosV = uSendDlgItemMessage(hWnd, IDC_TPOS_V, TBM_GETPOS, 0, 0);
 				cfgTitlePosH = 0.01 * titlePosH;
 				cfgTitlePosV = 0.01 * titlePosV;
-				uSendDlgItemMessageText(hWnd, IDC_TPOS_H_P, WM_SETTEXT, 0, pfc::string_fixed_t<16>() << titlePosH);
-				uSendDlgItemMessageText(hWnd, IDC_TPOS_V_P, WM_SETTEXT, 0, pfc::string_fixed_t<16>() << titlePosV);
+				uSendDlgItemMessageText(hWnd, IDC_TPOS_H_P, WM_SETTEXT, 0, std::to_string(titlePosH).data());
+				uSendDlgItemMessageText(hWnd, IDC_TPOS_V_P, WM_SETTEXT, 0, std::to_string(titlePosV).data());
 
 				redrawMainWin();
 			}
@@ -397,7 +397,7 @@ public:
 		case WM_DRAWITEM:
 			{
 				DRAWITEMSTRUCT * drawStruct = reinterpret_cast<DRAWITEMSTRUCT*>(lParam);
-				HBRUSH brush;
+				HBRUSH brush{};
 				switch (wParam){
 				case IDC_TEXTCOLOR_PREV:
 					brush = CreateSolidBrush(cfgTitleColor);
@@ -820,7 +820,7 @@ public:
 			uSendDlgItemMessageText(hWnd, IDC_SAVED_SELECT, CB_ADDSTRING, 0, cfgCoverConfigs.get_item_ref(n).name);
 		}
 
-		uSendDlgItemMessageText(hWnd, IDC_SAVED_SELECT, CB_SELECTSTRING, -1, cfgCoverConfigSel);
+		uSendDlgItemMessageText(hWnd, IDC_SAVED_SELECT, CB_SELECTSTRING, 1, cfgCoverConfigSel);
 	}
 	void configSelectionChanged(){
 		const CoverConfig* config = cfgCoverConfigs.getPtrByName(cfgCoverConfigSel);
@@ -939,7 +939,7 @@ public:
 			for (t_size n=0; n < mappedListVarMap[i].mapSize; n++){
 				uSendDlgItemMessageText(hWnd, mappedListVarMap[i].id, CB_ADDSTRING, 0, mappedListVarMap[i].map[n].text);
 				if (mappedListVarMap[i].map[n].val == *(mappedListVarMap[i].var))
-					uSendDlgItemMessageText(hWnd, mappedListVarMap[i].id, CB_SELECTSTRING, -1, mappedListVarMap[i].map[n].text);
+					uSendDlgItemMessageText(hWnd, mappedListVarMap[i].id, CB_SELECTSTRING, 1, mappedListVarMap[i].map[n].text);
 			}
 		}
 	}
@@ -972,10 +972,7 @@ private:
 	pfc::list_t<ConfigTab*> tabs;
 	t_size currentTab;
 public:
-	ConfigWindow()
-		: currentTab(~0)
-	{
-	}
+	ConfigWindow() : currentTab(~0u) {}
 
 	BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 		switch (uMsg)
@@ -1019,7 +1016,7 @@ public:
 				if (((LPNMHDR)lParam)->code == TCN_SELCHANGE){
 					if (currentTab < tabs.get_count())
 						tabs[currentTab]->hide();
-					currentTab = ~0;
+					currentTab = ~0u;
 					UINT32 currentIdx = SendDlgItemMessage(hWnd, IDC_TABS, TCM_GETCURSEL, 0, 0);
 					for (t_size i=0; i < tabs.get_count(); i++){
 						if(currentIdx == tabs[i]->idx){
@@ -1027,7 +1024,7 @@ public:
 							break;
 						}
 					}
-					if (currentTab != ~0)
+					if (currentTab != ~0u)
 						tabs[currentTab]->show();
 				}
 			}

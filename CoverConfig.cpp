@@ -61,7 +61,8 @@ bool cfg_coverConfigs::removeItemByName(const char* name){
 	return false;
 }
 void cfg_coverConfigs::sortByName(){
-	sort(CoverConfig_compareName());
+	CoverConfig_compareName callback{};
+	sort(callback);
 }
 
 void cfg_coverConfigs::get_data_raw(stream_writer * p_stream, abort_callback & p_abort)

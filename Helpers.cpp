@@ -6,7 +6,7 @@ void errorPopup(const char* message){
 	// This should be:
 	// popup_message::g_show(... , popup_message::icon_error);
 	// But we sometimes need this to be modal (as it will be followed by crash)
-	MessageBoxA(NULL, pfc::string_formatter()
+	MessageBoxA(NULL, PFC_string_formatter()
 		<< "foo_chronflow: " << message
 		<< "\r\n\r\nIf this happens more than once, please report this error in the foo_chronflow "
 		   "thread on Hydrogenaudo or via mail to foocomp@chronial.de",
@@ -14,7 +14,7 @@ void errorPopup(const char* message){
 }
 
 void errorPopupWin32(const char* message){
-	errorPopup(pfc::string_formatter()
+	errorPopup(PFC_string_formatter()
 		<< message
 		<< "\r\nWin32 Error Message: "
 		<< format_win32_error(GetLastError()));
@@ -73,7 +73,7 @@ void Helpers::fixPath(pfc::string_base & path)
         return;
 
 	pfc::string8 temp;
-	titleformat_compiler::remove_forbidden_chars_string(temp, path, ~0, "*?<>|" "\"");
+	titleformat_compiler::remove_forbidden_chars_string(temp, path, ~0u, "*?<>|" "\"");
 
 
 	// fix directory separators

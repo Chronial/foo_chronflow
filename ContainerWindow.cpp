@@ -121,9 +121,7 @@ LRESULT CALLBACK ContainerWindow::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, L
 }
 
 HWND  ContainerWindow::createWindow(HWND parent){
-	HWND		hWnd;
-
-	WIN32_OP(hWnd = CreateWindowEx(
+	return check(CreateWindowEx(
 		0,									// Extended Style For The Window
 		MAINWINDOW_CLASSNAME,				// Class Name
 		L"ChronFlow MainWin",				// Window Title
@@ -136,6 +134,4 @@ HWND  ContainerWindow::createWindow(HWND parent){
 		NULL,								// No Menu
 		core_api::get_my_instance(),		// Instance
 		(void*)this));
-
-	return hWnd;
 };

@@ -52,7 +52,7 @@ namespace win32_helpers {
 				send_message_to_all_children ( wnd, msg, wp, lp );
 				SendMessage ( wnd, msg, wp, lp );
 			}
-			while (wnd = GetWindow(wnd, GW_HWNDNEXT));
+			while ((wnd = GetWindow(wnd, GW_HWNDNEXT)) != nullptr);
 	}
 	void send_message_to_direct_children(HWND wnd_parent, UINT msg, WPARAM wp, LPARAM lp)
 	{
@@ -62,7 +62,7 @@ namespace win32_helpers {
 			{
 				SendMessage ( wnd, msg, wp, lp );
 			}
-			while (wnd = GetWindow(wnd, GW_HWNDNEXT));
+			while ((wnd = GetWindow(wnd, GW_HWNDNEXT)) != nullptr);
 	}
 	int message_box(HWND wnd,const TCHAR * text,const TCHAR * caption,UINT type)
 	{
@@ -274,8 +274,8 @@ BOOL uComboBox_GetText(HWND combo,UINT index,pfc::string_base & out)
 
 BOOL uComboBox_SelectString(HWND combo,const char * src)
 {
-	unsigned idx = CB_ERR;
-	idx = uSendMessageText(combo,CB_FINDSTRINGEXACT,-1,src);
+	LRESULT idx = CB_ERR;
+	idx = uSendMessageText(combo,CB_FINDSTRINGEXACT,1,src);
 	if (idx==CB_ERR) return false;
 	uSendMessage(combo,CB_SETCURSEL,idx,0);
 	return TRUE;

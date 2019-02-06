@@ -1,5 +1,7 @@
 #pragma once
 
+#pragma warning(push, 1)
+
 // Require windows vista
 #define _WIN32_WINNT 0x600
 #define WIN32_LEAN_AND_MEAN
@@ -65,3 +67,10 @@ using std::make_shared;
 
 
 #include <gsl/gsl>
+
+
+#pragma warning(pop)
+// 4100: Unused function argument
+// 4201: nonstandard extension used : nameless struct/union
+// 4458: Declaration hides class member
+#pragma warning(disable: 4100 4201 4458)

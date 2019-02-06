@@ -235,11 +235,14 @@ void EngineWindow::onContextMenu(const int x, const int y) {
 	HMENU hMenu = CreatePopupMenu();
 	if (target) {
 		if ((cfgEnterKey.length() > 0) && (strcmp(cfgEnterKey, cfgDoubleClick) != 0))
-			uAppendMenu(hMenu, MF_STRING, ID_ENTER, pfc::string8(cfgEnterKey) << "\tEnter");
+			uAppendMenu(hMenu, MF_STRING, ID_ENTER,
+						PFC_string_formatter() << cfgEnterKey << "\tEnter");
 		if (cfgDoubleClick.length() > 0)
-			uAppendMenu(hMenu, MF_STRING, ID_DOUBLECLICK, pfc::string8(cfgDoubleClick) << "\tDouble Click");
+			uAppendMenu(hMenu, MF_STRING, ID_DOUBLECLICK,
+						PFC_string_formatter() << cfgDoubleClick << "\tDouble Click");
 		if ((cfgMiddleClick.length() > 0) && (strcmp(cfgMiddleClick, cfgDoubleClick) != 0) && (strcmp(cfgMiddleClick, cfgEnterKey) != 0))
-			uAppendMenu(hMenu, MF_STRING, ID_MIDDLECLICK, pfc::string8(cfgMiddleClick) << "\tMiddle Click");
+			uAppendMenu(hMenu, MF_STRING, ID_MIDDLECLICK,
+						PFC_string_formatter() << cfgMiddleClick << "\tMiddle Click");
 
 		cmm->init_context(target->tracks, contextmenu_manager::FLAG_SHOW_SHORTCUTS);
 		if (cmm->get_root()) {

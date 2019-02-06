@@ -49,16 +49,13 @@ bool DbAlbumCollection::getTracks(CollectionPos pos, metadb_handle_list& out){
 }
 
 bool DbAlbumCollection::getAlbumForTrack(const metadb_handle_ptr& track, CollectionPos& out){
-	auto &sortedIndex = albums.get<1>();
 	pfc::string8_fast_aggressive albumKey;
 	if (!albumMapper.is_valid())
 		return false;
 	track->format_title(0, albumKey, albumMapper, 0);
 	if (albums.count(albumKey.get_ptr())){
 		auto groupAlbum = albums.find(albumKey.get_ptr());
-		auto sortAlbum = albums.project<1>(groupAlbum);
-		int idx = sortedIndex.rank(sortAlbum);
-		out = sortAlbum;
+		out = albums.project<1>(groupAlbum);
 		return true; 
 	} else {
 		return false;
@@ -75,7 +72,6 @@ AlbumInfo DbAlbumCollection::getAlbumInfo(CollectionPos pos)
 }
 
 void DbAlbumCollection::getTitle(CollectionPos pos, pfc::string_base& out){
-	auto &sortedIndex = albums.get<1>();
 	pos->tracks[0]->format_title(0, out, cfgAlbumTitleScript, 0);
 }
 
@@ -97,7 +93,7 @@ bool DbAlbumCollection::performFayt(const char * title, CollectionPos& out){
 		return false;
 	} else {
 		auto &sortIndex = albums.get<1>();
-		t_size outIdx = ~0;
+		t_size outIdx = ~0u;
 		out = sortIndex.begin();
 
 		// find the item with the lowest index (this is important to select the leftmost album)
@@ -125,8 +121,6 @@ CollectionPos DbAlbumCollection::end() const{
 t_size DbAlbumCollection::rank(CollectionPos p) {
 	return albums.get<1>().rank(p);
 }
-
-
 
 
 void DbAlbumCollection::setTargetPos(CollectionPos newTarget) {
