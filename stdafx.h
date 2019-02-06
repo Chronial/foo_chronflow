@@ -30,9 +30,7 @@
 #include "../foobar2000/helpers/helpers.h"
 
 
-//#define APIENTRY
 #include "opengl\glext.h"
-#include "opengl\wglext.h"
 
 #include <array>
 #include <deque>
