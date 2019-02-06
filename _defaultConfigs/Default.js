@@ -1,4 +1,4 @@
-﻿// Author: mil3s
+// Author: mil3s
 
 // General Notes:
 // Most of these functions return an array with 3 elements
