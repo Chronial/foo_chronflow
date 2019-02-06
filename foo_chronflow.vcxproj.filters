@@ -25,6 +25,9 @@
     <Filter Include="Header Files\Basics">
       <UniqueIdentifier>{de60aad4-e586-4d21-8eb6-25d1a6c3dd78}</UniqueIdentifier>
     </Filter>
+    <Filter Include="lib">
+      <UniqueIdentifier>{44371096-0fc0-45fa-8a10-a0d7034ba8f4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ConfigWindow.cpp">
@@ -185,12 +188,6 @@
     <ClInclude Include="TextureCache.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="stb_image.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="stb_image_resize.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Image.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -208,6 +205,12 @@
     </ClInclude>
     <ClInclude Include="ContainerWindow.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\stb_image.h">
+      <Filter>lib</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\stb_image_resize.h">
+      <Filter>lib</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

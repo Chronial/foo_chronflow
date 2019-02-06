@@ -178,8 +178,8 @@
     <ClInclude Include="Engine.h" />
     <ClInclude Include="engine_messages.h" />
     <ClInclude Include="Image.h" />
-    <ClInclude Include="stb_image.h" />
-    <ClInclude Include="stb_image_resize.h" />
+    <ClInclude Include="lib\stb_image.h" />
+    <ClInclude Include="lib\stb_image_resize.h" />
     <ClInclude Include="TextureCache.h" />
     <ClInclude Include="base.h" />
     <ClInclude Include="ContainerWindow.h" />
