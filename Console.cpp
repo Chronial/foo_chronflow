@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-HANDLE Console::screenBuffer = 0;
+HANDLE Console::screenBuffer = nullptr;
 
 void Console::create(void)
 {
@@ -13,7 +13,7 @@ void Console::create(void)
 
 void Console::print(const wchar_t* str)
 {
-	WriteConsole(screenBuffer, str, wcslen(str), NULL, NULL);
+	WriteConsole(screenBuffer, str, wcslen(str), nullptr, nullptr);
 }
 
 void Console::println(const wchar_t* str)
@@ -27,5 +27,5 @@ void Console::printf(const wchar_t* format, ...)
 	va_start(args, format);
 	wchar_t out[1024];
 	int len = vswprintf_s(out, 1024, format, args);
-	WriteConsole(screenBuffer, out, len, NULL, NULL);
+	WriteConsole(screenBuffer, out, len, nullptr, nullptr);
 }

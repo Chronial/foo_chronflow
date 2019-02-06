@@ -6,7 +6,7 @@ struct GdiContext {
 	ULONG_PTR token;
 	GdiContext() {
 		Gdiplus::GdiplusStartupInput input;
-		Gdiplus::GdiplusStartup(&token, &input, NULL);
+		Gdiplus::GdiplusStartup(&token, &input, nullptr);
 	}
 	~GdiContext() {
 		Gdiplus::GdiplusShutdown(token);

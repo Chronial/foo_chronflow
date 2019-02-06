@@ -45,7 +45,7 @@ public:
 
 	void invalidateWindow();
 
-	void on_playback_new_track(metadb_handle_ptr p_track);
+	void on_playback_new_track(metadb_handle_ptr p_track) final;
 
 	/// Runs a function in the foobar2000 mainthread
 	/// Guarantees that the callback runs only if this thread is still alive.

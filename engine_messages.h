@@ -15,7 +15,7 @@ public:
 template <typename... Types>
 struct DataMessage : Message {
 	DataMessage(Types... Args) { data = make_tuple(Args...); }
-	void execute(Engine& e) {
+	void execute(Engine& e) override {
 		std::apply(&DataMessage::run, std::tuple_cat(std::tie(*this, e), data));
 	}
 	virtual void run(Engine&, Types...) {};
@@ -26,7 +26,7 @@ template <typename T, typename... Types>
 struct AnswerMessage : Message {
 	typedef T ValueType;
 	AnswerMessage(Types... Args) { data = make_tuple(Args...); }
-	void execute(Engine& e) {
+	void execute(Engine& e) override {
 		promise.set_value(
 			std::apply(&AnswerMessage::run, std::tuple_cat(std::tie(*this, e), data)));
 	}
@@ -40,12 +40,12 @@ struct AnswerMessage : Message {
 
 #define E_MSG(NAME, ...) struct NAME : public engine_messages::DataMessage<__VA_ARGS__> { \
 	using DataMessage::DataMessage; \
-	void run(Engine&, __VA_ARGS__); \
+	void run(Engine&, __VA_ARGS__) final; \
 }
 
 #define E_ANSWER_MSG(NAME, T, ...)  struct NAME : public engine_messages::AnswerMessage<T, __VA_ARGS__> { \
 	using AnswerMessage::AnswerMessage; \
-	T run(Engine&, __VA_ARGS__); \
+	T run(Engine&, __VA_ARGS__) final; \
 }
 
 

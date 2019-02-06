@@ -11,18 +11,14 @@
 
 
 bool isExtensionSupported(const char *extName){
-	char *p;
-	char *end;
-	int extNameLen;
+	int extNameLen = strlen(extName);
 
-	extNameLen = strlen(extName);
-
-	p = (char *)glGetString(GL_EXTENSIONS);
+	char* p = (char *)glGetString(GL_EXTENSIONS);
 	if (!p) {
 		return false;
 	}
 
-	end = p + strlen(p);
+	char* end = p + strlen(p);
 
 	while (p < end) {
 		int n = strcspn(p, " ");

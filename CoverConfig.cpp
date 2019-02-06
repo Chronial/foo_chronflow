@@ -9,7 +9,7 @@ namespace {
 		inline static int static_compare(const CoverConfig &a, const CoverConfig &b){
 			return stricmp_utf8(a.name, b.name);
 		}
-		int compare(const CoverConfig &a, const CoverConfig &b){
+		int compare(const CoverConfig &a, const CoverConfig &b) override {
 			return static_compare(a, b);
 		}
 	};
@@ -48,7 +48,7 @@ CoverConfig* cfg_coverConfigs::getPtrByName(const char* name){
 			return &m_buffer[i];
 		}
 	}
-	return false;
+	return nullptr;
 }
 bool cfg_coverConfigs::removeItemByName(const char* name){
 	int count = get_count();

@@ -100,7 +100,7 @@ LRESULT ContainerWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 				if (engineWindow)
 					engineWindow->engineThread->send<EM::WindowShowMessage>();
 			}
-			SetTimer(hWnd, IDT_CHECK_MINIMIZED, MINIMIZE_CHECK_TIMEOUT, 0);
+			SetTimer(hWnd, IDT_CHECK_MINIMIZED, MINIMIZE_CHECK_TIMEOUT, nullptr);
 		}
 	}
 	}
@@ -110,12 +110,12 @@ LRESULT ContainerWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 LRESULT CALLBACK ContainerWindow::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 	ContainerWindow* chronflow = nullptr;
 	if (uMsg == WM_NCCREATE){
-		chronflow = reinterpret_cast<ContainerWindow*>(((CREATESTRUCT*)lParam)->lpCreateParams);
-		SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)chronflow);
+		chronflow = static_cast<ContainerWindow*>((reinterpret_cast<CREATESTRUCT*>(lParam))->lpCreateParams);
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(chronflow));
 	} else {
 		chronflow = reinterpret_cast<ContainerWindow*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 	}
-	if (chronflow == 0)
+	if (chronflow == nullptr)
 		return DefWindowProc(hWnd, uMsg, wParam, lParam);
 	return chronflow->MessageHandler(hWnd, uMsg, wParam, lParam);
 }
