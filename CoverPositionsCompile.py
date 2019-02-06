@@ -9,7 +9,7 @@ made_changes = False
 def update_file_contents(fn, contents):
     """Set file contents, only writing if needed to reduce recompilation"""
     global made_changes
-    with open(fn, "r+") as f:
+    with open(fn, "r+", newline="\n") as f:
         old_contents = f.read()
         if old_contents != contents:
             made_changes = True
