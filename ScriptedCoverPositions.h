@@ -109,10 +109,9 @@ public:
 
 		t_size c;
 		p_stream->read_lendian_t(c, p_abort);
-		CoverPosInfo* tmp = new CoverPosInfo[c];
-		p_stream->read_object((void*)tmp, sizeof(CoverPosInfo) * c, p_abort);
-		out.coverPosInfos.set_data_fromptr(tmp, c);
-		delete tmp;
+		auto tmp = make_unique<CoverPosInfo[]>(c);
+		p_stream->read_object((void*)tmp.get(), sizeof(CoverPosInfo) * c, p_abort);
+		out.coverPosInfos.set_data_fromptr(tmp.get(), c);
 	}
 };
 

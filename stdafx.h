@@ -34,6 +34,7 @@
 #include "opengl\glext.h"
 #include "opengl\wglext.h"
 
+#include <array>
 #include <deque>
 #include <unordered_set>
 #include <condition_variable>
