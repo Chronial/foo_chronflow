@@ -6,6 +6,9 @@
 #define _WIN32_WINNT 0x600
 #define WIN32_LEAN_AND_MEAN
 
+#define APIENTRY __stdcall
+#include "lib/glad.h"
+
 #define GLFW_INCLUDE_GLU
 #define GLFW_EXPOSE_NATIVE_WIN32
 #define GLFW_EXPOSE_NATIVE_WGL
@@ -29,8 +32,6 @@
 #include "../foobar2000/SDK/foobar2000.h"
 #include "../foobar2000/helpers/helpers.h"
 
-
-#include "opengl\glext.h"
 
 #include <array>
 #include <deque>

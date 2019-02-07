@@ -9,43 +9,18 @@
 #include "MyActions.h"
 #include "EngineWindow.h"
 
-
-bool isExtensionSupported(const char *extName){
-	int extNameLen = strlen(extName);
-
-	char* p = (char *)glGetString(GL_EXTENSIONS);
-	if (!p) {
-		return false;
-	}
-
-	char* end = p + strlen(p);
-
-	while (p < end) {
-		int n = strcspn(p, " ");
-		if ((extNameLen == n) && (strncmp(extName, p, n) == 0)) {
-			return true;
-		}
-		p += (n + 1);
-	}
-	return false;
-}
-
-void loadExtensions(){
-	if(isExtensionSupported("GL_EXT_fog_coord"))
-		glFogCoordf = (PFNGLFOGCOORDFPROC) wglGetProcAddress("glFogCoordf");
-	else
-		glFogCoordf = 0;
-
-	if(isExtensionSupported("GL_EXT_blend_color"))
-		glBlendColor = (PFNGLBLENDCOLORPROC)wglGetProcAddress("glBlendColor");
-	else
-		glBlendColor = 0;
-}
-
 GLContext::GLContext(EngineWindow& window)
 {
 	window.makeContextCurrent();
-	loadExtensions();
+	// Static, since we only want to initialize the extensions once.
+	// This also takes care of multithread synchronization.
+	static const bool glad = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+	if (!(glad &&
+		  GLAD_GL_VERSION_2_1 &&
+		  GLAD_GL_EXT_texture_filter_anisotropic &&
+		  GLAD_GL_EXT_bgra)) {
+		throw std::exception("Glad failed to initialize OpenGl");
+	}
 
 	glShadeModel(GL_SMOOTH);							// Enable Smooth Shading
 	glClearDepth(1.0f);									// Depth Buffer Setup
@@ -55,14 +30,12 @@ GLContext::GLContext(EngineWindow& window)
 	glHint(GL_TEXTURE_COMPRESSION_HINT,GL_FASTEST);
 	glEnable(GL_TEXTURE_2D);
 
-	if (isExtensionSupported("GL_EXT_fog_coord")){
-		glFogi(GL_FOG_MODE, GL_EXP);
-		glFogf(GL_FOG_DENSITY, 5);
-		GLfloat	fogColor[4] = {0.0f, 0.0f, 0.0f, 1.0f};     // Fog Color - should be BG color
-		glFogfv(GL_FOG_COLOR, fogColor);					// Set The Fog Color
-		glHint(GL_FOG_HINT, GL_NICEST);						// Per-Pixel Fog Calculation
-		glFogi(GL_FOG_COORD_SRC, GL_FOG_COORD);		// Set Fog Based On Vertice Coordinates
-	}
+	glFogi(GL_FOG_MODE, GL_EXP);
+	glFogf(GL_FOG_DENSITY, 5);
+	GLfloat	fogColor[4] = {0.0f, 0.0f, 0.0f, 1.0f};     // Fog Color - should be BG color
+	glFogfv(GL_FOG_COLOR, fogColor);					// Set The Fog Color
+	glHint(GL_FOG_HINT, GL_NICEST);						// Per-Pixel Fog Calculation
+	glFogi(GL_FOG_COORD_SRC, GL_FOG_COORD);		// Set Fog Based On Vertice Coordinates
 }
 
 
@@ -119,7 +92,7 @@ void Engine::onPaint(){
 
 	renderer.drawFrame();
 
-	// this might not be right – do we need a glFinish() here?
+	// this might not be right â€“ do we need a glFinish() here?
 	double frameEnd = Helpers::getHighresTimer();
 	renderer.fpsCounter.recordFrame(frameStart, frameEnd);
 

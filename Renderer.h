@@ -9,11 +9,6 @@ class TextureCache;
 class DisplayPosition;
 class Engine;
 
-
-// TODO: use extension loader instead
-extern PFNGLFOGCOORDFPROC glFogCoordf;
-extern PFNGLBLENDCOLORPROC glBlendColor;
-
 enum VSyncMode {
 	VSYNC_SLEEP_ONLY = 1,
 	VSYNC_AND_SLEEP = 2,

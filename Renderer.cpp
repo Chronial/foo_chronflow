@@ -11,10 +11,6 @@
 #include "glStructs.h"
 #include "Engine.h"
 
-// TODO: Use extension loader instead
-extern PFNGLFOGCOORDFPROC glFogCoordf = nullptr;
-extern PFNGLBLENDCOLORPROC glBlendColor = nullptr;
-
 
 #define SELECTION_CENTER INT_MAX //Selection is an unsigned int, so this is center
 #define SELECTION_COVERS 1
@@ -136,11 +132,9 @@ void Renderer::drawMirrorPass(){
 	double rotAngle = rad2deg(scaleAxis.intersectAng(mirrorNormal));
 	rotAngle = -2*rotAngle;
 
-	if (glFogCoordf){
-		GLfloat	fogColor[4] = {GetRValue(cfgPanelBg)/255.0f, GetGValue(cfgPanelBg)/255.0f, GetBValue(cfgPanelBg)/255.0f, 1.0f};
-		glFogfv(GL_FOG_COLOR, fogColor);
-		glEnable(GL_FOG);
-	}
+	GLfloat	fogColor[4] = {GetRValue(cfgPanelBg)/255.0f, GetGValue(cfgPanelBg)/255.0f, GetBValue(cfgPanelBg)/255.0f, 1.0f};
+	glFogfv(GL_FOG_COLOR, fogColor);
+	glEnable(GL_FOG);
 
 	glPushMatrix();
 		glTranslated(2 * mirrorPos.x, 2 * mirrorPos.y, 2 * mirrorPos.z);
@@ -149,9 +143,8 @@ void Renderer::drawMirrorPass(){
 
 		drawCovers();
 	glPopMatrix();
-	
-	if (glFogCoordf)
-		glDisable(GL_FOG);
+
+	glDisable(GL_FOG);
 }
 
 void Renderer::drawMirrorOverlay(){
@@ -326,19 +319,19 @@ void Renderer::drawCovers(bool showTarget){
 		glPushName(SELECTION_CENTER + offset);
 
 		glBegin(GL_QUADS);
-		if (glFogCoordf) glFogCoordf((GLfloat)coverPos.distanceToMirror(coverQuad.topLeft));
+			glFogCoordf((GLfloat)coverPos.distanceToMirror(coverQuad.topLeft));
 			glTexCoord2f(0.0f, 1.0f); // top left
 			glVertex3fv((GLfloat*)&(coverQuad.topLeft.x));
 
-			if (glFogCoordf) glFogCoordf((GLfloat)coverPos.distanceToMirror(coverQuad.topRight));
+			glFogCoordf((GLfloat)coverPos.distanceToMirror(coverQuad.topRight));
 			glTexCoord2f(1.0f, 1.0f); // top right
 			glVertex3fv((GLfloat*)&(coverQuad.topRight.x));
 
-			if (glFogCoordf) glFogCoordf((GLfloat)coverPos.distanceToMirror(coverQuad.bottomRight));
+			glFogCoordf((GLfloat)coverPos.distanceToMirror(coverQuad.bottomRight));
 			glTexCoord2f(1.0f, 0.0f); // bottom right
 			glVertex3fv((GLfloat*)&(coverQuad.bottomRight.x));
 
-			if (glFogCoordf) glFogCoordf((GLfloat)coverPos.distanceToMirror(coverQuad.bottomLeft));
+			glFogCoordf((GLfloat)coverPos.distanceToMirror(coverQuad.bottomLeft));
 			glTexCoord2f(0.0f, 0.0f); // bottom left
 			glVertex3fv((GLfloat*)&(coverQuad.bottomLeft.x));
 		glEnd();

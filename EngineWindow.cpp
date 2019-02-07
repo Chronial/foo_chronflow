@@ -11,6 +11,8 @@ EngineWindow::EngineWindow(HWND parent, ui_element_instance_callback_ptr default
 	glfwWindowHint(GLFW_FOCUSED, false);
 	glfwWindowHint(GLFW_RESIZABLE, false);
 	glfwWindowHint(GLFW_VISIBLE, false);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 
 	glfwWindow.reset(glfwCreateWindow(640, 480, "foo_chronflow render window", nullptr, nullptr));
 	if (!glfwWindow) {
