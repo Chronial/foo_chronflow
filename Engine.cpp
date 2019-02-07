@@ -5,8 +5,8 @@
 #include "EngineWindow.h"
 #include "MyActions.h"
 #include "PlaybackTracer.h"
-#include "ScriptedCoverPositions.h"
 #include "TextureCache.h"
+#include "config.h"
 
 GLContext::GLContext(EngineWindow& window) {
   window.makeContextCurrent();
@@ -41,7 +41,7 @@ Engine::Engine(EngineThread& thread, EngineWindow& window)
       afterLastSwap(0) {
   TIMECAPS tc;
   if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) == TIMERR_NOERROR) {
-    timerResolution = min(max(tc.wPeriodMin, (UINT)1), tc.wPeriodMax);
+    timerResolution = std::min(std::max(tc.wPeriodMin, (UINT)1), tc.wPeriodMax);
   }
 }
 

@@ -3,9 +3,9 @@
 #include "EngineThread.h"
 #include "MyActions.h"
 #include "PlaybackTracer.h"
-#include "ScriptedCoverPositions.h"
 #include "base.h"
 #include "config.h"
+#include "cover_positions_compiler.h"
 #include "win32_helpers.h"
 
 static struct {
@@ -74,6 +74,10 @@ static struct {
     // Performance
     {IDC_MULTI_SAMPLING, IDC_MULTI_SAMPLING_PASSES},
 };
+
+inline int bounded(int min, int max, int value) {
+  return std::max(min, std::min(max, value));
+}
 
 class ConfigTab {
  protected:
@@ -296,7 +300,7 @@ class BehaviourTab : public ConfigTab {
           textChanged(LOWORD(wParam));
           if (LOWORD(wParam) == IDC_FOLLOW_DELAY) {
             cfgCoverFollowDelay =
-                max(1, min(999, int(uGetDlgItemInt(hWnd, IDC_FOLLOW_DELAY, 0, 1))));
+                bounded(1, 999, int(uGetDlgItemInt(hWnd, IDC_FOLLOW_DELAY, 0, 1)));
           }
         } else if (HIWORD(wParam) == BN_CLICKED) {
           buttonClicked(LOWORD(wParam));
@@ -415,7 +419,7 @@ class DisplayTab : public ConfigTab {
             case IDC_FRAME_WIDTH: {
               pfc::string_fixed_t<16> highlightWidth;
               uGetDlgItemText(hWnd, IDC_FRAME_WIDTH, highlightWidth);
-              cfgHighlightWidth = max(0, min(30, atoi(highlightWidth)));
+              cfgHighlightWidth = bounded(0, 30, atoi(highlightWidth));
               redrawMainWin();
             } break;
           }
@@ -877,10 +881,10 @@ class PerformanceTab : public ConfigTab {
 
           if (LOWORD(wParam) == IDC_CACHE_SIZE) {
             cfgTextureCacheSize =
-                max(2, min(999, int(uGetDlgItemInt(hWnd, IDC_CACHE_SIZE, 0, 1))));
+                bounded(2, 999, int(uGetDlgItemInt(hWnd, IDC_CACHE_SIZE, 0, 1)));
           } else if (LOWORD(wParam) == IDC_TEXTURE_SIZE) {
             cfgMaxTextureSize =
-                max(4, min(2024, int(uGetDlgItemInt(hWnd, IDC_TEXTURE_SIZE, 0, 1))));
+                bounded(4, 2024, int(uGetDlgItemInt(hWnd, IDC_TEXTURE_SIZE, 0, 1)));
           }
         } else if (HIWORD(wParam) == BN_CLICKED) {
           buttonClicked(LOWORD(wParam));

@@ -2,8 +2,8 @@
 #include "Helpers.h"
 
 #include "DbAlbumCollection.h"
-#include "ScriptedCoverPositions.h"
 #include "TextDisplay.h"
+#include "cover_positions.h"
 
 class TextureCache;
 class DisplayPosition;

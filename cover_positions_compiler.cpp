@@ -1,8 +1,9 @@
-#include "ScriptedCoverPositions.h"
+#include "cover_positions_compiler.h"
 
 #include <comutil.h>
 
-#include "SafeArrayHelper.h"
+#include "lib/script_control.h"
+
 #include "base.h"
 
 using namespace pfc;

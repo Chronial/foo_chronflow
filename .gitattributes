@@ -1,2 +1,3 @@
 * text=auto eol=lf
 *.vcxproj* text=auto eol=crlf
+*.sln text=auto eol=crlf

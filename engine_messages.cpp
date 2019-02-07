@@ -1,10 +1,7 @@
 #include "Engine.h"
 
-#include "DisplayPosition.h"
-#include "EngineWindow.h"
-#include "PlaybackTracer.h"
-#include "ScriptedCoverPositions.h"
-#include "TextureCache.h"
+#include "EngineThread.h"
+#include "config.h"
 
 void EM::RedrawMessage::run(Engine& e) {
   e.doPaint = true;

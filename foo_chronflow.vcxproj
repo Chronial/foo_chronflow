@@ -149,6 +149,8 @@
     <ClCompile Include="Image.cpp" />
     <ClCompile Include="lib\cover_configs.cpp" />
     <ClCompile Include="lib\glad.cpp" />
+    <ClCompile Include="lib\script_control.cpp" />
+    <ClCompile Include="cover_positions.cpp" />
     <ClCompile Include="TextureCache.cpp" />
     <ClCompile Include="ContainerWindow.cpp" />
     <ClCompile Include="CoverConfig.cpp" />
@@ -156,7 +158,7 @@
     <ClCompile Include="Console.cpp">
       <FileType>CppCode</FileType>
     </ClCompile>
-    <ClCompile Include="CPScriptCompiler.cpp" />
+    <ClCompile Include="cover_positions_compiler.cpp" />
     <ClCompile Include="CuiComponent.cpp" />
     <ClCompile Include="DbAlbumCollection.cpp" />
     <ClCompile Include="DbReloadWorker.cpp" />
@@ -173,17 +175,17 @@
     <ClCompile Include="PlaybackTracer.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="EngineThread.cpp" />
-    <ClCompile Include="SafeArrayHelper.cpp" />
-    <ClCompile Include="ScriptObject.cpp" />
     <ClCompile Include="TextDisplay.cpp" />
     <ClCompile Include="win32_helpers.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="cover_positions_compiler.h" />
     <ClInclude Include="Engine.h" />
     <ClInclude Include="engine_messages.h" />
     <ClInclude Include="Image.h" />
     <ClInclude Include="lib\glad.h" />
     <ClInclude Include="lib\khrplatform.h" />
+    <ClInclude Include="lib\script_control.h" />
     <ClInclude Include="lib\stb_image.h" />
     <ClInclude Include="lib\stb_image_resize.h" />
     <ClInclude Include="TextureCache.h" />
@@ -208,9 +210,7 @@
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="EngineThread.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="SafeArrayHelper.h" />
-    <ClInclude Include="ScriptedCoverPositions.h" />
-    <ClInclude Include="ScriptObject.h" />
+    <ClInclude Include="cover_positions.h" />
     <ClInclude Include="TextDisplay.h" />
     <ClInclude Include="win32_helpers.h" />
   </ItemGroup>

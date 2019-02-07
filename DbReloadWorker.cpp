@@ -3,6 +3,7 @@
 #include "Engine.h"
 #include "EngineThread.h"
 #include "base.h"
+#include "config.h"
 
 DbReloadWorker::DbReloadWorker(EngineThread& engineThread)
     : engineThread(engineThread), thread(&DbReloadWorker::threadProc, this) {

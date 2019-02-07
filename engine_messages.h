@@ -13,7 +13,7 @@ struct Message {
 
 template <typename... Types>
 struct DataMessage : Message {
-  DataMessage(Types... Args) { data = make_tuple(Args...); }
+  DataMessage(Types... Args) { data = std::make_tuple(Args...); }
   void execute(Engine& e) override {
     std::apply(&DataMessage::run, std::tuple_cat(std::tie(*this, e), data));
   }
@@ -24,7 +24,7 @@ struct DataMessage : Message {
 template <typename T, typename... Types>
 struct AnswerMessage : Message {
   typedef T ValueType;
-  AnswerMessage(Types... Args) { data = make_tuple(Args...); }
+  AnswerMessage(Types... Args) { data = std::make_tuple(Args...); }
   void execute(Engine& e) override {
     promise.set_value(
         std::apply(&AnswerMessage::run, std::tuple_cat(std::tie(*this, e), data)));

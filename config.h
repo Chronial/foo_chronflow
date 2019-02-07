@@ -1,5 +1,6 @@
 #pragma once
 #include "CoverConfig.h"
+#include "cover_positions.h"
 
 /*********************************************** Album Source tab
  * *******************************************************/
@@ -56,3 +57,4 @@ extern cfg_bool cfgShowFps;
 // Non-config vars
 extern cfg_int sessionSelectedCover;
 extern cfg_int sessionSelectedConfigTab;
+extern cfg_compiledCPInfoPtr sessionCompiledCPInfo;

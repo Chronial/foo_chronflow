@@ -1,22 +1,8 @@
-/************************************************************
- * FILENAME : ScriptObject.h
- *
- * class CScriptObject
- *		This class implements MSScript control
- *		It can interface script from resource file or text file
- *
- * INITIAL CODING : Ernest Laurentin (EL)
- *************************************************************/
+#pragma once
 
-#ifndef _SCRIPT_OBJECT_
-#define _SCRIPT_OBJECT_
 #include <list>
 #include <xstring>
 
-// Add this to your stdafx.h
-//#pragma warning( disable: 4786)
-
-// Adjust the following path if required
 #import "msscript.ocx" no_namespace
 
 #define LANGUAGE_DEFAULT _T("VBScript")
@@ -24,29 +10,11 @@
 #define LANGUAGE_NAME_LEN 40
 #define ERROR_DESC_LEN 256
 
-#ifndef ASSERT
-#define ASSERT PFC_ASSERT
-#endif
-
-#ifndef TRACE
-#define TRACE __noop
-#endif
-
-using namespace std;
-
-#ifndef _UNICODE
-typedef list<string> stl_string_list;
-#else
-typedef list<wstring> stl_string_list;
-#endif
-
 class CScriptObject {
-  // Construction
  public:
   CScriptObject();
   ~CScriptObject();
 
-  // Function
  public:
   LPCTSTR GetLanguage();
   void SetLanguage(LPCTSTR szLanguage);
@@ -66,10 +34,35 @@ class CScriptObject {
   LPCTSTR GetScriptFunction(LPCTSTR name);
 
   IScriptControlPtr m_pScript;                // The one and only script control
-  stl_string_list m_FunctionList;             // Function list
+  std::list<std::wstring> m_FunctionList;     // Function list
   TCHAR m_szLanguage[LANGUAGE_NAME_LEN + 1];  // Current language
   TCHAR m_szError[ERROR_DESC_LEN + 1];        // Description error
  private:
 };
 
-#endif  // _SCRIPT_OBJECT_
+class CSafeArrayHelper {
+ public:
+  CSafeArrayHelper();
+  ~CSafeArrayHelper();
+
+  bool Create(VARTYPE vt, UINT cDims, UINT lBound, UINT cCount);
+  bool Destroy();
+  UINT GetDimension();
+
+  bool Attach(LPSAFEARRAY psa);
+  bool AttachFromVariant(VARIANT* pVariant);
+  LPSAFEARRAY Detach();
+  LPSAFEARRAY GetArray();
+  bool AccessData(void FAR* FAR* pvData);
+  bool UnaccessData();
+  bool Lock();
+  bool Unlock();
+  bool PutElement(long lIndices, void FAR* vData);
+  bool GetElement(long lIndices, void FAR* vData);
+  VARIANT GetAsVariant();
+
+ protected:
+  LPSAFEARRAY m_pSA;
+
+ private:
+};

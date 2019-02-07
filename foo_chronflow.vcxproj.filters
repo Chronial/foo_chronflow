@@ -48,9 +48,6 @@
     <ClCompile Include="TextDisplay.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CPScriptCompiler.cpp">
-      <Filter>Source Files\Helpers</Filter>
-    </ClCompile>
     <ClCompile Include="CoverConfig.cpp">
       <Filter>Source Files\Helpers</Filter>
     </ClCompile>
@@ -67,12 +64,6 @@
       <Filter>Source Files\Helpers</Filter>
     </ClCompile>
     <ClCompile Include="TrackDropSource.cpp">
-      <Filter>Source Files\Helpers</Filter>
-    </ClCompile>
-    <ClCompile Include="ScriptObject.cpp">
-      <Filter>Source Files\Helpers</Filter>
-    </ClCompile>
-    <ClCompile Include="SafeArrayHelper.cpp">
       <Filter>Source Files\Helpers</Filter>
     </ClCompile>
     <ClCompile Include="config.cpp">
@@ -123,6 +114,15 @@
     <ClCompile Include="lib\cover_configs.cpp">
       <Filter>lib</Filter>
     </ClCompile>
+    <ClCompile Include="lib\script_control.cpp">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="cover_positions_compiler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cover_positions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DbAlbumCollection.h">
@@ -140,9 +140,6 @@
     <ClInclude Include="Renderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ScriptedCoverPositions.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="TextDisplay.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -153,12 +150,6 @@
       <Filter>Header Files\Helpers</Filter>
     </ClInclude>
     <ClInclude Include="Helpers.h">
-      <Filter>Header Files\Helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="SafeArrayHelper.h">
-      <Filter>Header Files\Helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="ScriptObject.h">
       <Filter>Header Files\Helpers</Filter>
     </ClInclude>
     <ClInclude Include="TrackDropSource.h">
@@ -223,6 +214,15 @@
     </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cover_positions_compiler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\script_control.h">
+      <Filter>lib</Filter>
+    </ClInclude>
+    <ClInclude Include="cover_positions.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

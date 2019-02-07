@@ -63,7 +63,7 @@ class TextureCache {
   void clearCache();
   void onTargetChange();
   void onCollectionReload();
-  void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter);
+  void updateLoadingQueue(const CollectionPos& queueCenter);
   void uploadTextures();
 
  private:
