@@ -1,5 +1,14 @@
-#include "stdafx.h"
 #include "EngineWindow.h"
+
+#include "base.h"
+#include "config.h"
+#include "Console.h"
+#include "MyActions.h"
+#include "PlaybackTracer.h"
+#include "TrackDropSource.h"
+#include "Engine.h"
+#include "win32_helpers.h"
+
 
 EngineWindow::EngineWindow(HWND parent, ui_element_instance_callback_ptr defaultUiCallback)
 	: defaultUiCallback(defaultUiCallback) {

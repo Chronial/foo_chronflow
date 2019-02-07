@@ -1,6 +1,7 @@
-#include "stdafx.h"
-#include "base.h"
 #include "CoverConfig.h"
+
+#include "base.h"
+
 
 namespace {
 	class CoverConfig_compareName : public pfc::list_base_t<CoverConfig>::sort_callback {

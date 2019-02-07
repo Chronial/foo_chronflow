@@ -1,10 +1,7 @@
-#include "stdafx.h"
-#include <process.h>
-#include "config.h"
-#include "Helpers.h"
-
 #include "TextureCache.h"
 
+#include "config.h"
+#include "Helpers.h"
 #include "Console.h"
 #include "DbAlbumCollection.h"
 #include "EngineThread.h"

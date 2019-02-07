@@ -1,9 +1,8 @@
-#include "stdafx.h"
+#include "ScriptedCoverPositions.h"
+
 #include <comutil.h>
-#include <limits>
 
 #include "base.h"
-#include "ScriptedCoverPositions.h"
 #include "SafeArrayHelper.h"
 
 using namespace pfc;

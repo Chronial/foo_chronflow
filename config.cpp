@@ -1,9 +1,6 @@
-#include "stdafx.h"
-
 #include "CoverConfig.h"
 #include "Renderer.h"
 #include "ScriptedCoverPositions.h"
-
 
 
 /*********************************************** Album Source tab *******************************************************/

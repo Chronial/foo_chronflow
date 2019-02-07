@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #pragma warning(push, 1)
 #include "../columns_ui-sdk/ui_extension.h"
 #pragma warning(pop)

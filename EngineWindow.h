@@ -1,16 +1,7 @@
 #pragma once
-
-#include "stdafx.h"
-#include "base.h"
-#include "config.h"
-
-#include "Console.h"
-#include "MyActions.h"
-#include "PlaybackTracer.h"
 #include "EngineThread.h"
-#include "TrackDropSource.h"
-#include "Engine.h"
-
+#include "base.h"
+#include "DbAlbumCollection.h"
 
 class EngineWindow {
 	unique_ptr_del<GLFWwindow, glfwDestroyWindow> glfwWindow;

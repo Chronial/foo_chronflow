@@ -1,7 +1,5 @@
 #pragma once
-#include "stdafx.h"
 #include "config.h"
-
 #include "CoverConfig.h"
 #include "Helpers.h"
 #include "ScriptObject.h"

@@ -1,5 +1,4 @@
 #pragma once
-#include "Helpers.h"
 #include "DbAlbumCollection.h"
 
 class EngineThread;

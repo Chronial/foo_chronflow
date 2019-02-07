@@ -1,11 +1,11 @@
-#include "stdafx.h"
-#include "base.h"
 #include "ContainerWindow.h"
 
+#include "base.h"
 #include "Console.h"
 #include "EngineThread.h"
 #include "EngineWindow.h"
 #include "Engine.h"
+
 
 #define MAINWINDOW_CLASSNAME L"foo_chronflow MainWindow"
 

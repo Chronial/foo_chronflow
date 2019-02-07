@@ -1,11 +1,10 @@
-#include "stdafx.h"
+#include "Engine.h"
 
 #include "TextureCache.h"
 #include "ScriptedCoverPositions.h"
 #include "DisplayPosition.h"
 #include "PlaybackTracer.h"
 #include "EngineWindow.h"
-#include "Engine.h"
 
 
 void EM::RedrawMessage::run(Engine& e) {

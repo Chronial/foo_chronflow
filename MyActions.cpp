@@ -1,7 +1,6 @@
-#include "stdafx.h"
-#include "config.h"
-
 #include "MyActions.h"
+
+#include "config.h"
 
 
 namespace {

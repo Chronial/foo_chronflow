@@ -1,13 +1,13 @@
-#include "stdafx.h"
 #include "base.h"
 #include "config.h"
-
 #include "DbAlbumCollection.h"
 #include "MyActions.h"
 #include "PlaybackTracer.h"
 #include "EngineThread.h"
 #include "Engine.h"
 #include "ScriptedCoverPositions.h"
+#include "win32_helpers.h"
+
 
 static struct {
    UINT id;

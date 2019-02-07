@@ -1,4 +1,5 @@
-#include "stdafx.h"
+#include "win32_helpers.h"
+
 
 class param_utf16_from_utf8 : public pfc::stringcvt::string_wide_from_utf8
 {

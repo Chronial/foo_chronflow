@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "Helpers.h"
 #include "ContainerWindow.h"
 

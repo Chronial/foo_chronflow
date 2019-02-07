@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "Console.h"
 
 #include <stdio.h>

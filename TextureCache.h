@@ -1,8 +1,6 @@
 #pragma once
-#include "stdafx.h"
-
-#include "DbAlbumCollection.h"
 #include "Helpers.h"
+#include "DbAlbumCollection.h"
 #include "BlockingQueue.h"
 #include "Image.h"
 

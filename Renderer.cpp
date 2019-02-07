@@ -1,8 +1,6 @@
-#include "stdafx.h"
-#include "config.h"
-
 #include "Renderer.h"
 
+#include "config.h"
 #include "TextureCache.h"
 #include "DisplayPosition.h"
 #include "DbAlbumCollection.h"

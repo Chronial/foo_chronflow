@@ -1,9 +1,8 @@
-#include "stdafx.h"
+#include "DisplayPosition.h"
+
 #include "base.h"
 #include "config.h"
 #include "Helpers.h"
-
-#include "DisplayPosition.h"
 #include "PlaybackTracer.h"
 
 
@@ -42,7 +41,7 @@ void DisplayPosition::update(void)
 {
 	double currentTime = Helpers::getHighresTimer();
 	CollectionPos targetPos = db.getTargetPos();
-	// do this here because of concurrency – isMoving might see a different targetPos
+	// do this here because of concurrency â€“ isMoving might see a different targetPos
 	if (centeredPos != targetPos || centeredOffset != 0){
 		int targetRank = db.rank(targetPos);
 		int centeredRank = db.rank(centeredPos);

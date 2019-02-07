@@ -1,15 +1,13 @@
-#include "stdafx.h"
-#include "config.h"
-
 #include "Image.h"
-#include "Console.h"
-#include "Helpers.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include "lib/stb_image.h"
 #include "lib/stb_image_resize.h"
 
+#include "config.h"
+#include "Console.h"
+#include "Helpers.h"
 
 
 Image::Image(malloc_ptr data, int width, int height)

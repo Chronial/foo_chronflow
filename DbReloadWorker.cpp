@@ -1,7 +1,6 @@
-#include "stdafx.h"
-#include "base.h"
-
 #include "DbReloadWorker.h"
+
+#include "base.h"
 #include "EngineThread.h"
 #include "Engine.h"
 

@@ -1,5 +1,5 @@
-#include "stdafx.h"
 #include "Helpers.h"
+
 #include <stdio.h>
 
 void errorPopup(const char* message){

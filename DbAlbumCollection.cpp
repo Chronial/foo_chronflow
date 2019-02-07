@@ -1,12 +1,10 @@
-#include "stdafx.h"
-#include "config.h"
-
 #include "DbAlbumCollection.h"
 
 #include "EngineThread.h"
-
+#include "config.h"
 #include "DbReloadWorker.h"
 #include "Engine.h"
+
 
 DbAlbumCollection::DbAlbumCollection() :
 	targetPos(albums.get<1>().end())

@@ -1,10 +1,8 @@
-#include "stdafx.h"
-#include "Helpers.h"
-
 #include "EngineThread.h"
+
+#include "Helpers.h"
 #include "Engine.h"
 #include "EngineWindow.h"
-
 
 
 void EngineThread::run(){

@@ -1,9 +1,8 @@
-#include "stdafx.h"
-#include "config.h"
-
 #include "TextDisplay.h"
 
+#include "config.h"
 #include "Renderer.h"
+
 using namespace Gdiplus;
 
 

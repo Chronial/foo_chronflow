@@ -1,5 +1,5 @@
-#include "stdafx.h"
 #include "FindAsYouType.h"
+
 #include "EngineThread.h"
 #include "DbAlbumCollection.h"
 #include "Engine.h"

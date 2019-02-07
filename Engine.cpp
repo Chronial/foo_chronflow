@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "Engine.h"
 
 #include "TextureCache.h"
@@ -8,6 +7,7 @@
 #include "PlaybackTracer.h"
 #include "MyActions.h"
 #include "EngineWindow.h"
+
 
 GLContext::GLContext(EngineWindow& window)
 {

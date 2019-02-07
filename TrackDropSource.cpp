@@ -1,5 +1,3 @@
-#include "stdafx.h"
-
 #include "TrackDropSource.h"
 
 TrackDropSource::TrackDropSource(HWND p_hWnd) : m_refcount(1), m_hWnd(p_hWnd)

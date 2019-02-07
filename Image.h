@@ -1,5 +1,4 @@
 #pragma once
-#include "stdafx.h"
 #include "base.h"
 
 class Image {

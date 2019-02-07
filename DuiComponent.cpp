@@ -1,7 +1,5 @@
-#include "stdafx.h"
 
 #include "ContainerWindow.h"
-
 
 
 class dui_chronflow : public ui_element_instance {
