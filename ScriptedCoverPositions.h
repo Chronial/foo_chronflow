@@ -7,8 +7,6 @@
 #include "ScriptObject.h"
 #include "glStructs.h"
 
-#include "COVER_CONFIG_DEF_CONTENT.h"
-
 
 struct fovAspectBehaviour {
 	float x;
@@ -179,6 +177,7 @@ public:
 
 extern cfg_compiledCPInfoPtr sessionCompiledCPInfo;
 
+
 class ScriptedCoverPositions
 {
 public:
@@ -188,7 +187,7 @@ public:
 			const CoverConfig* config = cfgCoverConfigs.getPtrByName(cfgCoverConfigSel);
 			pfc::string8 errorMsg;
 			if (!config || !setScript(config->script, errorMsg)){
-				if(!setScript(COVER_CONFIG_DEF_CONTENT, errorMsg)){
+				if(!setScript(defaultCoverConfig, errorMsg)){
 					popup_message::g_show(errorMsg, "JScript Compile Error", popup_message::icon_error);
 					throw new pfc::exception(errorMsg);
 				}

@@ -1,7 +1,6 @@
 #include "stdafx.h"
+#include "base.h"
 #include "CoverConfig.h"
-
-#include "BUILD_IN_COVERCONFIGS.h"
 
 namespace {
 	class CoverConfig_compareName : public pfc::list_base_t<CoverConfig>::sort_callback {
@@ -16,24 +15,15 @@ namespace {
 
 	class BuildInCoverConfigs : public pfc::list_t<CoverConfig> {
 	public:
-		BuildInCoverConfigs(char const* const* contents, int count){
-			m_buffer.set_size(count);
-			int i = 0;
-			while (**contents != '\0'){
-				m_buffer[i].buildIn = true;
-				m_buffer[i].name.set_string(*contents);
-				contents++;
-				m_buffer[i].script.set_string(*contents);
-				contents++;
-				i++;
+		BuildInCoverConfigs(){
+			auto map = builtInCoverConfigs;
+			for (auto&[name, script] : builtInCoverConfigs) {
+				this->add_item(CoverConfig{name, script, true});
 			}
 		}
 	};
+	const BuildInCoverConfigs buildIn{};
 }
-
-
-static BuildInCoverConfigs buildIn(buildInCoverConfigs, buildInCoverConfigCount);
-
 
 cfg_coverConfigs::cfg_coverConfigs(const GUID& p_guid) : cfg_var(p_guid)
 {

@@ -27,3 +27,6 @@ using deleter_from_fn = std::integral_constant<decltype(fn), fn>;
 
 template <typename T, auto fn>
 using unique_ptr_del = std::unique_ptr<T, deleter_from_fn<fn>>;
+
+extern const char* defaultCoverConfig;
+extern const std::unordered_map<const char*, const char*> builtInCoverConfigs;

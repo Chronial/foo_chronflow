@@ -784,7 +784,7 @@ public:
 							useClipboard = true;
 					}
 					if (!useClipboard)
-						config.script = COVER_CONFIG_DEF_CONTENT;
+						config.script = defaultCoverConfig;
 					config.buildIn = false;
 					cfgCoverConfigs.add_item(config);
 					cfgCoverConfigSel = dialog.value;

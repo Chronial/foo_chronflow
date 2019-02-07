@@ -120,6 +120,9 @@
     <ClCompile Include="lib\glad.cpp">
       <Filter>lib</Filter>
     </ClCompile>
+    <ClCompile Include="lib\cover_configs.cpp">
+      <Filter>lib</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DbAlbumCollection.h">
@@ -240,5 +243,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />
+    <None Include="CoverPositionsCompile.py" />
   </ItemGroup>
 </Project>
