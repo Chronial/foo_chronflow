@@ -1,0 +1,8 @@
+BasedOnStyle: Google
+ColumnLimit: 90
+AllowShortBlocksOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Inline
+AlignEscapedNewlines: DontAlign
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
+DerivePointerAlignment: false

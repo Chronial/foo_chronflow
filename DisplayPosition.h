@@ -1,30 +1,33 @@
 #pragma once
 #include "DbAlbumCollection.h"
 
-class DisplayPosition
-{
-	DbAlbumCollection& db;
-public:
-	DisplayPosition(DbAlbumCollection& db);
-	~DisplayPosition(void);
-	void update(void);
+class DisplayPosition {
+  DbAlbumCollection& db;
 
-	bool isMoving(void);
-	CollectionPos getCenteredPos(void) const; //Position centered or left of center (eg. display between 2. and 3. cover -> CenteredPos = 2. cover
-	float getCenteredOffset(void) const; // return in range [0;1)  (eg. display on pos 2.59 -- returns 0.59)
-	CollectionPos getOffsetPos(int offset) const; // Relative to centeredPos
+ public:
+  DisplayPosition(DbAlbumCollection& db);
+  ~DisplayPosition(void);
+  void update(void);
 
-	void hardSetCenteredPos(CollectionPos pos);
+  bool isMoving(void);
+  CollectionPos getCenteredPos(
+      void) const;  // Position centered or left of center (eg. display between 2. and 3.
+                    // cover -> CenteredPos = 2. cover
+  float getCenteredOffset(
+      void) const;  // return in range [0;1)  (eg. display on pos 2.59 -- returns 0.59)
+  CollectionPos getOffsetPos(int offset) const;  // Relative to centeredPos
 
-	void onTargetChange();
+  void hardSetCenteredPos(CollectionPos pos);
 
-private:
-	float targetDist2moveDist(float targetDist);
+  void onTargetChange();
 
-	bool rendering;
+ private:
+  float targetDist2moveDist(float targetDist);
 
-	CollectionPos centeredPos;
-	volatile float centeredOffset;
-	float lastSpeed;
-	double lastMovement;
+  bool rendering;
+
+  CollectionPos centeredPos;
+  volatile float centeredOffset;
+  float lastSpeed;
+  double lastMovement;
 };

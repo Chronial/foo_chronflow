@@ -1,7 +1,7 @@
 #pragma once
-#include "Helpers.h"
-#include "DbAlbumCollection.h"
 #include "BlockingQueue.h"
+#include "DbAlbumCollection.h"
+#include "Helpers.h"
 #include "Image.h"
 
 using namespace boost::multi_index;
@@ -10,92 +10,91 @@ class ImgTexture;
 class EngineThread;
 
 struct TextureCacheMeta {
-	std::string groupString;
-	unsigned int collectionVersion;
-	// (generation, -distance to center)
-	std::pair<unsigned int, int> priority;
+  std::string groupString;
+  unsigned int collectionVersion;
+  // (generation, -distance to center)
+  std::pair<unsigned int, int> priority;
 };
-
 
 class TextureLoadingThreads {
-public:
-	TextureLoadingThreads();
-	~TextureLoadingThreads();
+ public:
+  TextureLoadingThreads();
+  ~TextureLoadingThreads();
 
-	struct LoadRequest {
-		TextureCacheMeta meta;
-		metadb_handle_list tracks;
-	};
+  struct LoadRequest {
+    TextureCacheMeta meta;
+    metadb_handle_list tracks;
+  };
 
-	struct LoadResponse {
-		TextureCacheMeta meta;
-		std::optional<UploadReadyImage> image;
+  struct LoadResponse {
+    TextureCacheMeta meta;
+    std::optional<UploadReadyImage> image;
 
-		LoadResponse(LoadResponse&& other)
-			: meta(other.meta), image(std::move(other.image)) {};
-		LoadResponse(const TextureCacheMeta& meta, std::optional<UploadReadyImage>&& image)
-			: meta(meta), image(std::move(image)) {};
-	};
+    LoadResponse(LoadResponse&& other)
+        : meta(other.meta), image(std::move(other.image)){};
+    LoadResponse(const TextureCacheMeta& meta, std::optional<UploadReadyImage>&& image)
+        : meta(meta), image(std::move(image)){};
+  };
 
-	void flushQueue();
-	void enqueue(const metadb_handle_list& tracks, const TextureCacheMeta& meta);
-	std::optional<LoadResponse> getLoaded();
-private:
-	std::vector<std::thread> threads;
-	std::atomic<bool> shouldStop = false;
+  void flushQueue();
+  void enqueue(const metadb_handle_list& tracks, const TextureCacheMeta& meta);
+  std::optional<LoadResponse> getLoaded();
 
-	BlockingQueue<LoadRequest> inQueue;
-	BlockingQueue<LoadResponse> outQueue;
+ private:
+  std::vector<std::thread> threads;
+  std::atomic<bool> shouldStop = false;
 
-	void run();
+  BlockingQueue<LoadRequest> inQueue;
+  BlockingQueue<LoadResponse> outQueue;
+
+  void run();
 };
 
-class TextureCache
-{
-	DbAlbumCollection& db;
-	EngineThread& thread;
-public:
-	TextureCache(EngineThread&, DbAlbumCollection&);
+class TextureCache {
+  DbAlbumCollection& db;
+  EngineThread& thread;
 
-	const GLTexture& getLoadedImgTexture(const std::string& albumName);
+ public:
+  TextureCache(EngineThread&, DbAlbumCollection&);
 
-	void trimCache();
-	void clearCache();
-	void onTargetChange();
-	void onCollectionReload();
-	void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter);
-	void uploadTextures();
+  const GLTexture& getLoadedImgTexture(const std::string& albumName);
 
-private:
-	GLFWwindow* glfwWindow = nullptr;
-	unsigned int collectionVersion = 0;
+  void trimCache();
+  void clearCache();
+  void onTargetChange();
+  void onCollectionReload();
+  void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter);
+  void uploadTextures();
 
-	void reloadSpecialTextures();
-	GLTexture noCoverTexture;
-	GLTexture loadingTexture;
+ private:
+  GLFWwindow* glfwWindow = nullptr;
+  unsigned int collectionVersion = 0;
 
-	unsigned int cacheGeneration = 0;
+  void reloadSpecialTextures();
+  GLTexture noCoverTexture;
+  GLTexture loadingTexture;
 
-	struct CacheItem : TextureCacheMeta {
-		CacheItem(const TextureCacheMeta& meta, std::optional<GLTexture>&& texture)
-			: TextureCacheMeta(meta), texture(std::move(texture)) {};
-		std::optional<GLTexture> texture;
-	};
-	typedef multi_index_container <
-		CacheItem,
-		indexed_by<
-			hashed_unique<member<TextureCacheMeta, std::string, &CacheItem::groupString>>,
-			ordered_non_unique<composite_key<
-				CacheItem,
-				member<TextureCacheMeta, unsigned int, &CacheItem::collectionVersion>,
-				member<TextureCacheMeta, std::pair<unsigned int, int>, &CacheItem::priority>
-			>>
-		>
-	> t_textureCache;
+  unsigned int cacheGeneration = 0;
 
-	t_textureCache textureCache;
+  struct CacheItem : TextureCacheMeta {
+    CacheItem(const TextureCacheMeta& meta, std::optional<GLTexture>&& texture)
+        : TextureCacheMeta(meta), texture(std::move(texture)){};
+    std::optional<GLTexture> texture;
+  };
+  typedef multi_index_container<
+      CacheItem,
+      indexed_by<
+          hashed_unique<member<TextureCacheMeta, std::string, &CacheItem::groupString>>,
+          ordered_non_unique<composite_key<
+              CacheItem,
+              member<TextureCacheMeta, unsigned int, &CacheItem::collectionVersion>,
+              member<TextureCacheMeta, std::pair<unsigned int, int>,
+                     &CacheItem::priority>>>>>
+      t_textureCache;
 
-	TextureLoadingThreads bgLoader;
+  t_textureCache textureCache;
 
-	friend class TextureLoadingThreads;
+  TextureLoadingThreads bgLoader;
+
+  friend class TextureLoadingThreads;
 };

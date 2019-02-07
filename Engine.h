@@ -1,48 +1,47 @@
 #pragma once
-#include "TextureCache.h"
-#include "DisplayPosition.h"
+#include "BlockingQueue.h"
 #include "DbAlbumCollection.h"
 #include "DbReloadWorker.h"
-#include "BlockingQueue.h"
-#include "Renderer.h"
+#include "DisplayPosition.h"
 #include "FindAsYouType.h"
 #include "PlaybackTracer.h"
+#include "Renderer.h"
+#include "TextureCache.h"
 
 class GLContext {
-public:
-	GLContext(class EngineWindow&);
+ public:
+  GLContext(class EngineWindow&);
 };
 
-
 class Engine {
-public:
-	GLContext glContext;
-	DbAlbumCollection db;
-	FindAsYouType findAsYouType;
-	DisplayPosition displayPos;
-	TextureCache texCache;
-	Renderer renderer;
-	PlaybackTracer playbackTracer;
-	unique_ptr<DbReloadWorker> reloadWorker;
+ public:
+  GLContext glContext;
+  DbAlbumCollection db;
+  FindAsYouType findAsYouType;
+  DisplayPosition displayPos;
+  TextureCache texCache;
+  Renderer renderer;
+  PlaybackTracer playbackTracer;
+  unique_ptr<DbReloadWorker> reloadWorker;
 
-	EngineWindow& window;
-	class EngineThread& thread;
+  EngineWindow& window;
+  class EngineThread& thread;
 
-	Engine(EngineThread&, EngineWindow&);
-	void mainLoop();
-	void onPaint();
-	void updateRefreshRate();
-	void onTargetChange(bool userInitiated);
+  Engine(EngineThread&, EngineWindow&);
+  void mainLoop();
+  void onPaint();
+  void updateRefreshRate();
+  void onTargetChange(bool userInitiated);
 
-private:
-	bool doPaint = false;
-	int timerResolution = 10;
-	bool timerInPeriod = false;
-	int refreshRate = 60;
-	double afterLastSwap = 0;
+ private:
+  bool doPaint = false;
+  int timerResolution = 10;
+  bool timerInPeriod = false;
+  int refreshRate = 60;
+  double afterLastSwap = 0;
 
-public:
-	struct Messages;
+ public:
+  struct Messages;
 };
 
 using EM = Engine::Messages;

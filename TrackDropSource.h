@@ -2,25 +2,25 @@
 
 // IDropSource implementation for drag&drop.
 class TrackDropSource : public IDropSource {
-private:
-	pfc::refcounter m_refcount;
-	HWND m_hWnd;
+ private:
+  pfc::refcounter m_refcount;
+  HWND m_hWnd;
 
-	TrackDropSource(HWND hWnd);
+  TrackDropSource(HWND hWnd);
 
-public:
-	static pfc::com_ptr_t<IDropSource> g_create(HWND hWnd);
+ public:
+  static pfc::com_ptr_t<IDropSource> g_create(HWND hWnd);
 
-	/////////////////////////////////////////////////////////
-	// IUnknown methods
+  /////////////////////////////////////////////////////////
+  // IUnknown methods
 
-	STDMETHOD(QueryInterface)(REFIID iid, void ** ppvObject);
-	STDMETHOD_(ULONG, AddRef)();
-	STDMETHOD_(ULONG, Release)();
+  STDMETHOD(QueryInterface)(REFIID iid, void** ppvObject);
+  STDMETHOD_(ULONG, AddRef)();
+  STDMETHOD_(ULONG, Release)();
 
-	/////////////////////////////////////////////////////////
-	// IDropSource methods
+  /////////////////////////////////////////////////////////
+  // IDropSource methods
 
-	STDMETHOD(QueryContinueDrag)(BOOL fEscapePressed, DWORD grfKeyState);
-	STDMETHOD(GiveFeedback)(DWORD dwEffect);
+  STDMETHOD(QueryContinueDrag)(BOOL fEscapePressed, DWORD grfKeyState);
+  STDMETHOD(GiveFeedback)(DWORD dwEffect);
 };
