@@ -12,6 +12,10 @@ class CallbackHolder {
 
  public:
   CallbackHolder();
+  CallbackHolder(const CallbackHolder&) = delete;
+  CallbackHolder& operator=(const CallbackHolder&) = delete;
+  CallbackHolder(CallbackHolder&&) = delete;
+  CallbackHolder& operator=(CallbackHolder&&) = delete;
   ~CallbackHolder() noexcept;
   void addCallback(std::function<void()> f);
 };

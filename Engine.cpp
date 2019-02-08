@@ -12,36 +12,34 @@ GLContext::GLContext(EngineWindow& window) {
   window.makeContextCurrent();
   // Static, since we only want to initialize the extensions once.
   // This also takes care of multithread synchronization.
-  static const bool glad = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+  static const bool glad =
+      (0 != gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)));
   if (!(glad && GLAD_GL_VERSION_2_1 && GLAD_GL_EXT_texture_filter_anisotropic &&
         GLAD_GL_EXT_bgra)) {
     throw std::exception("Glad failed to initialize OpenGl");
   }
 
-  glShadeModel(GL_SMOOTH);  // Enable Smooth Shading
-  glClearDepth(1.0f);       // Depth Buffer Setup
-  glEnable(GL_DEPTH_TEST);  // Enables Depth Testing
-  glDepthFunc(GL_LEQUAL);   // The Type Of Depth Testing To Do
-  glHint(GL_PERSPECTIVE_CORRECTION_HINT,
-         GL_NICEST);  // Really Nice Perspective Calculations
+  glShadeModel(GL_SMOOTH);
+  glClearDepth(1.0f);
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LEQUAL);
+  glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
   glHint(GL_TEXTURE_COMPRESSION_HINT, GL_FASTEST);
   glEnable(GL_TEXTURE_2D);
 
   glFogi(GL_FOG_MODE, GL_EXP);
   glFogf(GL_FOG_DENSITY, 5);
-  GLfloat fogColor[4] = {0.0f, 0.0f, 0.0f, 1.0f};  // Fog Color - should be BG color
-  glFogfv(GL_FOG_COLOR, fogColor);                 // Set The Fog Color
-  glHint(GL_FOG_HINT, GL_NICEST);                  // Per-Pixel Fog Calculation
-  glFogi(GL_FOG_COORD_SRC, GL_FOG_COORD);          // Set Fog Based On Vertice Coordinates
+  glFogfv(GL_FOG_COLOR, std::array<GLfloat, 4>{0.0f, 0.0f, 0.0f, 1.0f}.data());
+  glHint(GL_FOG_HINT, GL_NICEST);          // Per-Pixel Fog Calculation
+  glFogi(GL_FOG_COORD_SRC, GL_FOG_COORD);  // Set Fog Based On Vertice Coordinates
 }
 
 Engine::Engine(EngineThread& thread, EngineWindow& window)
-    : window(window), thread(thread), glContext(window), db(), findAsYouType(*this),
-      displayPos(db), texCache(thread, db), renderer(*this), playbackTracer(thread),
-      afterLastSwap(0) {
+    : window(window), thread(thread), glContext(window), findAsYouType(*this),
+      displayPos(db), texCache(thread, db), renderer(*this), playbackTracer(thread) {
   TIMECAPS tc;
   if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) == TIMERR_NOERROR) {
-    timerResolution = std::min(std::max(tc.wPeriodMin, (UINT)1), tc.wPeriodMax);
+    timerResolution = std::min(std::max(tc.wPeriodMin, 1u), tc.wPeriodMax);
   }
 }
 
@@ -58,9 +56,9 @@ void Engine::mainLoop() {
     }
     std::unique_ptr<engine_messages::Message> msg = thread.messageQueue.pop();
 
-    if (dynamic_cast<EM::StopThreadMessage*>(msg.get())) {
+    if (dynamic_cast<EM::StopThreadMessage*>(msg.get()) != nullptr) {
       break;
-    } else if (dynamic_cast<EM::PaintMessage*>(msg.get())) {
+    } else if (dynamic_cast<EM::PaintMessage*>(msg.get()) != nullptr) {
       // do nothing, this is just here so that onPaint may run
     } else {
       msg->execute(*this);
@@ -90,10 +88,11 @@ void Engine::onPaint() {
     // time we have        time we already have spend
     int sleepTime =
         static_cast<int>((1000.0 / refreshRate) - 1000 * (currentTime - afterLastSwap));
-    if (cfgVSyncMode == VSYNC_AND_SLEEP)
+    if (cfgVSyncMode == VSYNC_AND_SLEEP) {
       sleepTime -= 2 * timerResolution;
-    else
+    } else {
       sleepTime -= timerResolution;
+    }
     if (sleepTime >= 0) {
       if (!timerInPeriod) {
         timeBeginPeriod(timerResolution);
@@ -121,7 +120,7 @@ void Engine::updateRefreshRate() {
   ZeroMemory(&dispSettings, sizeof(dispSettings));
   dispSettings.dmSize = sizeof(dispSettings);
 
-  if (0 != EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dispSettings)) {
+  if (0 != EnumDisplaySettings(nullptr, ENUM_CURRENT_SETTINGS, &dispSettings)) {
     refreshRate = dispSettings.dmDisplayFrequency;
     if (refreshRate >= 100)  // we do not need 100fps - 50 is enough
       refreshRate /= 2;

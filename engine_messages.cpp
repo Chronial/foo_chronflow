@@ -41,7 +41,7 @@ void EM::CharEntered::run(Engine& e, WPARAM wParam) {
   e.findAsYouType.onChar(wParam);
 }
 
-void EM::Run::run(Engine& e, std::function<void()> f) {
+void EM::Run::run(Engine& /*e*/, std::function<void()> f) {
   f();
 }
 

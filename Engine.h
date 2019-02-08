@@ -10,7 +10,7 @@
 
 class GLContext {
  public:
-  GLContext(class EngineWindow&);
+  explicit GLContext(class EngineWindow&);
 };
 
 class Engine {

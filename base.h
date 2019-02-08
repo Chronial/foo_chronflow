@@ -10,8 +10,8 @@
 #ifndef M_PI
 #define M_PI 3.1415926535897932385
 #endif
-#define deg2rad(X) (X * M_PI / 180)
-#define rad2deg(X) (X * 180 / M_PI)
+#define deg2rad(X) ((X)*M_PI / 180)
+#define rad2deg(X) ((X)*180 / M_PI)
 
 #define IDT_CHECK_MINIMIZED 665
 

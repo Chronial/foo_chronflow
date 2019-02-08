@@ -30,7 +30,7 @@ EngineThread::~EngineThread() {
 }
 
 void EngineThread::invalidateWindow() {
-  RedrawWindow(engineWindow.hWnd, NULL, NULL, RDW_INVALIDATE);
+  RedrawWindow(engineWindow.hWnd, nullptr, nullptr, RDW_INVALIDATE);
 }
 
 std::unordered_set<EngineThread*> EngineThread::instances{};
