@@ -1,7 +1,7 @@
 #pragma once
 #include "DbAlbumCollection.h"
 
-class CustomAction abstract {
+class CustomAction {
  protected:
   CustomAction(const char* actionName) { this->actionName = actionName; }
 

@@ -123,6 +123,9 @@
     <ClCompile Include="cover_positions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="lib\msscript.cpp">
+      <Filter>lib</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DbAlbumCollection.h">
@@ -223,6 +226,9 @@
     </ClInclude>
     <ClInclude Include="cover_positions.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\msscript.h">
+      <Filter>lib</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -1,5 +1,9 @@
 #pragma once
+
 #pragma warning(push, 1)
+#pragma warning(disable : 4068)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
 
 #include <array>
 #include <atomic>
@@ -39,12 +43,12 @@ using std::unique_ptr;
 #include <windows.h>
 
 #include <ActivScp.h>
-#include <Commdlg.h>
-#include <GdiPlus.h>
-#include <Mmsystem.h>
-#include <Process.h>
-#include <ShellApi.h>
 #include <Shlwapi.h>
+#include <commdlg.h>
+#include <gdiplus.h>
+#include <mmsystem.h>
+#include <process.h>
+#include <shellapi.h>
 #undef min
 #undef max
 
@@ -58,6 +62,15 @@ using std::unique_ptr;
 #include "../foobar2000/SDK/foobar2000.h"
 #include "../foobar2000/helpers/helpers.h"
 
+// clang doesn't support stdcall lambdas
+// since we only use it for linting, we just hide those lambdas from it
+#ifdef __clang__
+#define WINLAMBDA(X) nullptr
+#else
+#define WINLAMBDA(X) X
+#endif
+
+#pragma clang diagnostic pop
 #pragma warning(pop)
 // 4100: Unused function argument
 // 4201: nonstandard extension used : nameless struct/union

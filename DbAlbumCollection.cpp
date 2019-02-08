@@ -63,7 +63,7 @@ AlbumInfo DbAlbumCollection::getAlbumInfo(CollectionPos pos) {
   pfc::string8 title;
   getTracks(pos, tracks);
   getTitle(pos, title);
-  return AlbumInfo{title, pos->groupString, tracks};
+  return AlbumInfo{title.c_str(), pos->groupString, tracks};
 }
 
 void DbAlbumCollection::getTitle(CollectionPos pos, pfc::string_base& out) {

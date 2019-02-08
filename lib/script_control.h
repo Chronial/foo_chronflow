@@ -3,7 +3,8 @@
 #include <list>
 #include <xstring>
 
-#import "msscript.ocx" no_namespace
+//#import "msscript.ocx" no_namespace
+#include "msscript.h"
 
 #define LANGUAGE_DEFAULT _T("VBScript")
 #define RT_SCRIPT _T("SCRIPT")
@@ -37,7 +38,6 @@ class CScriptObject {
   std::list<std::wstring> m_FunctionList;     // Function list
   TCHAR m_szLanguage[LANGUAGE_NAME_LEN + 1];  // Current language
   TCHAR m_szError[ERROR_DESC_LEN + 1];        // Description error
- private:
 };
 
 class CSafeArrayHelper {

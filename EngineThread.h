@@ -19,8 +19,8 @@ class CallbackHolder {
 class EngineThread : public play_callback_impl_base {
  public:
   explicit EngineThread(EngineWindow& engineWindow);
-  EngineThread(EngineThread&) = delete;
-  EngineThread& operator=(EngineThread&) = delete;
+  EngineThread(const EngineThread&) = delete;
+  EngineThread& operator=(const EngineThread&) = delete;
   EngineThread(EngineThread&&) = delete;
   EngineThread& operator=(EngineThread&&) = delete;
   ~EngineThread();

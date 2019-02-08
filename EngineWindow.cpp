@@ -35,13 +35,13 @@ EngineWindow::EngineWindow(HWND parent,
   SetWindowLong(hWnd, GWL_STYLE, nNewStyle);
   const ULONG_PTR cNewStyle = GetClassLongPtr(hWnd, GCL_STYLE) | CS_DBLCLKS;
   SetClassLongPtr(hWnd, GCL_STYLE, cNewStyle);
-  SetWindowSubclass(
-      hWnd,
-      [](HWND, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR, DWORD_PTR dwRefData) {
-        return reinterpret_cast<EngineWindow*>(dwRefData)->messageHandler(uMsg, wParam,
-                                                                          lParam);
-      },
-      0, reinterpret_cast<DWORD_PTR>(this));
+  SetWindowSubclass(hWnd,
+                    WINLAMBDA([](HWND, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR,
+                                 DWORD_PTR dwRefData) {
+                      return reinterpret_cast<EngineWindow*>(dwRefData)->messageHandler(
+                          uMsg, wParam, lParam);
+                    }),
+                    0, reinterpret_cast<DWORD_PTR>(this));
 
   glfwSetWindowUserPointer(glfwWindow.get(), this);
   glfwSetScrollCallback(glfwWindow.get(),

@@ -8,10 +8,6 @@
 #define ASSUME(X) __assume(X)
 #endif
 
-#define RESTRICT_PTR __restrict
-#define RESTRICT_FUNC __declspec(restrict)
-#define NO_ALIAS __declspec(noalias)
-
 void errorPopup(const char* message);
 void errorPopupWin32(
     const char* message);  // Display the given message and the GetLastError() info
@@ -101,8 +97,8 @@ class Timer {
     FILETIME ftime = {(DWORD)delay_ns, (DWORD)(delay_ns >> 32)};
     SetThreadpoolTimer(timer, &ftime, 0, 0);
   }
-  Timer(Timer&) = delete;
-  Timer& operator=(Timer&) = delete;
+  Timer(const Timer&) = delete;
+  Timer& operator=(const Timer&) = delete;
   Timer(Timer&&) = delete;
   Timer& operator=(Timer&&) = delete;
   ~Timer() {
