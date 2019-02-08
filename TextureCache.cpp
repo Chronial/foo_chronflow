@@ -8,9 +8,9 @@
 #include "config.h"
 
 TextureCache::TextureCache(EngineThread& thread, DbAlbumCollection& db)
-    : thread(thread), db(db),
-      loadingTexture(loadSpecialArt(IDR_COVER_LOADING, cfgImgLoading).upload()),
-      noCoverTexture(loadSpecialArt(IDR_COVER_NO_IMG, cfgImgNoCover).upload()) {}
+    : db(db), thread(thread),
+      noCoverTexture(loadSpecialArt(IDR_COVER_NO_IMG, cfgImgNoCover).upload()),
+      loadingTexture(loadSpecialArt(IDR_COVER_LOADING, cfgImgLoading).upload()) {}
 
 void TextureCache::reloadSpecialTextures() {
   loadingTexture = loadSpecialArt(IDR_COVER_LOADING, cfgImgLoading).upload();
@@ -122,7 +122,7 @@ TextureLoadingThreads::TextureLoadingThreads() {
 TextureLoadingThreads::~TextureLoadingThreads() {
   shouldStop = true;
 #pragma warning(suppress : 4189)
-  for (auto& _ : threads) {
+  for ([[maybe_unused]] auto& thread : threads) {
     // TODO: This is hacky
     inQueue.push(LoadRequest{});
   }

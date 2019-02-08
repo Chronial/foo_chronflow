@@ -12,7 +12,7 @@
 #define SELECTION_COVERS 1
 #define SELECTION_MIRROR 2
 
-Renderer::Renderer(Engine& engine) : engine(engine), textDisplay(this) {
+Renderer::Renderer(Engine& engine) : textDisplay(this), engine(engine) {
   glfwSwapInterval(0);
   vSyncEnabled = false;
 }

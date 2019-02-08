@@ -31,7 +31,7 @@ EngineWindow::EngineWindow(HWND parent,
   hWnd = glfwGetWin32Window(glfwWindow.get());
 
   SetParent(hWnd, parent);
-  const LONG nNewStyle = GetWindowLong(hWnd, GWL_STYLE) & ~WS_POPUP | WS_CHILDWINDOW;
+  const LONG nNewStyle = (GetWindowLong(hWnd, GWL_STYLE) & ~WS_POPUP) | WS_CHILDWINDOW;
   SetWindowLong(hWnd, GWL_STYLE, nNewStyle);
   const ULONG_PTR cNewStyle = GetClassLongPtr(hWnd, GCL_STYLE) | CS_DBLCLKS;
   SetClassLongPtr(hWnd, GCL_STYLE, cNewStyle);

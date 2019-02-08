@@ -36,8 +36,8 @@ GLContext::GLContext(EngineWindow& window) {
 }
 
 Engine::Engine(EngineThread& thread, EngineWindow& window)
-    : thread(thread), window(window), glContext(window), db(), findAsYouType(*this),
-      displayPos(db), playbackTracer(thread), texCache(thread, db), renderer(*this),
+    : window(window), thread(thread), glContext(window), db(), findAsYouType(*this),
+      displayPos(db), texCache(thread, db), renderer(*this), playbackTracer(thread),
       afterLastSwap(0) {
   TIMECAPS tc;
   if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) == TIMERR_NOERROR) {

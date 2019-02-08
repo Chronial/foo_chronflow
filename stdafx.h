@@ -71,6 +71,9 @@ using std::unique_ptr;
 #endif
 
 #pragma clang diagnostic pop
+#pragma clang diagnostic ignored "-Wmicrosoft-enum-forward-reference"
+#pragma clang diagnostic ignored "-Wwritable-strings"
+
 #pragma warning(pop)
 // 4100: Unused function argument
 // 4201: nonstandard extension used : nameless struct/union

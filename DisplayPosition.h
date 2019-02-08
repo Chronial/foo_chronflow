@@ -24,10 +24,10 @@ class DisplayPosition {
  private:
   float targetDist2moveDist(float targetDist);
 
-  bool rendering;
+  bool rendering = false;
 
   CollectionPos centeredPos;
-  volatile float centeredOffset;
-  float lastSpeed;
+  volatile float centeredOffset = 0.0f;
+  float lastSpeed = 0.0f;
   double lastMovement;
 };

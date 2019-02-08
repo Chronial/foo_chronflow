@@ -15,6 +15,9 @@ class GLContext {
 
 class Engine {
  public:
+  EngineWindow& window;
+  class EngineThread& thread;
+
   GLContext glContext;
   DbAlbumCollection db;
   FindAsYouType findAsYouType;
@@ -23,9 +26,6 @@ class Engine {
   Renderer renderer;
   PlaybackTracer playbackTracer;
   unique_ptr<DbReloadWorker> reloadWorker;
-
-  EngineWindow& window;
-  class EngineThread& thread;
 
   Engine(EngineThread&, EngineWindow&);
   void mainLoop();

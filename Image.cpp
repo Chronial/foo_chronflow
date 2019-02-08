@@ -10,7 +10,7 @@
 #include "config.h"
 
 Image::Image(malloc_ptr data, int width, int height)
-    : data(std::move(data)), width(width), height(height) {}
+    : width(width), height(height), data(std::move(data)) {}
 
 Image Image::fromFile(const char* filename) {
   auto wideName = pfc::stringcvt::string_wide_from_utf8(filename);
@@ -229,7 +229,7 @@ GLTexture& GLTexture::operator=(GLTexture&& other) noexcept {
   return *this;
 }
 
-GLTexture::~GLTexture(void) {
+GLTexture::~GLTexture(void) noexcept {
   if (glTexture != 0)
     glDelete();
 }
@@ -238,7 +238,7 @@ void GLTexture::bind(void) const {
   glBindTexture(GL_TEXTURE_2D, glTexture);
 }
 
-void GLTexture::glDelete(void) {
+void GLTexture::glDelete(void) noexcept {
   IF_DEBUG(Console::println(L"   DELETE"));
   glDeleteTextures(1, &glTexture);
   glTexture = 0;

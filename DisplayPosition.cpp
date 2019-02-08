@@ -6,8 +6,7 @@
 #include "config.h"
 
 DisplayPosition::DisplayPosition(DbAlbumCollection& db)
-    : centeredOffset(0.0f), centeredPos(db.begin()), lastSpeed(0.0f), rendering(false),
-      db(db) {}
+    : db(db), centeredPos(db.begin()) {}
 
 DisplayPosition::~DisplayPosition(void) {}
 

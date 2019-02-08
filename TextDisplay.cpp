@@ -6,7 +6,7 @@
 using namespace Gdiplus;
 
 TextDisplay::TextDisplay(Renderer* renderer)
-    : bitmapFontInitialized(false), renderer(renderer) {}
+    : renderer(renderer), bitmapFontInitialized(false) {}
 
 TextDisplay::~TextDisplay() {
   clearCache();

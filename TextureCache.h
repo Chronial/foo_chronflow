@@ -67,7 +67,6 @@ class TextureCache {
   void uploadTextures();
 
  private:
-  GLFWwindow* glfwWindow = nullptr;
   unsigned int collectionVersion = 0;
 
   void reloadSpecialTextures();

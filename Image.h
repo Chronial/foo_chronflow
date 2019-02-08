@@ -34,7 +34,7 @@ class GLTexture {
  private:
   GLuint glTexture;
   float originalAspect;
-  void glDelete();
+  void glDelete() noexcept;
 };
 
 class UploadReadyImage {
@@ -43,15 +43,15 @@ class UploadReadyImage {
   UploadReadyImage(const UploadReadyImage&) = delete;
   UploadReadyImage& operator=(const UploadReadyImage&) = delete;
   UploadReadyImage(UploadReadyImage&& other)
-      : originalAspect(other.originalAspect), image(std::move(other.image)){};
+      : image(std::move(other.image)), originalAspect(other.originalAspect){};
   UploadReadyImage& operator=(UploadReadyImage&&);
   ~UploadReadyImage() = default;
 
   GLTexture upload() const;
 
  private:
-  double originalAspect;
   Image image;
+  double originalAspect;
 };
 
 std::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_list& tracks);

@@ -828,9 +828,6 @@ static ListMap multisamplingMap[] = {
     {8, "  8"},
     {16, "16"},
 };
-static ListMap supersamplingMap[] = {
-    {2, "  2"}, {3, "  3"}, {4, "  4"}, {5, "  5"}, {6, "  6"}, {8, "  8"}, {16, "16"},
-};
 static ListMap loaderPrioMap[] = {
     {THREAD_PRIORITY_BELOW_NORMAL, "Below Normal"},
     {THREAD_PRIORITY_IDLE, "Idle"},

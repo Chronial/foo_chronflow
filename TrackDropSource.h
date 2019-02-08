@@ -1,7 +1,7 @@
 #pragma once
 
 // IDropSource implementation for drag&drop.
-class TrackDropSource : public IDropSource {
+class TrackDropSource final : public IDropSource {
  private:
   pfc::refcounter m_refcount;
   HWND m_hWnd;
@@ -21,6 +21,6 @@ class TrackDropSource : public IDropSource {
   /////////////////////////////////////////////////////////
   // IDropSource methods
 
-  STDMETHOD(QueryContinueDrag)(BOOL fEscapePressed, DWORD grfKeyState);
-  STDMETHOD(GiveFeedback)(DWORD dwEffect);
+  STDMETHOD(QueryContinueDrag)(BOOL fEscapePressed, DWORD grfKeyState) final;
+  STDMETHOD(GiveFeedback)(DWORD dwEffect) final;
 };

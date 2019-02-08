@@ -27,7 +27,7 @@ extern const std::unordered_map<const char*, const char*> builtInCoverConfigs = 
     {configs}
 }};
 
-extern const char* defaultCoverConfig = {default};
+const char* defaultCoverConfig = {default};
 """
 new_content = template.format(configs=configs, default=default_config);
 
