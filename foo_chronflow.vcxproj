@@ -185,6 +185,7 @@
     <ClInclude Include="engine_messages.h" />
     <ClInclude Include="Image.h" />
     <ClInclude Include="lib\glad.h" />
+    <ClInclude Include="lib\gl_structs.h" />
     <ClInclude Include="lib\khrplatform.h" />
     <ClInclude Include="lib\msscript.h" />
     <ClInclude Include="lib\script_control.h" />
@@ -204,7 +205,6 @@
     <ClInclude Include="FindAsYouType.h" />
     <ClInclude Include="EngineWindow.h" />
     <ClInclude Include="TrackDropSource.h" />
-    <ClInclude Include="glStructs.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Helpers.h" />
     <ClInclude Include="MyActions.h" />

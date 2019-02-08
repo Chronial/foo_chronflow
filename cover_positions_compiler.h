@@ -2,11 +2,11 @@
 #include "cover_positions_compiler.h"
 
 #include "lib/script_control.h"
+#include "lib/gl_structs.h"
 
 #include "CoverConfig.h"
 #include "Helpers.h"
 #include "config.h"
-#include "glStructs.h"
 
 struct CoverPosInfo {  // When changing this you have to update CompiledCPInfo::version
   glVectorf position;

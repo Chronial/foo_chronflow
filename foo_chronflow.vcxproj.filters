@@ -149,9 +149,6 @@
     <ClInclude Include="CoverConfig.h">
       <Filter>Header Files\Helpers</Filter>
     </ClInclude>
-    <ClInclude Include="glStructs.h">
-      <Filter>Header Files\Helpers</Filter>
-    </ClInclude>
     <ClInclude Include="Helpers.h">
       <Filter>Header Files\Helpers</Filter>
     </ClInclude>
@@ -228,6 +225,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lib\msscript.h">
+      <Filter>lib</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\gl_structs.h">
       <Filter>lib</Filter>
     </ClInclude>
   </ItemGroup>
