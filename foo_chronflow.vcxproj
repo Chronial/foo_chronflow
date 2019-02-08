@@ -245,6 +245,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".clang-format" />
+    <None Include=".clang-tidy" />
     <None Include="CoverPositionsCompile.py" />
     <None Include="cpp.hint" />
   </ItemGroup>

@@ -251,5 +251,6 @@
     <None Include="cpp.hint" />
     <None Include="CoverPositionsCompile.py" />
     <None Include=".clang-format" />
+    <None Include=".clang-tidy" />
   </ItemGroup>
 </Project>
