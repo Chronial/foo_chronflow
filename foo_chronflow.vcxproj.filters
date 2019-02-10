@@ -60,9 +60,6 @@
     <ClCompile Include="Console.cpp">
       <Filter>Source Files\Helpers</Filter>
     </ClCompile>
-    <ClCompile Include="win32_helpers.cpp">
-      <Filter>Source Files\Helpers</Filter>
-    </ClCompile>
     <ClCompile Include="TrackDropSource.cpp">
       <Filter>Source Files\Helpers</Filter>
     </ClCompile>
@@ -126,6 +123,9 @@
     <ClCompile Include="lib\msscript.cpp">
       <Filter>lib</Filter>
     </ClCompile>
+    <ClCompile Include="lib\win32_helpers.cpp">
+      <Filter>lib</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DbAlbumCollection.h">
@@ -153,9 +153,6 @@
       <Filter>Header Files\Helpers</Filter>
     </ClInclude>
     <ClInclude Include="TrackDropSource.h">
-      <Filter>Header Files\Helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="win32_helpers.h">
       <Filter>Header Files\Helpers</Filter>
     </ClInclude>
     <ClInclude Include="Console.h">
@@ -228,6 +225,9 @@
       <Filter>lib</Filter>
     </ClInclude>
     <ClInclude Include="lib\gl_structs.h">
+      <Filter>lib</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\win32_helpers.h">
       <Filter>lib</Filter>
     </ClInclude>
   </ItemGroup>

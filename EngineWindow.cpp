@@ -1,6 +1,6 @@
 #include "EngineWindow.h"
 
-#include <utility>
+#include "lib/win32_helpers.h"
 
 #include "Console.h"
 #include "Engine.h"
@@ -9,7 +9,6 @@
 #include "TrackDropSource.h"
 #include "base.h"
 #include "config.h"
-#include "win32_helpers.h"
 
 EngineWindow::EngineWindow(HWND parent,
                            ui_element_instance_callback_ptr defaultUiCallback)

@@ -1,3 +1,5 @@
+#include "lib/win32_helpers.h"
+
 #include "DbAlbumCollection.h"
 #include "Engine.h"
 #include "EngineThread.h"
@@ -6,7 +8,6 @@
 #include "base.h"
 #include "config.h"
 #include "cover_positions_compiler.h"
-#include "win32_helpers.h"
 
 static struct {
   UINT id;
