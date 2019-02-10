@@ -8,7 +8,7 @@
 DbReloadWorker::DbReloadWorker(EngineThread& engineThread)
     : engineThread(engineThread), thread(&DbReloadWorker::threadProc, this) {
   SetThreadPriority(thread.native_handle(), THREAD_PRIORITY_BELOW_NORMAL);
-  SetThreadPriorityBoost(thread.native_handle(), true);
+  SetThreadPriorityBoost(thread.native_handle(), TRUE);
 };
 
 DbReloadWorker::~DbReloadWorker() {
@@ -78,18 +78,18 @@ void DbReloadWorker::generateData() {
         return;
       pfc::string8_fast groupString;
       metadb_handle_ptr track = library.get_item(i);
-      track->format_title(0, groupString, albumMapper, 0);
-      if (!groupIndex.count(groupString.get_ptr())) {
+      track->format_title(nullptr, groupString, albumMapper, nullptr);
+      if (groupIndex.count(groupString.get_ptr()) == 0u) {
         std::wstring sortString;
         if (cfgSortGroup) {
           sortString = pfc::stringcvt::string_wide_from_utf8(groupString);
         } else {
-          track->format_title(0, tmpSortString, sortFormatter, 0);
+          track->format_title(nullptr, tmpSortString, sortFormatter, nullptr);
           sortString = pfc::stringcvt::string_wide_from_utf8(tmpSortString);
         }
 
         pfc::string8_fast findAsYouType;
-        track->format_title(0, findAsYouType, cfgAlbumTitleScript, 0);
+        track->format_title(nullptr, findAsYouType, cfgAlbumTitleScript, nullptr);
 
         metadb_handle_list tracks;
         tracks.add_item(track);

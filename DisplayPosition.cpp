@@ -8,8 +8,6 @@
 DisplayPosition::DisplayPosition(DbAlbumCollection& db)
     : db(db), centeredPos(db.begin()) {}
 
-DisplayPosition::~DisplayPosition(void) {}
-
 void DisplayPosition::onTargetChange() {
   if (!rendering) {
     lastMovement = Helpers::getHighresTimer();
@@ -24,7 +22,7 @@ CollectionPos DisplayPosition::getOffsetPos(int n) const {
   return p;
 }
 
-void DisplayPosition::update(void) {
+void DisplayPosition::update() {
   double currentTime = Helpers::getHighresTimer();
   CollectionPos targetPos = db.getTargetPos();
   // do this here because of concurrency – isMoving might see a different targetPos
@@ -32,7 +30,7 @@ void DisplayPosition::update(void) {
     int targetRank = db.rank(targetPos);
     int centeredRank = db.rank(centeredPos);
     float dist = (targetRank - centeredRank) - centeredOffset;
-    float dTime = float(currentTime - lastMovement);
+    auto dTime = float(currentTime - lastMovement);
     float speed = abs(targetDist2moveDist(dist));
     if (lastSpeed < 0.1f)
       lastSpeed = 0.1f;
@@ -49,7 +47,7 @@ void DisplayPosition::update(void) {
       lastSpeed = 0.0f;
     } else {
       lastSpeed = speed;
-      int moveDistInt = (int)floor(moveDist);
+      int moveDistInt = int{floor(moveDist)};
 
       float newOffset = centeredOffset;  // minimize MT risk
       newOffset += (moveDist - moveDistInt);
@@ -77,15 +75,15 @@ float DisplayPosition::targetDist2moveDist(float targetDist) {
          ((0.1f * targetDist * targetDist) + (0.9f * targetDist) + 2.0f);
 }
 
-bool DisplayPosition::isMoving(void) {
+bool DisplayPosition::isMoving() {
   return !((centeredPos == db.getTargetPos()) && (centeredOffset == 0));
 }
 
-CollectionPos DisplayPosition::getCenteredPos(void) const {
+CollectionPos DisplayPosition::getCenteredPos() const {
   return centeredPos;
 }
 
-float DisplayPosition::getCenteredOffset(void) const {
+float DisplayPosition::getCenteredOffset() const {
   return centeredOffset;
 }
 

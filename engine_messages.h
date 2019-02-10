@@ -7,6 +7,9 @@ namespace engine_messages {
 
 struct Message {
  public:
+  Message() = default;
+  Message(const Message&) = delete;
+  Message& operator=(const Message&) = delete;
   virtual ~Message() = default;
   virtual void execute(Engine&){};
 };

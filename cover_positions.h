@@ -16,8 +16,9 @@ class cfg_compiledCPInfoPtr : public cfg_var {
   shared_ptr<CompiledCPInfo> data_;
 
  protected:
-  void get_data_raw(stream_writer* p_stream, abort_callback& p_abort);
-  void set_data_raw(stream_reader* p_stream, t_size p_sizehint, abort_callback& p_abort);
+  void get_data_raw(stream_writer* p_stream, abort_callback& p_abort) final;
+  void set_data_raw(stream_reader* p_stream, t_size p_sizehint,
+                    abort_callback& p_abort) final;
 
  public:
   shared_ptr<CompiledCPInfo> get() const { return std::atomic_load(&this->data_); }
@@ -26,7 +27,7 @@ class cfg_compiledCPInfoPtr : public cfg_var {
   }
   void reset() { std::atomic_store(&this->data_, {}); }
 
-  inline cfg_compiledCPInfoPtr(const GUID& p_guid) : cfg_var(p_guid) {}
+  inline explicit cfg_compiledCPInfoPtr(const GUID& p_guid) : cfg_var(p_guid) {}
 };
 
 class ScriptedCoverPositions {

@@ -33,7 +33,7 @@ class BlockingQueue {
   }
   std::optional<T> popMaybe() {
     std::unique_lock<std::mutex> lock(this->d_mutex);
-    if (this->d_queue.size() == 0)
+    if (this->d_queue.empty())
       return std::nullopt;
     T rc(std::move(this->d_queue.back()));
     this->d_queue.pop_back();

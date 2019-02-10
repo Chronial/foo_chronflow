@@ -1,4 +1,6 @@
 
+#include <utility>
+
 #include "ContainerWindow.h"
 
 class dui_chronflow : public ui_element_instance {
@@ -8,7 +10,7 @@ class dui_chronflow : public ui_element_instance {
  public:
   dui_chronflow(HWND parent, ui_element_config::ptr config,
                 ui_element_instance_callback_ptr p_callback)
-      : config(config), window(parent, p_callback) {}
+      : config(std::move(config)), window(parent, p_callback) {}
 
   static GUID g_get_guid() {
     // {1D56881C-CA24-470c-944A-DED830F9E95D}
@@ -18,8 +20,8 @@ class dui_chronflow : public ui_element_instance {
   }
   static GUID g_get_subclass() { return ui_element_subclass_media_library_viewers; }
 
-  GUID get_guid() { return dui_chronflow::g_get_guid(); }
-  GUID get_subclass() { return dui_chronflow::g_get_subclass(); }
+  GUID get_guid() final { return dui_chronflow::g_get_guid(); }
+  GUID get_subclass() final { return dui_chronflow::g_get_subclass(); }
 
   static void g_get_name(pfc::string_base& out) { out = "Chronflow"; }
   static const char* g_get_description() {
@@ -30,31 +32,32 @@ class dui_chronflow : public ui_element_instance {
     return ui_element_config::g_create_empty(g_get_guid());
   }
 
-  HWND get_wnd() { return window.hwnd; };
+  HWND get_wnd() final { return window.hwnd; };
 
-  void set_configuration(ui_element_config::ptr config) { this->config = config; }
-  ui_element_config::ptr get_configuration() { return config; }
+  void set_configuration(ui_element_config::ptr config) final { this->config = config; }
+  ui_element_config::ptr get_configuration() final { return config; }
 };
 
 class UiElement : public ui_element {
  public:
-  GUID get_guid() { return dui_chronflow::g_get_guid(); }
-  GUID get_subclass() { return dui_chronflow::g_get_subclass(); }
-  void get_name(pfc::string_base& out) { dui_chronflow::g_get_name(out); }
+  GUID get_guid() final { return dui_chronflow::g_get_guid(); }
+  GUID get_subclass() final { return dui_chronflow::g_get_subclass(); }
+  void get_name(pfc::string_base& out) final { dui_chronflow::g_get_name(out); }
   ui_element_instance::ptr instantiate(HWND parent, ui_element_config::ptr cfg,
-                                       ui_element_instance_callback::ptr callback) {
+                                       ui_element_instance_callback::ptr callback) final {
     PFC_ASSERT(cfg->get_guid() == get_guid());
     service_nnptr_t<dui_chronflow> item =
         new service_impl_t<dui_chronflow>(parent, cfg, callback);
     return item;
   }
-  ui_element_config::ptr get_default_configuration() {
+  ui_element_config::ptr get_default_configuration() final {
     return dui_chronflow::g_get_default_configuration();
   }
-  ui_element_children_enumerator_ptr enumerate_children(ui_element_config::ptr cfg) {
-    return NULL;
+  ui_element_children_enumerator_ptr enumerate_children(
+      ui_element_config::ptr /*cfg*/) final {
+    return nullptr;
   }
-  bool get_description(pfc::string_base& out) {
+  bool get_description(pfc::string_base& out) final {
     out = dui_chronflow::g_get_description();
     return true;
   }

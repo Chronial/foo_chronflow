@@ -13,8 +13,8 @@ DbAlbumCollection::DbAlbumCollection() : targetPos(albums.get<1>().end()) {
 void DbAlbumCollection::onCollectionReload(DbReloadWorker&& worker) {
   CollectionPos newTargetPos;
   auto& newSortedIndex = worker.albums.get<1>();
-  if (albums.size() == 0) {
-    if (worker.albums.size() > (t_size)sessionSelectedCover) {
+  if (albums.empty()) {
+    if (worker.albums.size() > static_cast<t_size>(sessionSelectedCover)) {
       newTargetPos = newSortedIndex.nth(sessionSelectedCover);
     } else {
       newTargetPos = newSortedIndex.begin();
@@ -24,8 +24,9 @@ void DbAlbumCollection::onCollectionReload(DbReloadWorker&& worker) {
     CollectionPos oldTargetPos = targetPos;
     pfc::string8_fast_aggressive albumKey;
     for (t_size i = 0; i < oldTargetPos->tracks.get_size(); i++) {
-      oldTargetPos->tracks[i]->format_title(0, albumKey, worker.albumMapper, 0);
-      if (worker.albums.count(albumKey.get_ptr())) {
+      oldTargetPos->tracks[i]->format_title(
+          nullptr, albumKey, worker.albumMapper, nullptr);
+      if (worker.albums.count(albumKey.get_ptr()) > 0u) {
         newTargetPos = worker.albums.project<1>(worker.albums.find(albumKey.get_ptr()));
         break;
       }
@@ -48,8 +49,8 @@ bool DbAlbumCollection::getAlbumForTrack(const metadb_handle_ptr& track,
   pfc::string8_fast_aggressive albumKey;
   if (!albumMapper.is_valid())
     return false;
-  track->format_title(0, albumKey, albumMapper, 0);
-  if (albums.count(albumKey.get_ptr())) {
+  track->format_title(nullptr, albumKey, albumMapper, nullptr);
+  if (albums.count(albumKey.get_ptr()) > 0u) {
     auto groupAlbum = albums.find(albumKey.get_ptr());
     out = albums.project<1>(groupAlbum);
     return true;
@@ -67,7 +68,7 @@ AlbumInfo DbAlbumCollection::getAlbumInfo(CollectionPos pos) {
 }
 
 void DbAlbumCollection::getTitle(CollectionPos pos, pfc::string_base& out) {
-  pos->tracks[0]->format_title(0, out, cfgAlbumTitleScript, 0);
+  pos->tracks[0]->format_title(nullptr, out, cfgAlbumTitleScript, nullptr);
 }
 
 struct CompIUtf8Partial {

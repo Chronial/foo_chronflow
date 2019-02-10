@@ -13,7 +13,7 @@ VALIDATE_COMPONENT_FILENAME("foo_chronflow.dll");
 
 class InitHandler : public init_stage_callback {
  public:
-  void on_init_stage(t_uint32 stage) {
+  void on_init_stage(t_uint32 stage) final {
     if (stage == init_stages::after_library_init) {
       initGlfw();
     } else if (stage == init_stages::before_ui_init) {
@@ -45,6 +45,6 @@ static service_factory_single_t<InitHandler> initHandler;
 
 class QuitHandler : public initquit {
  public:
-  void on_quit() { glfwTerminate(); }
+  void on_quit() final { glfwTerminate(); }
 };
 static service_factory_single_t<QuitHandler> quitHandler;

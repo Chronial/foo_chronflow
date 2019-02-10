@@ -14,7 +14,7 @@ void cfg_compiledCPInfoPtr::get_data_raw(stream_writer* p_stream,
   }
 }
 
-void cfg_compiledCPInfoPtr::set_data_raw(stream_reader* p_stream, t_size p_sizehint,
+void cfg_compiledCPInfoPtr::set_data_raw(stream_reader* p_stream, t_size /*p_sizehint*/,
                                          abort_callback& p_abort) {
   bool configNotEmpty;
   p_stream->read_lendian_t(configNotEmpty, p_abort);
@@ -32,11 +32,11 @@ ScriptedCoverPositions::ScriptedCoverPositions() {
   if (!cInfo) {
     const CoverConfig* config = cfgCoverConfigs.getPtrByName(cfgCoverConfigSel);
     pfc::string8 errorMsg;
-    if (!config || !setScript(config->script, errorMsg)) {
+    if ((config == nullptr) || !setScript(config->script, errorMsg)) {
       if (!setScript(defaultCoverConfig, errorMsg)) {
-        popup_message::g_show(errorMsg, "JScript Compile Error",
-                              popup_message::icon_error);
-        throw new pfc::exception(errorMsg);
+        popup_message::g_show(
+            errorMsg, "JScript Compile Error", popup_message::icon_error);
+        throw std::runtime_error(errorMsg.c_str());
       }
     }
   }
@@ -53,7 +53,7 @@ bool ScriptedCoverPositions::setScript(const char* script, pfc::string_base& err
     } else {
       return false;
     }
-  } catch (_com_error) {
+  } catch (_com_error&) {
     errorMsg =
         "Windows Script Control not installed. Download it from "
         "<http://www.microsoft.com/downloads/"
@@ -117,7 +117,7 @@ glQuad ScriptedCoverPositions::getCoverQuad(float coverId, float coverAspect) {
     w = h * coverAspect;
   }
 
-  glQuad out;
+  glQuad out{};
 
   // out.topLeft.x = -w/2 -align.x * w/2;
   out.topLeft.x = (-1 - cPos.alignment.x) * w / 2;

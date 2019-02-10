@@ -8,8 +8,6 @@
 #include "Engine.h"
 #include "EngineThread.h"
 
-PlaybackTracer::PlaybackTracer(EngineThread& thread) : thread(thread){};
-
 void PlaybackTracer::delay(double extra_time) {
   delayTimer.emplace(cfgCoverFollowDelay + extra_time, [&] {
     this->thread.send<EM::Run>([&] {
@@ -29,7 +27,7 @@ void PlaybackTracer::moveToNowPlaying() {
   });
 }
 
-void PlaybackTracer::onPlaybackNewTrack(metadb_handle_ptr p_track) {
+void PlaybackTracer::onPlaybackNewTrack(metadb_handle_ptr /*p_track*/) {
   if (!cfgCoverFollowsPlayback || delayTimer.has_value())
     return;
   moveToNowPlaying();

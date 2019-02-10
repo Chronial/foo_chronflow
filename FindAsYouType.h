@@ -9,8 +9,8 @@ class FindAsYouType {
   class Engine& engine;
 
  public:
-  FindAsYouType(Engine& engine) : engine(engine){};
-  bool onChar(WPARAM wParam);
+  explicit FindAsYouType(Engine& engine) : engine(engine){};
+  void onChar(WPARAM wParam);
 
  private:
   void enterChar(wchar_t c);

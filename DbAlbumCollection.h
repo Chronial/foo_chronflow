@@ -1,7 +1,7 @@
 #pragma once
 #include "Helpers.h"
 
-using namespace boost::multi_index;
+namespace bomi = boost::multi_index;
 
 class DbReloadWorker;
 
@@ -28,16 +28,16 @@ struct CompIUtf8 {
   bool operator()(pfc::string8 a, pfc::string8 b) const { return stricmp_utf8(a, b) < 0; }
 };
 
-typedef multi_index_container<
+using DbAlbums = bomi::multi_index_container<
     DbAlbum,
-    indexed_by<hashed_unique<member<DbAlbum, std::string, &DbAlbum::groupString> >,
-               ranked_non_unique<member<DbAlbum, std::wstring, &DbAlbum::sortString>,
-                                 CompWLogical>,
-               ordered_non_unique<member<DbAlbum, pfc::string8, &DbAlbum::findAsYouType>,
-                                  CompIUtf8> > >
-    DbAlbums;
+    bomi::indexed_by<
+        bomi::hashed_unique<bomi::member<DbAlbum, std::string, &DbAlbum::groupString> >,
+        bomi::ranked_non_unique<bomi::member<DbAlbum, std::wstring, &DbAlbum::sortString>,
+                                CompWLogical>,
+        bomi::ordered_non_unique<
+            bomi::member<DbAlbum, pfc::string8, &DbAlbum::findAsYouType>, CompIUtf8> > >;
 
-typedef DbAlbums::nth_index<1>::type::iterator CollectionPos;
+using CollectionPos = DbAlbums::nth_index<1>::type::iterator;
 
 class DbAlbumCollection {
  public:

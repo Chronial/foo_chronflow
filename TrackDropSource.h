@@ -6,7 +6,7 @@ class TrackDropSource final : public IDropSource {
   pfc::refcounter m_refcount;
   HWND m_hWnd;
 
-  TrackDropSource(HWND hWnd);
+  explicit TrackDropSource(HWND hWnd);
 
  public:
   static pfc::com_ptr_t<IDropSource> g_create(HWND hWnd);

@@ -7,6 +7,7 @@ Checks: >
   -cppcoreguidelines-pro-type-reinterpret-cast,
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   google-*,
+  -google-readability-todo,
   -google-runtime-references,
   modernize-*,
   misc-*,

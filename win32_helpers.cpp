@@ -5,13 +5,15 @@ class param_utf16_from_utf8 : public pfc::stringcvt::string_wide_from_utf8 {
   WORD low_word;
 
  public:
-  param_utf16_from_utf8(const char* p)
-      : pfc::stringcvt::string_wide_from_utf8(p && HIWORD((DWORD)p) != 0 ? p : ""),
-        is_null(p == 0), low_word(HIWORD((DWORD)p) == 0 ? LOWORD((DWORD)p) : 0) {}
-  inline operator const WCHAR*() { return get_ptr(); }
+  explicit param_utf16_from_utf8(const char* p)
+      : pfc::stringcvt::string_wide_from_utf8(
+            (p != nullptr) && HIWORD((DWORD)p) != 0 ? p : ""),
+        is_null(p == nullptr), low_word(HIWORD((DWORD)p) == 0 ? LOWORD((DWORD)p) : 0) {}
+  inline explicit operator const WCHAR*() { return get_ptr(); }
   const WCHAR* get_ptr() {
-    return low_word ? (const WCHAR*)(DWORD)low_word
-                    : is_null ? 0 : pfc::stringcvt::string_wide_from_utf8::get_ptr();
+    return low_word
+               ? (const WCHAR*)static_cast<DWORD>(low_word)
+               : is_null ? nullptr : pfc::stringcvt::string_wide_from_utf8::get_ptr();
   }
 };
 
@@ -20,31 +22,35 @@ class param_ansi_from_utf8 : public pfc::stringcvt::string_ansi_from_utf8 {
   WORD low_word;
 
  public:
-  param_ansi_from_utf8(const char* p)
-      : pfc::stringcvt::string_ansi_from_utf8(p && HIWORD((DWORD)p) != 0 ? p : ""),
-        is_null(p == 0), low_word(HIWORD((DWORD)p) == 0 ? LOWORD((DWORD)p) : 0) {}
-  inline operator const char*() { return get_ptr(); }
+  explicit param_ansi_from_utf8(const char* p)
+      : pfc::stringcvt::string_ansi_from_utf8(
+            (p != nullptr) && HIWORD((DWORD)p) != 0 ? p : ""),
+        is_null(p == nullptr), low_word(HIWORD((DWORD)p) == 0 ? LOWORD((DWORD)p) : 0) {}
+  inline explicit operator const char*() { return get_ptr(); }
   const char* get_ptr() {
-    return low_word ? (const char*)(DWORD)low_word
-                    : is_null ? 0 : pfc::stringcvt::string_ansi_from_utf8::get_ptr();
+    return low_word
+               ? (const char*)static_cast<DWORD>(low_word)
+               : is_null ? nullptr : pfc::stringcvt::string_ansi_from_utf8::get_ptr();
   }
 };
 
 namespace win32_helpers {
 void send_message_to_all_children(HWND wnd_parent, UINT msg, WPARAM wp, LPARAM lp) {
   HWND wnd = GetWindow(wnd_parent, GW_CHILD);
-  if (wnd)
+  if (wnd != nullptr) {
     do {
       send_message_to_all_children(wnd, msg, wp, lp);
       SendMessage(wnd, msg, wp, lp);
     } while ((wnd = GetWindow(wnd, GW_HWNDNEXT)) != nullptr);
+  }
 }
 void send_message_to_direct_children(HWND wnd_parent, UINT msg, WPARAM wp, LPARAM lp) {
   HWND wnd = GetWindow(wnd_parent, GW_CHILD);
-  if (wnd)
+  if (wnd != nullptr) {
     do {
       SendMessage(wnd, msg, wp, lp);
     } while ((wnd = GetWindow(wnd, GW_HWNDNEXT)) != nullptr);
+  }
 }
 int message_box(HWND wnd, const TCHAR* text, const TCHAR* caption, UINT type) {
   modal_dialog_scope scope(wnd);
@@ -54,7 +60,7 @@ int message_box(HWND wnd, const TCHAR* text, const TCHAR* caption, UINT type) {
 
 int uHeader_InsertItem(HWND wnd, int n, uHDITEM* hdi, bool insert) {
   if (IsUnicode()) {
-    param_utf16_from_utf8 text((hdi->mask & HDI_TEXT) ? hdi->pszText : 0);
+    param_utf16_from_utf8 text((hdi->mask & HDI_TEXT) ? hdi->pszText : nullptr);
     HDITEMW hdw;
     hdw.cchTextMax = hdi->cchTextMax;
     hdw.cxy = hdi->cxy;
@@ -69,7 +75,7 @@ int uHeader_InsertItem(HWND wnd, int n, uHDITEM* hdi, bool insert) {
     return uSendMessage(wnd, insert ? HDM_INSERTITEMW : HDM_SETITEMW, n, (LPARAM)&hdw);
 
   } else {
-    param_ansi_from_utf8 text((hdi->mask & HDI_TEXT) ? hdi->pszText : 0);
+    param_ansi_from_utf8 text((hdi->mask & HDI_TEXT) ? hdi->pszText : nullptr);
 
     HDITEMA hda;
     hda.cchTextMax = hdi->cchTextMax;
@@ -89,7 +95,7 @@ int uHeader_InsertItem(HWND wnd, int n, uHDITEM* hdi, bool insert) {
 BOOL uRebar_InsertItem(HWND wnd, int n, uREBARBANDINFO* rbbi, bool insert) {
   BOOL rv = FALSE;
   if (IsUnicode()) {
-    param_utf16_from_utf8 text((rbbi->fMask & RBBIM_TEXT) ? rbbi->lpText : 0);
+    param_utf16_from_utf8 text((rbbi->fMask & RBBIM_TEXT) ? rbbi->lpText : nullptr);
 
     REBARBANDINFOW rbw;
     rbw.cbSize = sizeof(REBARBANDINFOW);
@@ -121,7 +127,7 @@ BOOL uRebar_InsertItem(HWND wnd, int n, uREBARBANDINFO* rbbi, bool insert) {
     rv = uSendMessage(wnd, insert ? RB_INSERTBANDW : RB_SETBANDINFOW, n, (LPARAM)&rbw);
 
   } else {
-    param_ansi_from_utf8 text((rbbi->fMask & RBBIM_TEXT) ? rbbi->lpText : 0);
+    param_ansi_from_utf8 text((rbbi->fMask & RBBIM_TEXT) ? rbbi->lpText : nullptr);
 
     REBARBANDINFOA rba;
     rba.cbSize = sizeof(REBARBANDINFOA);
@@ -225,22 +231,22 @@ BOOL uComboBox_GetText(HWND combo, UINT index, pfc::string_base& out) {
   if (IsUnicode()) {
     pfc::array_t<WCHAR> temp;
     temp.set_size(len + 1);
-    if (temp.get_ptr() == 0)
+    if (temp.get_ptr() == nullptr)
       return FALSE;
     temp.fill(0);
     len = uSendMessage(combo, CB_GETLBTEXT, index, (LPARAM)temp.get_ptr());
     if (len == CB_ERR)
-      return false;
+      return 0;
     out.set_string(pfc::stringcvt::string_utf8_from_wide(temp.get_ptr()));
   } else {
     pfc::array_t<char> temp;
     temp.set_size(len + 1);
-    if (temp.get_ptr() == 0)
+    if (temp.get_ptr() == nullptr)
       return FALSE;
     temp.fill(0);
     len = uSendMessage(combo, CB_GETLBTEXT, index, (LPARAM)temp.get_ptr());
     if (len == CB_ERR)
-      return false;
+      return 0;
     out.set_string(pfc::stringcvt::string_utf8_from_ansi(temp.get_ptr()));
   }
   return TRUE;
@@ -250,7 +256,7 @@ BOOL uComboBox_SelectString(HWND combo, const char* src) {
   LRESULT idx = CB_ERR;
   idx = uSendMessageText(combo, CB_FINDSTRINGEXACT, 1, src);
   if (idx == CB_ERR)
-    return false;
+    return 0;
   uSendMessage(combo, CB_SETCURSEL, idx, 0);
   return TRUE;
 }
@@ -259,11 +265,11 @@ BOOL uStatus_SetText(HWND wnd, int part, const char* text) {
   BOOL rv = 0;
 
   if (IsUnicode()) {
-    rv = uSendMessage(wnd, SB_SETTEXTW, part,
-                      (LPARAM)(param_utf16_from_utf8(text).get_ptr()));
+    rv = uSendMessage(
+        wnd, SB_SETTEXTW, part, (LPARAM)(param_utf16_from_utf8(text).get_ptr()));
   } else {
-    rv = uSendMessage(wnd, SB_SETTEXTA, part,
-                      (LPARAM)(param_ansi_from_utf8(text).get_ptr()));
+    rv = uSendMessage(
+        wnd, SB_SETTEXTA, part, (LPARAM)(param_ansi_from_utf8(text).get_ptr()));
   }
 
   //	rv = uSendMessageText(wnd, IsUnicode() ? SB_SETTEXTW : SB_SETTEXTA, part, text);
@@ -271,7 +277,7 @@ BOOL uStatus_SetText(HWND wnd, int part, const char* text) {
 }
 
 HFONT uCreateIconFont() {
-  HFONT fnt_menu = 0;
+  HFONT fnt_menu = nullptr;
 
   if (IsUnicode()) {
     LOGFONTW lf;
@@ -291,7 +297,7 @@ HFONT uCreateIconFont() {
 }
 
 HFONT uCreateMenuFont(bool vertical) {
-  HFONT fnt_menu = 0;
+  HFONT fnt_menu = nullptr;
 
   if (IsUnicode()) {
     NONCLIENTMETRICSW ncm;
@@ -341,16 +347,16 @@ BOOL uFormatMessage(DWORD dw_error, pfc::string_base& out) {
     pfc::array_t<WCHAR> buffer;
     buffer.set_size(256);
     // MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-    if (FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM, 0, dw_error, 0, buffer.get_ptr(),
-                       buffer.get_size(), 0)) {
+    if (FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, dw_error, 0, buffer.get_ptr(),
+                       buffer.get_size(), nullptr)) {
       out.set_string(pfc::stringcvt::string_utf8_from_wide(buffer.get_ptr()));
       rv = TRUE;
     }
   } else {
     pfc::array_t<char> buffer;
     buffer.set_size(256);
-    if (FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, 0, dw_error, 0, buffer.get_ptr(),
-                       buffer.get_size(), 0)) {
+    if (FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, dw_error, 0, buffer.get_ptr(),
+                       buffer.get_size(), nullptr)) {
       // is it actually ANSI ?
       out.set_string(pfc::stringcvt::string_utf8_from_ansi(buffer.get_ptr()));
       rv = TRUE;
@@ -378,14 +384,14 @@ DWORD uGetClassLong(HWND wnd, int index) {
 #if (WINVER >= 0x0500)
 HWND uRecursiveChildWindowFromPoint(HWND parent, POINT pt_parent) {
   HWND wnd = RealChildWindowFromPoint(parent, pt_parent);
-  if (wnd && wnd != parent) {
+  if ((wnd != nullptr) && wnd != parent) {
     HWND wnd_last = wnd;
     POINT pt = pt_parent;
     MapWindowPoints(parent, wnd_last, &pt, 1);
     for (;;) {
       wnd = RealChildWindowFromPoint(wnd_last, pt);
-      if (!wnd)
-        return 0;
+      if (wnd == nullptr)
+        return nullptr;
       if (wnd == wnd_last)
         return wnd;
       MapWindowPoints(wnd_last, wnd, &pt, 1);
@@ -396,14 +402,14 @@ HWND uRecursiveChildWindowFromPoint(HWND parent, POINT pt_parent) {
         return wnd_last;
     }
   }
-  return 0;
+  return nullptr;
 }
 
 BOOL uGetMonitorInfo(HMONITOR monitor, LPMONITORINFO lpmi) {
   BOOL rv = FALSE;
   if (IsUnicode()) {
     if (lpmi->cbSize == sizeof(uMONITORINFOEX)) {
-      uLPMONITORINFOEX lpmiex = (uLPMONITORINFOEX)lpmi;
+      auto lpmiex = (uLPMONITORINFOEX)lpmi;
 
       MONITORINFOEXW mi;
       memset(&mi, 0, sizeof(MONITORINFOEXW));
@@ -425,7 +431,7 @@ BOOL uGetMonitorInfo(HMONITOR monitor, LPMONITORINFO lpmi) {
       rv = GetMonitorInfoW(monitor, lpmi);
   } else {
     if (lpmi->cbSize == sizeof(uMONITORINFOEX)) {
-      uLPMONITORINFOEX lpmiex = (uLPMONITORINFOEX)lpmi;
+      auto lpmiex = (uLPMONITORINFOEX)lpmi;
 
       MONITORINFOEXA mi;
       memset(&mi, 0, sizeof(MONITORINFOEXA));
@@ -466,7 +472,7 @@ void wcsncpy_addnull(WCHAR* dest, const WCHAR* src, int max) {
 #define tcsncpy_addnull strncpy_addnull
 #endif
 
-typedef LOGFONTA uLOGFONT;
+using uLOGFONT = LOGFONTA;
 
 void convert_logfont_utf8_to_os(const uLOGFONT& p_src, LOGFONT& p_dst) {
   p_dst.lfHeight = p_src.lfHeight;

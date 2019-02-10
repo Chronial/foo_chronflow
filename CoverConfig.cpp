@@ -71,13 +71,13 @@ void cfg_coverConfigs::get_data_raw(stream_writer* p_stream, abort_callback& p_a
   }
 }
 
-void cfg_coverConfigs::set_data_raw(stream_reader* p_stream, t_size p_sizehint,
+void cfg_coverConfigs::set_data_raw(stream_reader* p_stream, t_size /*p_sizehint*/,
                                     abort_callback& p_abort) {
   int c, v;
   p_stream->read_lendian_t(v, p_abort);
   if (v != 1) {
     MessageBox(
-        0,
+        nullptr,
         L"Couldn't load cover configs (incompatible version)\r\nIf you have not done it "
         L"yet, kill foobar with the taskmanager and make a backup of your coverflow "
         L"configs with the version of foo_chronflow you created them with.",

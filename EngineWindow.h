@@ -29,5 +29,5 @@ class EngineWindow {
   bool onKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam);
   void onWindowSize(int width, int height);
   void onScroll(double xoffset, double yoffset);
-  void onContextMenu(const int x, const int y);
+  void onContextMenu(int x, int y);
 };

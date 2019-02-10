@@ -84,11 +84,11 @@ class ConfigTab {
   UINT id;
   HWND parent;
   char* title;
-  bool initializing;
+  bool initializing{};
 
  public:
   const t_size idx;
-  HWND hWnd;
+  HWND hWnd{};
   ConfigTab(char* title, UINT id, HWND parent, int& i) : idx(i) {
     i++;
     this->title = title;
@@ -108,7 +108,7 @@ class ConfigTab {
   virtual BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam,
                                    LPARAM lParam) = 0;
   static BOOL CALLBACK dialogProxy(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-    ConfigTab* configTab = 0;
+    ConfigTab* configTab = nullptr;
     if (uMsg == WM_INITDIALOG) {
       configTab = (ConfigTab*)lParam;
       SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)configTab);
@@ -116,7 +116,7 @@ class ConfigTab {
     } else {
       configTab = reinterpret_cast<ConfigTab*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
     }
-    if (configTab == 0)
+    if (configTab == nullptr)
       return FALSE;
     return configTab->dialogProc(hWnd, uMsg, wParam, lParam);
   }
@@ -135,10 +135,11 @@ class ConfigTab {
     n = tabsize(disableMap);
     for (int i = 0; i < n; i++) {
       bool enabled = uButton_GetCheck(hWnd, disableMap[i].checkboxId);
-      if (disableMap[i].itemToDisable < 0)
-        uEnableWindow(uGetDlgItem(hWnd, -disableMap[i].itemToDisable), !enabled);
-      else
-        uEnableWindow(uGetDlgItem(hWnd, disableMap[i].itemToDisable), enabled);
+      if (disableMap[i].itemToDisable < 0) {
+        uEnableWindow(uGetDlgItem(hWnd, -disableMap[i].itemToDisable), static_cast<BOOL>(!enabled));
+      } else {
+        uEnableWindow(uGetDlgItem(hWnd, disableMap[i].itemToDisable), static_cast<BOOL>(enabled));
+}
     }
     initializing = false;
   }
@@ -167,10 +168,11 @@ class ConfigTab {
     for (int i = 0; i < n; i++) {
       if (disableMap[i].checkboxId == id) {
         bool enabled = uButton_GetCheck(hWnd, disableMap[i].checkboxId);
-        if (disableMap[i].itemToDisable < 0)
-          uEnableWindow(uGetDlgItem(hWnd, -disableMap[i].itemToDisable), !enabled);
-        else
-          uEnableWindow(uGetDlgItem(hWnd, disableMap[i].itemToDisable), enabled);
+        if (disableMap[i].itemToDisable < 0) {
+          uEnableWindow(uGetDlgItem(hWnd, -disableMap[i].itemToDisable), static_cast<BOOL>(!enabled));
+        } else {
+          uEnableWindow(uGetDlgItem(hWnd, disableMap[i].itemToDisable), static_cast<BOOL>(enabled));
+}
       }
     }
   }
@@ -187,7 +189,7 @@ class ConfigTab {
     }
   }
   void setPos(RECT fitInto) {
-    SetWindowPos(hWnd, NULL, fitInto.left, fitInto.top, fitInto.right - fitInto.left,
+    SetWindowPos(hWnd, nullptr, fitInto.left, fitInto.top, fitInto.right - fitInto.left,
                  fitInto.bottom - fitInto.top, SWP_NOZORDER | SWP_NOACTIVATE);
   }
 
@@ -229,7 +231,7 @@ class SourcesTab : public ConfigTab {
  public:
   CONFIG_TAB(SourcesTab, "Album Source", IDD_SOURCE_TAB);
 
-  BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+  BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM  /*lParam*/) override {
     switch (uMsg) {
       case WM_INITDIALOG:
         loadConfig();
@@ -284,7 +286,7 @@ class SourcesTab : public ConfigTab {
 class BehaviourTab : public ConfigTab {
  public:
   CONFIG_TAB(BehaviourTab, "Behaviour", IDD_BEHAVIOUR_TAB);
-  BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+  BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM  /*lParam*/) override {
     switch (uMsg) {
       case WM_INITDIALOG:
         loadConfig();
@@ -292,7 +294,7 @@ class BehaviourTab : public ConfigTab {
         loadActionList(IDC_MIDDLE_CLICK, cfgMiddleClick);
         loadActionList(IDC_ENTER_KEY, cfgEnterKey);
         SendDlgItemMessage(hWnd, IDC_FOLLOW_DELAY_SPINNER, UDM_SETRANGE32, 1, 999);
-        SetDlgItemInt(hWnd, IDC_FOLLOW_DELAY, cfgCoverFollowDelay, true);
+        SetDlgItemInt(hWnd, IDC_FOLLOW_DELAY, cfgCoverFollowDelay, 1);
         break;
 
       case WM_COMMAND:
@@ -300,7 +302,7 @@ class BehaviourTab : public ConfigTab {
           textChanged(LOWORD(wParam));
           if (LOWORD(wParam) == IDC_FOLLOW_DELAY) {
             cfgCoverFollowDelay =
-                bounded(1, 999, int(uGetDlgItemInt(hWnd, IDC_FOLLOW_DELAY, 0, 1)));
+                bounded(1, 999, int(uGetDlgItemInt(hWnd, IDC_FOLLOW_DELAY, nullptr, 1)));
           }
         } else if (HIWORD(wParam) == BN_CLICKED) {
           buttonClicked(LOWORD(wParam));
@@ -344,13 +346,13 @@ class DisplayTab : public ConfigTab {
  public:
   CONFIG_TAB(DisplayTab, "Display", IDD_DISPLAY_TAB);
 
-  BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+  BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override {
     switch (uMsg) {
       case WM_INITDIALOG:
         loadConfig();
         {
-          int titlePosH = (int)floor(cfgTitlePosH * 100 + 0.5);
-          int titlePosV = (int)floor(cfgTitlePosV * 100 + 0.5);
+          int titlePosH = static_cast<int>(floor(cfgTitlePosH * 100 + 0.5));
+          int titlePosV = static_cast<int>(floor(cfgTitlePosV * 100 + 0.5));
           uSendDlgItemMessage(hWnd, IDC_TPOS_H, TBM_SETRANGE, FALSE, MAKELONG(0, 100));
           uSendDlgItemMessage(hWnd, IDC_TPOS_H, TBM_SETTIC, 0, 50);
           uSendDlgItemMessage(hWnd, IDC_TPOS_H, TBM_SETPOS, TRUE, titlePosH);
@@ -385,7 +387,7 @@ class DisplayTab : public ConfigTab {
         redrawMainWin();
       } break;
       case WM_DRAWITEM: {
-        DRAWITEMSTRUCT* drawStruct = reinterpret_cast<DRAWITEMSTRUCT*>(lParam);
+        auto* drawStruct = reinterpret_cast<DRAWITEMSTRUCT*>(lParam);
         HBRUSH brush{};
         switch (wParam) {
           case IDC_TEXTCOLOR_PREV:
@@ -411,7 +413,7 @@ class DisplayTab : public ConfigTab {
               pfc::string8 preview;
               metadb_handle_ptr aTrack;
               if (db->g_get_random_handle(aTrack)) {
-                aTrack->format_title(0, preview, cfgAlbumTitleScript, 0);
+                aTrack->format_title(nullptr, preview, cfgAlbumTitleScript, nullptr);
                 uSendDlgItemMessageText(hWnd, IDC_TITLE_PREVIEW, WM_SETTEXT, 0, preview);
               }
               redrawMainWin();
@@ -430,14 +432,14 @@ class DisplayTab : public ConfigTab {
               COLORREF panelBg = cfgPanelBg;
               if (selectColor(panelBg)) {
                 cfgPanelBg = panelBg;
-                InvalidateRect(uGetDlgItem(hWnd, IDC_BG_COLOR_PREV), NULL, TRUE);
+                InvalidateRect(uGetDlgItem(hWnd, IDC_BG_COLOR_PREV), nullptr, TRUE);
               }
             } break;
             case IDC_TEXTCOLOR: {
               COLORREF titleColor = cfgTitleColor;
               if (selectColor(titleColor)) {
                 cfgTitleColor = titleColor;
-                InvalidateRect(uGetDlgItem(hWnd, IDC_TEXTCOLOR_PREV), NULL, TRUE);
+                InvalidateRect(uGetDlgItem(hWnd, IDC_TEXTCOLOR_PREV), nullptr, TRUE);
               }
             } break;
             case IDC_FONT: {
@@ -487,20 +489,21 @@ class DisplayTab : public ConfigTab {
 };
 
 class ConfigNameDialog : private dialog_helper::dialog_modal {
-  BOOL on_message(UINT uMsg, WPARAM wParam, LPARAM lParam) {
+  BOOL on_message(UINT uMsg, WPARAM wParam, LPARAM  /*lParam*/) override {
     switch (uMsg) {
       case WM_INITDIALOG:
-        if (value) {
+        if (value != nullptr) {
           uSetDlgItemText(get_wnd(), IDC_CONFIG_NAME, value);
         }
         SetFocus(uGetDlgItem(get_wnd(), IDC_CONFIG_NAME));
         return 0;
       case WM_COMMAND:
         if (HIWORD(wParam) == BN_CLICKED) {
-          if (LOWORD(wParam) == IDOK)
+          if (LOWORD(wParam) == IDOK) {
             end_dialog(1);
-          else if (LOWORD(wParam) == IDCANCEL)
+          } else if (LOWORD(wParam) == IDCANCEL) {
             end_dialog(0);
+}
         } else if (HIWORD(wParam) == EN_CHANGE) {
           uGetDlgItemText(get_wnd(), IDC_CONFIG_NAME, value);
         }
@@ -524,7 +527,7 @@ class CoverTab : public ConfigTab {
  public:
   CONFIG_TAB(CoverTab, "Cover Display", IDD_COVER_DISPLAY_TAB);
 
-  BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+  BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM  /*lParam*/) override {
     switch (uMsg) {
       case WM_INITDIALOG:
         editBoxFont =
@@ -548,14 +551,15 @@ class CoverTab : public ConfigTab {
           }
         } else if (HIWORD(wParam) == BN_CLICKED) {
           buttonClicked(LOWORD(wParam));
-          if (LOWORD(wParam) == IDC_SAVED_ADD)
+          if (LOWORD(wParam) == IDC_SAVED_ADD) {
             addConfig();
-          else if (LOWORD(wParam) == IDC_SAVED_RENAME)
+          } else if (LOWORD(wParam) == IDC_SAVED_RENAME) {
             renameConfig();
-          else if (LOWORD(wParam) == IDC_SAVED_REMOVE)
+          } else if (LOWORD(wParam) == IDC_SAVED_REMOVE) {
             removeConfig();
-          else if (LOWORD(wParam) == IDC_COMPILE)
+          } else if (LOWORD(wParam) == IDC_COMPILE) {
             compileConfig();
+}
         } else if (HIWORD(wParam) == CBN_SELCHANGE) {
           listSelChanged(LOWORD(wParam));
           if (LOWORD(wParam) == IDC_SAVED_SELECT) {
@@ -596,13 +600,13 @@ class CoverTab : public ConfigTab {
     SetProp(GetDlgItem(hWnd, IDC_DISPLAY_CONFIG), L"tab", (HANDLE)this);
   }
   static BOOL CALLBACK editboxProxy(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-    CoverTab* coverTab = reinterpret_cast<CoverTab*>(GetProp(hWnd, L"tab"));
+    auto* coverTab = reinterpret_cast<CoverTab*>(GetProp(hWnd, L"tab"));
     return coverTab->editboxProc(hWnd, uMsg, wParam, lParam);
   }
   BOOL editboxProc(HWND eWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     if (uMsg == WM_KEYDOWN && wParam == 'A' && (GetKeyState(VK_CONTROL) & 0x8000)) {
       SendMessage(eWnd, EM_SETSEL, 0, -1);
-      return false;
+      return 0;
     }
 
     if (GetWindowLong(eWnd, GWL_STYLE) & ES_READONLY)
@@ -616,7 +620,7 @@ class CoverTab : public ConfigTab {
         if (selFirst == selLast) {
           uSendMessageText(eWnd, EM_REPLACESEL, TRUE, "\t");
         } else {
-          bool intend = !(GetKeyState(VK_SHIFT) & 0x8000);
+          bool intend = (GetKeyState(VK_SHIFT) & 0x8000) == 0;
           pfc::string8 boxText;
           uGetWindowText(eWnd, boxText);
           PFC_ASSERT(selLast <= boxText.length());
@@ -660,7 +664,7 @@ class CoverTab : public ConfigTab {
           uSendMessageText(eWnd, EM_REPLACESEL, TRUE, outText);
           SendMessage(eWnd, EM_SETSEL, selFirst, repFirst + outText.length());
         }
-        return false;
+        return 0;
       } else if (wParam == VK_RETURN) {
         DWORD selFirst;
         DWORD selLast;
@@ -682,13 +686,13 @@ class CoverTab : public ConfigTab {
         pfc::string8 intend("\r\n");
         intend.add_chars('\t', tabCount);
         uSendMessageText(eWnd, EM_REPLACESEL, TRUE, intend);
-        return false;
+        return 0;
       }
     } else if (uMsg == WM_CHAR) {
       if (wParam == 1) {
-        return false;
+        return 0;
       } else if (wParam == VK_RETURN) {
-        return false;
+        return 0;
       } else if (wParam == '}') {
         wchar_t line[3];
         line[0] = 3;
@@ -700,17 +704,18 @@ class CoverTab : public ConfigTab {
         SendMessage(eWnd, EM_GETLINE, lineNumber, (LPARAM)&line);
         uSendMessageText(eWnd, EM_REPLACESEL, TRUE, "}");
         int deleteChars = 0;
-        if (lineLength > 0 && line[0] == '\t')
+        if (lineLength > 0 && line[0] == '\t') {
           deleteChars = 1;
-        else if (lineLength > 2 && line[0] == ' ' && line[1] == ' ' && line[2] == ' ')
+        } else if (lineLength > 2 && line[0] == ' ' && line[1] == ' ' && line[2] == ' ') {
           deleteChars = 3;
+}
         if (deleteChars > 0) {
-          SendMessage(eWnd, EM_SETSEL, (WPARAM)lineIdx, (LPARAM)(lineIdx + deleteChars));
+          SendMessage(eWnd, EM_SETSEL, static_cast<WPARAM>(lineIdx), static_cast<LPARAM>(lineIdx + deleteChars));
           uSendMessageText(eWnd, EM_REPLACESEL, TRUE, "");
           SendMessage(eWnd, EM_SETSEL, selFirst - deleteChars + 1,
                       selFirst - deleteChars + 1);
         }
-        return false;
+        return 0;
       }
     }
     return CallWindowProc(origEditboxProc, eWnd, uMsg, wParam, lParam);
@@ -744,7 +749,7 @@ class CoverTab : public ConfigTab {
     if (dialog.query(hWnd)) {
       dialog.value.skip_trailing_char(' ');
       if (dialog.value.get_length()) {
-        if (!cfgCoverConfigs.getPtrByName(dialog.value)) {
+        if (cfgCoverConfigs.getPtrByName(dialog.value) == nullptr) {
           CoverConfig config;
           config.name = dialog.value;
           bool useClipboard = false;
@@ -753,7 +758,7 @@ class CoverTab : public ConfigTab {
             pfc::stringcvt::string_wide_from_utf8 clipboard_w(config.script);
             for (int i = 0; i < CPScriptFuncInfos::funcCount; i++) {
               if (CPScriptFuncInfos::neededFunctions[i]) {
-                if (wcsstr(clipboard_w, CPScriptFuncInfos::knownFunctions[i]) == 0) {
+                if (wcsstr(clipboard_w, CPScriptFuncInfos::knownFunctions[i]) == nullptr) {
                   allFound = false;
                   break;
                 }
@@ -775,13 +780,13 @@ class CoverTab : public ConfigTab {
   }
   void renameConfig() {
     CoverConfig* config = cfgCoverConfigs.getPtrByName(cfgCoverConfigSel);
-    if (config) {
+    if (config != nullptr) {
       ConfigNameDialog dialog;
       if (dialog.query(hWnd, config->name)) {
         dialog.value.skip_trailing_char(' ');
         if (dialog.value.get_length()) {
           CoverConfig* nameCollision = cfgCoverConfigs.getPtrByName(dialog.value);
-          if (!nameCollision || nameCollision == config) {
+          if ((nameCollision == nullptr) || nameCollision == config) {
             config->name = dialog.value;
             cfgCoverConfigSel = dialog.value;
             loadConfigList();
@@ -805,13 +810,13 @@ class CoverTab : public ConfigTab {
   }
   void configSelectionChanged() {
     const CoverConfig* config = cfgCoverConfigs.getPtrByName(cfgCoverConfigSel);
-    if (config) {
+    if (config != nullptr) {
       uSetDlgItemText(hWnd, IDC_DISPLAY_CONFIG, config->script);
-      uSendDlgItemMessage(hWnd, IDC_DISPLAY_CONFIG, EM_SETREADONLY, (int)config->buildIn,
+      uSendDlgItemMessage(hWnd, IDC_DISPLAY_CONFIG, EM_SETREADONLY, static_cast<int>(config->buildIn),
                           0);
       // uEnableWindow(uGetDlgItem(hWnd, IDC_DISPLAY_CONFIG), !config->buildIn);
-      uEnableWindow(uGetDlgItem(hWnd, IDC_SAVED_REMOVE), !config->buildIn);
-      uEnableWindow(uGetDlgItem(hWnd, IDC_SAVED_RENAME), !config->buildIn);
+      uEnableWindow(uGetDlgItem(hWnd, IDC_SAVED_REMOVE), static_cast<BOOL>(!config->buildIn));
+      uEnableWindow(uGetDlgItem(hWnd, IDC_SAVED_RENAME), static_cast<BOOL>(!config->buildIn));
     }
     uSetDlgItemText(hWnd, IDC_COMPILE_STATUS, "");
   }
@@ -822,13 +827,13 @@ struct ListMap {
   int val;
   const char* text;
 };
-static ListMap multisamplingMap[] = {
+ListMap multisamplingMap[] = {
     {2, "  2"},
     {4, "  4"},
     {8, "  8"},
     {16, "16"},
 };
-static ListMap loaderPrioMap[] = {
+ListMap loaderPrioMap[] = {
     {THREAD_PRIORITY_BELOW_NORMAL, "Below Normal"},
     {THREAD_PRIORITY_IDLE, "Idle"},
 };
@@ -847,17 +852,17 @@ static struct {
 class PerformanceTab : public ConfigTab {
  public:
   CONFIG_TAB(PerformanceTab, "Performance", IDD_PERF_TAB);
-  BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+  BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM  /*lParam*/) override {
     switch (uMsg) {
       case WM_INITDIALOG:
         loadConfig();
         fillComboBoxes();
 
         SendDlgItemMessage(hWnd, IDC_CACHE_SIZE_SPIN, UDM_SETRANGE32, 2, 999);
-        SetDlgItemInt(hWnd, IDC_CACHE_SIZE, cfgTextureCacheSize, true);
+        SetDlgItemInt(hWnd, IDC_CACHE_SIZE, cfgTextureCacheSize, 1);
 
         SendDlgItemMessage(hWnd, IDC_TEXTURE_SIZE_SPIN, UDM_SETRANGE32, 4, 2024);
-        SetDlgItemInt(hWnd, IDC_TEXTURE_SIZE, cfgMaxTextureSize, true);
+        SetDlgItemInt(hWnd, IDC_TEXTURE_SIZE, cfgMaxTextureSize, 1);
 
         switch (cfgVSyncMode) {
           case VSYNC_SLEEP_ONLY:
@@ -878,10 +883,10 @@ class PerformanceTab : public ConfigTab {
 
           if (LOWORD(wParam) == IDC_CACHE_SIZE) {
             cfgTextureCacheSize =
-                bounded(2, 999, int(uGetDlgItemInt(hWnd, IDC_CACHE_SIZE, 0, 1)));
+                bounded(2, 999, int(uGetDlgItemInt(hWnd, IDC_CACHE_SIZE, nullptr, 1)));
           } else if (LOWORD(wParam) == IDC_TEXTURE_SIZE) {
             cfgMaxTextureSize =
-                bounded(4, 2024, int(uGetDlgItemInt(hWnd, IDC_TEXTURE_SIZE, 0, 1)));
+                bounded(4, 2024, int(uGetDlgItemInt(hWnd, IDC_TEXTURE_SIZE, nullptr, 1)));
           }
         } else if (HIWORD(wParam) == BN_CLICKED) {
           buttonClicked(LOWORD(wParam));
@@ -889,12 +894,13 @@ class PerformanceTab : public ConfigTab {
             case IDC_VSYNC_OFF:
             case IDC_VSYNC_ONLY:
             case IDC_VSYNC_SLEEP:
-              if (uButton_GetCheck(hWnd, IDC_VSYNC_OFF))
+              if (uButton_GetCheck(hWnd, IDC_VSYNC_OFF)) {
                 cfgVSyncMode = VSYNC_SLEEP_ONLY;
-              else if (uButton_GetCheck(hWnd, IDC_VSYNC_ONLY))
+              } else if (uButton_GetCheck(hWnd, IDC_VSYNC_ONLY)) {
                 cfgVSyncMode = VSYNC_ONLY;
-              else if (uButton_GetCheck(hWnd, IDC_VSYNC_SLEEP))
+              } else if (uButton_GetCheck(hWnd, IDC_VSYNC_SLEEP)) {
                 cfgVSyncMode = VSYNC_AND_SLEEP;
+}
           }
           redrawMainWin();
         } else if (HIWORD(wParam) == CBN_SELCHANGE) {
@@ -906,14 +912,15 @@ class PerformanceTab : public ConfigTab {
     return FALSE;
   }
   void fillComboBoxes() {
-    for (int i = 0; i < tabsize(mappedListVarMap); i++) {
-      uSendDlgItemMessage(hWnd, mappedListVarMap[i].id, CB_RESETCONTENT, 0, 0);
-      for (t_size n = 0; n < mappedListVarMap[i].mapSize; n++) {
-        uSendDlgItemMessageText(hWnd, mappedListVarMap[i].id, CB_ADDSTRING, 0,
-                                mappedListVarMap[i].map[n].text);
-        if (mappedListVarMap[i].map[n].val == *(mappedListVarMap[i].var))
-          uSendDlgItemMessageText(hWnd, mappedListVarMap[i].id, CB_SELECTSTRING, 1,
-                                  mappedListVarMap[i].map[n].text);
+    for (auto & i : mappedListVarMap) {
+      uSendDlgItemMessage(hWnd, i.id, CB_RESETCONTENT, 0, 0);
+      for (t_size n = 0; n < i.mapSize; n++) {
+        uSendDlgItemMessageText(hWnd, i.id, CB_ADDSTRING, 0,
+                                i.map[n].text);
+        if (i.map[n].val == *(i.var)) {
+          uSendDlgItemMessageText(hWnd, i.id, CB_SELECTSTRING, 1,
+                                  i.map[n].text);
+}
       }
     }
   }
@@ -925,11 +932,11 @@ class PerformanceTab : public ConfigTab {
     } else {
       return;
     }
-    for (int i = 0; i < tabsize(mappedListVarMap); i++) {
-      if (comboBox == mappedListVarMap[i].id) {
-        for (t_size n = 0; n < mappedListVarMap[i].mapSize; n++) {
-          if (0 == strcmp(selected, mappedListVarMap[i].map[n].text)) {
-            *(mappedListVarMap[i].var) = mappedListVarMap[i].map[n].val;
+    for (auto & i : mappedListVarMap) {
+      if (comboBox == i.id) {
+        for (t_size n = 0; n < i.mapSize; n++) {
+          if (0 == strcmp(selected, i.map[n].text)) {
+            *(i.var) = i.map[n].val;
             break;
           }
         }
@@ -946,7 +953,7 @@ class ConfigWindow : public preferences_page {
  public:
   ConfigWindow() : currentTab(~0u) {}
 
-  BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+  BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM  /*wParam*/, LPARAM lParam) {
     switch (uMsg) {
       case WM_INITDIALOG: {
         int j = 0;
@@ -1001,7 +1008,7 @@ class ConfigWindow : public preferences_page {
   }
 
   static BOOL CALLBACK dialogProxy(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-    ConfigWindow* configWindow = 0;
+    ConfigWindow* configWindow = nullptr;
     if (uMsg == WM_INITDIALOG) {
       configWindow = (ConfigWindow*)lParam;
       SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)configWindow);
@@ -1012,18 +1019,18 @@ class ConfigWindow : public preferences_page {
     return configWindow->dialogProc(hWnd, uMsg, wParam, lParam);
   }
 
-  HWND create(HWND parent) {
+  HWND create(HWND parent) override {
     return uCreateDialog(IDD_CONFIG_TABS, parent, dialogProxy, (LPARAM)this);
   }
 
-  const char* get_name() { return "Chronflow"; }
+  const char* get_name() override { return "Chronflow"; }
 
-  GUID get_guid() { return guid_configWindow; }
+  GUID get_guid() override { return guid_configWindow; }
 
-  GUID get_parent_guid() { return preferences_page::guid_display; }
+  GUID get_parent_guid() override { return preferences_page::guid_display; }
 
-  bool reset_query() { return false; }
-  void reset() {}
+  bool reset_query() override { return false; }
+  void reset() override {}
 };
 
 static service_factory_single_t<ConfigWindow> x_configWindow;

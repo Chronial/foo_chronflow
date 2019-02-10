@@ -12,10 +12,10 @@
 
 #define uT(x) pfc::stringcvt::string_os_from_utf8(x).get_ptr()
 
-typedef HDITEMA uHDITEM;
-typedef TOOLINFOA uTOOLINFO;
-typedef REBARBANDINFOA uREBARBANDINFO;
-typedef LOGFONTA uLOGFONT;
+using uHDITEM = HDITEMA;
+using uTOOLINFO = TTTOOLINFOA;
+using uREBARBANDINFO = REBARBANDINFOA;
+using uLOGFONT = LOGFONTA;
 
 int uHeader_InsertItem(
     HWND wnd, int n, uHDITEM* hdi,
@@ -34,7 +34,7 @@ inline void GetRelativeRect(HWND wnd, HWND wnd_parent,
                             RECT* rc)  // get rect of wnd in wnd_parent coordinates
 {
   GetWindowRect(wnd, rc);
-  MapWindowPoints(HWND_DESKTOP, wnd_parent, (LPPOINT)rc, 2);
+  MapWindowPoints(HWND_DESKTOP, wnd_parent, reinterpret_cast<LPPOINT>(rc), 2);
 }
 
 BOOL uComboBox_GetText(HWND combo, UINT index, pfc::string_base& out);
@@ -48,11 +48,11 @@ void uGetMenuFont(LOGFONT* p_lf);
 void uGetIconFont(LOGFONT* p_lf);
 
 struct logfont_os_menu : public LOGFONT {
-  logfont_os_menu() { uGetMenuFont(this); }
+  logfont_os_menu() : tagLOGFONTW() { uGetMenuFont(this); }
 };
 
 struct logfont_os_icon : public LOGFONT {
-  logfont_os_icon() { uGetIconFont(this); }
+  logfont_os_icon() : tagLOGFONTW() { uGetIconFont(this); }
 };
 
 inline void GetMessagePos(LPPOINT pt) {
@@ -93,13 +93,13 @@ void convert_logfont_utf8_to_os(const uLOGFONT& p_src, LOGFONT& p_dst);
 void convert_logfont_os_to_utf8(const LOGFONT& p_src, uLOGFONT& p_dst);
 
 struct logfont_os_from_utf8 : public LOGFONT {
-  logfont_os_from_utf8(const uLOGFONT& p_logfont) {
+  explicit logfont_os_from_utf8(const uLOGFONT& p_logfont) : tagLOGFONTW() {
     convert_logfont_utf8_to_os(p_logfont, *this);
   }
 };
 
 struct logfont_utf8_from_os : public uLOGFONT {
-  logfont_utf8_from_os(const LOGFONT& p_logfont) {
+  explicit logfont_utf8_from_os(const LOGFONT& p_logfont) : tagLOGFONTA() {
     convert_logfont_os_to_utf8(p_logfont, *this);
   }
 };

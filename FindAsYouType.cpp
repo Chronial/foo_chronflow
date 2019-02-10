@@ -5,7 +5,7 @@
 #include "EngineThread.h"
 #include "PlaybackTracer.h"
 
-bool FindAsYouType::onChar(WPARAM wParam) {
+void FindAsYouType::onChar(WPARAM wParam) {
   switch (wParam) {
     case 1:     // any other nonchar character
     case 0x09:  // Process a tab.
@@ -25,7 +25,6 @@ bool FindAsYouType::onChar(WPARAM wParam) {
       enterChar(static_cast<wchar_t>(wParam));
       break;
   }
-  return 0;
 }
 
 void FindAsYouType::enterChar(wchar_t c) {
@@ -61,8 +60,8 @@ bool FindAsYouType::updateSearch(const char* searchFor) {
     engine.onTargetChange(true);
   }
 
-  timeoutTimer.emplace(typeTimeout,
-                       [&] { engine.thread.send<EM::Run>([&] { reset(); }); });
+  timeoutTimer.emplace(
+      typeTimeout, [&] { engine.thread.send<EM::Run>([&] { reset(); }); });
 
   return result;
 }

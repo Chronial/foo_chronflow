@@ -1,5 +1,7 @@
 #include "EngineWindow.h"
 
+#include <utility>
+
 #include "Console.h"
 #include "Engine.h"
 #include "MyActions.h"
@@ -11,15 +13,15 @@
 
 EngineWindow::EngineWindow(HWND parent,
                            ui_element_instance_callback_ptr defaultUiCallback)
-    : defaultUiCallback(defaultUiCallback) {
+    : defaultUiCallback(std::move(defaultUiCallback)) {
   TRACK_CALL_TEXT("EngineWindow::EngineWindow");
 
   glfwDefaultWindowHints();
-  glfwWindowHint(GLFW_DECORATED, false);
+  glfwWindowHint(GLFW_DECORATED, FALSE);
   glfwWindowHint(GLFW_SAMPLES, cfgMultisampling ? cfgMultisamplingPasses : 0);
-  glfwWindowHint(GLFW_FOCUSED, false);
-  glfwWindowHint(GLFW_RESIZABLE, false);
-  glfwWindowHint(GLFW_VISIBLE, false);
+  glfwWindowHint(GLFW_FOCUSED, FALSE);
+  glfwWindowHint(GLFW_RESIZABLE, FALSE);
+  glfwWindowHint(GLFW_VISIBLE, FALSE);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 
@@ -44,19 +46,19 @@ EngineWindow::EngineWindow(HWND parent,
                     0, reinterpret_cast<DWORD_PTR>(this));
 
   glfwSetWindowUserPointer(glfwWindow.get(), this);
-  glfwSetScrollCallback(glfwWindow.get(),
-                        [](GLFWwindow* window, double xoffset, double yoffset) {
-                          static_cast<EngineWindow*>(glfwGetWindowUserPointer(window))
-                              ->onScroll(xoffset, yoffset);
-                        });
+  glfwSetScrollCallback(
+      glfwWindow.get(), [](GLFWwindow* window, double xoffset, double yoffset) {
+        static_cast<EngineWindow*>(glfwGetWindowUserPointer(window))
+            ->onScroll(xoffset, yoffset);
+      });
   glfwSetWindowRefreshCallback(glfwWindow.get(), [](GLFWwindow* window) {
     static_cast<EngineWindow*>(glfwGetWindowUserPointer(window))->onDamage();
   });
-  glfwSetWindowSizeCallback(glfwWindow.get(),
-                            [](GLFWwindow* window, int width, int height) {
-                              static_cast<EngineWindow*>(glfwGetWindowUserPointer(window))
-                                  ->onWindowSize(width, height);
-                            });
+  glfwSetWindowSizeCallback(
+      glfwWindow.get(), [](GLFWwindow* window, int width, int height) {
+        static_cast<EngineWindow*>(glfwGetWindowUserPointer(window))
+            ->onWindowSize(width, height);
+      });
 
   engineThread.emplace(*this);
   glfwShowWindow(glfwWindow.get());
@@ -122,9 +124,9 @@ bool EngineWindow::onChar(WPARAM wParam) {
   }
 }
 
-void EngineWindow::onMouseClick(UINT uMsg, WPARAM wParam, LPARAM lParam) {
-  auto future = engineThread->sendSync<EM::GetAlbumAtCoords>(GET_X_LPARAM(lParam),
-                                                             GET_Y_LPARAM(lParam));
+void EngineWindow::onMouseClick(UINT uMsg, WPARAM /*wParam*/, LPARAM lParam) {
+  auto future = engineThread->sendSync<EM::GetAlbumAtCoords>(
+      GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
   auto clickedAlbum = future.get();
   if (!clickedAlbum)
     return;
@@ -201,8 +203,8 @@ bool EngineWindow::onKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam) {
     auto targetAlbum = engineThread->sendSync<EM::GetTargetAlbum>().get();
     static_api_ptr_t<keyboard_shortcut_manager> ksm;
     if (targetAlbum) {
-      return ksm->on_keydown_auto_context(targetAlbum->tracks, wParam,
-                                          contextmenu_item::caller_media_library_viewer);
+      return ksm->on_keydown_auto_context(
+          targetAlbum->tracks, wParam, contextmenu_item::caller_media_library_viewer);
     } else {
       return ksm->on_keydown_auto(wParam);
     }
@@ -218,7 +220,7 @@ void EngineWindow::onWindowSize(int width, int height) {
   engineThread->send<EM::WindowResizeMessage>(width, height);
 }
 
-void EngineWindow::onScroll(double xoffset, double yoffset) {
+void EngineWindow::onScroll(double /*xoffset*/, double yoffset) {
   scrollAggregator -= yoffset;
   int m = int(scrollAggregator);
   scrollAggregator -= m;
@@ -258,19 +260,22 @@ void EngineWindow::onContextMenu(const int x, const int y) {
   contextmenu_manager::g_create(cmm);
   HMENU hMenu = CreatePopupMenu();
   if (target) {
-    if ((cfgEnterKey.length() > 0) && (strcmp(cfgEnterKey, cfgDoubleClick) != 0))
-      uAppendMenu(hMenu, MF_STRING, ID_ENTER,
-                  PFC_string_formatter() << cfgEnterKey << "\tEnter");
-    if (cfgDoubleClick.length() > 0)
+    if ((cfgEnterKey.length() > 0) && (strcmp(cfgEnterKey, cfgDoubleClick) != 0)) {
+      uAppendMenu(
+          hMenu, MF_STRING, ID_ENTER, PFC_string_formatter() << cfgEnterKey << "\tEnter");
+    }
+    if (cfgDoubleClick.length() > 0) {
       uAppendMenu(hMenu, MF_STRING, ID_DOUBLECLICK,
                   PFC_string_formatter() << cfgDoubleClick << "\tDouble Click");
+    }
     if ((cfgMiddleClick.length() > 0) && (strcmp(cfgMiddleClick, cfgDoubleClick) != 0) &&
-        (strcmp(cfgMiddleClick, cfgEnterKey) != 0))
+        (strcmp(cfgMiddleClick, cfgEnterKey) != 0)) {
       uAppendMenu(hMenu, MF_STRING, ID_MIDDLECLICK,
                   PFC_string_formatter() << cfgMiddleClick << "\tMiddle Click");
+    }
 
     cmm->init_context(target->tracks, contextmenu_manager::FLAG_SHOW_SHORTCUTS);
-    if (cmm->get_root()) {
+    if (cmm->get_root() != nullptr) {
       if (GetMenuItemCount(hMenu) > 0)
         uAppendMenu(hMenu, MF_SEPARATOR, 0, nullptr);
       cmm->win32_build_menu(hMenu, ID_CONTEXT_FIRST, ID_CONTEXT_LAST);

@@ -5,7 +5,7 @@ class PlaybackTracer {
   class EngineThread& thread;
 
  public:
-  PlaybackTracer(EngineThread&);
+  explicit PlaybackTracer(EngineThread& thread) : thread(thread){};
   void delay(double extra_time);
   void moveToNowPlaying();
   void onPlaybackNewTrack(metadb_handle_ptr p_track);
