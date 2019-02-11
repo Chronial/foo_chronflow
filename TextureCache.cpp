@@ -4,10 +4,12 @@
 #include "EngineThread.h"
 #include "Image.h"
 #include "config.h"
+#include "cover_positions.h"
 #include "utils.h"
 
-TextureCache::TextureCache(EngineThread& thread, DbAlbumCollection& db)
-    : db(db), thread(thread),
+TextureCache::TextureCache(EngineThread& thread, DbAlbumCollection& db,
+                           ScriptedCoverPositions& coverPos)
+    : db(db), thread(thread), coverPos(coverPos),
       noCoverTexture(loadSpecialArt(IDR_COVER_NO_IMG, cfgImgNoCover.c_str()).upload()),
       loadingTexture(loadSpecialArt(IDR_COVER_LOADING, cfgImgLoading.c_str()).upload()) {}
 
@@ -16,17 +18,19 @@ void TextureCache::reloadSpecialTextures() {
   noCoverTexture = loadSpecialArt(IDR_COVER_NO_IMG, cfgImgNoCover.c_str()).upload();
 }
 
-const GLTexture& TextureCache::getLoadedImgTexture(const std::string& albumName) {
+const GLTexture* TextureCache::getAlbumTexture(const std::string& albumName) {
   auto entry = textureCache.find(albumName);
-  if (entry != textureCache.end()) {
-    if (entry->texture) {
-      return entry->texture.value();
-    } else {
-      return noCoverTexture;
-    }
+  if (entry == textureCache.end())
+    return nullptr;
+  if (entry->texture) {
+    return &entry->texture.value();
   } else {
-    return loadingTexture;
+    return &noCoverTexture;
   }
+}
+
+GLTexture& TextureCache::getLoadingTexture() {
+  return loadingTexture;
 }
 
 void TextureCache::onTargetChange() {
@@ -47,8 +51,13 @@ void TextureCache::onCollectionReload() {
   updateLoadingQueue(db.getTargetPos());
 }
 
+int TextureCache::maxCacheSize() {
+  int maxDisplay = 1 + std::max(-coverPos.getFirstCover(), coverPos.getLastCover());
+  return std::min(int(db.getCount()), std::max(int(cfgTextureCacheSize), 2 * maxDisplay));
+}
+
 void TextureCache::trimCache() {
-  while (textureCache.size() > static_cast<size_t>(cfgTextureCacheSize)) {
+  while (textureCache.size() > static_cast<size_t>(maxCacheSize())) {
     auto& prorityIndex = textureCache.get<1>();
     auto oldestEntry = prorityIndex.begin();
     prorityIndex.erase(oldestEntry);
@@ -61,9 +70,7 @@ void TextureCache::clearCache() {
 }
 
 void TextureCache::uploadTextures() {
-  bool redraw = false;
   while (auto loaded = bgLoader.getLoaded()) {
-    redraw = true;
     auto existing = textureCache.find(loaded->meta.groupString);
     if (existing != textureCache.end()) {
       textureCache.erase(existing);
@@ -73,17 +80,12 @@ void TextureCache::uploadTextures() {
       texture = loaded->image->upload();
     textureCache.emplace(loaded->meta, std::move(texture));
   }
-  if (redraw) {
-    IF_DEBUG(console::println(L"Refresh MainWin."));
-    thread.invalidateWindow();
-  }
 }
 
 void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter) {
   bgLoader.flushQueue();
 
-  size_t collectionSize = db.getCount();
-  size_t maxLoad = std::min(collectionSize, size_t(cfgTextureCacheSize * 0.8));
+  size_t maxLoad = maxCacheSize();
 
   CollectionPos leftLoaded = queueCenter;
   CollectionPos rightLoaded = queueCenter;

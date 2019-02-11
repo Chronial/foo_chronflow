@@ -53,7 +53,8 @@ int HighTimerResolution::get() {
 
 Engine::Engine(EngineThread& thread, EngineWindow& window)
     : window(window), thread(thread), glContext(window), findAsYouType(*this),
-      displayPos(db), texCache(thread, db), renderer(*this), playbackTracer(thread) {}
+      displayPos(db), texCache(thread, db, coverPos), renderer(*this),
+      playbackTracer(thread) {}
 
 void Engine::mainLoop() {
   updateRefreshRate();
@@ -83,7 +84,7 @@ void Engine::mainLoop() {
     texCache.trimCache();
 
     render();
-    windowDirty = displayPos.isMoving();
+    windowDirty = displayPos.isMoving() || renderer.wasMissingTextures;
 
     renderer.ensureVSync(cfgVSyncMode != VSYNC_SLEEP_ONLY);
     if (cfgVSyncMode == VSYNC_AND_SLEEP || cfgVSyncMode == VSYNC_SLEEP_ONLY) {
@@ -115,7 +116,7 @@ void Engine::render() {
   renderer.drawFrame();
   glFinish();
   double frameEnd = Helpers::getHighresTimer();
-  renderer.fpsCounter.recordFrame(frameStart, frameEnd);
+  fpsCounter.recordFrame(frameStart, frameEnd);
 }
 
 void Engine::updateRefreshRate() {

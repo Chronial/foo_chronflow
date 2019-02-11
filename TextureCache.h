@@ -54,11 +54,13 @@ class TextureLoadingThreads {
 class TextureCache {
   DbAlbumCollection& db;
   EngineThread& thread;
+  class ScriptedCoverPositions& coverPos;
 
  public:
-  TextureCache(EngineThread&, DbAlbumCollection&);
+  TextureCache(EngineThread&, DbAlbumCollection&, ScriptedCoverPositions&);
 
-  const GLTexture& getLoadedImgTexture(const std::string& albumName);
+  const GLTexture* getAlbumTexture(const std::string& albumName);
+  GLTexture& getLoadingTexture();
 
   void trimCache();
   void clearCache();
@@ -68,6 +70,7 @@ class TextureCache {
   void uploadTextures();
 
  private:
+  int maxCacheSize();
   unsigned int collectionVersion = 0;
 
   void reloadSpecialTextures();

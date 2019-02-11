@@ -1,7 +1,6 @@
 #pragma once
 #include "DbAlbumCollection.h"
 #include "TextDisplay.h"
-#include "cover_positions.h"
 #include "utils.h"
 
 class TextureCache;
@@ -25,9 +24,9 @@ class Renderer {
   void glPopOrthoMatrix();
 
   TextDisplay textDisplay;
-  FpsCounter fpsCounter;
-  ScriptedCoverPositions coverPos;
   class Engine& engine;
+
+  bool wasMissingTextures = false;
 
  private:
   void getFrustrumSize(double& right, double& top, double& zNear, double& zFar);

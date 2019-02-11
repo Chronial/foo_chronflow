@@ -21,8 +21,10 @@ void EM::WindowResizeMessage::run(Engine& e, int width, int height) {
 
 void EM::ChangeCPScriptMessage::run(Engine& e, pfc::string8 script) {
   pfc::string8 tmp;
-  e.renderer.coverPos.setScript(script, tmp);
+  e.coverPos.setScript(script, tmp);
   e.renderer.setProjectionMatrix();
+  if (e.db.getCount() > 0)
+    e.texCache.updateLoadingQueue(e.db.getTargetPos());
   e.windowDirty = true;
 }
 

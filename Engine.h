@@ -7,6 +7,7 @@
 #include "PlaybackTracer.h"
 #include "Renderer.h"
 #include "TextureCache.h"
+#include "cover_positions.h"
 #include "utils.h"
 
 class GLContext {
@@ -30,8 +31,10 @@ class Engine {
   GLContext glContext;
   DbAlbumCollection db;
   FindAsYouType findAsYouType;
+  ScriptedCoverPositions coverPos;
   DisplayPosition displayPos;
   TextureCache texCache;
+  FpsCounter fpsCounter;
   Renderer renderer;
   PlaybackTracer playbackTracer;
   unique_ptr<DbReloadWorker> reloadWorker;

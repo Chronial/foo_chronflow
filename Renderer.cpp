@@ -41,7 +41,7 @@ void Renderer::getFrustrumSize(double& right, double& top, double& zNear, double
   // Calculate The Aspect Ratio Of The Window
   static const double fov = 45;
   static const double squareLength = tan(deg2rad(fov) / 2) * zNear;
-  fovAspectBehaviour weight = coverPos.getAspectBehaviour();
+  fovAspectBehaviour weight = engine.coverPos.getAspectBehaviour();
   double aspect = double(winHeight) / winWidth;
   right = squareLength / pow(aspect, double(weight.y));
   top = squareLength * pow(aspect, double(weight.x));
@@ -114,8 +114,8 @@ bool Renderer::offsetOnPoint(int x, int y, int& out) {
 }
 
 void Renderer::drawMirrorPass() {
-  glVectord mirrorNormal = coverPos.getMirrorNormal();
-  glVectord mirrorCenter = coverPos.getMirrorCenter();
+  glVectord mirrorNormal = engine.coverPos.getMirrorNormal();
+  glVectord mirrorCenter = engine.coverPos.getMirrorCenter();
 
   double mirrorDist;  // distance from origin
   mirrorDist = mirrorCenter * mirrorNormal;
@@ -174,9 +174,9 @@ void Renderer::drawMirrorOverlay() {
 }
 
 pfc::array_t<double> Renderer::getMirrorClipPlane() {
-  glVectord mirrorNormal = coverPos.getMirrorNormal();
-  glVectord mirrorCenter = coverPos.getMirrorCenter();
-  glVectord eye2mCent = (mirrorCenter - coverPos.getCameraPos());
+  glVectord mirrorNormal = engine.coverPos.getMirrorNormal();
+  glVectord mirrorCenter = engine.coverPos.getMirrorCenter();
+  glVectord eye2mCent = (mirrorCenter - engine.coverPos.getCameraPos());
 
   // Angle at which the mirror normal stands to the eyePos
   double mirrorNormalAngle = rad2deg(eye2mCent.intersectAng(mirrorNormal));
@@ -198,14 +198,15 @@ pfc::array_t<double> Renderer::getMirrorClipPlane() {
 
 void Renderer::drawScene(bool selectionPass) {
   glLoadIdentity();
-  gluLookAt(coverPos.getCameraPos().x, coverPos.getCameraPos().y,
-            coverPos.getCameraPos().z, coverPos.getLookAt().x, coverPos.getLookAt().y,
-            coverPos.getLookAt().z, coverPos.getUpVector().x, coverPos.getUpVector().y,
-            coverPos.getUpVector().z);
+  auto cameraPos = engine.coverPos.getCameraPos();
+  auto lookAt = engine.coverPos.getLookAt();
+  auto up = engine.coverPos.getUpVector();
+  gluLookAt(cameraPos.x, cameraPos.y, cameraPos.z, lookAt.x, lookAt.y, lookAt.z, up.x,
+            up.y, up.z);
 
   pfc::array_t<double> clipEq;
 
-  if (coverPos.isMirrorPlaneEnabled()) {
+  if (engine.coverPos.isMirrorPlaneEnabled()) {
     clipEq = getMirrorClipPlane();
     if (!selectionPass) {
       glClipPlane(GL_CLIP_PLANE0, clipEq.get_ptr());
@@ -230,7 +231,7 @@ void Renderer::drawScene(bool selectionPass) {
   drawCovers(true);
   glPopName();
 
-  if (coverPos.isMirrorPlaneEnabled()) {
+  if (engine.coverPos.isMirrorPlaneEnabled()) {
     glDisable(GL_CLIP_PLANE0);
   }
 }
@@ -252,7 +253,7 @@ void Renderer::drawGui() {
 
   if (cfgShowFps) {
     double fps, msPerFrame, longestFrame, minFPS;
-    fpsCounter.getFPS(fps, msPerFrame, longestFrame, minFPS);
+    engine.fpsCounter.getFPS(fps, msPerFrame, longestFrame, minFPS);
     pfc::string8 dispStringA;
     pfc::string8 dispStringB;
     dispStringA << "FPS:  " << pfc::format_float(fps, 4, 1);
@@ -272,6 +273,7 @@ void Renderer::drawBg() {
 
 void Renderer::drawFrame() {
   TRACK_CALL_TEXT("Renderer::drawFrame");
+  wasMissingTextures = false;
   drawBg();
   drawScene(false);
   drawGui();
@@ -286,8 +288,10 @@ void Renderer::drawCovers(bool showTarget) {
 
   float centerOffset = engine.displayPos.getCenteredOffset();
   CollectionPos centerCover = engine.displayPos.getCenteredPos();
-  CollectionPos firstCover = engine.displayPos.getOffsetPos(coverPos.getFirstCover() + 1);
-  CollectionPos lastCover = engine.displayPos.getOffsetPos(coverPos.getLastCover());
+  CollectionPos firstCover =
+      engine.displayPos.getOffsetPos(engine.coverPos.getFirstCover() + 1);
+  CollectionPos lastCover =
+      engine.displayPos.getOffsetPos(engine.coverPos.getLastCover());
   lastCover++;  // getOffsetPos does not return the end() element
   CollectionPos targetCover = engine.db.getTargetPos();
 
@@ -296,8 +300,12 @@ void Renderer::drawCovers(bool showTarget) {
   for (CollectionPos p = firstCover; p != lastCover; ++p, ++offset) {
     float co = -centerOffset + offset;
 
-    const GLTexture& tex = engine.texCache.getLoadedImgTexture(p->groupString);
-    tex.bind();
+    auto tex = engine.texCache.getAlbumTexture(p->groupString);
+    if (!tex) {
+      wasMissingTextures = true;
+      tex = &engine.texCache.getLoadingTexture();
+    }
+    tex->bind();
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     // calculate darkening
@@ -312,24 +320,28 @@ void Renderer::drawCovers(bool showTarget) {
     glColor3f(g, g, g);
     glVectord origin(0, 0.5, 0);
 
-    glQuad coverQuad = coverPos.getCoverQuad(co, tex.getAspect());
+    glQuad coverQuad = engine.coverPos.getCoverQuad(co, tex->getAspect());
 
     glPushName(SELECTION_CENTER + offset);
 
     glBegin(GL_QUADS);
-    glFogCoordf(static_cast<GLfloat>(coverPos.distanceToMirror(coverQuad.topLeft)));
+    glFogCoordf(
+        static_cast<GLfloat>(engine.coverPos.distanceToMirror(coverQuad.topLeft)));
     glTexCoord2f(0.0f, 1.0f);  // top left
     glVertex3fv(coverQuad.topLeft.as_3fv());
 
-    glFogCoordf(static_cast<GLfloat>(coverPos.distanceToMirror(coverQuad.topRight)));
+    glFogCoordf(
+        static_cast<GLfloat>(engine.coverPos.distanceToMirror(coverQuad.topRight)));
     glTexCoord2f(1.0f, 1.0f);  // top right
     glVertex3fv(coverQuad.topRight.as_3fv());
 
-    glFogCoordf(static_cast<GLfloat>(coverPos.distanceToMirror(coverQuad.bottomRight)));
+    glFogCoordf(
+        static_cast<GLfloat>(engine.coverPos.distanceToMirror(coverQuad.bottomRight)));
     glTexCoord2f(1.0f, 0.0f);  // bottom right
     glVertex3fv(coverQuad.bottomRight.as_3fv());
 
-    glFogCoordf(static_cast<GLfloat>(coverPos.distanceToMirror(coverQuad.bottomLeft)));
+    glFogCoordf(
+        static_cast<GLfloat>(engine.coverPos.distanceToMirror(coverQuad.bottomLeft)));
     glTexCoord2f(0.0f, 0.0f);  // bottom left
     glVertex3fv(coverQuad.bottomLeft.as_3fv());
     glEnd();
