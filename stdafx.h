@@ -46,6 +46,26 @@ using std::unique_ptr;  // NOLINT
 // Require windows vista
 #define _WIN32_WINNT 0x600
 #define WIN32_LEAN_AND_MEAN
+#define NOSERVICE
+#define NOSOUND
+#define NOKANJI
+#define NOKERNEL
+#define NOGDICAPMASKS
+#define NOSYSMETRICS
+#define NORASTEROPS
+#define OEMRESOURCE
+#define NOATOM
+#define NOCLIPBOARD
+#define NOMEMMGR
+#define NOOPENFILE
+#define NOSCROLL
+#define NOTEXTMETRIC
+#define NOWH
+#define NOCOMM
+#define NOHELP
+#define NOPROFILER
+#define NODEFERWINDOWPOS
+#define NOMCX
 #include <windows.h>
 
 #include <ActivScp.h>
