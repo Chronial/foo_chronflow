@@ -3,8 +3,12 @@
 #include "EngineThread.h"
 #include "config.h"
 
+void EM::StopThread::run(Engine& e) {
+  e.shouldStop = true;
+}
+
 void EM::RedrawMessage::run(Engine& e) {
-  e.doPaint = true;
+  e.windowDirty = true;
 }
 
 void EM::DeviceModeMessage::run(Engine& e) {
@@ -19,7 +23,7 @@ void EM::ChangeCPScriptMessage::run(Engine& e, pfc::string8 script) {
   pfc::string8 tmp;
   e.renderer.coverPos.setScript(script, tmp);
   e.renderer.setProjectionMatrix();
-  e.doPaint = true;
+  e.windowDirty = true;
 }
 
 void EM::WindowHideMessage::run(Engine& e) {

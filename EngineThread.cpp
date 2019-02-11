@@ -24,7 +24,7 @@ EngineThread::EngineThread(EngineWindow& engineWindow)
 
 EngineThread::~EngineThread() {
   instances.erase(this);
-  this->send<EM::StopThreadMessage>();
+  this->send<EM::StopThread>();
   if (thread.joinable())
     thread.join();
 }

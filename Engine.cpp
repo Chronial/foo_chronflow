@@ -33,85 +33,89 @@ GLContext::GLContext(EngineWindow& window) {
   glFogi(GL_FOG_COORD_SRC, GL_FOG_COORD);  // Set Fog Based On Vertice Coordinates
 }
 
+HighTimerResolution::HighTimerResolution() {
+  timeBeginPeriod(get());
+}
+
+HighTimerResolution::~HighTimerResolution() {
+  timeEndPeriod(get());
+}
+
+int HighTimerResolution::get() {
+  static int resolution = [] {
+    TIMECAPS tc;
+    if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) != MMSYSERR_NOERROR)
+      throw(std::runtime_error("timeGetDevCaps failed"));
+    return std::min(std::max(tc.wPeriodMin, 1u), tc.wPeriodMax);
+  }();
+  return resolution;
+}
+
 Engine::Engine(EngineThread& thread, EngineWindow& window)
     : window(window), thread(thread), glContext(window), findAsYouType(*this),
-      displayPos(db), texCache(thread, db), renderer(*this), playbackTracer(thread) {
-  TIMECAPS tc;
-  if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) == TIMERR_NOERROR) {
-    timerResolution = std::min(std::max(tc.wPeriodMin, 1u), tc.wPeriodMax);
-  }
-}
+      displayPos(db), texCache(thread, db), renderer(*this), playbackTracer(thread) {}
 
 void Engine::mainLoop() {
   updateRefreshRate();
   EM::ReloadCollection().execute(*this);
 
-  for (;;) {
-    if (thread.messageQueue.size() == 0 && doPaint) {
-      texCache.uploadTextures();
-      texCache.trimCache();
-      onPaint();
-      continue;
-    }
-    std::unique_ptr<engine_messages::Message> msg = thread.messageQueue.pop();
-
-    if (dynamic_cast<EM::StopThreadMessage*>(msg.get()) != nullptr) {
-      break;
-    } else if (dynamic_cast<EM::PaintMessage*>(msg.get()) != nullptr) {
-      // do nothing, this is just here so that onPaint may run
-    } else {
+  double lastSwapTime = 0;
+  std::optional<HighTimerResolution> timerResolution;
+  while (!shouldStop) {
+    // Handle messages
+    while (!shouldStop) {
+      std::unique_ptr<engine_messages::Message> msg = nullptr;
+      if (windowDirty) {
+        auto maybeMsg = thread.messageQueue.popMaybe();
+        if (!maybeMsg)
+          break;
+        msg = std::move(maybeMsg.value());
+      } else {
+        msg = thread.messageQueue.pop();
+      }
       msg->execute(*this);
     }
+
+    if (!timerResolution)
+      timerResolution.emplace();
+    displayPos.update();
+    texCache.uploadTextures();
+    texCache.trimCache();
+
+    render();
+    windowDirty = displayPos.isMoving();
+
+    renderer.ensureVSync(cfgVSyncMode != VSYNC_SLEEP_ONLY);
+    if (cfgVSyncMode == VSYNC_AND_SLEEP || cfgVSyncMode == VSYNC_SLEEP_ONLY) {
+      double currentTime = Helpers::getHighresTimer();
+      // time we have - time we already have spend
+      int sleepTime = int((1000.0 / refreshRate) - 1000 * (currentTime - lastSwapTime));
+      if (cfgVSyncMode == VSYNC_AND_SLEEP) {
+        sleepTime -= 2 * timerResolution->get();
+      } else {
+        sleepTime -= timerResolution->get();
+      }
+      if (sleepTime >= 0) {
+        Sleep(sleepTime);
+      }
+    }
+
+    window.swapBuffers();
+    glFinish();
+    lastSwapTime = Helpers::getHighresTimer();
+    if (!windowDirty)
+      timerResolution.reset();
   }
   glFinish();
 }
 
-void Engine::onPaint() {
-  TRACK_CALL_TEXT("EngineThread::onPaint");
+void Engine::render() {
+  TRACK_CALL_TEXT("EngineThread::render");
   double frameStart = Helpers::getHighresTimer();
-
-  displayPos.update();
-  // continue animation if we are not done
-  doPaint = displayPos.isMoving();
-  // doPaint = true;
-
   renderer.drawFrame();
-
-  // this might not be right – do we need a glFinish() here?
+  glFinish();
   double frameEnd = Helpers::getHighresTimer();
   renderer.fpsCounter.recordFrame(frameStart, frameEnd);
-
-  renderer.ensureVSync(cfgVSyncMode != VSYNC_SLEEP_ONLY);
-  if (cfgVSyncMode == VSYNC_AND_SLEEP || cfgVSyncMode == VSYNC_SLEEP_ONLY) {
-    double currentTime = Helpers::getHighresTimer();
-    // time we have        time we already have spend
-    int sleepTime =
-        static_cast<int>((1000.0 / refreshRate) - 1000 * (currentTime - afterLastSwap));
-    if (cfgVSyncMode == VSYNC_AND_SLEEP) {
-      sleepTime -= 2 * timerResolution;
-    } else {
-      sleepTime -= timerResolution;
-    }
-    if (sleepTime >= 0) {
-      if (!timerInPeriod) {
-        timeBeginPeriod(timerResolution);
-        timerInPeriod = true;
-      }
-      Sleep(sleepTime);
-    }
-  }
-
-  window.swapBuffers();
-  afterLastSwap = Helpers::getHighresTimer();
-
-  if (doPaint) {
-    this->thread.send<EM::PaintMessage>();
-  } else {
-    if (timerInPeriod) {
-      timeEndPeriod(timerResolution);
-      timerInPeriod = false;
-    }
-  }
 }
 
 void Engine::updateRefreshRate() {

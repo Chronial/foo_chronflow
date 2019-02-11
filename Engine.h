@@ -7,10 +7,19 @@
 #include "PlaybackTracer.h"
 #include "Renderer.h"
 #include "TextureCache.h"
+#include "utils.h"
 
 class GLContext {
  public:
   explicit GLContext(class EngineWindow&);
+};
+
+class HighTimerResolution {
+ public:
+  HighTimerResolution();
+  NO_MOVE_NO_COPY(HighTimerResolution);
+  ~HighTimerResolution();
+  int get();
 };
 
 class Engine {
@@ -29,16 +38,14 @@ class Engine {
 
   Engine(EngineThread&, EngineWindow&);
   void mainLoop();
-  void onPaint();
   void updateRefreshRate();
   void onTargetChange(bool userInitiated);
 
  private:
-  bool doPaint = false;
-  int timerResolution = 10;
-  bool timerInPeriod = false;
+  void render();
+  bool windowDirty = false;
   int refreshRate = 60;
-  double afterLastSwap = 0;
+  bool shouldStop = false;
 
  public:
   struct Messages;

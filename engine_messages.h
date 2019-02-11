@@ -54,9 +54,7 @@ struct AnswerMessage : Message {
   }
 
 struct Engine::Messages {
-  class PaintMessage : public engine_messages::Message {};
-  class StopThreadMessage : public engine_messages::Message {};
-
+  E_MSG(StopThread);
   E_MSG(RedrawMessage);
   E_MSG(TextFormatChangedMessage);
   E_MSG(DeviceModeMessage);

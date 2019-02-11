@@ -159,3 +159,9 @@ void println(const wchar_t* str);
 void printf(const wchar_t* format, ...);
 };  // namespace console
 #endif
+
+#define NO_MOVE_NO_COPY(C) \
+  C(const C&) = delete; \
+  C& operator=(const C&) = delete; \
+  C(C&&) = delete; \
+  C& operator=(C&&) = delete;
