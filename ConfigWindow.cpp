@@ -1,5 +1,7 @@
 #include <boost/range/iterator_range.hpp>
 
+#include "../foobar2000/helpers/dialog_resize_helper.h"
+#include "../foobar2000/helpers/win32_dialog.h"
 #include "lib/win32_helpers.h"
 
 #include "DbAlbumCollection.h"

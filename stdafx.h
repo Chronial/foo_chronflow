@@ -65,7 +65,7 @@ using std::unique_ptr;  // NOLINT
 #define APIENTRY WINAPI
 
 #include "../foobar2000/SDK/foobar2000.h"
-#include "../foobar2000/helpers/helpers.h"
+#include "../foobar2000/helpers/win32_misc.h"
 
 // clang doesn't support stdcall lambdas
 // since we only use it for linting, we just hide those lambdas from it
