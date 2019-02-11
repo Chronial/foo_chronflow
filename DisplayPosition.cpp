@@ -1,9 +1,8 @@
 #include "DisplayPosition.h"
 
-#include "Helpers.h"
 #include "PlaybackTracer.h"
-#include "base.h"
 #include "config.h"
+#include "utils.h"
 
 DisplayPosition::DisplayPosition(DbAlbumCollection& db)
     : db(db), centeredPos(db.begin()) {}

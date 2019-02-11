@@ -15,6 +15,7 @@
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
+#include <sstream>
 #include <thread>
 #include <unordered_set>
 #include <utility>

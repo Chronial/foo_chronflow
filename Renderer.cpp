@@ -5,9 +5,9 @@
 #include "DbAlbumCollection.h"
 #include "DisplayPosition.h"
 #include "Engine.h"
-#include "Helpers.h"
 #include "TextureCache.h"
 #include "config.h"
+#include "utils.h"
 
 #define SELECTION_CENTER INT_MAX  // Selection is an unsigned int, so this is center
 #define SELECTION_COVERS 1

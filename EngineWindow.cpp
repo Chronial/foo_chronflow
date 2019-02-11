@@ -2,13 +2,12 @@
 
 #include "lib/win32_helpers.h"
 
-#include "Console.h"
 #include "Engine.h"
 #include "MyActions.h"
 #include "PlaybackTracer.h"
 #include "TrackDropSource.h"
-#include "base.h"
 #include "config.h"
+#include "utils.h"
 
 EngineWindow::EngineWindow(HWND parent,
                            ui_element_instance_callback_ptr defaultUiCallback)

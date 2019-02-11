@@ -3,8 +3,8 @@
 
 #include "BlockingQueue.h"
 #include "DbAlbumCollection.h"
-#include "Helpers.h"
 #include "Image.h"
+#include "utils.h"
 
 namespace bomi = boost::multi_index;
 

@@ -1,10 +1,9 @@
 #include "ContainerWindow.h"
 
-#include "Console.h"
 #include "Engine.h"
 #include "EngineThread.h"
 #include "EngineWindow.h"
-#include "base.h"
+#include "utils.h"
 
 #define MAINWINDOW_CLASSNAME L"foo_chronflow MainWindow"
 
@@ -13,7 +12,7 @@
 ContainerWindow::ContainerWindow(HWND parent,
                                  ui_element_instance_callback_ptr duiCallback) {
   TRACK_CALL_TEXT("ContainerWindow::startup");
-  IF_DEBUG(Console::create());
+  IF_DEBUG(console::create());
 
   hwnd = createWindow(parent);
   try {

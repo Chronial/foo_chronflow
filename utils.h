@@ -1,6 +1,38 @@
 #pragma once
+#include "resource.h"
 
-#include "base.h"
+#ifdef _DEBUG
+#define IF_DEBUG(X) X
+#else
+#define IF_DEBUG(X)
+#endif
+
+#ifndef M_PI
+#define M_PI 3.1415926535897932385
+#endif
+#define deg2rad(X) ((X)*M_PI / 180)
+#define rad2deg(X) ((X)*180 / M_PI)
+
+#define IDT_CHECK_MINIMIZED 665
+
+// {37835416-4578-4aaa-A229-E09AB9E2CB9C}
+const GUID guid_configWindow = {
+    0x37835416, 0x4578, 0x4aaa, {0xa2, 0x29, 0xe0, 0x9a, 0xb9, 0xe2, 0xcb, 0x9c}};
+
+template <auto fn>
+using fn_class = std::integral_constant<decltype(fn), fn>;
+
+template <typename T, auto fn>
+using unique_ptr_del = std::unique_ptr<T, fn_class<fn>>;
+
+struct ILessUtf8 {
+  bool operator()(const std::string& a, const std::string& b) const {
+    return stricmp_utf8(a.c_str(), b.c_str()) < 0;
+  }
+};
+
+extern const char* defaultCoverConfig;
+extern const std::unordered_map<const char*, const char*> builtInCoverConfigs;
 
 #define TEST_BIT_PTR(BITSET_PTR, BIT) _bittest(BITSET_PTR, BIT)
 #ifdef _DEBUG
@@ -114,3 +146,16 @@ class Timer {
   PTP_TIMER timer;
   std::function<void()> f;
 };
+
+#ifdef _DEBUG
+namespace console {
+class out : std::wostringstream {
+  out() : std::wostringstream(){};
+  ~out();
+};
+void create();
+void print(const wchar_t* str);
+void println(const wchar_t* str);
+void printf(const wchar_t* format, ...);
+};  // namespace console
+#endif

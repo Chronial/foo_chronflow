@@ -9,9 +9,9 @@
 #include "EngineThread.h"
 #include "MyActions.h"
 #include "PlaybackTracer.h"
-#include "base.h"
 #include "config.h"
 #include "cover_positions_compiler.h"
+#include "utils.h"
 
 // NOLINTNEXTLINE(cppcoreguidelines-interfaces-global-init)
 std::unordered_map<UINT, cfg_string*> stringVarMap{

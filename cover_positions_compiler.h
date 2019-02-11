@@ -5,8 +5,8 @@
 #include "lib/script_control.h"
 
 #include "CoverConfig.h"
-#include "Helpers.h"
 #include "config.h"
+#include "utils.h"
 
 struct CoverPosInfo {  // When changing this you have to update CompiledCPInfo::version
   glVectorf position;

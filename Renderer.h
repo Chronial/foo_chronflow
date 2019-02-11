@@ -1,9 +1,8 @@
 #pragma once
-#include "Helpers.h"
-
 #include "DbAlbumCollection.h"
 #include "TextDisplay.h"
 #include "cover_positions.h"
+#include "utils.h"
 
 class TextureCache;
 class DisplayPosition;

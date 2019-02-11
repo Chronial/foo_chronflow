@@ -1,7 +1,7 @@
 #pragma once
 #include "DbAlbumCollection.h"
 #include "EngineThread.h"
-#include "base.h"
+#include "utils.h"
 
 class EngineWindow {
   unique_ptr_del<GLFWwindow, glfwDestroyWindow> glfwWindow;

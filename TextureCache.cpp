@@ -1,11 +1,10 @@
 #include "TextureCache.h"
 
-#include "Console.h"
 #include "DbAlbumCollection.h"
 #include "EngineThread.h"
-#include "Helpers.h"
 #include "Image.h"
 #include "config.h"
+#include "utils.h"
 
 TextureCache::TextureCache(EngineThread& thread, DbAlbumCollection& db)
     : db(db), thread(thread),
@@ -75,7 +74,7 @@ void TextureCache::uploadTextures() {
     textureCache.emplace(loaded->meta, std::move(texture));
   }
   if (redraw) {
-    IF_DEBUG(Console::println(L"Refresh MainWin."));
+    IF_DEBUG(console::println(L"Refresh MainWin."));
     thread.invalidateWindow();
   }
 }

@@ -157,16 +157,13 @@
     <ClCompile Include="ContainerWindow.cpp" />
     <ClCompile Include="CoverConfig.cpp" />
     <ClCompile Include="ConfigWindow.cpp" />
-    <ClCompile Include="Console.cpp">
-      <FileType>CppCode</FileType>
-    </ClCompile>
     <ClCompile Include="cover_positions_compiler.cpp" />
     <ClCompile Include="CuiComponent.cpp" />
     <ClCompile Include="DbAlbumCollection.cpp" />
     <ClCompile Include="DbReloadWorker.cpp" />
     <ClCompile Include="DisplayPosition.cpp" />
     <ClCompile Include="TrackDropSource.cpp" />
-    <ClCompile Include="Helpers.cpp" />
+    <ClCompile Include="utils.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -193,12 +190,11 @@
     <ClInclude Include="lib\stb_image_resize.h" />
     <ClInclude Include="lib\win32_helpers.h" />
     <ClInclude Include="TextureCache.h" />
-    <ClInclude Include="base.h" />
+    <ClInclude Include="utils.h" />
     <ClInclude Include="ContainerWindow.h" />
     <ClInclude Include="CoverConfig.h" />
     <ClCompile Include="config.cpp" />
     <ClInclude Include="config.h" />
-    <ClInclude Include="Console.h" />
     <ClInclude Include="DbAlbumCollection.h" />
     <ClInclude Include="DbReloadWorker.h" />
     <ClInclude Include="DisplayPosition.h" />
@@ -207,7 +203,6 @@
     <ClInclude Include="EngineWindow.h" />
     <ClInclude Include="TrackDropSource.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="Helpers.h" />
     <ClInclude Include="MyActions.h" />
     <ClInclude Include="PlaybackTracer.h" />
     <ClInclude Include="Renderer.h" />

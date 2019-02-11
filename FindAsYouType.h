@@ -1,5 +1,5 @@
 #pragma once
-#include "Helpers.h"
+#include "utils.h"
 
 class FindAsYouType {
   inline static const double typeTimeout = 1.0;

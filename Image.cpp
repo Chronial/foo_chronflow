@@ -5,9 +5,8 @@
 #include "lib/stb_image.h"
 #include "lib/stb_image_resize.h"
 
-#include "Console.h"
-#include "Helpers.h"
 #include "config.h"
+#include "utils.h"
 
 Image::Image(malloc_ptr data, int width, int height)
     : width(width), height(height), data(std::move(data)) {}
@@ -126,16 +125,16 @@ std::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_list& tracks) {
     auto art = extractor->query(album_art_ids::cover_front, abortCallback);
     Image image = Image::fromFileBuffer(art->get_ptr(), art->get_size());
     IF_DEBUG(gsl::finally([&] {
-      Console::printf(
+      console::printf(
           L"Load image file in %.2f ms\n", (Helpers::getHighresTimer() - preLoad) * 1000);
     }));
     return UploadReadyImage(std::move(image));
   } catch (const exception_album_art_not_found&) {
-    IF_DEBUG(Console::printf(L"Missing image file in %.2f ms\n",
+    IF_DEBUG(console::printf(L"Missing image file in %.2f ms\n",
                              (Helpers::getHighresTimer() - preLoad) * 1000));
     return std::nullopt;
   } catch (...) {
-    IF_DEBUG(Console::printf(L"Failed to load image in %.2f ms\n",
+    IF_DEBUG(console::printf(L"Failed to load image in %.2f ms\n",
                              (Helpers::getHighresTimer() - preLoad) * 1000));
     return std::nullopt;
   }
@@ -212,7 +211,7 @@ GLTexture UploadReadyImage::upload() const {
 
   glTexImage2D(GL_TEXTURE_2D, 0, glInternalFormat, image.width, image.height, 0, GL_RGB,
                GL_UNSIGNED_BYTE, image.data.get());
-  IF_DEBUG(Console::printf(
+  IF_DEBUG(console::printf(
       L"    UPLOAD (%.3f ms)\n", (Helpers::getHighresTimer() - preLoad) * 1000));
   return GLTexture(glTexture, static_cast<float>(originalAspect));
 }
@@ -243,7 +242,7 @@ void GLTexture::bind() const {
 }
 
 void GLTexture::glDelete() noexcept {
-  IF_DEBUG(Console::println(L"   DELETE"));
+  IF_DEBUG(console::println(L"   DELETE"));
   glDeleteTextures(1, &glTexture);
   glTexture = 0;
 }

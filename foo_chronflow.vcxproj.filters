@@ -19,12 +19,6 @@
     <Filter Include="Source Files\Helpers">
       <UniqueIdentifier>{28189b49-b5b5-469c-a975-9a2aa24c8adc}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Basics">
-      <UniqueIdentifier>{9bfd32db-d2e0-4ddb-add6-9709f62222f1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Basics">
-      <UniqueIdentifier>{de60aad4-e586-4d21-8eb6-25d1a6c3dd78}</UniqueIdentifier>
-    </Filter>
     <Filter Include="lib">
       <UniqueIdentifier>{44371096-0fc0-45fa-8a10-a0d7034ba8f4}</UniqueIdentifier>
     </Filter>
@@ -51,26 +45,11 @@
     <ClCompile Include="CoverConfig.cpp">
       <Filter>Source Files\Helpers</Filter>
     </ClCompile>
-    <ClCompile Include="Helpers.cpp">
-      <Filter>Source Files\Helpers</Filter>
-    </ClCompile>
     <ClCompile Include="MyActions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Console.cpp">
-      <Filter>Source Files\Helpers</Filter>
-    </ClCompile>
     <ClCompile Include="TrackDropSource.cpp">
       <Filter>Source Files\Helpers</Filter>
-    </ClCompile>
-    <ClCompile Include="config.cpp">
-      <Filter>Source Files\Basics</Filter>
-    </ClCompile>
-    <ClCompile Include="main.cpp">
-      <Filter>Source Files\Basics</Filter>
-    </ClCompile>
-    <ClCompile Include="stdafx.cpp">
-      <Filter>Source Files\Basics</Filter>
     </ClCompile>
     <ClCompile Include="DbReloadWorker.cpp">
       <Filter>Source Files</Filter>
@@ -126,6 +105,18 @@
     <ClCompile Include="lib\win32_helpers.cpp">
       <Filter>lib</Filter>
     </ClCompile>
+    <ClCompile Include="config.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DbAlbumCollection.h">
@@ -149,23 +140,8 @@
     <ClInclude Include="CoverConfig.h">
       <Filter>Header Files\Helpers</Filter>
     </ClInclude>
-    <ClInclude Include="Helpers.h">
-      <Filter>Header Files\Helpers</Filter>
-    </ClInclude>
     <ClInclude Include="TrackDropSource.h">
       <Filter>Header Files\Helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="Console.h">
-      <Filter>Header Files\Helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="base.h">
-      <Filter>Header Files\Basics</Filter>
-    </ClInclude>
-    <ClInclude Include="config.h">
-      <Filter>Header Files\Basics</Filter>
-    </ClInclude>
-    <ClInclude Include="stdafx.h">
-      <Filter>Header Files\Basics</Filter>
     </ClInclude>
     <ClInclude Include="BlockingQueue.h">
       <Filter>Header Files\Helpers</Filter>
@@ -229,6 +205,15 @@
     </ClInclude>
     <ClInclude Include="lib\win32_helpers.h">
       <Filter>lib</Filter>
+    </ClInclude>
+    <ClInclude Include="config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="utils.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -5,7 +5,7 @@
 
 #include "lib/script_control.h"
 
-#include "base.h"
+#include "utils.h"
 
 CPScriptCompiler::CPScriptCompiler() {
   scriptObj.SetLanguage(L"JScript");
