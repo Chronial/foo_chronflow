@@ -2,51 +2,27 @@
 
 #include "base.h"
 
-class BuildInCoverConfigs : public std::vector<CoverConfig> {
- public:
-  BuildInCoverConfigs() {
-    auto map = builtInCoverConfigs;
-    for (auto& [name, script] : builtInCoverConfigs) {
-      this->push_back(CoverConfig{name, script, true});
-    }
+const CoverConfigMap buildIn = [] {
+  CoverConfigMap map;
+  for (auto& [name, script] : builtInCoverConfigs) {
+    map[name] = CoverConfig{script, true};
   }
-};
-const BuildInCoverConfigs buildIn{};
+  return map;
+}();
 
 cfg_coverConfigs::cfg_coverConfigs(const GUID& p_guid)
-    : cfg_var(p_guid), std::vector<CoverConfig>(buildIn) {}
-
-CoverConfig* cfg_coverConfigs::getPtrByName(const char* name) {
-  for (auto& config : *this) {
-    if (!stricmp_utf8(config.name, name))
-      return &config;
-  }
-  return nullptr;
-}
-bool cfg_coverConfigs::removeItemByName(const char* name) {
-  for (auto it = begin(); it != end(); ++it) {
-    if (!stricmp_utf8(it->name, name)) {
-      erase(it);
-      return true;
-    }
-  }
-  return false;
-}
-
-void cfg_coverConfigs::sortByName() {
-  std::sort(
-      begin(), end(), [](auto a, auto b) { return stricmp_utf8(a.name, b.name) < 0; });
-}
+    : cfg_var(p_guid), CoverConfigMap(buildIn) {}
 
 void cfg_coverConfigs::get_data_raw(stream_writer* p_stream, abort_callback& p_abort) {
   p_stream->write_lendian_t(version, p_abort);
-  int c = std::count_if(begin(), end(), [](auto x) { return !x.buildIn; });
-  p_stream->write_lendian_t(c, p_abort);
-  for (auto& config : *this) {
+  int customCount = std::count_if(
+      begin(), end(), [](CoverConfigMap::value_type& x) { return !x.second.buildIn; });
+  p_stream->write_lendian_t(customCount, p_abort);
+  for (auto& [name, config] : *this) {
     if (config.buildIn)
       continue;
-    p_stream->write_string(config.name, p_abort);
-    p_stream->write_string(config.script, p_abort);
+    p_stream->write_string(name.c_str(), p_abort);
+    p_stream->write_string(config.script.c_str(), p_abort);
   }
 }
 
@@ -65,15 +41,13 @@ void cfg_coverConfigs::set_data_raw(stream_reader* p_stream, t_size /*p_sizehint
   }
   p_stream->read_lendian_t(c, p_abort);
   clear();
-  reserve(c);
   for (int i = 0; i < c; i++) {
-    CoverConfig config;
-    p_stream->read_string(config.name, p_abort);
-    p_stream->read_string(config.script, p_abort);
-    config.buildIn = false;
-    push_back(std::move(config));
+    pfc::string8 name;
+    pfc::string8 script;
+    p_stream->read_string(name, p_abort);
+    p_stream->read_string(script, p_abort);
+    insert({name.c_str(), CoverConfig{script.c_str(), false}});
   }
 
-  insert(end(), buildIn.begin(), buildIn.end());
-  sortByName();
+  insert(buildIn.begin(), buildIn.end());
 }

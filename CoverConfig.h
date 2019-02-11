@@ -1,17 +1,16 @@
 #pragma once
+#include "base.h"
 
 struct CoverConfig {
-  pfc::string8 name;
-  pfc::string8 script;
+  std::string script;
   bool buildIn = false;
 };
 
-class cfg_coverConfigs : public cfg_var, public std::vector<CoverConfig> {
+using CoverConfigMap = std::map<std::string, CoverConfig, ILessUtf8>;
+
+class cfg_coverConfigs : public cfg_var, public CoverConfigMap {
  public:
   explicit cfg_coverConfigs(const GUID& p_guid);
-  CoverConfig* getPtrByName(const char* name);
-  bool removeItemByName(const char* name);
-  void sortByName();
 
  protected:
   void get_data_raw(stream_writer* p_stream, abort_callback& p_abort) final;

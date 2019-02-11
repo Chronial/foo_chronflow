@@ -28,17 +28,19 @@ void cfg_compiledCPInfoPtr::set_data_raw(stream_reader* p_stream, t_size /*p_siz
 }
 
 ScriptedCoverPositions::ScriptedCoverPositions() {
+  // Do we have already compiled data?
   cInfo = sessionCompiledCPInfo.get();
-  if (!cInfo) {
-    const CoverConfig* config = cfgCoverConfigs.getPtrByName(cfgCoverConfigSel);
-    pfc::string8 errorMsg;
-    if ((config == nullptr) || !setScript(config->script, errorMsg)) {
-      if (!setScript(defaultCoverConfig, errorMsg)) {
-        popup_message::g_show(
-            errorMsg, "JScript Compile Error", popup_message::icon_error);
-        throw std::runtime_error(errorMsg.c_str());
-      }
-    }
+  if (cInfo)
+    return;
+  // If not, try to compile the user's script
+  pfc::string8 errorMsg;
+  auto elem = cfgCoverConfigs.find(cfgCoverConfigSel.c_str());
+  if (elem != cfgCoverConfigs.end() && setScript(elem->second.script.c_str(), errorMsg))
+    return;
+  // If that fails, try to fall back to the default script
+  if (!setScript(defaultCoverConfig, errorMsg)) {
+    popup_message::g_show(errorMsg, "JScript Compile Error", popup_message::icon_error);
+    throw std::runtime_error(errorMsg.c_str());
   }
 }
 

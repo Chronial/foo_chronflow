@@ -528,8 +528,9 @@ class CoverTab : public ConfigTab {
         if (HIWORD(wParam) == EN_CHANGE) {
           textChanged(LOWORD(wParam));
           if (LOWORD(wParam) == IDC_DISPLAY_CONFIG) {
-            CoverConfig* config = cfgCoverConfigs.getPtrByName(cfgCoverConfigSel);
-            uGetDlgItemText(hWnd, IDC_DISPLAY_CONFIG, config->script);
+            pfc::string8 script;
+            uGetDlgItemText(hWnd, IDC_DISPLAY_CONFIG, script);
+            cfgCoverConfigs[cfgCoverConfigSel.c_str()].script = script.c_str();
             uSetDlgItemText(hWnd, IDC_COMPILE_STATUS, "");
           }
         } else if (HIWORD(wParam) == BN_CLICKED) {
@@ -711,22 +712,14 @@ class CoverTab : public ConfigTab {
   void removeConfig() {
     if (cfgCoverConfigs.size() > 1) {
       pfc::string8 title;
-      title << "Delete Config \"" << cfgCoverConfigs.getPtrByName(cfgCoverConfigSel)->name
-            << "\"";
+      title << "Delete Config \"" << cfgCoverConfigSel << "\"";
       if (IDYES == uMessageBox(hWnd, "Are you sure?", title,
                                MB_APPLMODAL | MB_YESNO | MB_ICONQUESTION)) {
-        cfgCoverConfigs.sortByName();
-        t_size configIdx = 0;
-        for (t_size i = 0; i < cfgCoverConfigs.size(); i++) {
-          if (!stricmp_utf8(cfgCoverConfigs[i].name, cfgCoverConfigSel)) {
-            configIdx = i;
-          }
-        }
-        cfgCoverConfigs.erase(cfgCoverConfigs.begin() + configIdx);
-        if (configIdx == cfgCoverConfigs.size()) {
-          configIdx--;
-        }
-        cfgCoverConfigSel = cfgCoverConfigs[configIdx].name;
+        auto i = cfgCoverConfigs.find(cfgCoverConfigSel.c_str());
+        auto next = cfgCoverConfigs.erase(i);
+        if (next == cfgCoverConfigs.end())
+          --next;
+        cfgCoverConfigSel = next->first.c_str();
         loadConfigList();
         configSelectionChanged();
       }
@@ -737,13 +730,12 @@ class CoverTab : public ConfigTab {
     if (dialog.query(hWnd)) {
       dialog.value.skip_trailing_char(' ');
       if (dialog.value.get_length()) {
-        if (cfgCoverConfigs.getPtrByName(dialog.value) == nullptr) {
-          CoverConfig config;
-          config.name = dialog.value;
+        if (cfgCoverConfigs.count(dialog.value.c_str()) == 0) {
+          pfc::string8 script;
           bool useClipboard = false;
-          if (uGetClipboardString(config.script)) {
+          if (uGetClipboardString(script)) {
             bool allFound = true;
-            pfc::stringcvt::string_wide_from_utf8 clipboard_w(config.script);
+            pfc::stringcvt::string_wide_from_utf8 clipboard_w(script);
             for (size_t i = 0; i < CPScriptFuncInfos::knownFunctions.size(); i++) {
               if (CPScriptFuncInfos::neededFunctions[i]) {
                 if (nullptr == wcsstr(clipboard_w,
@@ -757,10 +749,10 @@ class CoverTab : public ConfigTab {
               useClipboard = true;
           }
           if (!useClipboard)
-            config.script = defaultCoverConfig;
-          config.buildIn = false;
-          cfgCoverConfigs.push_back(config);
-          cfgCoverConfigSel = dialog.value;
+            script = defaultCoverConfig;
+          pfc::string8& name = dialog.value;
+          cfgCoverConfigs.insert({name.c_str(), CoverConfig{script, false}});
+          cfgCoverConfigSel = name;
           loadConfigList();
           configSelectionChanged();
         }
@@ -768,19 +760,21 @@ class CoverTab : public ConfigTab {
     }
   }
   void renameConfig() {
-    CoverConfig* config = cfgCoverConfigs.getPtrByName(cfgCoverConfigSel);
-    if (config != nullptr) {
-      ConfigNameDialog dialog;
-      if (dialog.query(hWnd, config->name)) {
-        dialog.value.skip_trailing_char(' ');
-        if (dialog.value.get_length()) {
-          CoverConfig* nameCollision = cfgCoverConfigs.getPtrByName(dialog.value);
-          if ((nameCollision == nullptr) || nameCollision == config) {
-            config->name = dialog.value;
-            cfgCoverConfigSel = dialog.value;
-            loadConfigList();
-            configSelectionChanged();
-          }
+    ConfigNameDialog dialog;
+    if (dialog.query(hWnd, cfgCoverConfigSel)) {
+      dialog.value.skip_trailing_char(' ');
+      if (dialog.value.get_length()) {
+        auto existing = cfgCoverConfigs.find(dialog.value.c_str());
+        if (existing == cfgCoverConfigs.end() ||
+            existing->first == cfgCoverConfigSel.c_str()) {
+          auto node = cfgCoverConfigs.extract(cfgCoverConfigSel.c_str());
+          if (node.empty())
+            return;
+          node.key() = dialog.value.c_str();
+          cfgCoverConfigs.insert(std::move(node));
+          cfgCoverConfigSel = dialog.value;
+          loadConfigList();
+          configSelectionChanged();
         }
       }
     }
@@ -788,24 +782,25 @@ class CoverTab : public ConfigTab {
   void loadConfigList() {
     uSendDlgItemMessage(hWnd, IDC_SAVED_SELECT, CB_RESETCONTENT, 0, 0);
 
-    for (auto& config : cfgCoverConfigs) {
-      uSendDlgItemMessageText(hWnd, IDC_SAVED_SELECT, CB_ADDSTRING, 0, config.name);
+    for (auto& [name, config] : cfgCoverConfigs) {
+      uSendDlgItemMessageText(hWnd, IDC_SAVED_SELECT, CB_ADDSTRING, 0, name.c_str());
     }
 
     uSendDlgItemMessageText(
         hWnd, IDC_SAVED_SELECT, CB_SELECTSTRING, 1, cfgCoverConfigSel);
   }
   void configSelectionChanged() {
-    const CoverConfig* config = cfgCoverConfigs.getPtrByName(cfgCoverConfigSel);
-    if (config != nullptr) {
-      uSetDlgItemText(hWnd, IDC_DISPLAY_CONFIG, config->script);
+    try {
+      const CoverConfig& config = cfgCoverConfigs.at(cfgCoverConfigSel.c_str());
+      uSetDlgItemText(hWnd, IDC_DISPLAY_CONFIG, config.script.c_str());
       uSendDlgItemMessage(
-          hWnd, IDC_DISPLAY_CONFIG, EM_SETREADONLY, static_cast<int>(config->buildIn), 0);
+          hWnd, IDC_DISPLAY_CONFIG, EM_SETREADONLY, static_cast<int>(config.buildIn), 0);
       // uEnableWindow(uGetDlgItem(hWnd, IDC_DISPLAY_CONFIG), !config->buildIn);
       uEnableWindow(
-          uGetDlgItem(hWnd, IDC_SAVED_REMOVE), static_cast<BOOL>(!config->buildIn));
+          uGetDlgItem(hWnd, IDC_SAVED_REMOVE), static_cast<BOOL>(!config.buildIn));
       uEnableWindow(
-          uGetDlgItem(hWnd, IDC_SAVED_RENAME), static_cast<BOOL>(!config->buildIn));
+          uGetDlgItem(hWnd, IDC_SAVED_RENAME), static_cast<BOOL>(!config.buildIn));
+    } catch (std::out_of_range&) {
     }
     uSetDlgItemText(hWnd, IDC_COMPILE_STATUS, "");
   }

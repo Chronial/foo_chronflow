@@ -20,10 +20,16 @@ const GUID guid_configWindow = {
     0x37835416, 0x4578, 0x4aaa, {0xa2, 0x29, 0xe0, 0x9a, 0xb9, 0xe2, 0xcb, 0x9c}};
 
 template <auto fn>
-using deleter_from_fn = std::integral_constant<decltype(fn), fn>;
+using fn_class = std::integral_constant<decltype(fn), fn>;
 
 template <typename T, auto fn>
-using unique_ptr_del = std::unique_ptr<T, deleter_from_fn<fn>>;
+using unique_ptr_del = std::unique_ptr<T, fn_class<fn>>;
+
+struct ILessUtf8 {
+  bool operator()(const std::string& a, const std::string& b) const {
+    return stricmp_utf8(a.c_str(), b.c_str()) < 0;
+  }
+};
 
 extern const char* defaultCoverConfig;
 extern const std::unordered_map<const char*, const char*> builtInCoverConfigs;
