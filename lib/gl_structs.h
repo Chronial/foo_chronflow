@@ -19,6 +19,9 @@ struct glVertex {  // GL_V3F
     res.z = z + v.z;
     return res;
   }
+  float* as_3fv() {
+    return &x;
+  }
 };
 
 typedef glVertex glVectorf;

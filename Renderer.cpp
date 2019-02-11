@@ -42,9 +42,9 @@ void Renderer::getFrustrumSize(double& right, double& top, double& zNear, double
   static const double fov = 45;
   static const double squareLength = tan(deg2rad(fov) / 2) * zNear;
   fovAspectBehaviour weight = coverPos.getAspectBehaviour();
-  double aspect = (double)winHeight / winWidth;
-  right = squareLength / pow(aspect, (double)weight.y);
-  top = squareLength * pow(aspect, (double)weight.x);
+  double aspect = double(winHeight) / winWidth;
+  right = squareLength / pow(aspect, double(weight.y));
+  top = squareLength * pow(aspect, double(weight.x));
 }
 
 void Renderer::setProjectionMatrix(bool pickMatrix, int x, int y) {
@@ -52,8 +52,9 @@ void Renderer::setProjectionMatrix(bool pickMatrix, int x, int y) {
   glLoadIdentity();
   if (pickMatrix) {
     GLint viewport[4];
-    glGetIntegerv(GL_VIEWPORT, viewport);
-    gluPickMatrix((GLdouble)x, (GLdouble)(viewport[3] - y), 1.0, 1.0, viewport);
+    glGetIntegerv(GL_VIEWPORT, static_cast<GLint*>(viewport));
+    gluPickMatrix(
+        GLdouble(x), GLdouble(viewport[3] - y), 1.0, 1.0, static_cast<GLint*>(viewport));
   }
   double right, top, zNear, zFar;
   getFrustrumSize(right, top, zNear, zFar);
@@ -82,14 +83,14 @@ void Renderer::glPopOrthoMatrix() {
 
 bool Renderer::offsetOnPoint(int x, int y, int& out) {
   GLuint buf[256];
-  glSelectBuffer(256, buf);
+  glSelectBuffer(256, static_cast<GLuint*>(buf));
   glRenderMode(GL_SELECT);
   setProjectionMatrix(true, x, y);
   glInitNames();
   drawScene(true);
   GLint hits = glRenderMode(GL_RENDER);
   setProjectionMatrix();
-  GLuint* p = buf;
+  GLuint* p = static_cast<GLuint*>(buf);
   GLuint minZ = INFINITE;
   GLuint selectedName = 0;
   for (int i = 0; i < hits; i++) {
@@ -125,9 +126,10 @@ void Renderer::drawMirrorPass() {
   double rotAngle = rad2deg(scaleAxis.intersectAng(mirrorNormal));
   rotAngle = -2 * rotAngle;
 
-  GLfloat fogColor[4] = {GetRValue(cfgPanelBg) / 255.0f, GetGValue(cfgPanelBg) / 255.0f,
-                         GetBValue(cfgPanelBg) / 255.0f, 1.0f};
-  glFogfv(GL_FOG_COLOR, fogColor);
+  glFogfv(GL_FOG_COLOR, std::array<GLfloat, 4>{GetRValue(cfgPanelBg) / 255.0f,
+                                               GetGValue(cfgPanelBg) / 255.0f,
+                                               GetBValue(cfgPanelBg) / 255.0f, 1.0f}
+                            .data());
   glEnable(GL_FOG);
 
   glPushMatrix();
@@ -315,21 +317,21 @@ void Renderer::drawCovers(bool showTarget) {
     glPushName(SELECTION_CENTER + offset);
 
     glBegin(GL_QUADS);
-    glFogCoordf((GLfloat)coverPos.distanceToMirror(coverQuad.topLeft));
+    glFogCoordf(static_cast<GLfloat>(coverPos.distanceToMirror(coverQuad.topLeft)));
     glTexCoord2f(0.0f, 1.0f);  // top left
-    glVertex3fv((GLfloat*)&(coverQuad.topLeft.x));
+    glVertex3fv(coverQuad.topLeft.as_3fv());
 
-    glFogCoordf((GLfloat)coverPos.distanceToMirror(coverQuad.topRight));
+    glFogCoordf(static_cast<GLfloat>(coverPos.distanceToMirror(coverQuad.topRight)));
     glTexCoord2f(1.0f, 1.0f);  // top right
-    glVertex3fv((GLfloat*)&(coverQuad.topRight.x));
+    glVertex3fv(coverQuad.topRight.as_3fv());
 
-    glFogCoordf((GLfloat)coverPos.distanceToMirror(coverQuad.bottomRight));
+    glFogCoordf(static_cast<GLfloat>(coverPos.distanceToMirror(coverQuad.bottomRight)));
     glTexCoord2f(1.0f, 0.0f);  // bottom right
-    glVertex3fv((GLfloat*)&(coverQuad.bottomRight.x));
+    glVertex3fv(coverQuad.bottomRight.as_3fv());
 
-    glFogCoordf((GLfloat)coverPos.distanceToMirror(coverQuad.bottomLeft));
+    glFogCoordf(static_cast<GLfloat>(coverPos.distanceToMirror(coverQuad.bottomLeft)));
     glTexCoord2f(0.0f, 0.0f);  // bottom left
-    glVertex3fv((GLfloat*)&(coverQuad.bottomLeft.x));
+    glVertex3fv(coverQuad.bottomLeft.as_3fv());
     glEnd();
     glPopName();
 
@@ -349,12 +351,12 @@ void Renderer::drawCovers(bool showTarget) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         glDisable(GL_TEXTURE_2D);
 
-        glLineWidth((GLfloat)cfgHighlightWidth);
+        glLineWidth(GLfloat(cfgHighlightWidth));
         glPolygonOffset(-1.0f, -1.0f);
         glEnable(GL_POLYGON_OFFSET_LINE);
 
         glEnable(GL_VERTEX_ARRAY);
-        glVertexPointer(3, GL_FLOAT, 0, (void*)&coverQuad);
+        glVertexPointer(3, GL_FLOAT, 0, static_cast<void*>(&coverQuad));
         glDrawArrays(GL_QUADS, 0, 4);
 
         glDisable(GL_POLYGON_OFFSET_LINE);

@@ -9,21 +9,22 @@
 
 TextureCache::TextureCache(EngineThread& thread, DbAlbumCollection& db)
     : db(db), thread(thread),
-      noCoverTexture(loadSpecialArt(IDR_COVER_NO_IMG, cfgImgNoCover).upload()),
-      loadingTexture(loadSpecialArt(IDR_COVER_LOADING, cfgImgLoading).upload()) {}
+      noCoverTexture(loadSpecialArt(IDR_COVER_NO_IMG, cfgImgNoCover.c_str()).upload()),
+      loadingTexture(loadSpecialArt(IDR_COVER_LOADING, cfgImgLoading.c_str()).upload()) {}
 
 void TextureCache::reloadSpecialTextures() {
-  loadingTexture = loadSpecialArt(IDR_COVER_LOADING, cfgImgLoading).upload();
-  noCoverTexture = loadSpecialArt(IDR_COVER_NO_IMG, cfgImgNoCover).upload();
+  loadingTexture = loadSpecialArt(IDR_COVER_LOADING, cfgImgLoading.c_str()).upload();
+  noCoverTexture = loadSpecialArt(IDR_COVER_NO_IMG, cfgImgNoCover.c_str()).upload();
 }
 
 const GLTexture& TextureCache::getLoadedImgTexture(const std::string& albumName) {
   auto entry = textureCache.find(albumName);
   if (entry != textureCache.end()) {
-    if (entry->texture)
+    if (entry->texture) {
       return entry->texture.value();
-    else
+    } else {
       return noCoverTexture;
+    }
   } else {
     return loadingTexture;
   }
@@ -48,7 +49,7 @@ void TextureCache::onCollectionReload() {
 }
 
 void TextureCache::trimCache() {
-  while (textureCache.size() > (size_t)cfgTextureCacheSize) {
+  while (textureCache.size() > static_cast<size_t>(cfgTextureCacheSize)) {
     auto& prorityIndex = textureCache.get<1>();
     auto oldestEntry = prorityIndex.begin();
     prorityIndex.erase(oldestEntry);
@@ -91,7 +92,7 @@ void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter) {
 
   for (size_t i = 0; i < maxLoad; i++) {
     auto cacheEntry = textureCache.find(loadNext->groupString);
-    auto priority = std::make_pair(cacheGeneration, -(int)i);
+    auto priority = std::make_pair(cacheGeneration, -static_cast<int>(i));
     if (cacheEntry != textureCache.end() &&
         cacheEntry->collectionVersion == collectionVersion) {
       textureCache.modify(cacheEntry, [=](CacheItem& x) { x.priority = priority; });
@@ -100,7 +101,8 @@ void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter) {
                                                           collectionVersion, priority});
     }
 
-    if ((i % 2 || leftLoaded == db.begin()) && ++CollectionPos(rightLoaded) != db.end()) {
+    if ((((i % 2) != 0u) || leftLoaded == db.begin()) &&
+        ++CollectionPos(rightLoaded) != db.end()) {
       ++rightLoaded;
       loadNext = rightLoaded;
       PFC_ASSERT(loadNext != db.end());

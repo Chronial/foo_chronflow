@@ -1,9 +1,7 @@
 #pragma once
 
-class Console {
+struct Console {
   Console() = delete;
-
- public:
   static void create();
   static void print(const wchar_t* str);
   static void println(const wchar_t* str);

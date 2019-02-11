@@ -17,7 +17,7 @@ enum VSyncMode {
 
 class Renderer {
  public:
-  Renderer(Engine& engine);
+  explicit Renderer(Engine& engine);
 
   void resizeGlScene(int width, int height);
   void setProjectionMatrix(bool pickMatrix = false, int x = 0, int y = 0);
@@ -39,8 +39,8 @@ class Renderer {
  private:
   void getFrustrumSize(double& right, double& top, double& zNear, double& zFar);
 
-  int winWidth;
-  int winHeight;
+  int winWidth = 1;
+  int winHeight = 1;
 
   bool vSyncEnabled;
 

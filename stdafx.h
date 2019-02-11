@@ -16,11 +16,13 @@
 #include <shared_mutex>
 #include <thread>
 #include <unordered_set>
+#include <utility>
+#include <valarray>
 
-using std::make_shared;
-using std::make_unique;
-using std::shared_ptr;
-using std::unique_ptr;
+using std::unique_ptr; // NOLINT
+using std::make_unique; // NOLINT
+using std::shared_ptr; // NOLINT
+using std::make_shared; // NOLINT
 
 #include <gsl/gsl>
 

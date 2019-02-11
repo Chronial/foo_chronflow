@@ -47,19 +47,19 @@ void DisplayPosition::update() {
       lastSpeed = 0.0f;
     } else {
       lastSpeed = speed;
-      int moveDistInt = int{floor(moveDist)};
+      float moveDistFloor = floor(moveDist);
 
       float newOffset = centeredOffset;  // minimize MT risk
-      newOffset += (moveDist - moveDistInt);
+      newOffset += (moveDist - moveDistFloor);
       if (newOffset >= 1.0f) {
         newOffset -= 1.0f;
-        moveDistInt += 1;
+        moveDistFloor += 1;
       } else if (newOffset < 0.0f) {
         newOffset += 1.0f;
-        moveDistInt -= 1;
+        moveDistFloor -= 1;
       }
       centeredOffset = newOffset;
-      std::advance(centeredPos, moveDistInt);
+      std::advance(centeredPos, moveDistFloor);
     }
   }
   if (!isMoving()) {

@@ -3,11 +3,6 @@
 #include "Renderer.h"
 #include "config.h"
 
-using namespace Gdiplus;
-
-TextDisplay::TextDisplay(Renderer* renderer)
-    : renderer(renderer), bitmapFontInitialized(false) {}
-
 TextDisplay::~TextDisplay() {
   clearCache();
   if (bitmapFontInitialized)
@@ -15,32 +10,33 @@ TextDisplay::~TextDisplay() {
 }
 
 void TextDisplay::buildDisplayFont() {
-  HFONT font = CreateFont(-14,                        // Height Of Font
-                          0,                          // Width Of Font
-                          0,                          // Angle Of Escapement
-                          0,                          // Orientation Angle
-                          FW_NORMAL,                  // Font Weight
-                          FALSE,                      // Italic
-                          FALSE,                      // Underline
-                          FALSE,                      // Strikeout
-                          ANSI_CHARSET,               // Character Set Identifier
-                          OUT_TT_PRECIS,              // Output Precision
-                          CLIP_DEFAULT_PRECIS,        // Clipping Precision
-                          ANTIALIASED_QUALITY,        // Output Quality
+  HFONT font = CreateFont(-14,  // Height Of Font
+                          0,  // Width Of Font
+                          0,  // Angle Of Escapement
+                          0,  // Orientation Angle
+                          FW_NORMAL,  // Font Weight
+                          FALSE,  // Italic
+                          FALSE,  // Underline
+                          FALSE,  // Strikeout
+                          ANSI_CHARSET,  // Character Set Identifier
+                          OUT_TT_PRECIS,  // Output Precision
+                          CLIP_DEFAULT_PRECIS,  // Clipping Precision
+                          ANTIALIASED_QUALITY,  // Output Quality
                           FF_SCRIPT | DEFAULT_PITCH,  // Family And Pitch
-                          L"Courier New");            // Font Name
+                          L"Courier New");  // Font Name
 
   Gdiplus::Bitmap dcBitmap(5, 5, PixelFormat32bppARGB);
   Gdiplus::Graphics dcGraphics(&dcBitmap);
 
   HDC hDC = dcGraphics.GetHDC();
-  SelectObject(hDC, font);  // Selects The Font We Want
+  // Select The Font We Want
+  SelectObject(hDC, font);
   bitmapDisplayList = glGenLists(96);
-  wglUseFontBitmaps(hDC, 32, 96,
-                    bitmapDisplayList);  // Builds 96 Characters Starting At Character 32
+  // Build 96 Characters Starting At Character 32
+  wglUseFontBitmaps(hDC, 32, 96, bitmapDisplayList);
   dcGraphics.ReleaseHDC(hDC);
 
-  DeleteObject(font);  // Delete The Font
+  DeleteObject(font);
   bitmapFontInitialized = true;
 }
 
@@ -52,65 +48,66 @@ void TextDisplay::displayBitmapText(const char* text, int x, int y) {
   glColor3f(GetRValue(cfgTitleColor) / 255.0f, GetGValue(cfgTitleColor) / 255.0f,
             GetBValue(cfgTitleColor) / 255.0f);
   glRasterPos2i(x, y);
-  glPushAttrib(GL_LIST_BIT);                          // Pushes The Display List Bits
-  glListBase(bitmapDisplayList - 32);                 // Sets The Base Character to 32
-  glCallLists(strlen(text), GL_UNSIGNED_BYTE, text);  // Draws The Display List Text
-  glPopAttrib();                                      // Pops The Display List Bits
+  glPushAttrib(GL_LIST_BIT);
+  glListBase(bitmapDisplayList - 32);
+  glCallLists(strlen(text), GL_UNSIGNED_BYTE, text);
+  glPopAttrib();
   glEnable(GL_TEXTURE_2D);
   renderer->glPopOrthoMatrix();
 }
 
 void TextDisplay::clearCache() {
-  for (int i = 0; i < CACHE_SIZE; i++) {
-    if (texCache[i].glTex) {
-      glDeleteTextures(i, &texCache[i].glTex);
+  for (auto& tex : texCache) {
+    if (tex.glTex) {
+      glDeleteTextures(1, &tex.glTex);
     }
-    texCache[i].age = ~0u;
+    tex.age = ~0u;
   }
 }
 
 void TextDisplay::displayText(const char* text, int x, int y, HAlignment hAlign,
                               VAlignment vAlign) {
-  if (text == 0 || text[0] == '\0')
+  if (text == nullptr || text[0] == '\0')
     return;
 
-  DisplayTexture* dTex = 0;
-  int oldestElem = 0;
+  DisplayTexture* dTex = nullptr;
+  DisplayTexture* oldestElem = &texCache.front();
   unsigned int maxAge = 0;
-  for (int i = 0; i < CACHE_SIZE; i++) {
-    if (texCache[i].glTex && texCache[i].text == text &&
-        texCache[i].color == cfgTitleColor) {
-      dTex = &texCache[i];
-      texCache[i].age = 0;
+  for (auto& tex : texCache) {
+    if (tex.glTex && tex.text == text && tex.color == cfgTitleColor) {
+      dTex = &tex;
+      tex.age = 0;
     } else {
-      if (texCache[i].age < ~0)
-        texCache[i].age++;
-      if (texCache[i].age > maxAge) {
-        maxAge = texCache[i].age;
-        oldestElem = i;
+      if (tex.age < ~0)
+        tex.age++;
+      if (tex.age > maxAge) {
+        maxAge = tex.age;
+        oldestElem = &tex;
       }
     }
   }
-  if (!dTex) {                         // not in cache
-    if (texCache[oldestElem].glTex) {  // is oldest Element initialized?
-      glDeleteTextures(1, &texCache[oldestElem].glTex);
-      texCache[oldestElem].glTex = 0;
+  if (dTex == nullptr) {  // not in cache
+    if (oldestElem->glTex) {  // is oldest Element initialized?
+      glDeleteTextures(1, &oldestElem->glTex);
+      oldestElem->glTex = 0;
     }
-    texCache[oldestElem] = createTexture(text);
-    texCache[oldestElem].age = 0;
-    dTex = &texCache[oldestElem];
+    *oldestElem = createTexture(text);
+    oldestElem->age = 0;
+    dTex = oldestElem;
   }
 
   renderer->glPushOrthoMatrix();
-  if (hAlign == right)
+  if (hAlign == right) {
     x -= dTex->textWidth;
-  else if (hAlign == center)
+  } else if (hAlign == center) {
     x -= dTex->textWidth / 2;
+  }
 
-  if (vAlign == bottom)
+  if (vAlign == bottom) {
     y -= dTex->textHeight;
-  else if (vAlign == middle)
+  } else if (vAlign == middle) {
     y -= dTex->textHeight / 2;
+  }
 
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   glEnable(GL_BLEND);
@@ -136,21 +133,22 @@ void TextDisplay::displayText(const char* text, int x, int y, HAlignment hAlign,
 TextDisplay::DisplayTexture TextDisplay::createTexture(const char* text) {
   DisplayTexture displayTex;
   displayTex.text = std::string(text);
-  unique_ptr<Bitmap> bitmap;
+  unique_ptr<Gdiplus::Bitmap> bitmap;
 
   {
     pfc::stringcvt::string_wide_from_utf8 w_text(text);
-    StringFormat strFormat;
+    Gdiplus::StringFormat strFormat;
     unique_ptr<Gdiplus::Font> font;
-    strFormat.SetAlignment(StringAlignmentCenter);
-    strFormat.SetTrimming(StringTrimmingNone);
-    strFormat.SetFormatFlags(StringFormatFlagsNoFitBlackBox | StringFormatFlagsNoWrap |
-                             StringFormatFlagsNoClip);
-    RectF stringSize(0, 0, 1024, 128);
+    strFormat.SetAlignment(Gdiplus::StringAlignmentCenter);
+    strFormat.SetTrimming(Gdiplus::StringTrimmingNone);
+    strFormat.SetFormatFlags(Gdiplus::StringFormatFlagsNoFitBlackBox |
+                             Gdiplus::StringFormatFlagsNoWrap |
+                             Gdiplus::StringFormatFlagsNoClip);
+    Gdiplus::RectF stringSize(0, 0, 1024, 128);
 
     {  // calculate Text Size
-      Bitmap calcBitmap(5, 5, PixelFormat32bppARGB);
-      Graphics graphics(&calcBitmap);
+      Gdiplus::Bitmap calcBitmap(5, 5, PixelFormat32bppARGB);
+      Gdiplus::Graphics graphics(&calcBitmap);
 
       HDC fontDC = graphics.GetHDC();
       font = make_unique<Gdiplus::Font>(fontDC, &(cfgTitleFont.get_value()));
@@ -158,14 +156,14 @@ TextDisplay::DisplayTexture TextDisplay::createTexture(const char* text) {
       if (!font->IsAvailable()) {
         font = make_unique<Gdiplus::Font>(L"Verdana", 8.0f);
       }
-      graphics.MeasureString(w_text, -1, font.get(), PointF(), &stringSize);
+      graphics.MeasureString(w_text, -1, font.get(), Gdiplus::PointF(), &stringSize);
     }
 
     // round to multiples of two, so centering is consistent
     stringSize.Width = ceil(stringSize.Width / 2.0f) * 2;
     stringSize.Height = ceil(stringSize.Height);
-    displayTex.texWidth = displayTex.textWidth = (int)stringSize.Width;
-    displayTex.texHeight = displayTex.textHeight = (int)stringSize.Height;
+    displayTex.texWidth = displayTex.textWidth = static_cast<int>(stringSize.Width);
+    displayTex.texHeight = displayTex.textHeight = static_cast<int>(stringSize.Height);
 
     // Make the texture size a power of two
     displayTex.texWidth = 1;
@@ -176,23 +174,23 @@ TextDisplay::DisplayTexture TextDisplay::createTexture(const char* text) {
     while (displayTex.texHeight < displayTex.textHeight)
       displayTex.texHeight = displayTex.texHeight << 1;
 
-    bitmap = make_unique<Bitmap>(displayTex.texWidth, displayTex.texHeight,
-                                 PixelFormat32bppARGB);
-    Graphics drawer(bitmap.get());
-    drawer.SetTextRenderingHint(TextRenderingHintAntiAliasGridFit);
+    bitmap = make_unique<Gdiplus::Bitmap>(
+        displayTex.texWidth, displayTex.texHeight, PixelFormat32bppARGB);
+    Gdiplus::Graphics drawer(bitmap.get());
+    drawer.SetTextRenderingHint(Gdiplus::TextRenderingHintAntiAliasGridFit);
 
-    Color textColor(255, 255, 255);
+    Gdiplus::Color textColor(255, 255, 255);
     textColor.SetFromCOLORREF(cfgTitleColor);
-    SolidBrush textBrush(textColor);
+    Gdiplus::SolidBrush textBrush(textColor);
     displayTex.color = cfgTitleColor;
 
     drawer.DrawString(w_text, -1, font.get(), stringSize, &strFormat, &textBrush);
   }
   {
-    bitmap->RotateFlip(RotateNoneFlipY);
-    Rect rc(0, 0, bitmap->GetWidth(), bitmap->GetHeight());
-    BitmapData bitmapData;
-    bitmap->LockBits(&rc, ImageLockModeRead, PixelFormat32bppARGB, &bitmapData);
+    bitmap->RotateFlip(Gdiplus::RotateNoneFlipY);
+    Gdiplus::Rect rc(0, 0, bitmap->GetWidth(), bitmap->GetHeight());
+    Gdiplus::BitmapData bitmapData{};
+    bitmap->LockBits(&rc, Gdiplus::ImageLockModeRead, PixelFormat32bppARGB, &bitmapData);
 
     glGenTextures(1, &displayTex.glTex);
     glBindTexture(GL_TEXTURE_2D, displayTex.glTex);

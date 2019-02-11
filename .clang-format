@@ -6,3 +6,5 @@ AllowShortFunctionsOnASingleLine: Inline
 AlignEscapedNewlines: DontAlign
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 DerivePointerAlignment: false
+PenaltyBreakBeforeFirstCallParameter: 0
+AlignTrailingComments: false

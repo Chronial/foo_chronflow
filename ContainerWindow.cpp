@@ -32,14 +32,14 @@ bool ContainerWindow::registerWindowClass() {
 
   WNDCLASS wc = {0};
   wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC | CS_DBLCLKS | CS_NOCLOSE;
-  wc.lpfnWndProc = (WNDPROC)ContainerWindow::WndProc;
+  wc.lpfnWndProc = ContainerWindow::WndProc;
   wc.cbClsExtra = 0;
   wc.cbWndExtra = sizeof(ContainerWindow*);
   wc.hInstance = myInstance;
-  wc.hIcon = LoadIcon(NULL, IDI_HAND);
-  wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-  wc.hbrBackground = NULL;
-  wc.lpszMenuName = NULL;
+  wc.hIcon = LoadIcon(nullptr, IDI_HAND);
+  wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+  wc.hbrBackground = nullptr;
+  wc.lpszMenuName = nullptr;
   wc.lpszClassName = MAINWINDOW_CLASSNAME;
 
   return RegisterClass(&wc) != 0;
@@ -77,7 +77,7 @@ LRESULT ContainerWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam,
     case WM_ERASEBKGND:
       return TRUE;
     case WM_PAINT: {
-      if (GetUpdateRect(hWnd, 0, FALSE)) {
+      if (GetUpdateRect(hWnd, nullptr, FALSE)) {
         if (engineWindow) {
           engineWindow->onDamage();
         } else {
@@ -86,7 +86,7 @@ LRESULT ContainerWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam,
           RECT rc;
           hdc = BeginPaint(hWnd, &ps);
           GetClientRect(hWnd, &rc);
-          FillRect(hdc, &rc, (HBRUSH)GetStockObject(WHITE_BRUSH));
+          FillRect(hdc, &rc, static_cast<HBRUSH>(GetStockObject(WHITE_BRUSH)));
           rc.top += 10;
           DrawText(hdc,
                    L"foo_chronflow failed to open an opengl window :(.\nSee Console for "
@@ -132,7 +132,7 @@ HWND ContainerWindow::createWindow(HWND parent) {
                               CW_USEDEFAULT, CW_USEDEFAULT,  // Window Position
                               CW_USEDEFAULT, CW_USEDEFAULT,  // Window Dimensions
                               parent,                        // No Parent Window
-                              NULL,                          // No Menu
+                              nullptr,                       // No Menu
                               core_api::get_my_instance(),   // Instance
-                              (void*)this));
+                              static_cast<void*>(this)));
 };

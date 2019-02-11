@@ -3,7 +3,7 @@
 
 class Image {
  public:
-  typedef unique_ptr_del<void, &free> malloc_ptr;
+  using malloc_ptr = unique_ptr_del<void, &free>;
   int width;
   int height;
   malloc_ptr data;
@@ -39,7 +39,7 @@ class GLTexture {
 
 class UploadReadyImage {
  public:
-  UploadReadyImage(Image&& src);
+  explicit UploadReadyImage(Image&& src);
   UploadReadyImage(const UploadReadyImage&) = delete;
   UploadReadyImage& operator=(const UploadReadyImage&) = delete;
   UploadReadyImage(UploadReadyImage&& other)

@@ -18,7 +18,7 @@ Image Image::fromFile(const char* filename) {
   int height;
   int channels_in_file;
   FILE* f;
-  stbi_set_flip_vertically_on_load(true);
+  stbi_set_flip_vertically_on_load(TRUE);
   if (!_wfopen_s(&f, wideName, L"r"))
     throw std::runtime_error{"Failed to open image file"};
   malloc_ptr data{
@@ -34,7 +34,7 @@ Image Image::fromFileBuffer(const void* buffer, size_t len) {
   int width;
   int height;
   int channels_in_file;
-  stbi_set_flip_vertically_on_load(true);
+  stbi_set_flip_vertically_on_load(TRUE);
   malloc_ptr data{static_cast<void*>(stbi_load_from_memory(
       static_cast<const stbi_uc*>(buffer), len, &width, &height, &channels_in_file, 3))};
   if (data == nullptr) {
@@ -45,7 +45,7 @@ Image Image::fromFileBuffer(const void* buffer, size_t len) {
 
 Image Image::fromResource(LPCTSTR pName, LPCTSTR pType, HMODULE hInst) {
   HRSRC hResource = FindResource(hInst, pName, pType);
-  if (!hResource)
+  if (hResource == nullptr)
     throw std::runtime_error{"Failed to find image resource"};
 
   DWORD resourceSize = SizeofResource(hInst, hResource);
@@ -53,11 +53,11 @@ Image Image::fromResource(LPCTSTR pName, LPCTSTR pType, HMODULE hInst) {
     throw std::runtime_error{"Failed to size image resource"};
 
   HGLOBAL resourceHandle = LoadResource(hInst, hResource);
-  if (!resourceHandle)
+  if (resourceHandle == nullptr)
     throw std::runtime_error{"Failed to load image resource"};
 
   const void* resourceData = LockResource(resourceHandle);
-  if (!resourceData)
+  if (resourceData == nullptr)
     throw std::runtime_error{"Failed to lock image resource"};
 
   return Image::fromFileBuffer(resourceData, resourceSize);
@@ -68,10 +68,10 @@ Image Image::fromResource(UINT id, LPCTSTR pType, HMODULE hInst) {
 }
 
 Image Image::fromGdiBitmap(Gdiplus::Bitmap& bitmap) {
-  using namespace Gdiplus;
-  BitmapData bitmapData;
-  Rect rc(0, 0, bitmap.GetWidth(), bitmap.GetHeight());
-  if (Ok != bitmap.LockBits(&rc, ImageLockModeRead, PixelFormat24bppRGB, &bitmapData)) {
+  Gdiplus::BitmapData bitmapData{};
+  Gdiplus::Rect rc(0, 0, bitmap.GetWidth(), bitmap.GetHeight());
+  if (Gdiplus::Ok != bitmap.LockBits(&rc, Gdiplus::ImageLockModeRead, PixelFormat24bppRGB,
+                                     &bitmapData)) {
     throw std::runtime_error{"Failed to lock bitmap data"};
   }
   auto _ = gsl::finally([&] { bitmap.UnlockBits(&bitmapData); });
@@ -84,7 +84,7 @@ Image Image::fromGdiBitmap(Gdiplus::Bitmap& bitmap) {
   stbi__vertical_flip(outBuffer.get(), bitmapData.Width, bitmapData.Height, 3);
 
   // convert bgr to rgb
-  uint8_t* p = static_cast<uint8_t*>(outBuffer.get());
+  auto* p = static_cast<uint8_t*>(outBuffer.get());
   for (t_size i = 0; i < bitmapData.Width * bitmapData.Height; ++i) {
     stbi_uc t = p[0];
     p[0] = p[2];
@@ -117,14 +117,14 @@ std::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_list& tracks) {
   static_api_ptr_t<album_art_manager_v2> aam;
   abort_callback_impl abortCallback;
   // We only consider one track for art extraction for performance reasons
-  auto extractor = aam->open(pfc_list({tracks[0]}),
-                             pfc_list({album_art_ids::cover_front}), abortCallback);
+  auto extractor = aam->open(
+      pfc_list({tracks[0]}), pfc_list({album_art_ids::cover_front}), abortCallback);
   try {
     auto art = extractor->query(album_art_ids::cover_front, abortCallback);
     Image image = Image::fromFileBuffer(art->get_ptr(), art->get_size());
     IF_DEBUG(gsl::finally([&] {
-      Console::printf(L"Load image file in %.2f ms\n",
-                      (Helpers::getHighresTimer() - preLoad) * 1000);
+      Console::printf(
+          L"Load image file in %.2f ms\n", (Helpers::getHighresTimer() - preLoad) * 1000);
     }));
     return UploadReadyImage(std::move(image));
   } catch (const exception_album_art_not_found&) {
@@ -201,15 +201,16 @@ GLTexture UploadReadyImage::upload() const {
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16);
 
   GLint glInternalFormat;
-  if (cfgTextureCompression)
+  if (cfgTextureCompression) {
     glInternalFormat = GL_COMPRESSED_RGB;
-  else
+  } else {
     glInternalFormat = GL_RGB;
+  }
 
   glTexImage2D(GL_TEXTURE_2D, 0, glInternalFormat, image.width, image.height, 0, GL_RGB,
                GL_UNSIGNED_BYTE, image.data.get());
-  IF_DEBUG(Console::printf(L"    UPLOAD (%.3f ms)\n",
-                           (Helpers::getHighresTimer() - preLoad) * 1000));
+  IF_DEBUG(Console::printf(
+      L"    UPLOAD (%.3f ms)\n", (Helpers::getHighresTimer() - preLoad) * 1000));
   return GLTexture(glTexture, static_cast<float>(originalAspect));
 }
 
@@ -229,16 +230,16 @@ GLTexture& GLTexture::operator=(GLTexture&& other) noexcept {
   return *this;
 }
 
-GLTexture::~GLTexture(void) noexcept {
+GLTexture::~GLTexture() noexcept {
   if (glTexture != 0)
     glDelete();
 }
 
-void GLTexture::bind(void) const {
+void GLTexture::bind() const {
   glBindTexture(GL_TEXTURE_2D, glTexture);
 }
 
-void GLTexture::glDelete(void) noexcept {
+void GLTexture::glDelete() noexcept {
   IF_DEBUG(Console::println(L"   DELETE"));
   glDeleteTextures(1, &glTexture);
   glTexture = 0;

@@ -1,10 +1,10 @@
 #include "Console.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 HANDLE Console::screenBuffer = nullptr;
 
-void Console::create(void) {
+void Console::create() {
   AllocConsole();
   screenBuffer = GetStdHandle(STD_OUTPUT_HANDLE);
 }
@@ -19,8 +19,8 @@ void Console::println(const wchar_t* str) {
 }
 void Console::printf(const wchar_t* format, ...) {
   va_list args;
-  va_start(args, format);
+  va_start(args, format);  // NOLINT
   wchar_t out[1024];
-  int len = vswprintf_s(out, 1024, format, args);
-  WriteConsole(screenBuffer, out, len, nullptr, nullptr);
+  int len = vswprintf_s(out, 1024, format, args);  // NOLINT
+  WriteConsole(screenBuffer, out, len, nullptr, nullptr);  // NOLINT
 }
