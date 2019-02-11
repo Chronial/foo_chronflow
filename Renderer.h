@@ -8,12 +8,6 @@ class TextureCache;
 class DisplayPosition;
 class Engine;
 
-enum VSyncMode {
-  VSYNC_SLEEP_ONLY = 1,
-  VSYNC_AND_SLEEP = 2,
-  VSYNC_ONLY = 3,
-};
-
 class Renderer {
  public:
   explicit Renderer(Engine& engine);

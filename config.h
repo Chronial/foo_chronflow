@@ -2,8 +2,7 @@
 #include "CoverConfig.h"
 #include "cover_positions.h"
 
-/*********************************************** Album Source tab
- * *******************************************************/
+/***************************** Album Source tab ******************************/
 extern cfg_string cfgFilter;
 extern cfg_string cfgGroup;
 extern cfg_string cfgSort;
@@ -12,8 +11,7 @@ extern cfg_string cfgInnerSort;
 extern cfg_string cfgImgNoCover;
 extern cfg_string cfgImgLoading;
 
-/*********************************************** Behaviour tab
- * **********************************************************/
+/******************************* Behaviour tab *******************************/
 extern cfg_bool cfgCoverFollowsPlayback;
 extern cfg_int cfgCoverFollowDelay;
 extern cfg_bool cfgFindAsYouType;
@@ -23,8 +21,7 @@ extern cfg_string cfgDoubleClick;
 extern cfg_string cfgMiddleClick;
 extern cfg_string cfgEnterKey;
 
-/*********************************************** Display tab
- * ************************************************************/
+/******************************** Display tab ********************************/
 extern cfg_bool cfgShowAlbumTitle;
 extern cfg_string cfgAlbumTitle;
 extern service_ptr_t<titleformat_object> cfgAlbumTitleScript;
@@ -35,13 +32,11 @@ extern cfg_struct_t<LOGFONT> cfgTitleFont;
 extern cfg_int cfgPanelBg;
 extern cfg_int cfgHighlightWidth;
 
-/********************************************* Cover Display tab
- * *********************************************************/
+/***************************** Cover Display tab *****************************/
 extern cfg_coverConfigs cfgCoverConfigs;
 extern cfg_string cfgCoverConfigSel;
 
-/*********************************************** Performance tab
- * *********************************************************/
+/****************************** Performance tab ******************************/
 extern cfg_bool cfgMultisampling;
 extern cfg_int cfgMultisamplingPasses;
 
@@ -54,7 +49,14 @@ extern cfg_bool cfgEmptyCacheOnMinimize;
 extern cfg_int cfgVSyncMode;
 extern cfg_bool cfgShowFps;
 
-// Non-config vars
+/****************************** non-config vars ******************************/
 extern cfg_int sessionSelectedCover;
 extern cfg_int sessionSelectedConfigTab;
 extern cfg_compiledCPInfoPtr sessionCompiledCPInfo;
+
+/*********************************** Types ***********************************/
+enum VSyncMode {
+  VSYNC_SLEEP_ONLY = 1,
+  VSYNC_AND_SLEEP = 2,
+  VSYNC_ONLY = 3,
+};

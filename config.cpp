@@ -1,9 +1,9 @@
+#include "config.h"
+
 #include "CoverConfig.h"
-#include "Renderer.h"
 #include "cover_positions.h"
 
-/*********************************************** Album Source tab
- * *******************************************************/
+/***************************** Album Source tab ******************************/
 // {8426005A-98F3-42fe-A335-C0929C7DBC69}
 static const GUID guid_cfgFilter = {
     0x8426005a, 0x98f3, 0x42fe, {0xa3, 0x35, 0xc0, 0x92, 0x9c, 0x7d, 0xbc, 0x69}};
@@ -39,8 +39,7 @@ static const GUID guid_cfgImgLoading = {
     0x7fa5e2cc, 0x4eb, 0x4585, {0x92, 0x9, 0xd1, 0x88, 0xcd, 0x82, 0x4c, 0x79}};
 cfg_string cfgImgLoading(guid_cfgImgLoading, "");
 
-/*********************************************** Behaviour tab
- * **********************************************************/
+/******************************* Behaviour tab *******************************/
 // {5B915FEB-5FED-4edc-98D7-26F5BC991B3D}
 static const GUID guid_cfgCoverFollowsPlayback = {
     0x5b915feb, 0x5fed, 0x4edc, {0x98, 0xd7, 0x26, 0xf5, 0xbc, 0x99, 0x1b, 0x3d}};
@@ -76,8 +75,7 @@ static const GUID guid_cfgEnterKey = {
     0x30afb194, 0xe81a, 0x4130, {0x91, 0xa9, 0x1b, 0xca, 0x1f, 0x4e, 0x37, 0x15}};
 cfg_string cfgEnterKey(guid_cfgEnterKey, "Replace Default Playlist ");
 
-/*********************************************** Display tab
- * ************************************************************/
+/******************************** Display tab ********************************/
 // {3CA53569-36E3-4f55-98E9-5FDD27C6D041}
 static const GUID guid_cfgShowAlbumTitle = {
     0x3ca53569, 0x36e3, 0x4f55, {0x98, 0xe9, 0x5f, 0xdd, 0x27, 0xc6, 0xd0, 0x41}};
@@ -126,8 +124,7 @@ static const GUID guid_cfgHighlightWidth = {
     0x495f43f9, 0xc6a9, 0x4289, {0xaa, 0x1a, 0xc8, 0x71, 0xb5, 0xc, 0x5f, 0x62}};
 cfg_int cfgHighlightWidth(guid_cfgHighlightWidth, 0);
 
-/********************************************* Cover Display tab
- * *********************************************************/
+/***************************** Cover Display tab *****************************/
 // {7C3CFFF9-A881-476e-ACE7-503512F75C14}
 static const GUID guid_cfgCoverConfigs = {
     0x7c3cfff9, 0xa881, 0x476e, {0xac, 0xe7, 0x50, 0x35, 0x12, 0xf7, 0x5c, 0x14}};
@@ -138,9 +135,7 @@ static const GUID guid_cfgCoverConfigSel = {
     0xa6f566e7, 0x9800, 0x4de8, {0xbf, 0x72, 0x22, 0xfa, 0xa4, 0xad, 0xbb, 0x6b}};
 cfg_string cfgCoverConfigSel(guid_cfgCoverConfigSel, "Default (build-in)");
 
-/*********************************************** Performance tab
- * *********************************************************/
-
+/****************************** Performance tab ******************************/
 // {11053387-12C8-4f16-8BD0-7C6FF1523252}
 static const GUID guid_cfgMultisampling = {
     0x11053387, 0x12c8, 0x4f16, {0x8b, 0xd0, 0x7c, 0x6f, 0xf1, 0x52, 0x32, 0x52}};
