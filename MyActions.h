@@ -3,7 +3,7 @@
 
 class CustomAction {
  protected:
-  CustomAction(const char* actionName) { this->actionName = actionName; }
+  explicit CustomAction(const char* actionName) { this->actionName = actionName; }
 
  public:
   pfc::string8 actionName;
@@ -11,6 +11,6 @@ class CustomAction {
                    const char* albumTitle) = 0;
 };
 
-extern CustomAction* g_customActions[4];
+extern std::vector<CustomAction*> g_customActions;
 
 void executeAction(const char* action, const AlbumInfo& album);

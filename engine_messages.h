@@ -10,6 +10,8 @@ struct Message {
   Message() = default;
   Message(const Message&) = delete;
   Message& operator=(const Message&) = delete;
+  Message(Message&&) = delete;
+  Message& operator=(Message&&) = delete;
   virtual ~Message() = default;
   virtual void execute(Engine&){};
 };

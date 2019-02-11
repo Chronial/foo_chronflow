@@ -1,8 +1,8 @@
 #pragma once
 #include "cover_positions_compiler.h"
 
-#include "lib/script_control.h"
 #include "lib/gl_structs.h"
+#include "lib/script_control.h"
 
 #include "CoverConfig.h"
 #include "Helpers.h"
@@ -28,7 +28,7 @@ struct CoverPosInfo {  // When changing this you have to update CompiledCPInfo::
 
   static CoverPosInfo interpolate(const CoverPosInfo& a, const CoverPosInfo& b,
                                   float bWeight) {
-    CoverPosInfo out;
+    CoverPosInfo out{};
 
     out.position.x = interpolF(a.position.x, b.position.x, bWeight);
     out.position.y = interpolF(a.position.y, b.position.y, bWeight);
@@ -62,7 +62,7 @@ class CompiledCPInfo {
  public:
   static const int version = 1;
 
-  bool showMirrorPlane;
+  bool showMirrorPlane{};
   glVectord mirrorNormal;  // guaranteed to have length 1
   glVectord mirrorCenter;
 
@@ -70,10 +70,10 @@ class CompiledCPInfo {
   glVectord lookAt;
   glVectord upVector;
 
-  int firstCover;
-  int lastCover;
+  int firstCover{};
+  int lastCover{};
 
-  fovAspectBehaviour aspectBehaviour;
+  fovAspectBehaviour aspectBehaviour{};
 
   // this has to be the last Member!
   pfc::array_t<CoverPosInfo> coverPosInfos;
@@ -84,38 +84,40 @@ class CompiledCPInfo {
     int iPart = static_cast<int>(idx);
     float fPart = idx - iPart;
 
-    return CoverPosInfo::interpolate(coverPosInfos[iPart], coverPosInfos[iPart + 1],
-                                     fPart);
+    return CoverPosInfo::interpolate(
+        coverPosInfos[iPart], coverPosInfos[iPart + 1], fPart);
   }
 
   void serialize(stream_writer* p_stream, abort_callback& p_abort) {
     p_stream->write_lendian_t(version, p_abort);
 
-    p_stream->write_object((void*)this, offsetof(CompiledCPInfo, coverPosInfos), p_abort);
+    p_stream->write_object(  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-cstyle-cast)
+        static_cast<void*>(this), offsetof(CompiledCPInfo, coverPosInfos), p_abort);
 
     t_size c = coverPosInfos.get_size();
     p_stream->write_lendian_t(c, p_abort);
-    p_stream->write_object((void*)coverPosInfos.get_ptr(), sizeof(CoverPosInfo) * c,
-                           p_abort);
+    p_stream->write_object(
+        static_cast<void*>(coverPosInfos.get_ptr()), sizeof(CoverPosInfo) * c, p_abort);
   }
   static void unserialize(CompiledCPInfo& out, stream_reader* p_stream,
                           abort_callback& p_abort) {
     int fileVer;
     p_stream->read_lendian_t(fileVer, p_abort);
     PFC_ASSERT(fileVer == version);
-    p_stream->read_object((void*)&out, offsetof(CompiledCPInfo, coverPosInfos), p_abort);
+    p_stream->read_object(  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-cstyle-cast)
+        static_cast<void*>(&out), offsetof(CompiledCPInfo, coverPosInfos), p_abort);
 
     t_size c;
     p_stream->read_lendian_t(c, p_abort);
     auto tmp = make_unique<CoverPosInfo[]>(c);
-    p_stream->read_object((void*)tmp.get(), sizeof(CoverPosInfo) * c, p_abort);
+    p_stream->read_object(
+        static_cast<void*>(tmp.get()), sizeof(CoverPosInfo) * c, p_abort);
     out.coverPosInfos.set_data_fromptr(tmp.get(), c);
   }
 };
 
 struct CPScriptFuncInfos {
-  static const t_size funcCount = 12;
-  static const wchar_t* knownFunctions[funcCount];
+  static const std::vector<std::wstring> knownFunctions;
 
   static const bit_array_range neededFunctions;
   static const bit_array_range mirrorFunctions;

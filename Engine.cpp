@@ -30,7 +30,7 @@ GLContext::GLContext(EngineWindow& window) {
   glFogi(GL_FOG_MODE, GL_EXP);
   glFogf(GL_FOG_DENSITY, 5);
   glFogfv(GL_FOG_COLOR, std::array<GLfloat, 4>{0.0f, 0.0f, 0.0f, 1.0f}.data());
-  glHint(GL_FOG_HINT, GL_NICEST);          // Per-Pixel Fog Calculation
+  glHint(GL_FOG_HINT, GL_NICEST);  // Per-Pixel Fog Calculation
   glFogi(GL_FOG_COORD_SRC, GL_FOG_COORD);  // Set Fog Based On Vertice Coordinates
 }
 

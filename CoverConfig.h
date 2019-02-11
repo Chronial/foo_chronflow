@@ -6,7 +6,7 @@ struct CoverConfig {
   bool buildIn = false;
 };
 
-class cfg_coverConfigs : public cfg_var, public pfc::list_t<CoverConfig> {
+class cfg_coverConfigs : public cfg_var, public std::vector<CoverConfig> {
  public:
   explicit cfg_coverConfigs(const GUID& p_guid);
   CoverConfig* getPtrByName(const char* name);

@@ -6,6 +6,7 @@ Checks: >
   cppcoreguidelines-*,
   -cppcoreguidelines-pro-type-reinterpret-cast,
   -cppcoreguidelines-pro-type-union-access,
+  -cppcoreguidelines-pro-type-vararg,
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   google-*,
   -google-readability-todo,

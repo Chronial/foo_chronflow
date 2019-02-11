@@ -1,39 +1,36 @@
 #include "cover_positions_compiler.h"
 
 #include <comutil.h>
+#include <boost/range/adaptor/indexed.hpp>
 
 #include "lib/script_control.h"
 
 #include "base.h"
 
-using namespace pfc;
-
 CPScriptCompiler::CPScriptCompiler() {
   scriptObj.SetLanguage(L"JScript");
 }
 
-static inline bool GetIDispatchProperty(const LPDISPATCH _lpDispatch, LPWSTR _Name,
+static inline bool GetIDispatchProperty(LPDISPATCH _lpDispatch, LPOLESTR _Name,
                                         VARIANT& _ExVariant) {
   bool Ret = false;
   DISPID dispid = 0;
-  OLECHAR FAR* szMember = _Name;
 
   HRESULT Hr =
-      _lpDispatch->GetIDsOfNames(IID_NULL, &szMember, 1, LOCALE_SYSTEM_DEFAULT, &dispid);
+      _lpDispatch->GetIDsOfNames(IID_NULL, &_Name, 1, LOCALE_SYSTEM_DEFAULT, &dispid);
 
   if (Hr == S_OK) {
     // VARIANT pVarResult;
 
-    DISPPARAMS dispparamsNoArgs = {NULL, NULL, 0, 0};
+    DISPPARAMS dispparamsNoArgs = {nullptr, nullptr, 0, 0};
     EXCEPINFO excepinfo;
     UINT nArgErr;
 
     Ret = true;
 
     try {
-      Hr = _lpDispatch->Invoke(dispid, IID_NULL, LOCALE_SYSTEM_DEFAULT,
-                               DISPATCH_PROPERTYGET, &dispparamsNoArgs, &_ExVariant,
-                               &excepinfo, &nArgErr);
+      _lpDispatch->Invoke(dispid, IID_NULL, LOCALE_SYSTEM_DEFAULT, DISPATCH_PROPERTYGET,
+                          &dispparamsNoArgs, &_ExVariant, &excepinfo, &nArgErr);
     } catch (...) {
       /*CString TString;
       DebugString += "catch<BR>rn";
@@ -52,13 +49,13 @@ static inline bool GetIDispatchProperty(const LPDISPATCH _lpDispatch, LPWSTR _Na
   return Ret;
 };
 
-const wchar_t* CPScriptFuncInfos::knownFunctions[CPScriptFuncInfos::funcCount] = {
+const std::vector<std::wstring> CPScriptFuncInfos::knownFunctions{
     L"eyePos",          L"lookAt",          L"upVector",        L"coverPosition",
     L"coverRotation",   L"coverAlign",      L"coverSizeLimits", L"drawCovers",
     L"aspectBehaviour", L"showMirrorPlane", L"mirrorPoint",     L"mirrorNormal"};
 
-const bit_array_range CPScriptFuncInfos::neededFunctions(0, 10);
-const bit_array_range CPScriptFuncInfos::mirrorFunctions(10, 2);
+const pfc::bit_array_range CPScriptFuncInfos::neededFunctions(0, 10);
+const pfc::bit_array_range CPScriptFuncInfos::mirrorFunctions(10, 2);
 
 bool CPScriptCompiler::compileScript(const char* script, CompiledCPInfo& out,
                                      pfc::string_base& message) {
@@ -69,33 +66,35 @@ bool CPScriptCompiler::compileScript(const char* script, CompiledCPInfo& out,
       return false;
     }
 
-    bit_array_bittable foundFunctions(CPScriptFuncInfos::funcCount);
-    bit_array_not notFoundFunctions(foundFunctions);
+    pfc::bit_array_bittable foundFunctions(CPScriptFuncInfos::knownFunctions.size());
+    pfc::bit_array_not notFoundFunctions(foundFunctions);
     int mCount = scriptObj.GetMethodsCount();
     for (int i = 0; i < mCount; i++) {
       const wchar_t* mName = scriptObj.GetNameAt(i);
-      for (int j = 0; j < CPScriptFuncInfos::funcCount; j++) {
-        if (!wcscmp(mName, CPScriptFuncInfos::knownFunctions[j])) {
-          foundFunctions.set(j, true);
+      for (auto&& elem : boost::adaptors::index(CPScriptFuncInfos::knownFunctions)) {
+        if (elem.value() == mName) {
+          foundFunctions.set(elem.index(), true);
           break;
         }
       }
     }
-    bit_array_and missingFunctions(CPScriptFuncInfos::neededFunctions, notFoundFunctions);
-    t_size missing = missingFunctions.find(true, 0, CPScriptFuncInfos::funcCount);
-    if (missing == CPScriptFuncInfos::funcCount) {
+    pfc::bit_array_and missingFunctions(
+        CPScriptFuncInfos::neededFunctions, notFoundFunctions);
+    t_size missing =
+        missingFunctions.find(true, 0, CPScriptFuncInfos::knownFunctions.size());
+    if (missing == CPScriptFuncInfos::knownFunctions.size()) {
       if (!scShowMirrorPlane(out.showMirrorPlane, message))
         return false;
       if (out.showMirrorPlane) {
-        bit_array_and missingMirrors(CPScriptFuncInfos::mirrorFunctions,
-                                     notFoundFunctions);
-        missing = missingMirrors.find(true, 0, CPScriptFuncInfos::funcCount);
+        pfc::bit_array_and missingMirrors(
+            CPScriptFuncInfos::mirrorFunctions, notFoundFunctions);
+        missing = missingMirrors.find(true, 0, CPScriptFuncInfos::knownFunctions.size());
       }
     }
-    if (missing < CPScriptFuncInfos::funcCount) {
+    if (missing < CPScriptFuncInfos::knownFunctions.size()) {
       message = "Error: Required Function \"";
       message << pfc::stringcvt::string_utf8_from_wide(
-          CPScriptFuncInfos::knownFunctions[missing]);
+          CPScriptFuncInfos::knownFunctions[missing].c_str());
       message << "\" is not defined.";
       return false;
     }
@@ -145,8 +144,8 @@ bool CPScriptCompiler::compileScript(const char* script, CompiledCPInfo& out,
         message = "Error: aspectBehaviour() did not return an Array with 2 elements";
         return false;
       } else {
-        out.aspectBehaviour.x = (float)ret.get_item(0);
-        out.aspectBehaviour.y = (float)ret.get_item(1);
+        out.aspectBehaviour.x = static_cast<float>(ret.get_item(0));
+        out.aspectBehaviour.y = static_cast<float>(ret.get_item(1));
         out.aspectBehaviour.x /= out.aspectBehaviour.x + out.aspectBehaviour.y;
         out.aspectBehaviour.y /= out.aspectBehaviour.x + out.aspectBehaviour.y;
       }
@@ -205,18 +204,18 @@ bool CPScriptCompiler::compileScript(const char* script, CompiledCPInfo& out,
           "elements";
       return false;
     }
-    int tableSize = coverCount * out.tableRes + 1;
+    int tableSize = coverCount * CompiledCPInfo::tableRes + 1;
     out.coverPosInfos.set_size(tableSize);
     for (int i = 0; i < tableSize; i++) {
-      double coverId = static_cast<double>(i) / out.tableRes + out.firstCover;
+      double coverId = static_cast<double>(i) / CompiledCPInfo::tableRes + out.firstCover;
       if (scCallDArrayFunction(L"coverPosition", ret, message, coverId)) {
         if (ret.get_count() != 3) {
           message = "Error: coverPosition() did not return an Array with 3 elements";
           return false;
         } else {
-          out.coverPosInfos[i].position.x = (float)ret.get_item(0);
-          out.coverPosInfos[i].position.y = (float)ret.get_item(1);
-          out.coverPosInfos[i].position.z = (float)ret.get_item(2);
+          out.coverPosInfos[i].position.x = static_cast<float>(ret.get_item(0));
+          out.coverPosInfos[i].position.y = static_cast<float>(ret.get_item(1));
+          out.coverPosInfos[i].position.z = static_cast<float>(ret.get_item(2));
         }
       } else {
         return false;
@@ -226,10 +225,10 @@ bool CPScriptCompiler::compileScript(const char* script, CompiledCPInfo& out,
           message = "Error: coverRotation() did not return an Array with 4 elements";
           return false;
         } else {
-          out.coverPosInfos[i].rotation.a = (float)deg2rad(ret.get_item(0));
-          out.coverPosInfos[i].rotation.axis.x = (float)ret.get_item(1);
-          out.coverPosInfos[i].rotation.axis.y = (float)ret.get_item(2);
-          out.coverPosInfos[i].rotation.axis.z = (float)ret.get_item(3);
+          out.coverPosInfos[i].rotation.a = static_cast<float> deg2rad(ret.get_item(0));
+          out.coverPosInfos[i].rotation.axis.x = static_cast<float>(ret.get_item(1));
+          out.coverPosInfos[i].rotation.axis.y = static_cast<float>(ret.get_item(2));
+          out.coverPosInfos[i].rotation.axis.z = static_cast<float>(ret.get_item(3));
         }
       } else {
         return false;
@@ -239,8 +238,8 @@ bool CPScriptCompiler::compileScript(const char* script, CompiledCPInfo& out,
           message = "Error: coverAlign() did not return an Array with 4 elements";
           return false;
         } else {
-          out.coverPosInfos[i].alignment.x = (float)ret.get_item(0);
-          out.coverPosInfos[i].alignment.y = (float)ret.get_item(1);
+          out.coverPosInfos[i].alignment.x = static_cast<float>(ret.get_item(0));
+          out.coverPosInfos[i].alignment.y = static_cast<float>(ret.get_item(1));
         }
       } else {
         return false;
@@ -250,8 +249,8 @@ bool CPScriptCompiler::compileScript(const char* script, CompiledCPInfo& out,
           message = "Error: coverSizeLimits() did not return an Array with 4 elements";
           return false;
         } else {
-          out.coverPosInfos[i].sizeLim.w = (float)ret.get_item(0);
-          out.coverPosInfos[i].sizeLim.h = (float)ret.get_item(1);
+          out.coverPosInfos[i].sizeLim.w = static_cast<float>(ret.get_item(0));
+          out.coverPosInfos[i].sizeLim.h = static_cast<float>(ret.get_item(1));
         }
       } else {
         return false;
@@ -282,7 +281,7 @@ bool CPScriptCompiler::scCallDArrayFunction(const wchar_t* func, pfc::list_t<dou
   _variant_t var;
   var.vt = VT_R8;
   var.dblVal = param;
-  sfHelper.PutElement(0, (void*)&var);
+  sfHelper.PutElement(0, reinterpret_cast<void*>(&var));
   LPSAFEARRAY sa = sfHelper.GetArray();
   return scCallDArrayFunction(func, res, message, sa);
 }
@@ -299,13 +298,11 @@ bool CPScriptCompiler::scCallDArrayFunction(const wchar_t* func, pfc::list_t<dou
           PFC_ASSERT(lVar.vt == VT_I4);
           if (lVar.vt != VT_I4)
             lVar.ChangeType(VT_I4);
-          length = (int)lVar.lVal;
+          length = static_cast<int>(lVar.lVal);
           res.remove_all();
           _variant_t eVar;
-          wchar_t id[32];
           for (int i = 0; i < length; i++) {
-            swprintf_s(id, L"%d", i);
-            GetIDispatchProperty(lpDispatch, id, eVar);
+            GetIDispatchProperty(lpDispatch, std::to_wstring(i).data(), eVar);
             try {
               eVar.ChangeType(VT_R8);
               if (_isnan(eVar.dblVal)) {
@@ -361,11 +358,7 @@ bool CPScriptCompiler::scShowMirrorPlane(bool& res, pfc::string_base& message) {
     _variant_t varRet;
     if (scriptObj.RunProcedure(L"showMirrorPlane", &sa, &varRet)) {
       varRet.ChangeType(VT_BOOL);
-      if (varRet.boolVal) {
-        res = true;
-      } else {
-        res = false;
-      }
+      res = varRet.boolVal != 0;
       return true;
     } else {
       message = pfc::stringcvt::string_utf8_from_wide(scriptObj.GetErrorString());

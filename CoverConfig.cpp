@@ -2,72 +2,51 @@
 
 #include "base.h"
 
-namespace {
-class CoverConfig_compareName : public pfc::list_base_t<CoverConfig>::sort_callback {
- public:
-  inline static int static_compare(const CoverConfig& a, const CoverConfig& b) {
-    return stricmp_utf8(a.name, b.name);
-  }
-  int compare(const CoverConfig& a, const CoverConfig& b) override {
-    return static_compare(a, b);
-  }
-};
-
-class BuildInCoverConfigs : public pfc::list_t<CoverConfig> {
+class BuildInCoverConfigs : public std::vector<CoverConfig> {
  public:
   BuildInCoverConfigs() {
     auto map = builtInCoverConfigs;
     for (auto& [name, script] : builtInCoverConfigs) {
-      this->add_item(CoverConfig{name, script, true});
+      this->push_back(CoverConfig{name, script, true});
     }
   }
 };
 const BuildInCoverConfigs buildIn{};
-}  // namespace
 
-cfg_coverConfigs::cfg_coverConfigs(const GUID& p_guid) : cfg_var(p_guid) {
-  remove_all();
-  add_items(buildIn);
-}
+cfg_coverConfigs::cfg_coverConfigs(const GUID& p_guid)
+    : cfg_var(p_guid), std::vector<CoverConfig>(buildIn) {}
 
 CoverConfig* cfg_coverConfigs::getPtrByName(const char* name) {
-  int count = get_count();
-  for (int i = 0; i < count; i++) {
-    if (!stricmp_utf8(m_buffer[i].name, name)) {
-      return &m_buffer[i];
-    }
+  for (auto& config : *this) {
+    if (!stricmp_utf8(config.name, name))
+      return &config;
   }
   return nullptr;
 }
 bool cfg_coverConfigs::removeItemByName(const char* name) {
-  int count = get_count();
-  for (int i = 0; i < count; i++) {
-    if (!stricmp_utf8(m_buffer[i].name, name)) {
-      remove_by_idx(i);
+  for (auto it = begin(); it != end(); ++it) {
+    if (!stricmp_utf8(it->name, name)) {
+      erase(it);
       return true;
     }
   }
   return false;
 }
+
 void cfg_coverConfigs::sortByName() {
-  CoverConfig_compareName callback{};
-  sort(callback);
+  std::sort(
+      begin(), end(), [](auto a, auto b) { return stricmp_utf8(a.name, b.name) < 0; });
 }
 
 void cfg_coverConfigs::get_data_raw(stream_writer* p_stream, abort_callback& p_abort) {
   p_stream->write_lendian_t(version, p_abort);
-  int count = get_count();
-  int c = 0;
-  for (int i = 0; i < count; i++) {
-    if (!m_buffer[i].buildIn)
-      c++;
-  }
+  int c = std::count_if(begin(), end(), [](auto x) { return !x.buildIn; });
   p_stream->write_lendian_t(c, p_abort);
-  for (int i = 0; i < count; i++) {
-    if (m_buffer[i].buildIn)
+  for (auto& config : *this) {
+    if (config.buildIn)
       continue;
-    p_stream->write_string(m_buffer[i].name, p_abort);
-    p_stream->write_string(m_buffer[i].script, p_abort);
+    p_stream->write_string(config.name, p_abort);
+    p_stream->write_string(config.script, p_abort);
   }
 }
 
@@ -85,14 +64,16 @@ void cfg_coverConfigs::set_data_raw(stream_reader* p_stream, t_size /*p_sizehint
     return;
   }
   p_stream->read_lendian_t(c, p_abort);
-  m_buffer.set_size(c);
+  clear();
+  reserve(c);
   for (int i = 0; i < c; i++) {
-    p_stream->read_string(m_buffer[i].name, p_abort);
-    p_stream->read_string(m_buffer[i].script, p_abort);
-    m_buffer[i].buildIn = false;
+    CoverConfig config;
+    p_stream->read_string(config.name, p_abort);
+    p_stream->read_string(config.script, p_abort);
+    config.buildIn = false;
+    push_back(std::move(config));
   }
 
-  add_items(buildIn);
-  sort_remove_duplicates_t(
-      &CoverConfig_compareName::static_compare);  // just to be sure...
+  insert(end(), buildIn.begin(), buildIn.end());
+  sortByName();
 }

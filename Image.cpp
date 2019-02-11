@@ -17,7 +17,7 @@ Image Image::fromFile(const char* filename) {
   int width;
   int height;
   int channels_in_file;
-  FILE* f;
+  gsl::owner<FILE*> f;
   stbi_set_flip_vertically_on_load(TRUE);
   if (!_wfopen_s(&f, wideName, L"r"))
     throw std::runtime_error{"Failed to open image file"};
@@ -64,6 +64,7 @@ Image Image::fromResource(LPCTSTR pName, LPCTSTR pType, HMODULE hInst) {
 }
 
 Image Image::fromResource(UINT id, LPCTSTR pType, HMODULE hInst) {
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-cstyle-cast)
   return Image::fromResource(MAKEINTRESOURCE(id), pType, hInst);
 }
 
@@ -76,6 +77,7 @@ Image Image::fromGdiBitmap(Gdiplus::Bitmap& bitmap) {
   }
   auto _ = gsl::finally([&] { bitmap.UnlockBits(&bitmapData); });
   size_t bufferSize = bitmapData.Width * bitmapData.Height * 3;
+  // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
   malloc_ptr outBuffer{malloc(bufferSize)};
   if (outBuffer == nullptr) {
     throw std::bad_alloc{};
@@ -97,6 +99,7 @@ Image Image::fromGdiBitmap(Gdiplus::Bitmap& bitmap) {
 
 Image Image::resize(int width, int height) const {
   size_t new_size = width * height * 3;
+  // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
   malloc_ptr new_buffer{static_cast<stbi_uc*>(malloc(new_size))};
   if (new_buffer == nullptr) {
     throw std::bad_alloc{};

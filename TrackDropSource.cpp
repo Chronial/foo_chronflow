@@ -3,9 +3,7 @@
 TrackDropSource::TrackDropSource(HWND p_hWnd) : m_refcount(1), m_hWnd(p_hWnd) {}
 
 pfc::com_ptr_t<IDropSource> TrackDropSource::g_create(HWND hWnd) {
-  pfc::com_ptr_t<IDropSource> temp;
-  temp.attach(new TrackDropSource(hWnd));
-  return temp;
+  return {new TrackDropSource(hWnd)};
 }
 
 /////////////////////////////////////////////////////////
@@ -17,11 +15,11 @@ STDMETHODIMP TrackDropSource::QueryInterface(REFIID iid, void** ppvObject) {
     return E_INVALIDARG;
   } else if (iid == IID_IUnknown) {
     AddRef();
-    *ppvObject = (IUnknown*)this;
+    *ppvObject = static_cast<IUnknown*>(this);
     return S_OK;
   } else if (iid == IID_IDropSource) {
     AddRef();
-    *ppvObject = (IDropSource*)this;
+    *ppvObject = static_cast<IDropSource*>(this);
     return S_OK;
   } else
     return E_NOINTERFACE;
@@ -58,7 +56,7 @@ STDMETHODIMP TrackDropSource::QueryContinueDrag(BOOL fEscapePressed, DWORD grfKe
     // Drop or cancel if left mouse button was released.
   } else if (!(grfKeyState & MK_LBUTTON)) {
     DWORD pts = GetMessagePos();
-    POINT pt = {static_cast<short> LOWORD(pts), static_cast<short> HIWORD(pts)};
+    POINT pt = {LOWORD(pts), HIWORD(pts)};
     HWND pwnd = WindowFromPoint(pt);
     // If the mouse button was released over our window, cancel the operation.
     if (pwnd == m_hWnd || GetParent(pwnd) == m_hWnd) {

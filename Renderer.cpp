@@ -90,7 +90,7 @@ bool Renderer::offsetOnPoint(int x, int y, int& out) {
   drawScene(true);
   GLint hits = glRenderMode(GL_RENDER);
   setProjectionMatrix();
-  GLuint* p = static_cast<GLuint*>(buf);
+  auto* p = static_cast<GLuint*>(buf);
   GLuint minZ = INFINITE;
   GLuint selectedName = 0;
   for (int i = 0; i < hits; i++) {

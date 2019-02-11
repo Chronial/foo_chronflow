@@ -116,6 +116,7 @@ void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter) {
 TextureLoadingThreads::TextureLoadingThreads() {
   unsigned int threadCount = std::thread::hardware_concurrency();
   for (unsigned int i = 0; i < threadCount; i++) {
+    // NOLINTNEXTLINE(modernize-use-emplace)
     threads.push_back(std::thread(&TextureLoadingThreads::run, this));
     SetThreadPriority(threads.back().native_handle(), cfgTexLoaderPrio);
   }

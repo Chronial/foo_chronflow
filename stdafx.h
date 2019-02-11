@@ -10,6 +10,7 @@
 #include <condition_variable>
 #include <deque>
 #include <future>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <mutex>
@@ -19,10 +20,10 @@
 #include <utility>
 #include <valarray>
 
-using std::unique_ptr; // NOLINT
-using std::make_unique; // NOLINT
-using std::shared_ptr; // NOLINT
-using std::make_shared; // NOLINT
+using std::make_shared;  // NOLINT
+using std::make_unique;  // NOLINT
+using std::shared_ptr;  // NOLINT
+using std::unique_ptr;  // NOLINT
 
 #include <gsl/gsl>
 
@@ -38,6 +39,8 @@ using std::make_shared; // NOLINT
 #include <boost/multi_index/ranked_index.hpp>
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/multi_index_container.hpp>
+
+#include <boost/range/adaptor/reversed.hpp>
 
 // Require windows vista
 #define _WIN32_WINNT 0x600

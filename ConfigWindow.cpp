@@ -1,3 +1,5 @@
+#include <boost/range/iterator_range.hpp>
+
 #include "lib/win32_helpers.h"
 
 #include "DbAlbumCollection.h"
@@ -9,10 +11,8 @@
 #include "config.h"
 #include "cover_positions_compiler.h"
 
-static struct {
-  UINT id;
-  cfg_string* var;
-} stringVarMap[] = {
+// NOLINTNEXTLINE(cppcoreguidelines-interfaces-global-init)
+std::unordered_map<UINT, cfg_string*> stringVarMap{
     // Sources
     {IDC_FILTER, &cfgFilter},
     {IDC_GROUP, &cfgGroup},
@@ -28,10 +28,8 @@ static struct {
     {IDC_TARGET_PL, &cfgTargetPlaylist},
 };
 
-static struct {
-  UINT id;
-  cfg_string* var;
-} textListVarMap[] = {
+// NOLINTNEXTLINE(cppcoreguidelines-interfaces-global-init)
+std::unordered_map<UINT, cfg_string*> textListVarMap{
     // Behaviour
     {IDC_DOUBLE_CLICK, &cfgDoubleClick},
     {IDC_MIDDLE_CLICK, &cfgMiddleClick},
@@ -41,10 +39,8 @@ static struct {
     {IDC_SAVED_SELECT, &cfgCoverConfigSel},
 };
 
-static struct {
-  UINT id;
-  cfg_bool* var;
-} boolVarMap[] = {
+// NOLINTNEXTLINE(cppcoreguidelines-interfaces-global-init)
+std::unordered_map<UINT, cfg_bool*> boolVarMap{
     // Sources
     {IDC_SORT_GROUP, &cfgSortGroup},
 
@@ -62,10 +58,7 @@ static struct {
     {IDC_SHOW_FPS, &cfgShowFps},
 };
 
-static struct {
-  UINT checkboxId;
-  int itemToDisable;
-} disableMap[] = {
+std::multimap<UINT, int> disableMap{
     // Sources
     {IDC_SORT_GROUP, -IDC_SORT},
 
@@ -90,13 +83,16 @@ class ConfigTab {
  public:
   const t_size idx;
   HWND hWnd{};
-  ConfigTab(char* title, UINT id, HWND parent, int& i) : idx(i) {
+  ConfigTab(char* title, UINT id, HWND parent, int& i)
+      : id(id), parent(parent), title(title), idx(i) {
     i++;
-    this->title = title;
-    this->id = id;
-    this->parent = parent;
   }
+  ConfigTab(const ConfigTab&) = delete;
+  ConfigTab& operator=(const ConfigTab&) = delete;
+  ConfigTab(ConfigTab&&) = delete;
+  ConfigTab& operator=(ConfigTab&&) = delete;
   virtual ~ConfigTab() { DestroyWindow(hWnd); }
+
   void createDialog() {
     HWND hWndTab = uGetDlgItem(parent, IDC_TABS);
     uTCITEM tabItem = {0};
@@ -104,15 +100,15 @@ class ConfigTab {
     tabItem.pszText = title;
     uTabCtrl_InsertItem(hWndTab, idx, &tabItem);
 
-    hWnd = uCreateDialog(id, parent, dialogProxy, (LPARAM)this);
+    hWnd = uCreateDialog(id, parent, dialogProxy, reinterpret_cast<LPARAM>(this));
   }
   virtual BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam,
                                    LPARAM lParam) = 0;
   static BOOL CALLBACK dialogProxy(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     ConfigTab* configTab = nullptr;
     if (uMsg == WM_INITDIALOG) {
-      configTab = (ConfigTab*)lParam;
-      SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)configTab);
+      configTab = reinterpret_cast<ConfigTab*>(lParam);
+      SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(configTab));
       configTab->hWnd = hWnd;
     } else {
       configTab = reinterpret_cast<ConfigTab*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
@@ -125,67 +121,50 @@ class ConfigTab {
   void hide() { ShowWindow(hWnd, SW_HIDE); }
   void loadConfig() {
     initializing = true;
-    int n = tabsize(stringVarMap);
-    for (int i = 0; i < n; i++) {
-      uSetDlgItemText(hWnd, stringVarMap[i].id, stringVarMap[i].var->get_ptr());
+    for (auto [id, var] : stringVarMap) {
+      uSetDlgItemText(hWnd, id, var->get_ptr());
     }
-    n = tabsize(boolVarMap);
-    for (int i = 0; i < n; i++) {
-      uButton_SetCheck(hWnd, boolVarMap[i].id, boolVarMap[i].var->get_value());
+    for (auto [id, var] : boolVarMap) {
+      uButton_SetCheck(hWnd, id, var->get_value());
     }
-    n = tabsize(disableMap);
-    for (int i = 0; i < n; i++) {
-      bool enabled = uButton_GetCheck(hWnd, disableMap[i].checkboxId);
-      if (disableMap[i].itemToDisable < 0) {
-        uEnableWindow(uGetDlgItem(hWnd, -disableMap[i].itemToDisable), static_cast<BOOL>(!enabled));
+    for (auto [checkboxId, itemToDisable] : disableMap) {
+      bool enabled = uButton_GetCheck(hWnd, checkboxId);
+      if (itemToDisable < 0) {
+        uEnableWindow(uGetDlgItem(hWnd, -itemToDisable), static_cast<BOOL>(!enabled));
       } else {
-        uEnableWindow(uGetDlgItem(hWnd, disableMap[i].itemToDisable), static_cast<BOOL>(enabled));
-}
+        uEnableWindow(uGetDlgItem(hWnd, itemToDisable), static_cast<BOOL>(enabled));
+      }
     }
     initializing = false;
   }
   void textChanged(UINT id) {
     if (initializing)
       return;
-    int n = tabsize(stringVarMap);
-    for (int i = 0; i < n; i++) {
-      if (stringVarMap[i].id == id) {
-        pfc::string8 buf;
-        uGetDlgItemText(hWnd, stringVarMap[i].id, buf);
-        (*stringVarMap[i].var) = buf;
-        break;
-      }
+    if (stringVarMap.count(id) > 0) {
+      pfc::string8 buf;
+      uGetDlgItemText(hWnd, id, buf);
+      *(stringVarMap[id]) = buf;
     }
   }
   void buttonClicked(UINT id) {
-    int n = tabsize(boolVarMap);
-    for (int i = 0; i < n; i++) {
-      if (boolVarMap[i].id == id) {
-        (*boolVarMap[i].var) = uButton_GetCheck(hWnd, id);
-        break;
-      }
+    if (boolVarMap.count(id) > 0) {
+      *(boolVarMap[id]) = uButton_GetCheck(hWnd, id);
     }
-    n = tabsize(disableMap);
-    for (int i = 0; i < n; i++) {
-      if (disableMap[i].checkboxId == id) {
-        bool enabled = uButton_GetCheck(hWnd, disableMap[i].checkboxId);
-        if (disableMap[i].itemToDisable < 0) {
-          uEnableWindow(uGetDlgItem(hWnd, -disableMap[i].itemToDisable), static_cast<BOOL>(!enabled));
-        } else {
-          uEnableWindow(uGetDlgItem(hWnd, disableMap[i].itemToDisable), static_cast<BOOL>(enabled));
-}
+    for (auto [checkboxId, itemToDisable] :
+         boost::make_iterator_range(disableMap.equal_range(id))) {
+      bool enabled = uButton_GetCheck(hWnd, checkboxId);
+      if (itemToDisable < 0) {
+        uEnableWindow(uGetDlgItem(hWnd, -itemToDisable), static_cast<BOOL>(!enabled));
+      } else {
+        uEnableWindow(uGetDlgItem(hWnd, itemToDisable), static_cast<BOOL>(enabled));
       }
     }
   }
   void listSelChanged(UINT id) {
-    int n = tabsize(textListVarMap);
-    for (int i = 0; i < n; i++) {
-      if (textListVarMap[i].id == id) {
-        int s = uSendDlgItemMessage(hWnd, id, CB_GETCURSEL, 0, 0);
-        if (s != CB_ERR) {
-          uComboBox_GetText(uGetDlgItem(hWnd, id), s, *(textListVarMap[i].var));
-        }
-        break;
+    if (textListVarMap.count(id) > 0) {
+      int s = uSendDlgItemMessage(hWnd, id, CB_GETCURSEL, 0, 0);
+      if (s != CB_ERR) {
+        uComboBox_GetText(uGetDlgItem(hWnd, id), s, *(textListVarMap[id]));
       }
     }
   }
@@ -232,7 +211,7 @@ class SourcesTab : public ConfigTab {
  public:
   CONFIG_TAB(SourcesTab, "Album Source", IDD_SOURCE_TAB);
 
-  BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM  /*lParam*/) override {
+  BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM /*lParam*/) final {
     switch (uMsg) {
       case WM_INITDIALOG:
         loadConfig();
@@ -265,18 +244,20 @@ class SourcesTab : public ConfigTab {
   bool browseForImage(const char* oldImg, pfc::string_base& out) {
     OPENFILENAME ofn;
     wchar_t fileName[1024];
-    pfc::stringcvt::convert_utf8_to_wide(fileName, 1024, oldImg, ~0u);
+    pfc::stringcvt::convert_utf8_to_wide(
+        static_cast<wchar_t*>(fileName), 1024, oldImg, ~0u);
     ZeroMemory(&ofn, sizeof(ofn));
     ofn.lStructSize = sizeof(ofn);
     ofn.hwndOwner = hWnd;
-    ofn.lpstrFile = fileName;
+    ofn.lpstrFile = static_cast<wchar_t*>(fileName);
     ofn.nMaxFile = 1024;
     ofn.lpstrFilter = L"Image File\0*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.tiff\0";
     ofn.nFilterIndex = 1;
     ofn.Flags =
         OFN_FILEMUSTEXIST | OFN_HIDEREADONLY | OFN_NONETWORKBUTTON | OFN_PATHMUSTEXIST;
     if (GetOpenFileName(&ofn)) {
-      out = pfc::stringcvt::string_utf8_from_wide(fileName).get_ptr();
+      out = pfc::stringcvt::string_utf8_from_wide(static_cast<wchar_t*>(fileName))
+                .get_ptr();
       return true;
     } else {
       return false;
@@ -287,7 +268,7 @@ class SourcesTab : public ConfigTab {
 class BehaviourTab : public ConfigTab {
  public:
   CONFIG_TAB(BehaviourTab, "Behaviour", IDD_BEHAVIOUR_TAB);
-  BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM  /*lParam*/) override {
+  BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM /*lParam*/) final {
     switch (uMsg) {
       case WM_INITDIALOG:
         loadConfig();
@@ -335,9 +316,8 @@ class BehaviourTab : public ConfigTab {
         uSendDlgItemMessageText(hWnd, id, CB_ADDSTRING, 0, menuPath);
       }
     }
-    for (int i = (tabsize(g_customActions) - 1); i >= 0; i--) {
-      uSendDlgItemMessageText(hWnd, id, CB_INSERTSTRING, 0,
-                              g_customActions[i]->actionName);
+    for (auto action : boost::adaptors::reverse(g_customActions)) {
+      uSendDlgItemMessageText(hWnd, id, CB_INSERTSTRING, 0, action->actionName);
     }
     uSendDlgItemMessageText(hWnd, id, CB_SELECTSTRING, 1, selectedItem);
   }
@@ -347,7 +327,7 @@ class DisplayTab : public ConfigTab {
  public:
   CONFIG_TAB(DisplayTab, "Display", IDD_DISPLAY_TAB);
 
-  BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override {
+  BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) final {
     switch (uMsg) {
       case WM_INITDIALOG:
         loadConfig();
@@ -357,22 +337,23 @@ class DisplayTab : public ConfigTab {
           uSendDlgItemMessage(hWnd, IDC_TPOS_H, TBM_SETRANGE, FALSE, MAKELONG(0, 100));
           uSendDlgItemMessage(hWnd, IDC_TPOS_H, TBM_SETTIC, 0, 50);
           uSendDlgItemMessage(hWnd, IDC_TPOS_H, TBM_SETPOS, TRUE, titlePosH);
-          uSendDlgItemMessageText(hWnd, IDC_TPOS_H_P, WM_SETTEXT, 0,
-                                  std::to_string(titlePosH).data());
+          uSendDlgItemMessageText(
+              hWnd, IDC_TPOS_H_P, WM_SETTEXT, 0, std::to_string(titlePosH).data());
 
           uSendDlgItemMessage(hWnd, IDC_TPOS_V, TBM_SETRANGE, TRUE, MAKELONG(0, 100));
           uSendDlgItemMessage(hWnd, IDC_TPOS_V, TBM_SETTIC, 0, 50);
           uSendDlgItemMessage(hWnd, IDC_TPOS_V, TBM_SETPOS, TRUE, titlePosV);
-          uSendDlgItemMessageText(hWnd, IDC_TPOS_V_P, WM_SETTEXT, 0,
-                                  std::to_string(titlePosV).data());
+          uSendDlgItemMessageText(
+              hWnd, IDC_TPOS_V_P, WM_SETTEXT, 0, std::to_string(titlePosV).data());
 
-          uSendDlgItemMessage(hWnd, IDC_FONT_PREV, WM_SETTEXT, 0,
-                              (LPARAM)cfgTitleFont.get_value().lfFaceName);
+          uSendDlgItemMessage(
+              hWnd, IDC_FONT_PREV, WM_SETTEXT, 0,
+              reinterpret_cast<LPARAM>(cfgTitleFont.get_value().lfFaceName));
 
-          uSendDlgItemMessage(hWnd, IDC_FRAME_WIDTH_SPIN, UDM_SETRANGE, 0,
-                              MAKELONG(short(30), short(0)));
-          uSetDlgItemText(hWnd, IDC_FRAME_WIDTH,
-                          std::to_string(cfgHighlightWidth).data());
+          uSendDlgItemMessage(
+              hWnd, IDC_FRAME_WIDTH_SPIN, UDM_SETRANGE, 0, MAKELONG(short(30), short(0)));
+          uSetDlgItemText(
+              hWnd, IDC_FRAME_WIDTH, std::to_string(cfgHighlightWidth).data());
         }
         break;
       case WM_HSCROLL: {
@@ -380,10 +361,10 @@ class DisplayTab : public ConfigTab {
         int titlePosV = uSendDlgItemMessage(hWnd, IDC_TPOS_V, TBM_GETPOS, 0, 0);
         cfgTitlePosH = 0.01 * titlePosH;
         cfgTitlePosV = 0.01 * titlePosV;
-        uSendDlgItemMessageText(hWnd, IDC_TPOS_H_P, WM_SETTEXT, 0,
-                                std::to_string(titlePosH).data());
-        uSendDlgItemMessageText(hWnd, IDC_TPOS_V_P, WM_SETTEXT, 0,
-                                std::to_string(titlePosV).data());
+        uSendDlgItemMessageText(
+            hWnd, IDC_TPOS_H_P, WM_SETTEXT, 0, std::to_string(titlePosH).data());
+        uSendDlgItemMessageText(
+            hWnd, IDC_TPOS_V_P, WM_SETTEXT, 0, std::to_string(titlePosV).data());
 
         redrawMainWin();
       } break;
@@ -447,8 +428,9 @@ class DisplayTab : public ConfigTab {
               LOGFONT titleFont = cfgTitleFont;
               if (selectFont(titleFont)) {
                 cfgTitleFont = titleFont;
-                uSendDlgItemMessage(hWnd, IDC_FONT_PREV, WM_SETTEXT, 0,
-                                    (LPARAM)cfgTitleFont.get_value().lfFaceName);
+                uSendDlgItemMessage(
+                    hWnd, IDC_FONT_PREV, WM_SETTEXT, 0,
+                    reinterpret_cast<LPARAM>(cfgTitleFont.get_value().lfFaceName));
                 EngineThread::forEach(
                     [](EngineThread& t) { t.send<EM::TextFormatChangedMessage>(); });
               }
@@ -465,7 +447,7 @@ class DisplayTab : public ConfigTab {
   bool selectColor(COLORREF& color) {
     static DWORD costumColors[16] = {0};
     COLORREF tColor = color;
-    if (uChooseColor(&tColor, hWnd, costumColors)) {
+    if (uChooseColor(&tColor, hWnd, static_cast<DWORD*>(costumColors))) {
       color = tColor;
       return true;
     } else {
@@ -490,7 +472,7 @@ class DisplayTab : public ConfigTab {
 };
 
 class ConfigNameDialog : private dialog_helper::dialog_modal {
-  BOOL on_message(UINT uMsg, WPARAM wParam, LPARAM  /*lParam*/) override {
+  BOOL on_message(UINT uMsg, WPARAM wParam, LPARAM /*lParam*/) final {
     switch (uMsg) {
       case WM_INITDIALOG:
         if (value != nullptr) {
@@ -504,7 +486,7 @@ class ConfigNameDialog : private dialog_helper::dialog_modal {
             end_dialog(1);
           } else if (LOWORD(wParam) == IDCANCEL) {
             end_dialog(0);
-}
+          }
         } else if (HIWORD(wParam) == EN_CHANGE) {
           uGetDlgItemText(get_wnd(), IDC_CONFIG_NAME, value);
         }
@@ -516,19 +498,19 @@ class ConfigNameDialog : private dialog_helper::dialog_modal {
  public:
   int query(HWND parent, const char* defValue = "") {
     value = defValue;
-    return run(IDD_CONFIG_NAME, parent);
+    return run(IDD_CONFIG_NAME, parent);  // NOLINT
   }
   pfc::string8 value;
 };
 
 class CoverTab : public ConfigTab {
-  HFONT editBoxFont;
-  WNDPROC origEditboxProc;
+  HFONT editBoxFont{};
+  WNDPROC origEditboxProc = nullptr;
 
  public:
   CONFIG_TAB(CoverTab, "Cover Display", IDD_COVER_DISPLAY_TAB);
 
-  BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM  /*lParam*/) override {
+  BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM /*lParam*/) final {
     switch (uMsg) {
       case WM_INITDIALOG:
         editBoxFont =
@@ -560,7 +542,7 @@ class CoverTab : public ConfigTab {
             removeConfig();
           } else if (LOWORD(wParam) == IDC_COMPILE) {
             compileConfig();
-}
+          }
         } else if (HIWORD(wParam) == CBN_SELCHANGE) {
           listSelChanged(LOWORD(wParam));
           if (LOWORD(wParam) == IDC_SAVED_SELECT) {
@@ -594,11 +576,14 @@ class CoverTab : public ConfigTab {
   }
   void setUpEditBox() {
     int tabstops[1] = {14};
-    SendDlgItemMessage(hWnd, IDC_DISPLAY_CONFIG, EM_SETTABSTOPS, 1, (LPARAM)tabstops);
-    SendDlgItemMessage(hWnd, IDC_DISPLAY_CONFIG, WM_SETFONT, (WPARAM)editBoxFont, TRUE);
-    origEditboxProc = (WNDPROC)SetWindowLong(GetDlgItem(hWnd, IDC_DISPLAY_CONFIG),
-                                             GWL_WNDPROC, (LONG)editboxProxy);
-    SetProp(GetDlgItem(hWnd, IDC_DISPLAY_CONFIG), L"tab", (HANDLE)this);
+    SendDlgItemMessage(
+        hWnd, IDC_DISPLAY_CONFIG, EM_SETTABSTOPS, 1, reinterpret_cast<LPARAM>(tabstops));
+    SendDlgItemMessage(hWnd, IDC_DISPLAY_CONFIG, WM_SETFONT,
+                       reinterpret_cast<WPARAM>(editBoxFont), TRUE);
+    origEditboxProc = reinterpret_cast<WNDPROC>(
+        SetWindowLong(GetDlgItem(hWnd, IDC_DISPLAY_CONFIG), GWL_WNDPROC,
+                      reinterpret_cast<LONG>(editboxProxy)));
+    SetProp(GetDlgItem(hWnd, IDC_DISPLAY_CONFIG), L"tab", static_cast<HANDLE>(this));
   }
   static BOOL CALLBACK editboxProxy(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     auto* coverTab = reinterpret_cast<CoverTab*>(GetProp(hWnd, L"tab"));
@@ -617,7 +602,8 @@ class CoverTab : public ConfigTab {
       if (wParam == VK_TAB) {
         DWORD selFirst;
         DWORD selLast;
-        SendMessage(eWnd, EM_GETSEL, (WPARAM)&selFirst, (LPARAM)&selLast);
+        SendMessage(eWnd, EM_GETSEL, reinterpret_cast<WPARAM>(&selFirst),
+                    reinterpret_cast<LPARAM>(&selLast));
         if (selFirst == selLast) {
           uSendMessageText(eWnd, EM_REPLACESEL, TRUE, "\t");
         } else {
@@ -669,7 +655,8 @@ class CoverTab : public ConfigTab {
       } else if (wParam == VK_RETURN) {
         DWORD selFirst;
         DWORD selLast;
-        SendMessage(eWnd, EM_GETSEL, (WPARAM)&selFirst, (LPARAM)&selLast);
+        SendMessage(eWnd, EM_GETSEL, reinterpret_cast<WPARAM>(&selFirst),
+                    reinterpret_cast<LPARAM>(&selLast));
         pfc::string8 boxText;
         uGetWindowText(eWnd, boxText);
         const char* pStart = boxText.get_ptr();
@@ -698,23 +685,23 @@ class CoverTab : public ConfigTab {
         wchar_t line[3];
         line[0] = 3;
         DWORD selFirst;
-        SendMessage(eWnd, EM_GETSEL, (WPARAM)&selFirst, 0);
+        SendMessage(eWnd, EM_GETSEL, reinterpret_cast<WPARAM>(&selFirst), 0);
         int lineNumber = SendMessage(eWnd, EM_LINEFROMCHAR, selFirst, 0);
         int lineLength = SendMessage(eWnd, EM_LINELENGTH, selFirst, 0);
         int lineIdx = SendMessage(eWnd, EM_LINEINDEX, lineNumber, 0);
-        SendMessage(eWnd, EM_GETLINE, lineNumber, (LPARAM)&line);
+        SendMessage(eWnd, EM_GETLINE, lineNumber, reinterpret_cast<LPARAM>(&line));
         uSendMessageText(eWnd, EM_REPLACESEL, TRUE, "}");
         int deleteChars = 0;
         if (lineLength > 0 && line[0] == '\t') {
           deleteChars = 1;
         } else if (lineLength > 2 && line[0] == ' ' && line[1] == ' ' && line[2] == ' ') {
           deleteChars = 3;
-}
+        }
         if (deleteChars > 0) {
-          SendMessage(eWnd, EM_SETSEL, static_cast<WPARAM>(lineIdx), static_cast<LPARAM>(lineIdx + deleteChars));
+          SendMessage(eWnd, EM_SETSEL, lineIdx, (lineIdx + deleteChars));
           uSendMessageText(eWnd, EM_REPLACESEL, TRUE, "");
-          SendMessage(eWnd, EM_SETSEL, selFirst - deleteChars + 1,
-                      selFirst - deleteChars + 1);
+          SendMessage(
+              eWnd, EM_SETSEL, selFirst - deleteChars + 1, selFirst - deleteChars + 1);
         }
         return 0;
       }
@@ -722,21 +709,21 @@ class CoverTab : public ConfigTab {
     return CallWindowProc(origEditboxProc, eWnd, uMsg, wParam, lParam);
   }
   void removeConfig() {
-    if (cfgCoverConfigs.get_count() > 1) {
+    if (cfgCoverConfigs.size() > 1) {
       pfc::string8 title;
       title << "Delete Config \"" << cfgCoverConfigs.getPtrByName(cfgCoverConfigSel)->name
             << "\"";
-      if (IDYES == MessageBoxA(hWnd, "Are you sure?", title,
+      if (IDYES == uMessageBox(hWnd, "Are you sure?", title,
                                MB_APPLMODAL | MB_YESNO | MB_ICONQUESTION)) {
         cfgCoverConfigs.sortByName();
         t_size configIdx = 0;
-        for (t_size i = 0; i < cfgCoverConfigs.get_count(); i++) {
+        for (t_size i = 0; i < cfgCoverConfigs.size(); i++) {
           if (!stricmp_utf8(cfgCoverConfigs[i].name, cfgCoverConfigSel)) {
             configIdx = i;
           }
         }
-        cfgCoverConfigs.remove_by_idx(configIdx);
-        if (configIdx == cfgCoverConfigs.get_count()) {
+        cfgCoverConfigs.erase(cfgCoverConfigs.begin() + configIdx);
+        if (configIdx == cfgCoverConfigs.size()) {
           configIdx--;
         }
         cfgCoverConfigSel = cfgCoverConfigs[configIdx].name;
@@ -757,9 +744,10 @@ class CoverTab : public ConfigTab {
           if (uGetClipboardString(config.script)) {
             bool allFound = true;
             pfc::stringcvt::string_wide_from_utf8 clipboard_w(config.script);
-            for (int i = 0; i < CPScriptFuncInfos::funcCount; i++) {
+            for (size_t i = 0; i < CPScriptFuncInfos::knownFunctions.size(); i++) {
               if (CPScriptFuncInfos::neededFunctions[i]) {
-                if (wcsstr(clipboard_w, CPScriptFuncInfos::knownFunctions[i]) == nullptr) {
+                if (nullptr == wcsstr(clipboard_w,
+                                      CPScriptFuncInfos::knownFunctions.at(i).c_str())) {
                   allFound = false;
                   break;
                 }
@@ -771,7 +759,7 @@ class CoverTab : public ConfigTab {
           if (!useClipboard)
             config.script = defaultCoverConfig;
           config.buildIn = false;
-          cfgCoverConfigs.add_item(config);
+          cfgCoverConfigs.push_back(config);
           cfgCoverConfigSel = dialog.value;
           loadConfigList();
           configSelectionChanged();
@@ -800,60 +788,56 @@ class CoverTab : public ConfigTab {
   void loadConfigList() {
     uSendDlgItemMessage(hWnd, IDC_SAVED_SELECT, CB_RESETCONTENT, 0, 0);
 
-    t_size n, m = cfgCoverConfigs.get_count();
-    for (n = 0; n < m; n++) {
-      uSendDlgItemMessageText(hWnd, IDC_SAVED_SELECT, CB_ADDSTRING, 0,
-                              cfgCoverConfigs.get_item_ref(n).name);
+    for (auto& config : cfgCoverConfigs) {
+      uSendDlgItemMessageText(hWnd, IDC_SAVED_SELECT, CB_ADDSTRING, 0, config.name);
     }
 
-    uSendDlgItemMessageText(hWnd, IDC_SAVED_SELECT, CB_SELECTSTRING, 1,
-                            cfgCoverConfigSel);
+    uSendDlgItemMessageText(
+        hWnd, IDC_SAVED_SELECT, CB_SELECTSTRING, 1, cfgCoverConfigSel);
   }
   void configSelectionChanged() {
     const CoverConfig* config = cfgCoverConfigs.getPtrByName(cfgCoverConfigSel);
     if (config != nullptr) {
       uSetDlgItemText(hWnd, IDC_DISPLAY_CONFIG, config->script);
-      uSendDlgItemMessage(hWnd, IDC_DISPLAY_CONFIG, EM_SETREADONLY, static_cast<int>(config->buildIn),
-                          0);
+      uSendDlgItemMessage(
+          hWnd, IDC_DISPLAY_CONFIG, EM_SETREADONLY, static_cast<int>(config->buildIn), 0);
       // uEnableWindow(uGetDlgItem(hWnd, IDC_DISPLAY_CONFIG), !config->buildIn);
-      uEnableWindow(uGetDlgItem(hWnd, IDC_SAVED_REMOVE), static_cast<BOOL>(!config->buildIn));
-      uEnableWindow(uGetDlgItem(hWnd, IDC_SAVED_RENAME), static_cast<BOOL>(!config->buildIn));
+      uEnableWindow(
+          uGetDlgItem(hWnd, IDC_SAVED_REMOVE), static_cast<BOOL>(!config->buildIn));
+      uEnableWindow(
+          uGetDlgItem(hWnd, IDC_SAVED_RENAME), static_cast<BOOL>(!config->buildIn));
     }
     uSetDlgItemText(hWnd, IDC_COMPILE_STATUS, "");
   }
 };
 
-namespace {
-struct ListMap {
-  int val;
-  const char* text;
-};
-ListMap multisamplingMap[] = {
+using ListMap = std::unordered_map<int, std::string>;
+
+ListMap multisamplingMap{
     {2, "  2"},
     {4, "  4"},
     {8, "  8"},
     {16, "16"},
 };
-ListMap loaderPrioMap[] = {
+ListMap loaderPrioMap{
     {THREAD_PRIORITY_BELOW_NORMAL, "Below Normal"},
     {THREAD_PRIORITY_IDLE, "Idle"},
 };
-};  // namespace
+
 static struct {
   int id;
   cfg_int* var;
-  ListMap* map;
-  t_size mapSize;
+  ListMap& map;
+  // NOLINTNEXTLINE(cppcoreguidelines-interfaces-global-init)
 } mappedListVarMap[] = {
-    {IDC_MULTI_SAMPLING_PASSES, &cfgMultisamplingPasses, multisamplingMap,
-     tabsize(multisamplingMap)},
-    {IDC_TEXLOADER_PRIO, &cfgTexLoaderPrio, loaderPrioMap, tabsize(loaderPrioMap)},
+    {IDC_MULTI_SAMPLING_PASSES, &cfgMultisamplingPasses, multisamplingMap},
+    {IDC_TEXLOADER_PRIO, &cfgTexLoaderPrio, loaderPrioMap},
 };
 
 class PerformanceTab : public ConfigTab {
  public:
   CONFIG_TAB(PerformanceTab, "Performance", IDD_PERF_TAB);
-  BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM  /*lParam*/) override {
+  BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM /*lParam*/) final {
     switch (uMsg) {
       case WM_INITDIALOG:
         loadConfig();
@@ -901,7 +885,7 @@ class PerformanceTab : public ConfigTab {
                 cfgVSyncMode = VSYNC_ONLY;
               } else if (uButton_GetCheck(hWnd, IDC_VSYNC_SLEEP)) {
                 cfgVSyncMode = VSYNC_AND_SLEEP;
-}
+              }
           }
           redrawMainWin();
         } else if (HIWORD(wParam) == CBN_SELCHANGE) {
@@ -913,15 +897,13 @@ class PerformanceTab : public ConfigTab {
     return FALSE;
   }
   void fillComboBoxes() {
-    for (auto & i : mappedListVarMap) {
+    for (auto& i : mappedListVarMap) {
       uSendDlgItemMessage(hWnd, i.id, CB_RESETCONTENT, 0, 0);
-      for (t_size n = 0; n < i.mapSize; n++) {
-        uSendDlgItemMessageText(hWnd, i.id, CB_ADDSTRING, 0,
-                                i.map[n].text);
-        if (i.map[n].val == *(i.var)) {
-          uSendDlgItemMessageText(hWnd, i.id, CB_SELECTSTRING, 1,
-                                  i.map[n].text);
-}
+      for (auto& [val, text] : i.map) {
+        uSendDlgItemMessageText(hWnd, i.id, CB_ADDSTRING, 0, text.c_str());
+        if (val == *(i.var)) {
+          uSendDlgItemMessageText(hWnd, i.id, CB_SELECTSTRING, 1, text.c_str());
+        }
       }
     }
   }
@@ -933,11 +915,11 @@ class PerformanceTab : public ConfigTab {
     } else {
       return;
     }
-    for (auto & i : mappedListVarMap) {
+    for (auto& i : mappedListVarMap) {
       if (comboBox == i.id) {
-        for (t_size n = 0; n < i.mapSize; n++) {
-          if (0 == strcmp(selected, i.map[n].text)) {
-            *(i.var) = i.map[n].val;
+        for (auto& [val, text] : i.map) {
+          if (text == selected.c_str()) {
+            *(i.var) = val;
             break;
           }
         }
@@ -948,52 +930,52 @@ class PerformanceTab : public ConfigTab {
 
 class ConfigWindow : public preferences_page {
  private:
-  pfc::list_t<ConfigTab*> tabs;
+  std::vector<unique_ptr<ConfigTab>> tabs;
   t_size currentTab;
 
  public:
   ConfigWindow() : currentTab(~0u) {}
 
-  BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM  /*wParam*/, LPARAM lParam) {
+  BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM /*wParam*/, LPARAM lParam) {
     switch (uMsg) {
       case WM_INITDIALOG: {
         int j = 0;
-        tabs.add_item(new BehaviourTab(hWnd, j));
-        tabs.add_item(new SourcesTab(hWnd, j));
-        tabs.add_item(new DisplayTab(hWnd, j));
-        tabs.add_item(new CoverTab(hWnd, j));
-        tabs.add_item(new PerformanceTab(hWnd, j));
+        tabs.emplace_back(make_unique<BehaviourTab>(hWnd, j));
+        tabs.emplace_back(make_unique<SourcesTab>(hWnd, j));
+        tabs.emplace_back(make_unique<DisplayTab>(hWnd, j));
+        tabs.emplace_back(make_unique<CoverTab>(hWnd, j));
+        tabs.emplace_back(make_unique<PerformanceTab>(hWnd, j));
 
         HWND hWndTab = uGetDlgItem(hWnd, IDC_TABS);
 
         RECT rcTab;
         GetChildWindowRect(hWnd, IDC_TABS, &rcTab);
-        uSendMessage(hWndTab, TCM_ADJUSTRECT, FALSE, (LPARAM)&rcTab);
+        uSendMessage(hWndTab, TCM_ADJUSTRECT, FALSE, reinterpret_cast<LPARAM>(&rcTab));
 
-        for (t_size i = 0; i < tabs.get_count(); i++) {
-          tabs[i]->setPos(rcTab);
+        for (auto& tab : tabs) {
+          tab->setPos(rcTab);
         }
         currentTab = sessionSelectedConfigTab;
+        if (currentTab > tabs.size())
+          currentTab = 0;
         uSendMessage(hWndTab, TCM_SETCURSEL, tabs[currentTab]->idx, 0);
         tabs[currentTab]->show();
       } break;
 
       case WM_NCDESTROY: {
         sessionSelectedConfigTab = currentTab;
-        for (t_size i = 0; i < tabs.get_count(); i++) {
-          delete tabs[i];
-        }
-        tabs.remove_all();
+        tabs.clear();
       } break;
 
       case WM_NOTIFY:
-        if (((LPNMHDR)lParam)->idFrom == IDC_TABS) {
-          if (((LPNMHDR)lParam)->code == TCN_SELCHANGE) {
-            if (currentTab < tabs.get_count())
+        NMHDR& msg = *reinterpret_cast<LPNMHDR>(lParam);
+        if (msg.idFrom == IDC_TABS) {
+          if (msg.code == TCN_SELCHANGE) {
+            if (currentTab < tabs.size())
               tabs[currentTab]->hide();
             currentTab = ~0u;
             UINT32 currentIdx = SendDlgItemMessage(hWnd, IDC_TABS, TCM_GETCURSEL, 0, 0);
-            for (t_size i = 0; i < tabs.get_count(); i++) {
+            for (t_size i = 0; i < tabs.size(); i++) {
               if (currentIdx == tabs[i]->idx) {
                 currentTab = i;
                 break;
@@ -1011,8 +993,8 @@ class ConfigWindow : public preferences_page {
   static BOOL CALLBACK dialogProxy(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     ConfigWindow* configWindow = nullptr;
     if (uMsg == WM_INITDIALOG) {
-      configWindow = (ConfigWindow*)lParam;
-      SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)configWindow);
+      configWindow = reinterpret_cast<ConfigWindow*>(lParam);
+      SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(configWindow));
     } else {
       configWindow =
           reinterpret_cast<ConfigWindow*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
@@ -1020,18 +1002,19 @@ class ConfigWindow : public preferences_page {
     return configWindow->dialogProc(hWnd, uMsg, wParam, lParam);
   }
 
-  HWND create(HWND parent) override {
-    return uCreateDialog(IDD_CONFIG_TABS, parent, dialogProxy, (LPARAM)this);
+  HWND create(HWND parent) final {
+    return uCreateDialog(
+        IDD_CONFIG_TABS, parent, dialogProxy, reinterpret_cast<LPARAM>(this));
   }
 
-  const char* get_name() override { return "Chronflow"; }
+  const char* get_name() final { return "Chronflow"; }
 
-  GUID get_guid() override { return guid_configWindow; }
+  GUID get_guid() final { return guid_configWindow; }
 
-  GUID get_parent_guid() override { return preferences_page::guid_display; }
+  GUID get_parent_guid() final { return preferences_page::guid_display; }
 
-  bool reset_query() override { return false; }
-  void reset() override {}
+  bool reset_query() final { return false; }
+  void reset() final {}
 };
 
 static service_factory_single_t<ConfigWindow> x_configWindow;

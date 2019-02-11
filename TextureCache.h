@@ -21,6 +21,10 @@ struct TextureCacheMeta {
 class TextureLoadingThreads {
  public:
   TextureLoadingThreads();
+  TextureLoadingThreads(const TextureLoadingThreads&) = delete;
+  TextureLoadingThreads& operator=(const TextureLoadingThreads&) = delete;
+  TextureLoadingThreads(TextureLoadingThreads&&) = delete;
+  TextureLoadingThreads& operator=(TextureLoadingThreads&&) = delete;
   ~TextureLoadingThreads();
 
   struct LoadRequest {
@@ -31,11 +35,6 @@ class TextureLoadingThreads {
   struct LoadResponse {
     TextureCacheMeta meta;
     std::optional<UploadReadyImage> image;
-
-    LoadResponse(LoadResponse&& other)
-        : meta(other.meta), image(std::move(other.image)){};
-    LoadResponse(TextureCacheMeta meta, std::optional<UploadReadyImage>&& image)
-        : meta(std::move(meta)), image(std::move(image)){};
   };
 
   void flushQueue();

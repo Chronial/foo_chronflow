@@ -7,7 +7,7 @@
 
 void FindAsYouType::onChar(WPARAM wParam) {
   switch (wParam) {
-    case 1:     // any other nonchar character
+    case 1:  // any other nonchar character
     case 0x09:  // Process a tab.
       break;
 

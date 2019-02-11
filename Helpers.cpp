@@ -1,12 +1,12 @@
 #include "Helpers.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 void errorPopup(const char* message) {
   // This should be:
   // popup_message::g_show(... , popup_message::icon_error);
   // But we sometimes need this to be modal (as it will be followed by crash)
-  MessageBoxA(NULL,
+  MessageBoxA(nullptr,
               PFC_string_formatter()
                   << "foo_chronflow: " << message
                   << "\r\n\r\nIf this happens more than once, please report this error "
@@ -21,7 +21,7 @@ void errorPopupWin32(const char* message) {
 }
 
 // Returns the time in seconds with maximum resolution
-double Helpers::getHighresTimer(void) {
+double Helpers::getHighresTimer() {
   static double timerResolution = 0;
   static __int64 timerOffset = 0;
   static bool timerSupported;
@@ -32,7 +32,7 @@ double Helpers::getHighresTimer(void) {
       timerResolution = 1;
     } else {
       timerSupported = true;
-      timerResolution = 1.0 / (double)res.QuadPart;
+      timerResolution = 1.0 / static_cast<double>(res.QuadPart);
       LARGE_INTEGER count;
       QueryPerformanceCounter(&count);
       timerOffset = count.QuadPart;
@@ -48,10 +48,7 @@ double Helpers::getHighresTimer(void) {
 }
 bool Helpers::isPerformanceCounterSupported() {
   LARGE_INTEGER res;
-  if (!QueryPerformanceFrequency(&res) || res.QuadPart == 0)
-    return false;
-  else
-    return true;
+  return QueryPerformanceFrequency(&res) == TRUE && res.QuadPart > 0;
 }
 
 // adjusts a given path for certain discrepancies between how foobar2000
@@ -69,9 +66,7 @@ void Helpers::fixPath(pfc::string_base& path) {
     return;
 
   pfc::string8 temp;
-  titleformat_compiler::remove_forbidden_chars_string(temp, path, ~0u,
-                                                      "*?<>|"
-                                                      "\"");
+  titleformat_compiler::remove_forbidden_chars_string(temp, path, ~0u, "*?<>|\"");
 
   // fix directory separators
   temp.replace_char('/', '\\');

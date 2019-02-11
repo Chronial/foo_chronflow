@@ -1,4 +1,5 @@
 #pragma once
+
 #include "base.h"
 
 #define TEST_BIT_PTR(BITSET_PTR, BIT) _bittest(BITSET_PTR, BIT)
@@ -16,23 +17,20 @@ class Helpers {
  public:
   // Returns the time in seconds with maximum resolution
   static bool isPerformanceCounterSupported();
-  static double getHighresTimer(void);
+  static double getHighresTimer();
   static void fixPath(pfc::string_base& path);
-  // static void FPS(HWND hWnd, CollectionPos pos, float offset);
 };
 
 class FpsCounter {
-  double frameTimes[60];
-  double frameDur[60];
-  int frameTimesP;
+  std::array<double, 60> frameTimes{};
+  std::array<double, 60> frameDur{};
+  int frameTimesP = 0;
 
  public:
-  FpsCounter() : frameTimesP(0) { ZeroMemory(frameTimes, sizeof(frameTimes)); }
-
   void recordFrame(double start, double end) {
     double thisFrame = end - start;
-    frameTimes[frameTimesP] = end;
-    frameDur[frameTimesP] = thisFrame;
+    frameTimes.at(frameTimesP) = end;
+    frameDur.at(frameTimesP) = thisFrame;
     if (++frameTimesP == 60)
       frameTimesP = 0;
   }
@@ -46,20 +44,20 @@ class FpsCounter {
     if (frameTimesT < 0)
       frameTimesT = 59;
 
-    double lastTime = frameTimes[frameTimesT];
+    double lastTime = frameTimes.at(frameTimesT);
     double endTime = lastTime;
     for (int i = 0; i < 30; i++, frameTimesT--) {
       if (frameTimesT < 0)
         frameTimesT = 59;
 
-      frameDurSum += frameDur[frameTimesT];
-      if (frameDur[frameTimesT] > longestFrame)
-        longestFrame = frameDur[frameTimesT];
+      frameDurSum += frameDur.at(frameTimesT);
+      if (frameDur.at(frameTimesT) > longestFrame)
+        longestFrame = frameDur.at(frameTimesT);
 
-      thisFrameTime = lastTime - frameTimes[frameTimesT];
+      thisFrameTime = lastTime - frameTimes.at(frameTimesT);
       if (thisFrameTime > longestFrameTime)
         longestFrameTime = thisFrameTime;
-      lastTime = frameTimes[frameTimesT];
+      lastTime = frameTimes.at(frameTimesT);
     }
 
     fps = 1 / ((endTime - lastTime) / 29);
@@ -91,10 +89,10 @@ inline T check(T a) {
 
 class Timer {
  public:
-  Timer(double delay_s, std::function<void()> f) : f(f) {
-    timer = check(CreateThreadpoolTimer(Timer::callback, this, NULL));
+  Timer(double delay_s, std::function<void()> f) : f(std::move(f)) {
+    timer = check(CreateThreadpoolTimer(Timer::callback, this, nullptr));
     int64_t delay_ns = static_cast<int>(-delay_s * 1000 * 1000 * 1000);
-    FILETIME ftime = {(DWORD)delay_ns, (DWORD)(delay_ns >> 32)};
+    FILETIME ftime = {static_cast<DWORD>(delay_ns), static_cast<DWORD>(delay_ns >> 32)};
     SetThreadpoolTimer(timer, &ftime, 0, 0);
   }
   Timer(const Timer&) = delete;
@@ -102,14 +100,14 @@ class Timer {
   Timer(Timer&&) = delete;
   Timer& operator=(Timer&&) = delete;
   ~Timer() {
-    SetThreadpoolTimer(timer, NULL, 0, 0);
-    WaitForThreadpoolTimerCallbacks(timer, true);
+    SetThreadpoolTimer(timer, nullptr, 0, 0);
+    WaitForThreadpoolTimerCallbacks(timer, 1);
     CloseThreadpoolTimer(timer);
   }
 
  private:
-  static VOID CALLBACK callback(PTP_CALLBACK_INSTANCE instance, PVOID context,
-                                PTP_TIMER timer) {
+  static VOID CALLBACK callback(PTP_CALLBACK_INSTANCE /*instance*/, PVOID context,
+                                PTP_TIMER /*timer*/) {
     reinterpret_cast<Timer*>(context)->f();
   }
 
