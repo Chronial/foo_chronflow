@@ -43,7 +43,6 @@ extern cfg_int cfgMultisamplingPasses;
 extern cfg_int cfgTextureCacheSize;
 extern cfg_int cfgMaxTextureSize;
 extern cfg_bool cfgTextureCompression;
-extern cfg_int cfgTexLoaderPrio;
 extern cfg_bool cfgEmptyCacheOnMinimize;
 
 extern cfg_int cfgVSyncMode;

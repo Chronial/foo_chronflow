@@ -816,10 +816,6 @@ ListMap multisamplingMap{
     {8, "  8"},
     {16, "16"},
 };
-ListMap loaderPrioMap{
-    {THREAD_PRIORITY_BELOW_NORMAL, "Below Normal"},
-    {THREAD_PRIORITY_IDLE, "Idle"},
-};
 
 static struct {
   int id;
@@ -828,7 +824,6 @@ static struct {
   // NOLINTNEXTLINE(cppcoreguidelines-interfaces-global-init)
 } mappedListVarMap[] = {
     {IDC_MULTI_SAMPLING_PASSES, &cfgMultisamplingPasses, multisamplingMap},
-    {IDC_TEXLOADER_PRIO, &cfgTexLoaderPrio, loaderPrioMap},
 };
 
 class PerformanceTab : public ConfigTab {

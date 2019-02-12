@@ -120,7 +120,10 @@ TextureLoadingThreads::TextureLoadingThreads() {
   for (unsigned int i = 0; i < threadCount; i++) {
     // NOLINTNEXTLINE(modernize-use-emplace)
     threads.push_back(std::thread(&TextureLoadingThreads::run, this));
-    SetThreadPriority(threads.back().native_handle(), cfgTexLoaderPrio);
+    SetThreadPriority(threads.back().native_handle(), THREAD_PRIORITY_BELOW_NORMAL);
+    // Disable dynamic priority boost. We don't want the texture loaders to ever have
+    // higher priority than the engine thread.
+    SetThreadPriorityBoost(threads.back().native_handle(), TRUE);
   }
 }
 

@@ -25,7 +25,9 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 //
 
 IDR_COVER_LOADING       JPG                     "images\\cover-loading.jpg"
+
 IDR_COVER_NO_IMG        JPG                     "images\\cover-no-img.jpg"
+
 #endif    // Neutral resources
 /////////////////////////////////////////////////////////////////////////////
 
@@ -202,7 +204,7 @@ BEGIN
     GROUPBOX        "Rendering Quality",IDC_STATIC,7,7,210,45
     COMBOBOX        IDC_MULTI_SAMPLING_PASSES,78,17,26,57,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Passes",IDC_STATIC,107,19,23,8
-    GROUPBOX        "Texture Cache",IDC_STATIC,7,56,294,81
+    GROUPBOX        "Texture Cache",IDC_STATIC,7,56,294,65
     LTEXT           "Cache Size:",IDC_STATIC,11,68,38,8
     EDITTEXT        IDC_CACHE_SIZE,55,66,33,12,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
     CONTROL         "",IDC_CACHE_SIZE_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,110,65,10,14
@@ -211,20 +213,18 @@ BEGIN
     LTEXT           "Maximum Texture Size (sidelength):",IDC_STATIC,11,82,115,8
     EDITTEXT        IDC_TEXTURE_SIZE,130,80,38,12,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
     CONTROL         "",IDC_TEXTURE_SIZE_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,183,79,11,14
-    GROUPBOX        "VSync",IDC_STATIC,7,142,294,49
+    GROUPBOX        "VSync",IDC_STATIC,7,127,294,49
     CONTROL         "No VSync + try to hit VBlank with Sleep() [lowest cpu usage, but may cause tearing]",IDC_VSYNC_OFF,
-                    "Button",BS_AUTORADIOBUTTON,11,154,284,10
+                    "Button",BS_AUTORADIOBUTTON,11,138,284,10
     CONTROL         "VSync + try to hit VBlank with Sleep() [low cpu usage, but may loose fps]",IDC_VSYNC_SLEEP,
-                    "Button",BS_AUTORADIOBUTTON,11,165,249,10
+                    "Button",BS_AUTORADIOBUTTON,11,150,249,10
     CONTROL         "VSync only [GPU dependant CPU usage, good fps]",IDC_VSYNC_ONLY,
-                    "Button",BS_AUTORADIOBUTTON,11,176,177,10
+                    "Button",BS_AUTORADIOBUTTON,11,161,177,10
     GROUPBOX        "Benchmarking",IDC_STATIC,7,220,294,28
     CONTROL         "Display speed information (fps, ms per frame)",IDC_SHOW_FPS,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,232,162,10
-    LTEXT           "Texture Loading Thread Priority:",IDC_STATIC,11,109,105,8
-    COMBOBOX        IDC_TEXLOADER_PRIO,120,107,69,35,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
     CONTROL         "Empty cache when window is minimized (recommended for games etc.)",IDC_EMPTY_ON_MINIMIZE,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,122,241,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,107,241,10
     LTEXT           "Do not change any settings on this page without having read the help pages.",IDC_STATIC,227,15,68,38
     GROUPBOX        "Warning",IDC_STATIC,221,7,80,45
     CONTROL         "Multisampling:",IDC_MULTI_SAMPLING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,18,61,10
