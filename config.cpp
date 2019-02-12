@@ -174,7 +174,7 @@ cfg_bool cfgEmptyCacheOnMinimize(guid_cfgEmptyCacheOnMinimize, true);
 // {7EFEB474-EEDC-4242-AFA7-6A8AA4C08FF9}
 static const GUID guid_cfgVSyncMode = {
     0x7efeb474, 0xeedc, 0x4242, {0xaf, 0xa7, 0x6a, 0x8a, 0xa4, 0xc0, 0x8f, 0xf9}};
-cfg_int cfgVSyncMode(guid_cfgVSyncMode, VSYNC_AND_SLEEP);
+cfg_int cfgVSyncMode(guid_cfgVSyncMode, VSYNC_SLEEP_ONLY);
 
 // {34AEE526-264B-4c82-B336-81D398536871}
 static const GUID guid_cfgShowFps = {
