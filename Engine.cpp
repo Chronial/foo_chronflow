@@ -77,6 +77,7 @@ void Engine::mainLoop() {
 
     if (!timerResolution)
       timerResolution.emplace();
+    texCache.setPriority(true);
 
     // Housekeeping
     texCache.uploadTextures();
@@ -108,6 +109,7 @@ void Engine::mainLoop() {
     glFinish();  // Wait for GPU
     lastSwapTime = Helpers::getHighresTimer();
 
+    texCache.setPriority(windowDirty);
     if (!windowDirty)
       timerResolution.reset();
   }

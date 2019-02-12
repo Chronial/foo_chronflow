@@ -39,10 +39,12 @@ class TextureLoadingThreads {
   std::optional<LoadResponse> getLoaded();
   void pause();
   void resume();
+  void setPriority(bool highPriority);
 
  private:
   std::vector<std::thread> threads;
   std::atomic<bool> shouldStop = false;
+  std::atomic<bool> highPriority = false;
   std::shared_mutex pauseMutex;
   std::unique_lock<std::shared_mutex> pauseLock{pauseMutex, std::defer_lock};
 
@@ -72,6 +74,7 @@ class TextureCache {
 
   void pauseLoading();
   void resumeLoading();
+  void setPriority(bool highPriority);
 
  private:
   int maxCacheSize();

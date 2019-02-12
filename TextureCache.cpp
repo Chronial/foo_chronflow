@@ -90,6 +90,10 @@ void TextureCache::resumeLoading() {
   bgLoader.resume();
 }
 
+void TextureCache::setPriority(bool highPriority) {
+  bgLoader.setPriority(highPriority);
+}
+
 void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter) {
   bgLoader.flushQueue();
   size_t maxLoad = maxCacheSize();
@@ -128,11 +132,13 @@ TextureLoadingThreads::TextureLoadingThreads() {
   for (unsigned int i = 0; i < threadCount; i++) {
     // NOLINTNEXTLINE(modernize-use-emplace)
     threads.push_back(std::thread(&TextureLoadingThreads::run, this));
-    SetThreadPriority(threads.back().native_handle(), THREAD_PRIORITY_BELOW_NORMAL);
+    check(
+        SetThreadPriority(threads.back().native_handle(), THREAD_PRIORITY_BELOW_NORMAL));
     // Disable dynamic priority boost. We don't want the texture loaders to ever have
     // higher priority than the engine thread.
-    SetThreadPriorityBoost(threads.back().native_handle(), TRUE);
+    check(SetThreadPriorityBoost(threads.back().native_handle(), TRUE));
   }
+  setPriority(true);
 }
 
 TextureLoadingThreads::~TextureLoadingThreads() {
@@ -151,6 +157,7 @@ TextureLoadingThreads::~TextureLoadingThreads() {
 }
 
 void TextureLoadingThreads::run() {
+  bool inBackground = false;
   while (!shouldStop) {
     pauseMutex.lock_shared();
     pauseMutex.unlock_shared();
@@ -159,6 +166,15 @@ void TextureLoadingThreads::run() {
     auto request = inQueue.pop();
     if (shouldStop)
       break;
+
+    bool shouldBackground = !highPriority.load(std::memory_order_relaxed);
+    if (shouldBackground != inBackground) {
+      check(SetThreadPriority(GetCurrentThread(), shouldBackground
+                                                      ? THREAD_MODE_BACKGROUND_BEGIN
+                                                      : THREAD_MODE_BACKGROUND_END));
+      inBackground = shouldBackground;
+    }
+
     auto art = loadAlbumArt(request.track);
     if (shouldStop)
       break;
@@ -171,13 +187,17 @@ std::optional<TextureLoadingThreads::LoadResponse> TextureLoadingThreads::getLoa
 }
 
 void TextureLoadingThreads::pause() {
-  if (!pauseLock.owns_lock)
+  if (!pauseLock.owns_lock())
     pauseLock.lock();
 }
 
 void TextureLoadingThreads::resume() {
-  if (pauseLock.owns_lock)
+  if (pauseLock.owns_lock())
     pauseLock.unlock();
+}
+
+void TextureLoadingThreads::setPriority(bool highPriority) {
+  this->highPriority.store(highPriority, std::memory_order_relaxed);
 }
 
 void TextureLoadingThreads::flushQueue() {
