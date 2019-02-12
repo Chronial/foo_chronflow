@@ -24,7 +24,7 @@ void EM::ChangeCPScriptMessage::run(Engine& e, pfc::string8 script) {
   e.coverPos.setScript(script, tmp);
   e.renderer.setProjectionMatrix();
   if (e.db.getCount() > 0)
-    e.texCache.updateLoadingQueue(e.db.getTargetPos());
+    e.texCache.onTargetChange();
   e.windowDirty = true;
 }
 
@@ -36,6 +36,9 @@ void EM::WindowHideMessage::run(Engine& e) {
 }
 
 void EM::WindowShowMessage::run(Engine& e) {
+  if (cfgEmptyCacheOnMinimize) {
+    e.texCache.onTargetChange();
+  }
   e.texCache.resumeLoading();
 }
 

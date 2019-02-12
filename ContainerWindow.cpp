@@ -5,9 +5,9 @@
 #include "EngineWindow.h"
 #include "utils.h"
 
-#define MAINWINDOW_CLASSNAME L"foo_chronflow MainWindow"
+constexpr wchar_t* mainwindowClassname = L"foo_chronflow MainWindow";
 
-#define MINIMIZE_CHECK_TIMEOUT 10000  // milliseconds
+constexpr int minimizeCheckTimeout = 10'000;  // milliseconds
 
 ContainerWindow::ContainerWindow(HWND parent,
                                  ui_element_instance_callback_ptr duiCallback) {
@@ -39,7 +39,7 @@ bool ContainerWindow::registerWindowClass() {
   wc.hCursor = LoadCursor(nullptr, IDC_ARROW);  // NOLINT
   wc.hbrBackground = nullptr;
   wc.lpszMenuName = nullptr;
-  wc.lpszClassName = MAINWINDOW_CLASSNAME;
+  wc.lpszClassName = mainwindowClassname;
 
   return RegisterClass(&wc) != 0;
 }
@@ -62,13 +62,11 @@ LRESULT ContainerWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam,
     case WM_TIMER:
       switch (wParam) {
         case IDT_CHECK_MINIMIZED:
-          if (!ui_control::get()->is_visible()) {
-            if (!mainWinMinimized) {
-              mainWinMinimized = true;
-              if (engineWindow)
-                engineWindow->engineThread->send<EM::WindowHideMessage>();
-              KillTimer(hWnd, IDT_CHECK_MINIMIZED);
-            }
+          if (!mainWinMinimized && !ui_control::get()->is_visible()) {
+            mainWinMinimized = true;
+            if (engineWindow)
+              engineWindow->engineThread->send<EM::WindowHideMessage>();
+            KillTimer(hWnd, IDT_CHECK_MINIMIZED);
           }
           break;
       }
@@ -99,7 +97,7 @@ LRESULT ContainerWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam,
           EndPaint(hWnd, &ps);
           return 0;
         }
-        SetTimer(hWnd, IDT_CHECK_MINIMIZED, MINIMIZE_CHECK_TIMEOUT, nullptr);
+        SetTimer(hWnd, IDT_CHECK_MINIMIZED, minimizeCheckTimeout, nullptr);
       }
     }
   }
@@ -123,7 +121,7 @@ LRESULT CALLBACK ContainerWindow::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam,
 
 HWND ContainerWindow::createWindow(HWND parent) {
   return check(CreateWindowEx(0,  // Extended Style For The Window
-                              MAINWINDOW_CLASSNAME,  // Class Name
+                              mainwindowClassname,  // Class Name
                               L"ChronFlow MainWin",  // Window Title
                               WS_CHILD |  // Defined Window Style
                                   WS_CLIPSIBLINGS |  // Required Window Style
