@@ -62,7 +62,6 @@ void Engine::mainLoop() {
   double lastSwapTime = 0;
   std::optional<HighTimerResolution> timerResolution;
   while (!shouldStop) {
-    // Handle messages
     while (!shouldStop) {
       std::unique_ptr<engine_messages::Message> msg = nullptr;
       if (windowDirty) {
@@ -78,13 +77,19 @@ void Engine::mainLoop() {
 
     if (!timerResolution)
       timerResolution.emplace();
-    displayPos.update();
+
+    // Housekeeping
     texCache.uploadTextures();
     texCache.trimCache();
 
+    // Update state
+    displayPos.update();
+
+    // Render
     render();
     windowDirty = displayPos.isMoving() || renderer.wasMissingTextures;
 
+    // Handle V-Sync
     renderer.ensureVSync(cfgVSyncMode != VSYNC_SLEEP_ONLY);
     if (cfgVSyncMode == VSYNC_AND_SLEEP || cfgVSyncMode == VSYNC_SLEEP_ONLY) {
       double currentTime = Helpers::getHighresTimer();
@@ -99,13 +104,14 @@ void Engine::mainLoop() {
         Sleep(sleepTime);
       }
     }
-
     window.swapBuffers();
-    glFinish();
+    glFinish();  // Wait for GPU
     lastSwapTime = Helpers::getHighresTimer();
+
     if (!windowDirty)
       timerResolution.reset();
   }
+  // Synchronize with GPU before shutdown to avoid crashes
   glFinish();
 }
 
