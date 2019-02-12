@@ -753,7 +753,7 @@ class CoverTab : public ConfigTab {
           if (!useClipboard)
             script = defaultCoverConfig;
           pfc::string8& name = dialog.value;
-          cfgCoverConfigs.insert({name.c_str(), CoverConfig{script, false}});
+          cfgCoverConfigs.insert({name.c_str(), CoverConfig{script.c_str(), false}});
           cfgCoverConfigSel = name;
           loadConfigList();
           configSelectionChanged();

@@ -301,7 +301,7 @@ void Renderer::drawCovers(bool showTarget) {
     float co = -centerOffset + offset;
 
     auto tex = engine.texCache.getAlbumTexture(p->groupString);
-    if (!tex) {
+    if (tex == nullptr) {
       wasMissingTextures = true;
       tex = &engine.texCache.getLoadingTexture();
     }

@@ -150,8 +150,8 @@ class Timer {
 #ifdef _DEBUG
 namespace console {
 class out : std::wostringstream {
-  out() : std::wostringstream(){};
-  ~out();
+ public:
+  ~out() final;
 };
 void create();
 void print(const wchar_t* str);
