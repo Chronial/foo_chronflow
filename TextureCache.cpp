@@ -82,6 +82,14 @@ void TextureCache::uploadTextures() {
   }
 }
 
+void TextureCache::pauseLoading() {
+  bgLoader.pause();
+}
+
+void TextureCache::resumeLoading() {
+  bgLoader.resume();
+}
+
 void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter) {
   bgLoader.flushQueue();
   size_t maxLoad = maxCacheSize();
@@ -129,6 +137,7 @@ TextureLoadingThreads::TextureLoadingThreads() {
 
 TextureLoadingThreads::~TextureLoadingThreads() {
   shouldStop = true;
+  resume();
 #pragma warning(suppress : 4189)
   for ([[maybe_unused]] auto& thread : threads) {
     // TODO: This is hacky
@@ -143,6 +152,10 @@ TextureLoadingThreads::~TextureLoadingThreads() {
 
 void TextureLoadingThreads::run() {
   while (!shouldStop) {
+    pauseMutex.lock_shared();
+    pauseMutex.unlock_shared();
+    if (shouldStop)
+      break;
     auto request = inQueue.pop();
     if (shouldStop)
       break;
@@ -155,6 +168,16 @@ void TextureLoadingThreads::run() {
 
 std::optional<TextureLoadingThreads::LoadResponse> TextureLoadingThreads::getLoaded() {
   return outQueue.popMaybe();
+}
+
+void TextureLoadingThreads::pause() {
+  if (!pauseLock.owns_lock)
+    pauseLock.lock();
+}
+
+void TextureLoadingThreads::resume() {
+  if (pauseLock.owns_lock)
+    pauseLock.unlock();
 }
 
 void TextureLoadingThreads::flushQueue() {

@@ -29,14 +29,14 @@ void EM::ChangeCPScriptMessage::run(Engine& e, pfc::string8 script) {
 }
 
 void EM::WindowHideMessage::run(Engine& e) {
-  // texCache.isPaused = true;
+  e.texCache.pauseLoading();
   if (cfgEmptyCacheOnMinimize) {
     e.texCache.clearCache();
   }
 }
 
 void EM::WindowShowMessage::run(Engine& e) {
-  // texCache.isPaused = false;
+  e.texCache.resumeLoading();
 }
 
 void EM::TextFormatChangedMessage::run(Engine& e) {

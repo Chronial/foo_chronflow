@@ -21,10 +21,7 @@ struct TextureCacheMeta {
 class TextureLoadingThreads {
  public:
   TextureLoadingThreads();
-  TextureLoadingThreads(const TextureLoadingThreads&) = delete;
-  TextureLoadingThreads& operator=(const TextureLoadingThreads&) = delete;
-  TextureLoadingThreads(TextureLoadingThreads&&) = delete;
-  TextureLoadingThreads& operator=(TextureLoadingThreads&&) = delete;
+  NO_MOVE_NO_COPY(TextureLoadingThreads);
   ~TextureLoadingThreads();
 
   struct LoadRequest {
@@ -40,10 +37,14 @@ class TextureLoadingThreads {
   void flushQueue();
   void enqueue(const metadb_handle_ptr& track, const TextureCacheMeta& meta);
   std::optional<LoadResponse> getLoaded();
+  void pause();
+  void resume();
 
  private:
   std::vector<std::thread> threads;
   std::atomic<bool> shouldStop = false;
+  std::shared_mutex pauseMutex;
+  std::unique_lock<std::shared_mutex> pauseLock{pauseMutex, std::defer_lock};
 
   BlockingQueue<LoadRequest> inQueue;
   BlockingQueue<LoadResponse> outQueue;
@@ -68,6 +69,9 @@ class TextureCache {
   void onCollectionReload();
   void updateLoadingQueue(const CollectionPos& queueCenter);
   void uploadTextures();
+
+  void pauseLoading();
+  void resumeLoading();
 
  private:
   int maxCacheSize();
