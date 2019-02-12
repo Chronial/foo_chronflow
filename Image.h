@@ -54,5 +54,5 @@ class UploadReadyImage {
   double originalAspect;
 };
 
-std::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_list& tracks);
+std::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_ptr& track);
 UploadReadyImage loadSpecialArt(WORD resource, pfc::string8 userImage);

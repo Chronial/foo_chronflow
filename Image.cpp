@@ -113,14 +113,12 @@ Image Image::resize(int width, int height) const {
   return Image{std::move(new_buffer), width, height};
 }
 
-std::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_list& tracks) {
+std::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_ptr& track) {
   IF_DEBUG(double preLoad = Helpers::getHighresTimer());
-
   static_api_ptr_t<album_art_manager_v2> aam;
   abort_callback_impl abortCallback;
-  // We only consider one track for art extraction for performance reasons
-  auto extractor = aam->open(
-      pfc_list({tracks[0]}), pfc_list({album_art_ids::cover_front}), abortCallback);
+  auto extractor =
+      aam->open(pfc_list({track}), pfc_list({album_art_ids::cover_front}), abortCallback);
   try {
     auto art = extractor->query(album_art_ids::cover_front, abortCallback);
     Image image = Image::fromFileBuffer(art->get_ptr(), art->get_size());

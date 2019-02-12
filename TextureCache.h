@@ -29,7 +29,7 @@ class TextureLoadingThreads {
 
   struct LoadRequest {
     TextureCacheMeta meta;
-    metadb_handle_list tracks;
+    metadb_handle_ptr track;
   };
 
   struct LoadResponse {
@@ -38,7 +38,7 @@ class TextureLoadingThreads {
   };
 
   void flushQueue();
-  void enqueue(const metadb_handle_list& tracks, const TextureCacheMeta& meta);
+  void enqueue(const metadb_handle_ptr& track, const TextureCacheMeta& meta);
   std::optional<LoadResponse> getLoaded();
 
  private:

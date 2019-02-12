@@ -84,7 +84,6 @@ void TextureCache::uploadTextures() {
 
 void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter) {
   bgLoader.flushQueue();
-
   size_t maxLoad = maxCacheSize();
 
   CollectionPos leftLoaded = queueCenter;
@@ -98,8 +97,10 @@ void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter) {
         cacheEntry->collectionVersion == collectionVersion) {
       textureCache.modify(cacheEntry, [=](CacheItem& x) { x.priority = priority; });
     } else {
-      bgLoader.enqueue(loadNext->tracks, TextureCacheMeta{loadNext->groupString,
-                                                          collectionVersion, priority});
+      // We only consider one track for art extraction for performance reasons
+      bgLoader.enqueue(
+          loadNext->tracks[0],
+          TextureCacheMeta{loadNext->groupString, collectionVersion, priority});
     }
 
     if ((((i % 2) != 0u) || leftLoaded == db.begin()) &&
@@ -142,7 +143,7 @@ void TextureLoadingThreads::run() {
     auto request = inQueue.pop();
     if (shouldStop)
       break;
-    auto art = loadAlbumArt(request.tracks);
+    auto art = loadAlbumArt(request.track);
     if (shouldStop)
       break;
     outQueue.push(LoadResponse{request.meta, std::move(art)});
@@ -157,7 +158,7 @@ void TextureLoadingThreads::flushQueue() {
   inQueue.clear();
 }
 
-void TextureLoadingThreads::enqueue(const metadb_handle_list& tracks,
+void TextureLoadingThreads::enqueue(const metadb_handle_ptr& track,
                                     const TextureCacheMeta& meta) {
-  inQueue.push(LoadRequest{meta, tracks});
+  inQueue.push(LoadRequest{meta, track});
 }
