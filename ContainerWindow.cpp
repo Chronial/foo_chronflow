@@ -62,7 +62,7 @@ LRESULT ContainerWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam,
     case WM_TIMER:
       switch (wParam) {
         case IDT_CHECK_MINIMIZED:
-          if (!static_api_ptr_t<ui_control>()->is_visible()) {
+          if (!ui_control::get()->is_visible()) {
             if (!mainWinMinimized) {
               mainWinMinimized = true;
               if (engineWindow)
@@ -77,6 +77,11 @@ LRESULT ContainerWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam,
       return TRUE;
     case WM_PAINT: {
       if (GetUpdateRect(hWnd, nullptr, FALSE)) {
+        if (mainWinMinimized) {
+          mainWinMinimized = false;
+          if (engineWindow)
+            engineWindow->engineThread->send<EM::WindowShowMessage>();
+        }
         if (engineWindow) {
           engineWindow->onDamage();
         } else {
@@ -93,11 +98,6 @@ LRESULT ContainerWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam,
                    -1, &rc, DT_CENTER | DT_VCENTER);
           EndPaint(hWnd, &ps);
           return 0;
-        }
-        if (mainWinMinimized) {
-          mainWinMinimized = false;
-          if (engineWindow)
-            engineWindow->engineThread->send<EM::WindowShowMessage>();
         }
         SetTimer(hWnd, IDT_CHECK_MINIMIZED, MINIMIZE_CHECK_TIMEOUT, nullptr);
       }
