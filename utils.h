@@ -32,7 +32,7 @@ struct ILessUtf8 {
 };
 
 extern const char* defaultCoverConfig;
-extern const std::unordered_map<const char*, const char*> builtInCoverConfigs;
+extern const char** builtInCoverConfigs;
 
 #define TEST_BIT_PTR(BITSET_PTR, BIT) _bittest(BITSET_PTR, BIT)
 #ifdef _DEBUG
