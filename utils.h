@@ -123,7 +123,7 @@ class Timer {
  public:
   Timer(double delay_s, std::function<void()> f) : f(std::move(f)) {
     timer = check(CreateThreadpoolTimer(Timer::callback, this, nullptr));
-    int64_t delay_ns = static_cast<int>(-delay_s * 1000 * 1000 * 1000);
+    int64_t delay_ns = static_cast<int>(-delay_s * 1000 * 1000 * 10);
     FILETIME ftime = {static_cast<DWORD>(delay_ns), static_cast<DWORD>(delay_ns >> 32)};
     SetThreadpoolTimer(timer, &ftime, 0, 0);
   }
