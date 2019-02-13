@@ -149,7 +149,7 @@ class Timer {
 
 #ifdef _DEBUG
 namespace console {
-class out : std::wostringstream {
+class out : public std::wostringstream {
  public:
   ~out() final;
 };
@@ -168,3 +168,10 @@ void printf(const wchar_t* format, ...);
 
 std::string linux_lineendings(const std::string& s);
 std::string windows_lineendings(const std::string& s);
+
+#ifndef uT
+#define uT(x) (pfc::stringcvt::string_os_from_utf8(x).get_ptr())
+#define uTS(x, s) (pfc::stringcvt::string_os_from_utf8(x, s).get_ptr())
+#define Tu(x) (pfc::stringcvt::string_utf8_from_os(x).get_ptr())
+#define TSu(x, s) (pfc::stringcvt::string_utf8_from_os(x, s).get_ptr())
+#endif

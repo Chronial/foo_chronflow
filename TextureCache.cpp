@@ -34,6 +34,8 @@ GLTexture& TextureCache::getLoadingTexture() {
 }
 
 void TextureCache::onTargetChange() {
+  if (db.getCount() == 0)
+    return;
   cacheGeneration += 1;
   // wrap around
   if (cacheGeneration > std::numeric_limits<unsigned int>::max() - 100) {
@@ -96,6 +98,8 @@ void TextureCache::setPriority(bool highPriority) {
 
 void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter) {
   bgLoader.flushQueue();
+  // Update loaded textures from background loader
+  uploadTextures();
   size_t maxLoad = maxCacheSize();
 
   CollectionPos leftLoaded = queueCenter;
