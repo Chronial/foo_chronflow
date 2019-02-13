@@ -87,6 +87,8 @@
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <ForcedIncludeFiles>stdafx.h</ForcedIncludeFiles>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DiagnosticsFormat>Caret</DiagnosticsFormat>
     </ClCompile>
     <Link>
       <AdditionalDependencies>..\libs\glfw-3.2.1\lib\glfw3.lib;..\foobar2000\shared\shared.lib;Comctl32.lib;Winmm.lib;Shlwapi.lib;gdiplus.lib;opengl32.lib;glu32.lib;odbc32.lib;odbccp32.lib;user32.lib;gdi32.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -127,6 +129,8 @@
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <ForcedIncludeFiles>stdafx.h</ForcedIncludeFiles>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DiagnosticsFormat>Caret</DiagnosticsFormat>
     </ClCompile>
     <Link>
       <AdditionalDependencies>..\libs\glfw-3.2.1\lib\glfw3.lib;..\foobar2000\shared\shared.lib;Comctl32.lib;Winmm.lib;Shlwapi.lib;gdiplus.lib;opengl32.lib;glu32.lib;odbc32.lib;odbccp32.lib;user32.lib;gdi32.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
