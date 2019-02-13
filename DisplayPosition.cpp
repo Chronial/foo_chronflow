@@ -9,10 +9,9 @@ DisplayPosition::DisplayPosition(DbAlbumCollection& db)
 
 void DisplayPosition::onTargetChange() {
   if (!rendering) {
-    lastMovement = Helpers::getHighresTimer();
+    lastMovement = Helpers::getHighresTimer() - 0.02;
     rendering = true;
   }
-  CollectionPos targetPos = db.getTargetPos();
 }
 
 CollectionPos DisplayPosition::getOffsetPos(int n) const {
@@ -24,23 +23,21 @@ CollectionPos DisplayPosition::getOffsetPos(int n) const {
 void DisplayPosition::update() {
   double currentTime = Helpers::getHighresTimer();
   CollectionPos targetPos = db.getTargetPos();
-  // do this here because of concurrency – isMoving might see a different targetPos
-  if (centeredPos != targetPos || centeredOffset != 0) {
+  if (isMoving()) {
     int targetRank = db.rank(targetPos);
     int centeredRank = db.rank(centeredPos);
     float dist = (targetRank - centeredRank) - centeredOffset;
     auto dTime = float(currentTime - lastMovement);
     float speed = abs(targetDist2moveDist(dist));
-    if (lastSpeed < 0.1f)
-      lastSpeed = 0.1f;
-    float accel = (speed - lastSpeed) / dTime;
-    if (accel > 0.0f) {
+    if (lastSpeed < speed) {
+      float accel = (speed - lastSpeed) / dTime;
       accel = sqrt(accel);
       speed = lastSpeed + accel * dTime;
     }
+    speed = std::max(0.1f, speed);  // minimum speed
     float moveDist = (dist > 0 ? 1.0f : -1.0f) * speed * dTime;
 
-    if ((abs(moveDist) > abs(dist)) || abs(moveDist - dist) < 0.001f) {
+    if (dTime > 1 || abs(moveDist) > abs(dist) || abs(moveDist - dist) < 0.001f) {
       centeredPos = targetPos;
       centeredOffset = 0.0f;
       lastSpeed = 0.0f;
