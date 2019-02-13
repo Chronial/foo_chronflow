@@ -2,21 +2,20 @@
 
 #include "utils.h"
 
-namespace {
-CoverConfigMap builtInConfigs() {
+CoverConfigMap builtInCoverConfigs() {
   CoverConfigMap map;
-  const char** p = builtInCoverConfigs;
+  const char** p = builtInCoverConfigArray;
   while (*p != nullptr) {
     const char* name = *(p++);
     const char* script = *(p++);
     map[name] = CoverConfig{script, true};
   }
+  PFC_ASSERT(map.count(defaultCoverConfig) == 1);
   return map;
 }
-}  // namespace
 
 cfg_coverConfigs::cfg_coverConfigs(const GUID& p_guid)
-    : cfg_var(p_guid), CoverConfigMap(builtInConfigs()) {}
+    : cfg_var(p_guid), CoverConfigMap(builtInCoverConfigs()) {}
 
 void cfg_coverConfigs::get_data_raw(stream_writer* p_stream, abort_callback& p_abort) {
   p_stream->write_lendian_t(version, p_abort);
@@ -53,6 +52,6 @@ void cfg_coverConfigs::set_data_raw(stream_reader* p_stream, t_size /*p_sizehint
     p_stream->read_string(script, p_abort);
     insert({name.c_str(), CoverConfig{script.c_str(), false}});
   }
-  auto builtIn = builtInConfigs();
+  auto builtIn = builtInCoverConfigs();
   insert(builtIn.begin(), builtIn.end());
 }

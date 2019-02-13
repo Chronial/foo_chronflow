@@ -31,8 +31,8 @@ struct ILessUtf8 {
   }
 };
 
-extern const char* defaultCoverConfig;
-extern const char** builtInCoverConfigs;
+extern const char** builtInCoverConfigArray;
+constexpr char* defaultCoverConfig = "Default (build-in)";
 
 #define TEST_BIT_PTR(BITSET_PTR, BIT) _bittest(BITSET_PTR, BIT)
 #ifdef _DEBUG
@@ -165,3 +165,6 @@ void printf(const wchar_t* format, ...);
   C& operator=(const C&) = delete; \
   C(C&&) = delete; \
   C& operator=(C&&) = delete;
+
+std::string linux_lineendings(const std::string& s);
+std::string windows_lineendings(const std::string& s);

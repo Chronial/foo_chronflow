@@ -8,6 +8,8 @@ struct CoverConfig {
 
 using CoverConfigMap = std::map<std::string, CoverConfig, ILessUtf8>;
 
+CoverConfigMap builtInCoverConfigs();
+
 class cfg_coverConfigs : public cfg_var, public CoverConfigMap {
  public:
   explicit cfg_coverConfigs(const GUID& p_guid);

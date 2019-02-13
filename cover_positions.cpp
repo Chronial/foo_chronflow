@@ -38,7 +38,7 @@ ScriptedCoverPositions::ScriptedCoverPositions() {
   if (elem != cfgCoverConfigs.end() && setScript(elem->second.script.c_str(), errorMsg))
     return;
   // If that fails, try to fall back to the default script
-  if (!setScript(defaultCoverConfig, errorMsg)) {
+  if (!setScript(builtInCoverConfigs()[defaultCoverConfig].script.c_str(), errorMsg)) {
     popup_message::g_show(errorMsg, "JScript Compile Error", popup_message::icon_error);
     throw std::runtime_error(errorMsg.c_str());
   }

@@ -20,6 +20,16 @@ void errorPopupWin32(const char* message) {
                                     << format_win32_error(GetLastError()));
 }
 
+std::string linux_lineendings(const std::string& s) {
+  static std::regex regex{"\r\n"};
+  return std::regex_replace(s, regex, "\n");
+}
+
+std::string windows_lineendings(const std::string& s) {
+  static std::regex regex{"\r?\n"};
+  return std::regex_replace(s, regex, "\r\n");
+}
+
 // Returns the time in seconds with maximum resolution
 double Helpers::getHighresTimer() {
   static double timerResolution = 0;

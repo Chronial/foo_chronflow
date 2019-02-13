@@ -133,7 +133,7 @@ cfg_coverConfigs cfgCoverConfigs(guid_cfgCoverConfigs);
 // {A6F566E7-9800-4de8-BF72-22FAA4ADBB6B}
 static const GUID guid_cfgCoverConfigSel = {
     0xa6f566e7, 0x9800, 0x4de8, {0xbf, 0x72, 0x22, 0xfa, 0xa4, 0xad, 0xbb, 0x6b}};
-cfg_string cfgCoverConfigSel(guid_cfgCoverConfigSel, "Default (build-in)");
+cfg_string cfgCoverConfigSel(guid_cfgCoverConfigSel, defaultCoverConfig);
 
 /****************************** Performance tab ******************************/
 // {11053387-12C8-4f16-8BD0-7C6FF1523252}

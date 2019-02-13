@@ -532,7 +532,8 @@ class CoverTab : public ConfigTab {
           if (LOWORD(wParam) == IDC_DISPLAY_CONFIG) {
             pfc::string8 script;
             uGetDlgItemText(hWnd, IDC_DISPLAY_CONFIG, script);
-            cfgCoverConfigs[cfgCoverConfigSel.c_str()].script = script.c_str();
+            cfgCoverConfigs[cfgCoverConfigSel.c_str()].script =
+                linux_lineendings(script.c_str());
             uSetDlgItemText(hWnd, IDC_COMPILE_STATUS, "");
           }
         } else if (HIWORD(wParam) == BN_CLICKED) {
@@ -751,7 +752,7 @@ class CoverTab : public ConfigTab {
               useClipboard = true;
           }
           if (!useClipboard)
-            script = defaultCoverConfig;
+            script = builtInCoverConfigs()[defaultCoverConfig].script.c_str();
           pfc::string8& name = dialog.value;
           cfgCoverConfigs.insert({name.c_str(), CoverConfig{script.c_str(), false}});
           cfgCoverConfigSel = name;
@@ -794,7 +795,8 @@ class CoverTab : public ConfigTab {
   void configSelectionChanged() {
     try {
       const CoverConfig& config = cfgCoverConfigs.at(cfgCoverConfigSel.c_str());
-      uSetDlgItemText(hWnd, IDC_DISPLAY_CONFIG, config.script.c_str());
+      uSetDlgItemText(
+          hWnd, IDC_DISPLAY_CONFIG, windows_lineendings(config.script).c_str());
       uSendDlgItemMessage(
           hWnd, IDC_DISPLAY_CONFIG, EM_SETREADONLY, static_cast<int>(config.buildIn), 0);
       // uEnableWindow(uGetDlgItem(hWnd, IDC_DISPLAY_CONFIG), !config->buildIn);
