@@ -55,7 +55,7 @@
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
     <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
-    <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
+    <PostBuildEventUseInBuild>true</PostBuildEventUseInBuild>
     <IncludePath>$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -100,7 +100,7 @@
     </Link>
     <PostBuildEvent>
       <Message>Copying</Message>
-      <Command>copy Debug\foo_chronflow.dll C:\home\coding\foobar2000\bin\default\components\foo_chronflow.dll</Command>
+      <Command>copy $(TargetPath) C:\home\coding\foobar2000\bin\default\components\foo_chronflow.dll</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -143,8 +143,8 @@
       <AdditionalLibraryDirectories>..\libs\boost_1_69_0\stage\lib</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Message>Cleanup</Message>
-      <Command>del $(ProjectDir)\COVER_CONFIG_DEF_CONTENT.h</Command>
+      <Message>Copying</Message>
+      <Command>copy $(TargetPath) C:\home\coding\foobar2000\bin\default\components\foo_chronflow.dll</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
