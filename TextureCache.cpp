@@ -68,6 +68,7 @@ void TextureCache::trimCache() {
 
 void TextureCache::clearCache() {
   textureCache.clear();
+  glFlush();
   bgLoader.flushQueue();
 }
 
