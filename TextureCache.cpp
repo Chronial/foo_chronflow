@@ -97,10 +97,13 @@ void TextureCache::setPriority(bool highPriority) {
 }
 
 void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter) {
-  bgLoader.flushQueue();
   // Update loaded textures from background loader
+  // There is a race here: if a loader finishes loading an image between this call
+  // and the call to setQueue below, we might load that image twice.
   uploadTextures();
   size_t maxLoad = maxCacheSize();
+
+  std::list<TextureLoadingThreads::LoadRequest> requests;
 
   CollectionPos leftLoaded = queueCenter;
   CollectionPos rightLoaded = queueCenter;
@@ -114,9 +117,9 @@ void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter) {
       textureCache.modify(cacheEntry, [=](CacheItem& x) { x.priority = priority; });
     } else {
       // We only consider one track for art extraction for performance reasons
-      bgLoader.enqueue(
-          loadNext->tracks[0],
-          TextureCacheMeta{loadNext->groupString, collectionVersion, priority});
+      requests.emplace_back(TextureLoadingThreads::LoadRequest{
+          TextureCacheMeta{loadNext->groupString, collectionVersion, priority},
+          loadNext->tracks[0]});
     }
 
     if ((((i % 2) != 0u) || leftLoaded == db.begin()) &&
@@ -129,6 +132,8 @@ void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter) {
       loadNext = leftLoaded;
     }
   }
+
+  bgLoader.setQueue(std::move(requests));
 }
 
 TextureLoadingThreads::TextureLoadingThreads() {
@@ -148,11 +153,7 @@ TextureLoadingThreads::TextureLoadingThreads() {
 TextureLoadingThreads::~TextureLoadingThreads() {
   shouldStop = true;
   resume();
-#pragma warning(suppress : 4189)
-  for ([[maybe_unused]] auto& thread : threads) {
-    // TODO: This is hacky
-    inQueue.push(LoadRequest{});
-  }
+  inCondition.notify_all();
   for (auto& thread : threads) {
     if (thread.joinable()) {
       thread.join();
@@ -167,7 +168,7 @@ void TextureLoadingThreads::run() {
     pauseMutex.unlock_shared();
     if (shouldStop)
       break;
-    auto request = inQueue.pop();
+    auto [jobId, track] = takeJob();
     if (shouldStop)
       break;
 
@@ -179,15 +180,20 @@ void TextureLoadingThreads::run() {
       inBackground = shouldBackground;
     }
 
-    auto art = loadAlbumArt(request.track);
+    auto art = loadAlbumArt(track);
     if (shouldStop)
       break;
-    outQueue.push(LoadResponse{request.meta, std::move(art)});
+    finishJob(jobId, std::move(art));
   }
 }
 
 std::optional<TextureLoadingThreads::LoadResponse> TextureLoadingThreads::getLoaded() {
-  return outQueue.popMaybe();
+  std::scoped_lock lock{mutex};
+  if (outQueue.empty())
+    return std::nullopt;
+  auto rc = std::make_optional(std::move(outQueue.back()));
+  outQueue.pop_back();
+  return rc;
 }
 
 void TextureLoadingThreads::pause() {
@@ -205,10 +211,41 @@ void TextureLoadingThreads::setPriority(bool highPriority) {
 }
 
 void TextureLoadingThreads::flushQueue() {
+  std::scoped_lock lock{mutex};
   inQueue.clear();
 }
 
-void TextureLoadingThreads::enqueue(const metadb_handle_ptr& track,
-                                    const TextureCacheMeta& meta) {
-  inQueue.push(LoadRequest{meta, track});
+void TextureLoadingThreads::setQueue(std::list<LoadRequest>&& data) {
+  {
+    std::scoped_lock lock{mutex};
+    inQueue.clear();
+    for (auto&& e : data) {
+      auto workItem = inProgress.find(e.meta.groupString);
+      if (workItem != inProgress.end()) {
+        workItem->second = std::move(e.meta);
+      } else {
+        inQueue.push_back(std::move(e));
+      }
+    }
+  }
+  inCondition.notify_all();
+}
+
+std::pair<std::string, metadb_handle_ptr> TextureLoadingThreads::takeJob() {
+  std::unique_lock lock{mutex};
+  inCondition.wait(lock, [&] { return shouldStop || !inQueue.empty(); });
+  if (shouldStop) {
+    return {};
+  }
+  LoadRequest rc(std::move(inQueue.front()));
+  inQueue.pop_front();
+  inProgress[rc.meta.groupString] = rc.meta;
+  return {rc.meta.groupString, rc.track};
+}
+
+void TextureLoadingThreads::finishJob(const std::string& id,
+                                      std::optional<UploadReadyImage> result) {
+  std::unique_lock lock{mutex};
+  auto job = inProgress.extract(id);
+  outQueue.push_back(LoadResponse{std::move(job.mapped()), std::move(result)});
 }

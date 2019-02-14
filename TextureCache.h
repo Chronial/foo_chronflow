@@ -35,21 +35,27 @@ class TextureLoadingThreads {
   };
 
   void flushQueue();
-  void enqueue(const metadb_handle_ptr& track, const TextureCacheMeta& meta);
+  void setQueue(std::list<LoadRequest>&& data);
   std::optional<LoadResponse> getLoaded();
   void pause();
   void resume();
   void setPriority(bool highPriority);
 
  private:
+  std::pair<std::string, metadb_handle_ptr> takeJob();
+  void finishJob(const std::string&, std::optional<UploadReadyImage>);
+
   std::vector<std::thread> threads;
   std::atomic<bool> shouldStop = false;
   std::atomic<bool> highPriority = false;
   std::shared_mutex pauseMutex;
   std::unique_lock<std::shared_mutex> pauseLock{pauseMutex, std::defer_lock};
 
-  BlockingQueue<LoadRequest> inQueue;
-  BlockingQueue<LoadResponse> outQueue;
+  std::mutex mutex;
+  std::condition_variable inCondition;
+  std::deque<LoadRequest> inQueue;
+  std::unordered_map<std::string, TextureCacheMeta> inProgress;
+  std::deque<LoadResponse> outQueue;
 
   void run();
 };
