@@ -4,7 +4,7 @@
 #include "utils.h"
 
 class TextureCache;
-class DisplayPosition;
+class WorldState;
 class Engine;
 
 class Renderer {
@@ -14,7 +14,7 @@ class Renderer {
   void resizeGlScene(int width, int height);
   void setProjectionMatrix(bool pickMatrix = false, int x = 0, int y = 0);
 
-  bool offsetOnPoint(int x, int y, int& out);
+  std::optional<AlbumInfo> albumAtPoint(int x, int y);
 
   void drawFrame();
 

@@ -64,41 +64,39 @@ void DbReloadWorker::generateData() {
   if (kill)
     return;
 
-  auto& groupIndex = albums.get<0>();
+  auto& keyIndex = albums.get<0>();
   {
-    compiler->compile_safe_ex(albumMapper, cfgGroup);
-    pfc::string8_fast_aggressive tmpSortString;
+    compiler->compile_safe_ex(keyBuilder, cfgGroup);
     albums.reserve(library.get_size());
     service_ptr_t<titleformat_object> sortFormatter;
     if (!cfgSortGroup) {
       compiler->compile_safe(sortFormatter, cfgSort);
     }
-    for (t_size i = 0; i < library.get_size(); i++) {
+    pfc::string8_fast_aggressive keyBuffer;
+    pfc::string8_fast_aggressive sortBuffer;
+    pfc::string8_fast_aggressive titleBuffer;
+    pfc::stringcvt::string_wide_from_utf8_fast sortBufferWide;
+
+    for (const metadb_handle_ptr& track : library) {
       if (kill)
         return;
-      pfc::string8_fast groupString;
-      metadb_handle_ptr track = library.get_item(i);
-      track->format_title(nullptr, groupString, albumMapper, nullptr);
-      if (groupIndex.count(groupString.get_ptr()) == 0u) {
-        std::wstring sortString;
+
+      track->format_title(nullptr, keyBuffer, keyBuilder, nullptr);
+      auto album = keyIndex.find(keyBuffer.get_ptr());
+      if (album == keyIndex.end()) {
         if (cfgSortGroup) {
-          sortString = pfc::stringcvt::string_wide_from_utf8(groupString);
+          sortBufferWide.convert(keyBuffer);
         } else {
-          track->format_title(nullptr, tmpSortString, sortFormatter, nullptr);
-          sortString = pfc::stringcvt::string_wide_from_utf8(tmpSortString);
+          track->format_title(nullptr, sortBuffer, sortFormatter, nullptr);
+          sortBufferWide.convert(sortBuffer);
         }
 
-        pfc::string8_fast findAsYouType;
-        track->format_title(nullptr, findAsYouType, cfgAlbumTitleScript, nullptr);
+        track->format_title(nullptr, titleBuffer, cfgAlbumTitleScript, nullptr);
 
-        metadb_handle_list tracks;
-        tracks.add_item(track);
-        albums.insert({groupString.get_ptr(), std::move(sortString),
-                       std::move(findAsYouType), std::move(tracks)});
-      } else {
-        auto album = groupIndex.find(groupString.get_ptr());
-        album->tracks.add_item(track);
+        bool success;
+        std::tie(album, success) = albums.emplace(keyBuffer, sortBufferWide, titleBuffer);
       }
+      album->tracks.add_item(track);
     }
   }
   library.remove_all();

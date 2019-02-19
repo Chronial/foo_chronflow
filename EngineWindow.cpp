@@ -151,7 +151,7 @@ void EngineWindow::doDragStart(AlbumInfo album) {
 
 void EngineWindow::onClickOnAlbum(AlbumInfo album, UINT uMsg) {
   if (uMsg == WM_LBUTTONDOWN) {
-    engineThread->send<EM::MoveToAlbumMessage>(album.groupString);
+    engineThread->send<EM::MoveToAlbumMessage>(album);
   } else if (uMsg == WM_MBUTTONDOWN) {
     executeAction(cfgMiddleClick, album);
   } else if (uMsg == WM_LBUTTONDBLCLK) {

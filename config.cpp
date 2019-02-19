@@ -177,10 +177,10 @@ static const GUID guid_cfgShowFps = {
 cfg_bool cfgShowFps(guid_cfgShowFps, false);
 
 // Non-config vars
-// {53209101-8AAE-4256-90A4-F67417F4F75C}
+// {53209101-8AAE-4256-90A4-F67417F4F76C}
 static const GUID guid_sessionSelectedCover = {
-    0x53209101, 0x8aae, 0x4256, {0x90, 0xa4, 0xf6, 0x74, 0x17, 0xf4, 0xf7, 0x5c}};
-cfg_int sessionSelectedCover(guid_sessionSelectedCover, 0);
+    0x53209101, 0x8aae, 0x4256, {0x90, 0xa4, 0xf6, 0x74, 0x17, 0xf4, 0xf7, 0x6c}};
+cfg_string_mt sessionSelectedCover(guid_sessionSelectedCover, "");
 
 // {6DDC4C81-7525-46d0-B9B8-0E8DE36957A8}
 static const GUID guid_sessionCompiledCPInfo = {

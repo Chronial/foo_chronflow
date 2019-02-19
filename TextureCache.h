@@ -73,9 +73,9 @@ class TextureCache {
 
   void trimCache();
   void clearCache();
-  void onTargetChange();
+  void startLoading(const DBPos& target);
   void onCollectionReload();
-  void updateLoadingQueue(const CollectionPos& queueCenter);
+  void updateLoadingQueue(const DBIter& queueCenter);
   void uploadTextures();
 
   void pauseLoading();

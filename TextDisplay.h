@@ -24,7 +24,8 @@ class TextDisplay {
   TextDisplay& operator=(TextDisplay&&) = delete;
   ~TextDisplay();
 
-  void displayText(const char* text, int x, int y, HAlignment hAlign, VAlignment vAlign);
+  void displayText(const std::string& text, int x, int y, HAlignment hAlign,
+                   VAlignment vAlign);
   void clearCache();
   void displayBitmapText(const char* text, int x, int y);
 
@@ -44,7 +45,7 @@ class TextDisplay {
     int texHeight{};
   };
 
-  DisplayTexture createTexture(const char* text);
+  DisplayTexture createTexture(const std::string& text);
   static const int CACHE_SIZE = 20;
   std::array<DisplayTexture, CACHE_SIZE> texCache;
 };

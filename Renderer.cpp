@@ -3,11 +3,11 @@
 #include "lib/gl_structs.h"
 
 #include "DbAlbumCollection.h"
-#include "DisplayPosition.h"
 #include "Engine.h"
 #include "TextureCache.h"
 #include "config.h"
 #include "utils.h"
+#include "world_state.h"
 
 #define SELECTION_CENTER INT_MAX  // Selection is an unsigned int, so this is center
 #define SELECTION_COVERS 1
@@ -81,7 +81,7 @@ void Renderer::glPopOrthoMatrix() {
   glEnable(GL_DEPTH_TEST);
 }
 
-bool Renderer::offsetOnPoint(int x, int y, int& out) {
+std::optional<AlbumInfo> Renderer::albumAtPoint(int x, int y) {
   GLuint buf[256];
   glSelectBuffer(256, static_cast<GLuint*>(buf));
   glRenderMode(GL_SELECT);
@@ -105,12 +105,12 @@ bool Renderer::offsetOnPoint(int x, int y, int& out) {
     }
     p += names;
   }
-  if (minZ != INFINITE) {
-    out = (selectedName - SELECTION_CENTER);
-    return true;
-  } else {
-    return false;
-  }
+
+  if (minZ == INFINITE)
+    return std::nullopt;
+  int offset = (selectedName - SELECTION_CENTER);
+  auto& center = engine.worldState.getCenteredPos();
+  return engine.db.getAlbumInfo(engine.db.movePosBy(center, offset));
 }
 
 void Renderer::drawMirrorPass() {
@@ -238,9 +238,9 @@ void Renderer::drawScene(bool selectionPass) {
 
 void Renderer::drawGui() {
   if (cfgShowAlbumTitle || engine.db.getCount() == 0) {
-    pfc::string8 albumTitle;
+    std::string albumTitle;
     if (engine.db.getCount()) {
-      engine.db.getTitle(engine.db.getTargetPos(), albumTitle);
+      albumTitle = engine.db.getAlbumInfo(engine.worldState.getTarget()).title;
     } else if (engine.reloadWorker) {
       albumTitle = "Generating Cover Display ...";
     } else {
@@ -286,21 +286,21 @@ void Renderer::drawCovers(bool showTarget) {
   if (engine.db.getCount() == 0)
     return;
 
-  float centerOffset = engine.displayPos.getCenteredOffset();
-  CollectionPos centerCover = engine.displayPos.getCenteredPos();
-  CollectionPos firstCover =
-      engine.displayPos.getOffsetPos(engine.coverPos.getFirstCover() + 1);
-  CollectionPos lastCover =
-      engine.displayPos.getOffsetPos(engine.coverPos.getLastCover());
-  lastCover++;  // getOffsetPos does not return the end() element
-  CollectionPos targetCover = engine.db.getTargetPos();
+  float centerOffset = engine.worldState.getCenteredOffset();
+  DBIter centerCover = engine.db.iterFromPos(engine.worldState.getCenteredPos());
+  DBIter firstCover =
+      engine.db.moveIterBy(centerCover, engine.coverPos.getFirstCover() + 1);
+  DBIter lastCover = engine.db.moveIterBy(centerCover, engine.coverPos.getLastCover());
+  lastCover++;  // moveIterBy never returns the end() element
+  DBIter targetCover = engine.db.iterFromPos(engine.worldState.getTarget());
 
-  int offset = engine.db.rank(firstCover) - engine.db.rank(centerCover);
+  int offset = engine.db.difference(
+      engine.db.posFromIter(firstCover), engine.db.posFromIter(centerCover));
 
-  for (CollectionPos p = firstCover; p != lastCover; ++p, ++offset) {
+  for (DBIter p = firstCover; p != lastCover; ++p, ++offset) {
     float co = -centerOffset + offset;
 
-    auto tex = engine.texCache.getAlbumTexture(p->groupString);
+    auto tex = engine.texCache.getAlbumTexture(p->key);
     if (tex == nullptr) {
       wasMissingTextures = true;
       tex = &engine.texCache.getLoadingTexture();

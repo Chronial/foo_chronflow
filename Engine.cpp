@@ -1,11 +1,11 @@
 #include "Engine.h"
 
-#include "DisplayPosition.h"
 #include "EngineWindow.h"
 #include "MyActions.h"
 #include "PlaybackTracer.h"
 #include "TextureCache.h"
 #include "config.h"
+#include "world_state.h"
 
 GLContext::GLContext(EngineWindow& window) {
   window.makeContextCurrent();
@@ -52,7 +52,7 @@ int HighTimerResolution::get() {
 
 Engine::Engine(EngineThread& thread, EngineWindow& window)
     : window(window), thread(thread), glContext(window), findAsYouType(*this),
-      displayPos(db), texCache(thread, db, coverPos), renderer(*this),
+      worldState(db), texCache(thread, db, coverPos), renderer(*this),
       playbackTracer(thread) {}
 
 void Engine::mainLoop() {
@@ -84,11 +84,11 @@ void Engine::mainLoop() {
     texCache.trimCache();
 
     // Update state
-    displayPos.update();
+    worldState.update();
 
     // Render
     render();
-    windowDirty = displayPos.isMoving() || renderer.wasMissingTextures;
+    windowDirty = worldState.isMoving() || renderer.wasMissingTextures;
 
     // Handle V-Sync
     renderer.ensureVSync(cfgVSyncMode != VSYNC_SLEEP_ONLY);
@@ -138,9 +138,9 @@ void Engine::updateRefreshRate() {
   }
 }
 
-void Engine::onTargetChange(bool userInitiated) {
-  displayPos.onTargetChange();
-  texCache.onTargetChange();
+void Engine::setTarget(DBPos target, bool userInitiated) {
+  worldState.setTarget(target);
+  texCache.startLoading(target);
   if (userInitiated)
     playbackTracer.delay(1);
 

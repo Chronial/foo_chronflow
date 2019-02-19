@@ -24,7 +24,7 @@ void EM::ChangeCPScriptMessage::run(Engine& e, pfc::string8 script) {
   e.coverPos.setScript(script, tmp);
   e.renderer.setProjectionMatrix();
   if (e.db.getCount() > 0)
-    e.texCache.onTargetChange();
+    e.texCache.startLoading(e.worldState.getTarget());
   e.windowDirty = true;
 }
 
@@ -37,7 +37,7 @@ void EM::WindowHideMessage::run(Engine& e) {
 
 void EM::WindowShowMessage::run(Engine& e) {
   if (cfgEmptyCacheOnMinimize) {
-    e.texCache.onTargetChange();
+    e.texCache.startLoading(e.worldState.getTarget());
   }
   e.texCache.resumeLoading();
 }
@@ -63,49 +63,41 @@ void EM::MoveTargetMessage::run(Engine& e, int moveBy, bool moveToEnd) {
     return;
 
   if (!moveToEnd) {
-    e.db.moveTargetBy(moveBy);
-    e.onTargetChange(true);
+    auto target = e.worldState.getTarget();
+    e.setTarget(e.db.movePosBy(target, moveBy), true);
   } else {
-    CollectionPos newTarget;
+    DBIter newTarget;
     if (moveBy > 0) {
       newTarget = --e.db.end();
     } else {
       newTarget = e.db.begin();
     }
-    e.db.setTargetPos(newTarget);
-    e.onTargetChange(true);
+    e.setTarget(e.db.posFromIter(newTarget), true);
   }
 }
 
 void EM::MoveToCurrentTrack::run(Engine& e, metadb_handle_ptr track) {
-  CollectionPos target;
-  if (e.db.getAlbumForTrack(track, target)) {
-    e.db.setTargetPos(target);
-    e.onTargetChange(false);
+  DBIter target;
+  if (auto pos = e.db.getPosForTrack(track)) {
+    e.setTarget(pos.value(), false);
   }
 }
 
-void EM::MoveToAlbumMessage::run(Engine& e, std::string groupString) {
+void EM::MoveToAlbumMessage::run(Engine& e, AlbumInfo album) {
   if (!e.db.getCount())
     return;
 
-  e.db.setTargetByName(groupString);
-  e.onTargetChange(true);
+  e.setTarget(album.pos, true);
 }
 
 std::optional<AlbumInfo> EM::GetAlbumAtCoords::run(Engine& e, int x, int y) {
-  int offset;
-  if (!e.renderer.offsetOnPoint(x, y, offset)) {
-    return std::nullopt;
-  }
-  CollectionPos pos = e.displayPos.getOffsetPos(offset);
-  return e.db.getAlbumInfo(pos);
+  return e.renderer.albumAtPoint(x, y);
 }
 
 std::optional<AlbumInfo> EM::GetTargetAlbum::run(Engine& e) {
   if (!e.db.getCount())
     return std::nullopt;
-  auto pos = e.db.getTargetPos();
+  auto& pos = e.worldState.getTarget();
   return e.db.getAlbumInfo(pos);
 }
 
@@ -118,9 +110,8 @@ void EM::ReloadCollection::run(Engine& e) {
 void EM::CollectionReloadedMessage::run(Engine& e) {
   e.db.onCollectionReload(std::move(*e.reloadWorker));
   e.reloadWorker.reset();
-  CollectionPos newTargetPos = e.db.getTargetPos();
-  e.displayPos.hardSetCenteredPos(newTargetPos);
   e.texCache.onCollectionReload();
+  e.texCache.startLoading(e.worldState.getTarget());
   e.thread.invalidateWindow();
 }
 

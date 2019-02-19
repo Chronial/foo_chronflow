@@ -65,11 +65,8 @@ void TextDisplay::clearCache() {
   }
 }
 
-void TextDisplay::displayText(const char* text, int x, int y, HAlignment hAlign,
+void TextDisplay::displayText(const std::string& text, int x, int y, HAlignment hAlign,
                               VAlignment vAlign) {
-  if (text == nullptr || text[0] == '\0')
-    return;
-
   DisplayTexture* dTex = nullptr;
   DisplayTexture* oldestElem = &texCache.front();
   unsigned int maxAge = 0;
@@ -130,13 +127,13 @@ void TextDisplay::displayText(const char* text, int x, int y, HAlignment hAlign,
   renderer->glPopOrthoMatrix();
 }
 
-TextDisplay::DisplayTexture TextDisplay::createTexture(const char* text) {
+TextDisplay::DisplayTexture TextDisplay::createTexture(const std::string& text) {
   DisplayTexture displayTex;
-  displayTex.text = std::string(text);
+  displayTex.text = text;
   unique_ptr<Gdiplus::Bitmap> bitmap;
 
   {
-    pfc::stringcvt::string_wide_from_utf8 w_text(text);
+    pfc::stringcvt::string_wide_from_utf8 w_text(text.c_str());
     Gdiplus::StringFormat strFormat;
     unique_ptr<Gdiplus::Font> font;
     strFormat.SetAlignment(Gdiplus::StringAlignmentCenter);

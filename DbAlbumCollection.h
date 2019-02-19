@@ -1,90 +1,101 @@
 #pragma once
 #include "utils.h"
 
-namespace bomi = boost::multi_index;
-
 class DbReloadWorker;
 
-struct DbAlbum {
-  std::string groupString;
-  std::wstring sortString;
-  pfc::string8 findAsYouType;
-  mutable metadb_handle_list tracks;
+struct DBPos {
+  std::string key;
+  std::wstring sortKey;
 };
+inline bool operator==(const DBPos& lhs, const DBPos& rhs) {
+  return lhs.key == rhs.key;
+}
+inline bool operator!=(const DBPos& lhs, const DBPos& rhs) {
+  return !(lhs == rhs);
+}
 
 struct AlbumInfo {
   std::string title;
-  std::string groupString;
+  DBPos pos;
   metadb_handle_list tracks;
 };
 
+namespace db_structure {
+namespace bomi = boost::multi_index;
+
 struct CompWLogical {
-  bool operator()(std::wstring a, std::wstring b) const {
-    return StrCmpLogicalW(a.data(), b.data()) < 0;
+  bool operator()(const std::wstring& a, const std::wstring& b) const {
+    return StrCmpLogicalW(a.c_str(), b.c_str()) < 0;
   }
 };
 
 struct CompIUtf8 {
-  bool operator()(pfc::string8 a, pfc::string8 b) const { return stricmp_utf8(a, b) < 0; }
+  bool operator()(const std::string& a, const std::string& b) const {
+    return stricmp_utf8(a.c_str(), b.c_str()) < 0;
+  }
 };
 
-using DbAlbums = bomi::multi_index_container<
-    DbAlbum,
-    bomi::indexed_by<
-        bomi::hashed_unique<bomi::member<DbAlbum, std::string, &DbAlbum::groupString> >,
-        bomi::ranked_non_unique<bomi::member<DbAlbum, std::wstring, &DbAlbum::sortString>,
-                                CompWLogical>,
-        bomi::ordered_non_unique<
-            bomi::member<DbAlbum, pfc::string8, &DbAlbum::findAsYouType>, CompIUtf8> > >;
+struct key {};
+struct sortKey {};
+struct title {};
 
-using CollectionPos = DbAlbums::nth_index<1>::type::iterator;
+struct Album {
+  Album(const char* key, const wchar_t* sortKey, const char* title)
+      : key(key), sortKey(sortKey), title(title){};
+  std::string key;
+  std::wstring sortKey;
+  std::string title;
+  mutable metadb_handle_list tracks;
+};
+
+using DB = bomi::multi_index_container<
+    Album, bomi::indexed_by<
+               bomi::hashed_unique<bomi::tag<key>,
+                                   bomi::member<Album, std::string, &Album::key> >,
+               bomi::ranked_non_unique<bomi::tag<sortKey>,
+                                       bomi::member<Album, std::wstring, &Album::sortKey>,
+                                       CompWLogical>,
+               bomi::ordered_non_unique<bomi::tag<title>,
+                                        bomi::member<Album, std::string, &Album::title>,
+                                        CompIUtf8> > >;
+}  // namespace db_structure
+
+using DBIter = db_structure::DB::index<db_structure::sortKey>::type::iterator;
 
 class DbAlbumCollection {
  public:
   DbAlbumCollection();
 
   inline size_t getCount() { return albums.size(); };
-  AlbumInfo getAlbumInfo(CollectionPos pos);
-  void getTitle(CollectionPos pos, pfc::string_base& out);
-  bool getTracks(CollectionPos pos, metadb_handle_list& out);
-  bool getAlbumForTrack(const metadb_handle_ptr& track, CollectionPos& out);
+  AlbumInfo getAlbumInfo(const DBPos& pos);
+  void getTracks(DBIter pos, metadb_handle_list& out);
+  std::optional<DBPos> getPosForTrack(const metadb_handle_ptr& track);
 
-  // Set `out` to leftmost album whose title starts with `title`
-  // Returns whether any results have been found
-  bool performFayt(const char* title, CollectionPos& out);
+  template <class T>
+  DBPos posFromIter(T iter) const {
+    return {iter->key, iter->sortKey};
+  };
+  DBIter iterFromPos(const DBPos&) const;
+
+  // Gets the leftmost album whose title starts with `input`
+  std::optional<DBPos> performFayt(const std::string& input);
 
   void onCollectionReload(DbReloadWorker&& worker);
 
-  CollectionPos begin() const;
-  CollectionPos end() const;
-  t_size rank(CollectionPos p);
+  DBIter begin() const;
+  DBIter end() const;
+  int difference(const DBPos&, const DBPos&);
 
-  CollectionPos getTargetPos() { return targetPos; }
-  void setTargetPos(CollectionPos newTarget);
-  void setTargetByName(const std::string& groupString);
-  void moveTargetBy(int n);
-  inline void movePosBy(CollectionPos& p, int n) const {
-    if (n > 0) {
-      CollectionPos next;
-      for (int i = 0; i < n; ++i) {
-        if (p == this->end())
-          break;
-        next = p;
-        ++next;
-        // Do only move just before the end, don't reach the end
-        if (next == this->end())
-          break;
-        p = next;
-      }
-    } else {
-      for (int i = 0; i > n && p != this->begin(); --p, --i) {
-      }
-    }
+  DBIter moveIterBy(const DBIter& p, int n) const;
+  DBPos movePosBy(const DBPos& p, int n) const {
+    return posFromIter(moveIterBy(iterFromPos(p), n));
   }
 
  private:
   /******************************* INTERN DATABASE ***************************/
-  DbAlbums albums;
-  CollectionPos targetPos;
-  service_ptr_t<titleformat_object> albumMapper;
+  db_structure::DB albums;
+  db_structure::DB::index<db_structure::key>::type& keyIndex;
+  db_structure::DB::index<db_structure::sortKey>::type& sortIndex;
+  db_structure::DB::index<db_structure::title>::type& titleIndex;
+  service_ptr_t<titleformat_object> keyBuilder;
 };

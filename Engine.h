@@ -2,13 +2,13 @@
 #include "BlockingQueue.h"
 #include "DbAlbumCollection.h"
 #include "DbReloadWorker.h"
-#include "DisplayPosition.h"
 #include "FindAsYouType.h"
 #include "PlaybackTracer.h"
 #include "Renderer.h"
 #include "TextureCache.h"
 #include "cover_positions.h"
 #include "utils.h"
+#include "world_state.h"
 
 class GLContext {
  public:
@@ -32,7 +32,7 @@ class Engine {
   DbAlbumCollection db;
   FindAsYouType findAsYouType;
   ScriptedCoverPositions coverPos;
-  DisplayPosition displayPos;
+  WorldState worldState;
   TextureCache texCache;
   FpsCounter fpsCounter;
   Renderer renderer;
@@ -42,7 +42,7 @@ class Engine {
   Engine(EngineThread&, EngineWindow&);
   void mainLoop();
   void updateRefreshRate();
-  void onTargetChange(bool userInitiated);
+  void setTarget(DBPos target, bool userInitiated);
 
  private:
   void render();

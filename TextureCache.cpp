@@ -33,7 +33,7 @@ GLTexture& TextureCache::getLoadingTexture() {
   return loadingTexture;
 }
 
-void TextureCache::onTargetChange() {
+void TextureCache::startLoading(const DBPos& target) {
   if (db.getCount() == 0)
     return;
   cacheGeneration += 1;
@@ -44,13 +44,12 @@ void TextureCache::onTargetChange() {
       textureCache.modify(it, [&](CacheItem& x) { x.priority.first = 0; });
     }
   }
-  updateLoadingQueue(db.getTargetPos());
+  updateLoadingQueue(db.iterFromPos(target));
 }
 
 void TextureCache::onCollectionReload() {
   collectionVersion += 1;
   reloadSpecialTextures();
-  updateLoadingQueue(db.getTargetPos());
 }
 
 int TextureCache::maxCacheSize() {
@@ -97,7 +96,7 @@ void TextureCache::setPriority(bool highPriority) {
   bgLoader.setPriority(highPriority);
 }
 
-void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter) {
+void TextureCache::updateLoadingQueue(const DBIter& queueCenter) {
   // Update loaded textures from background loader
   // There is a race here: if a loader finishes loading an image between this call
   // and the call to setQueue below, we might load that image twice.
@@ -106,12 +105,12 @@ void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter) {
 
   std::list<TextureLoadingThreads::LoadRequest> requests;
 
-  CollectionPos leftLoaded = queueCenter;
-  CollectionPos rightLoaded = queueCenter;
-  CollectionPos loadNext = queueCenter;
+  DBIter leftLoaded = queueCenter;
+  DBIter rightLoaded = queueCenter;
+  DBIter loadNext = queueCenter;
 
   for (size_t i = 0; i < maxLoad; i++) {
-    auto cacheEntry = textureCache.find(loadNext->groupString);
+    auto cacheEntry = textureCache.find(loadNext->key);
     auto priority = std::make_pair(cacheGeneration, -static_cast<int>(i));
     if (cacheEntry != textureCache.end() &&
         cacheEntry->collectionVersion == collectionVersion) {
@@ -119,12 +118,12 @@ void TextureCache::updateLoadingQueue(const CollectionPos& queueCenter) {
     } else {
       // We only consider one track for art extraction for performance reasons
       requests.emplace_back(TextureLoadingThreads::LoadRequest{
-          TextureCacheMeta{loadNext->groupString, collectionVersion, priority},
+          TextureCacheMeta{loadNext->key, collectionVersion, priority},
           loadNext->tracks[0]});
     }
 
     if ((((i % 2) != 0u) || leftLoaded == db.begin()) &&
-        ++CollectionPos(rightLoaded) != db.end()) {
+        ++DBIter(rightLoaded) != db.end()) {
       ++rightLoaded;
       loadNext = rightLoaded;
       PFC_ASSERT(loadNext != db.end());

@@ -30,9 +30,6 @@
     <ClCompile Include="DbAlbumCollection.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DisplayPosition.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="PlaybackTracer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -117,12 +114,12 @@
     <ClCompile Include="utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="world_state.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DbAlbumCollection.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DisplayPosition.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MyActions.h">
@@ -213,6 +210,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="world_state.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

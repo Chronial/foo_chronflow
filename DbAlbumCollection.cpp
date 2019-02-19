@@ -5,132 +5,101 @@
 #include "EngineThread.h"
 #include "config.h"
 
-DbAlbumCollection::DbAlbumCollection() : targetPos(albums.get<1>().end()) {
+DbAlbumCollection::DbAlbumCollection()
+    : keyIndex(albums.get<db_structure::key>()),
+      sortIndex(albums.get<db_structure::sortKey>()),
+      titleIndex(albums.get<db_structure::title>()) {
   static_api_ptr_t<titleformat_compiler> compiler;
   compiler->compile_safe_ex(cfgAlbumTitleScript, cfgAlbumTitle);
 }
 
 void DbAlbumCollection::onCollectionReload(DbReloadWorker&& worker) {
-  CollectionPos newTargetPos;
-  auto& newSortedIndex = worker.albums.get<1>();
-  if (albums.empty()) {
-    if (worker.albums.size() > static_cast<t_size>(sessionSelectedCover)) {
-      newTargetPos = newSortedIndex.nth(sessionSelectedCover);
-    } else {
-      newTargetPos = newSortedIndex.begin();
-    }
-  } else {
-    newTargetPos = newSortedIndex.begin();
-    CollectionPos oldTargetPos = targetPos;
-    pfc::string8_fast_aggressive albumKey;
-    for (t_size i = 0; i < oldTargetPos->tracks.get_size(); i++) {
-      oldTargetPos->tracks[i]->format_title(
-          nullptr, albumKey, worker.albumMapper, nullptr);
-      if (worker.albums.count(albumKey.get_ptr()) > 0u) {
-        newTargetPos = worker.albums.project<1>(worker.albums.find(albumKey.get_ptr()));
-        break;
-      }
-    }
-  }
   albums = std::move(worker.albums);
-  albumMapper = std::move(worker.albumMapper);
-
-  setTargetPos(newTargetPos);
+  keyBuilder = std::move(worker.keyBuilder);
 }
 
-bool DbAlbumCollection::getTracks(CollectionPos pos, metadb_handle_list& out) {
+void DbAlbumCollection::getTracks(DBIter pos, metadb_handle_list& out) {
   out = pos->tracks;
   out.sort_by_format(cfgInnerSort, nullptr);
-  return true;
 }
 
-bool DbAlbumCollection::getAlbumForTrack(const metadb_handle_ptr& track,
-                                         CollectionPos& out) {
+std::optional<DBPos> DbAlbumCollection::getPosForTrack(const metadb_handle_ptr& track) {
+  if (!keyBuilder.is_valid())
+    return std::nullopt;
   pfc::string8_fast_aggressive albumKey;
-  if (!albumMapper.is_valid())
-    return false;
-  track->format_title(nullptr, albumKey, albumMapper, nullptr);
-  if (albums.count(albumKey.get_ptr()) > 0u) {
-    auto groupAlbum = albums.find(albumKey.get_ptr());
-    out = albums.project<1>(groupAlbum);
-    return true;
-  } else {
-    return false;
-  }
+  track->format_title(nullptr, albumKey, keyBuilder, nullptr);
+  auto groupAlbum = albums.find(albumKey.get_ptr());
+  if (groupAlbum == albums.end())
+    return std::nullopt;
+  return posFromIter(groupAlbum);
 }
 
-AlbumInfo DbAlbumCollection::getAlbumInfo(CollectionPos pos) {
+DBIter DbAlbumCollection::iterFromPos(const DBPos& p) const {
+  if (albums.empty())
+    return sortIndex.end();
+  auto groupItem = albums.find(p.key);
+  if (groupItem != albums.end()) {
+    return albums.project<1>(groupItem);
+  }
+  auto sortItem = sortIndex.lower_bound(p.sortKey);
+  if (sortItem == sortIndex.end()) {
+    --sortItem;
+  }
+  return sortItem;
+}
+
+AlbumInfo DbAlbumCollection::getAlbumInfo(const DBPos& pos) {
   metadb_handle_list tracks;
-  pfc::string8 title;
-  getTracks(pos, tracks);
-  getTitle(pos, title);
-  return AlbumInfo{title.c_str(), pos->groupString, tracks};
+  auto iter = iterFromPos(pos);
+  getTracks(iter, tracks);
+  return AlbumInfo{iter->title, pos, tracks};
 }
 
-void DbAlbumCollection::getTitle(CollectionPos pos, pfc::string_base& out) {
-  pos->tracks[0]->format_title(nullptr, out, cfgAlbumTitleScript, nullptr);
-}
+std::optional<DBPos> DbAlbumCollection::performFayt(const std::string& input) {
+  size_t inputLen = pfc::strlen_utf8(input.c_str());
+  auto range =
+      titleIndex.equal_range(input, [&](const std::string& a, const std::string& b) {
+        return stricmp_utf8_partial(a.c_str(), b.c_str(), inputLen) < 0;
+      });
 
-struct CompIUtf8Partial {
-  bool operator()(pfc::string8 a, const char* b) const {
-    return stricmp_utf8_partial(a, b) < 0;
-  }
-  bool operator()(const char* a, pfc::string8 b) const {
-    return stricmp_utf8_partial(b, a) > 0;
-  }
-};
+  if (range.first == range.second)
+    return std::nullopt;
 
-bool DbAlbumCollection::performFayt(const char* title, CollectionPos& out) {
-  auto& faytIndex = albums.get<2>();
-  auto range = faytIndex.equal_range(title, CompIUtf8Partial());
+  t_size resRank = ~0u;
+  DBIter res;
 
-  if (range.first == range.second) {
-    return false;
-  } else {
-    auto& sortIndex = albums.get<1>();
-    t_size outIdx = ~0u;
-    out = sortIndex.begin();
-
-    // find the item with the lowest index (this is important to select the leftmost
-    // album)
-    for (auto it = range.first; it != range.second; ++it) {
-      CollectionPos thisPos = albums.project<1>(it);
-      t_size thisIdx = sortIndex.rank(thisPos);
-      if (thisIdx < outIdx) {
-        outIdx = thisIdx;
-        out = thisPos;
-      }
+  // Find the item with the lowest index.
+  // This is important to select the leftmost album
+  for (auto it = range.first; it != range.second; ++it) {
+    DBIter thisPos = albums.project<db_structure::sortKey>(it);
+    t_size thisIdx = sortIndex.rank(thisPos);
+    if (thisIdx < resRank) {
+      resRank = thisIdx;
+      res = thisPos;
     }
-    return true;
   }
+  return posFromIter(res);
 }
 
-CollectionPos DbAlbumCollection::begin() const {
-  return albums.get<1>().begin();
+DBIter DbAlbumCollection::begin() const {
+  return sortIndex.begin();
 }
 
-CollectionPos DbAlbumCollection::end() const {
-  return albums.get<1>().end();
+DBIter DbAlbumCollection::end() const {
+  return sortIndex.end();
 }
 
-t_size DbAlbumCollection::rank(CollectionPos p) {
-  return albums.get<1>().rank(p);
+int DbAlbumCollection::difference(const DBPos& a, const DBPos& b) {
+  return sortIndex.rank(iterFromPos(a)) - sortIndex.rank(iterFromPos(b));
 }
 
-void DbAlbumCollection::setTargetPos(CollectionPos newTarget) {
-  targetPos = newTarget;
-  sessionSelectedCover = this->rank(newTarget);
-}
-
-void DbAlbumCollection::setTargetByName(const std::string& groupString) {
-  auto groupAlbum = albums.find(groupString);
-  if (groupAlbum != albums.end()) {
-    targetPos = albums.project<1>(groupAlbum);
-    sessionSelectedCover = this->rank(targetPos);
+DBIter DbAlbumCollection::moveIterBy(const DBIter& p, int n) const {
+  auto& sortIndex = albums.get<1>();
+  int rank = sortIndex.rank(p) + n;
+  if (rank <= 0)
+    return sortIndex.begin();
+  if (size_t(rank) >= sortIndex.size()) {
+    return --sortIndex.end();
   }
-}
-
-void DbAlbumCollection::moveTargetBy(int n) {
-  movePosBy(targetPos, n);
-  sessionSelectedCover = this->rank(targetPos);
+  return sortIndex.nth(rank);
 }

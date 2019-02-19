@@ -43,6 +43,7 @@ using std::unique_ptr;  // NOLINT
 #include <boost/multi_index_container.hpp>
 
 #include <boost/range/adaptor/reversed.hpp>
+#include <boost/range/sub_range.hpp>
 
 // Require windows vista
 #define _WIN32_WINNT 0x600
@@ -88,6 +89,7 @@ using std::unique_ptr;  // NOLINT
 
 #include "../foobar2000/SDK/foobar2000.h"
 #include "../foobar2000/helpers/win32_misc.h"
+#include "../pfc/range_based_for.h"
 
 // clang doesn't support stdcall lambdas
 // since we only use it for linting, we just hide those lambdas from it

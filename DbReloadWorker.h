@@ -17,8 +17,8 @@ class DbReloadWorker {
   DbReloadWorker& operator=(DbReloadWorker&) = delete;
   DbReloadWorker& operator=(DbReloadWorker&&) = delete;
   ~DbReloadWorker();
-  DbAlbums albums;
-  service_ptr_t<titleformat_object> albumMapper;
+  db_structure::DB albums;
+  service_ptr_t<titleformat_object> keyBuilder;
 
  private:
   void threadProc();

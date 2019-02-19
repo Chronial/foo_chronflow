@@ -167,7 +167,7 @@
     <ClCompile Include="CuiComponent.cpp" />
     <ClCompile Include="DbAlbumCollection.cpp" />
     <ClCompile Include="DbReloadWorker.cpp" />
-    <ClCompile Include="DisplayPosition.cpp" />
+    <ClCompile Include="world_state.cpp" />
     <ClCompile Include="TrackDropSource.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClCompile Include="main.cpp" />
@@ -203,7 +203,7 @@
     <ClInclude Include="config.h" />
     <ClInclude Include="DbAlbumCollection.h" />
     <ClInclude Include="DbReloadWorker.h" />
-    <ClInclude Include="DisplayPosition.h" />
+    <ClInclude Include="world_state.h" />
     <ClInclude Include="BlockingQueue.h" />
     <ClInclude Include="FindAsYouType.h" />
     <ClInclude Include="EngineWindow.h" />

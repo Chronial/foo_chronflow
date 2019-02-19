@@ -49,7 +49,7 @@ extern cfg_int cfgVSyncMode;
 extern cfg_bool cfgShowFps;
 
 /****************************** non-config vars ******************************/
-extern cfg_int sessionSelectedCover;
+extern cfg_string_mt sessionSelectedCover;
 extern cfg_int sessionSelectedConfigTab;
 extern cfg_compiledCPInfoPtr sessionCompiledCPInfo;
 

@@ -50,18 +50,13 @@ void FindAsYouType::reset() {
 }
 
 bool FindAsYouType::updateSearch(const char* searchFor) {
-  // console::print(pfc::string_formatter() << "searching for: " << searchFor);
   timeoutTimer.reset();
   engine.playbackTracer.delay(typeTimeout);
-  CollectionPos pos;
-  bool result = engine.db.performFayt(searchFor, pos);
-  if (result) {
-    engine.db.setTargetPos(pos);
-    engine.onTargetChange(true);
-  }
+  auto result = engine.db.performFayt(searchFor);
+  if (result)
+    engine.setTarget(result.value(), true);
 
   timeoutTimer.emplace(
       typeTimeout, [&] { engine.thread.send<EM::Run>([&] { reset(); }); });
-
-  return result;
+  return result.has_value();
 }
