@@ -6,9 +6,9 @@ class EngineThread;
 class DbReloadWorker {
   metadb_handle_list library;
   EngineThread& engineThread;
-  std::thread thread;
   std::promise<void> copyDone;
   std::atomic<bool> kill = false;
+  std::thread thread;
 
  public:
   explicit DbReloadWorker(EngineThread& engineThread);
