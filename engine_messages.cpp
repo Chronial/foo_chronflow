@@ -23,8 +23,7 @@ void EM::ChangeCPScriptMessage::run(Engine& e, pfc::string8 script) {
   pfc::string8 tmp;
   e.coverPos.setScript(script, tmp);
   e.renderer.setProjectionMatrix();
-  if (e.db.getCount() > 0)
-    e.texCache.startLoading(e.worldState.getTarget());
+  e.texCache.startLoading(e.worldState.getTarget());
   e.windowDirty = true;
 }
 
@@ -59,9 +58,8 @@ void EM::MoveToNowPlayingMessage::run(Engine& e) {
 }
 
 void EM::MoveTargetMessage::run(Engine& e, int moveBy, bool moveToEnd) {
-  if (!e.db.getCount())
+  if (e.db.empty())
     return;
-
   if (!moveToEnd) {
     auto target = e.worldState.getTarget();
     e.setTarget(e.db.movePosBy(target, moveBy), true);
@@ -84,9 +82,6 @@ void EM::MoveToCurrentTrack::run(Engine& e, metadb_handle_ptr track) {
 }
 
 void EM::MoveToAlbumMessage::run(Engine& e, AlbumInfo album) {
-  if (!e.db.getCount())
-    return;
-
   e.setTarget(album.pos, true);
 }
 
@@ -95,10 +90,10 @@ std::optional<AlbumInfo> EM::GetAlbumAtCoords::run(Engine& e, int x, int y) {
 }
 
 std::optional<AlbumInfo> EM::GetTargetAlbum::run(Engine& e) {
-  if (!e.db.getCount())
+  auto iter = e.db.iterFromPos(e.worldState.getTarget());
+  if (!iter)
     return std::nullopt;
-  auto& pos = e.worldState.getTarget();
-  return e.db.getAlbumInfo(pos);
+  return e.db.getAlbumInfo(iter.value());
 }
 
 void EM::ReloadCollection::run(Engine& e) {

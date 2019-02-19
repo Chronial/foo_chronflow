@@ -110,7 +110,11 @@ std::optional<AlbumInfo> Renderer::albumAtPoint(int x, int y) {
     return std::nullopt;
   int offset = (selectedName - SELECTION_CENTER);
   auto& center = engine.worldState.getCenteredPos();
-  return engine.db.getAlbumInfo(engine.db.movePosBy(center, offset));
+  if (auto iter = engine.db.iterFromPos(center)) {
+    return engine.db.getAlbumInfo(engine.db.moveIterBy(iter.value(), offset));
+  } else {
+    return std::nullopt;
+  }
 }
 
 void Renderer::drawMirrorPass() {
@@ -237,10 +241,11 @@ void Renderer::drawScene(bool selectionPass) {
 }
 
 void Renderer::drawGui() {
-  if (cfgShowAlbumTitle || engine.db.getCount() == 0) {
+  if (cfgShowAlbumTitle || engine.db.empty()) {
     std::string albumTitle;
-    if (engine.db.getCount()) {
-      albumTitle = engine.db.getAlbumInfo(engine.worldState.getTarget()).title;
+    if (!engine.db.empty()) {
+      DBIter iter = engine.db.iterFromPos(engine.worldState.getTarget()).value();
+      albumTitle = engine.db.getAlbumInfo(iter).title;
     } else if (engine.reloadWorker) {
       albumTitle = "Generating Cover Display ...";
     } else {
@@ -283,19 +288,19 @@ void Renderer::drawCovers(bool showTarget) {
   if (cfgHighlightWidth == 0)
     showTarget = false;
 
-  if (engine.db.getCount() == 0)
+  if (engine.db.empty())
     return;
 
   float centerOffset = engine.worldState.getCenteredOffset();
-  DBIter centerCover = engine.db.iterFromPos(engine.worldState.getCenteredPos());
+  // We can assume that iterFromPos succeeds, because we already checked for empty db
+  DBIter targetCover = engine.db.iterFromPos(engine.worldState.getTarget()).value();
+  DBIter centerCover = engine.db.iterFromPos(engine.worldState.getCenteredPos()).value();
   DBIter firstCover =
       engine.db.moveIterBy(centerCover, engine.coverPos.getFirstCover() + 1);
   DBIter lastCover = engine.db.moveIterBy(centerCover, engine.coverPos.getLastCover());
   lastCover++;  // moveIterBy never returns the end() element
-  DBIter targetCover = engine.db.iterFromPos(engine.worldState.getTarget());
 
-  int offset = engine.db.difference(
-      engine.db.posFromIter(firstCover), engine.db.posFromIter(centerCover));
+  int offset = engine.db.difference(firstCover, centerCover);
 
   for (DBIter p = firstCover; p != lastCover; ++p, ++offset) {
     float co = -centerOffset + offset;

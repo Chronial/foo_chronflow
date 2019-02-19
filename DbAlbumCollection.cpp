@@ -34,9 +34,9 @@ std::optional<DBPos> DbAlbumCollection::getPosForTrack(const metadb_handle_ptr& 
   return posFromIter(groupAlbum);
 }
 
-DBIter DbAlbumCollection::iterFromPos(const DBPos& p) const {
+std::optional<DBIter> DbAlbumCollection::iterFromPos(const DBPos& p) const {
   if (albums.empty())
-    return sortIndex.end();
+    return std::nullopt;
   auto groupItem = albums.find(p.key);
   if (groupItem != albums.end()) {
     return albums.project<1>(groupItem);
@@ -48,11 +48,10 @@ DBIter DbAlbumCollection::iterFromPos(const DBPos& p) const {
   return sortItem;
 }
 
-AlbumInfo DbAlbumCollection::getAlbumInfo(const DBPos& pos) {
+AlbumInfo DbAlbumCollection::getAlbumInfo(DBIter pos) {
   metadb_handle_list tracks;
-  auto iter = iterFromPos(pos);
-  getTracks(iter, tracks);
-  return AlbumInfo{iter->title, pos, tracks};
+  getTracks(pos, tracks);
+  return AlbumInfo{pos->title, posFromIter(pos), tracks};
 }
 
 std::optional<DBPos> DbAlbumCollection::performFayt(const std::string& input) {
@@ -89,8 +88,8 @@ DBIter DbAlbumCollection::end() const {
   return sortIndex.end();
 }
 
-int DbAlbumCollection::difference(const DBPos& a, const DBPos& b) {
-  return sortIndex.rank(iterFromPos(a)) - sortIndex.rank(iterFromPos(b));
+int DbAlbumCollection::difference(DBIter a, DBIter b) {
+  return sortIndex.rank(a) - sortIndex.rank(b);
 }
 
 DBIter DbAlbumCollection::moveIterBy(const DBIter& p, int n) const {

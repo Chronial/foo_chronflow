@@ -66,16 +66,22 @@ class DbAlbumCollection {
  public:
   DbAlbumCollection();
 
-  inline size_t getCount() { return albums.size(); };
-  AlbumInfo getAlbumInfo(const DBPos& pos);
+  bool empty() { return albums.empty(); }
+  int size() { return albums.size(); }
+
+  AlbumInfo getAlbumInfo(DBIter pos);
   void getTracks(DBIter pos, metadb_handle_list& out);
   std::optional<DBPos> getPosForTrack(const metadb_handle_ptr& track);
 
   template <class T>
   DBPos posFromIter(T iter) const {
-    return {iter->key, iter->sortKey};
+    if (iter == iter.owner()->end())
+      return {};
+    else
+      return {iter->key, iter->sortKey};
   };
-  DBIter iterFromPos(const DBPos&) const;
+  // Returns a valid (non-end) iterator or nullopt if db is empty
+  std::optional<DBIter> iterFromPos(const DBPos&) const;
 
   // Gets the leftmost album whose title starts with `input`
   std::optional<DBPos> performFayt(const std::string& input);
@@ -84,11 +90,14 @@ class DbAlbumCollection {
 
   DBIter begin() const;
   DBIter end() const;
-  int difference(const DBPos&, const DBPos&);
+  int difference(DBIter, DBIter);
 
   DBIter moveIterBy(const DBIter& p, int n) const;
   DBPos movePosBy(const DBPos& p, int n) const {
-    return posFromIter(moveIterBy(iterFromPos(p), n));
+    auto iter = iterFromPos(p);
+    if (!iter)
+      return DBPos();
+    return posFromIter(moveIterBy(iter.value(), n));
   }
 
  private:

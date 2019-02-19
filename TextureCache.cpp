@@ -34,8 +34,6 @@ GLTexture& TextureCache::getLoadingTexture() {
 }
 
 void TextureCache::startLoading(const DBPos& target) {
-  if (db.getCount() == 0)
-    return;
   cacheGeneration += 1;
   // wrap around
   if (cacheGeneration > std::numeric_limits<unsigned int>::max() - 100) {
@@ -44,7 +42,9 @@ void TextureCache::startLoading(const DBPos& target) {
       textureCache.modify(it, [&](CacheItem& x) { x.priority.first = 0; });
     }
   }
-  updateLoadingQueue(db.iterFromPos(target));
+  if (auto iter = db.iterFromPos(target)) {
+    updateLoadingQueue(iter.value());
+  }
 }
 
 void TextureCache::onCollectionReload() {
@@ -54,7 +54,7 @@ void TextureCache::onCollectionReload() {
 
 int TextureCache::maxCacheSize() {
   int maxDisplay = 1 + std::max(-coverPos.getFirstCover(), coverPos.getLastCover());
-  return std::min(int(db.getCount()), std::max(int(cfgTextureCacheSize), 2 * maxDisplay));
+  return std::min(db.size(), std::max(int(cfgTextureCacheSize), 2 * maxDisplay));
 }
 
 void TextureCache::trimCache() {

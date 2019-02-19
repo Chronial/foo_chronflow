@@ -24,9 +24,13 @@ void WorldState::setTarget(DBPos target) {
 }
 
 void WorldState::update() {
+  if (db.empty())
+    return;
   double currentTime = Helpers::getHighresTimer();
   if (isMoving()) {
-    float dist = db.difference(targetPos, centeredPos) - centeredOffset;
+    float dist = db.difference(db.iterFromPos(targetPos).value(),
+                               db.iterFromPos(centeredPos).value()) -
+                 centeredOffset;
     auto dTime = float(currentTime - lastMovement);
     float speed = abs(targetDist2moveDist(dist));
     if (lastSpeed < speed) {
