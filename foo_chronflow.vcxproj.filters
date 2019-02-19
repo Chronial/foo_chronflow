@@ -13,12 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
     </Filter>
-    <Filter Include="Header Files\Helpers">
-      <UniqueIdentifier>{19f721ff-ce2f-4b00-88e1-e90a6d70ed35}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Helpers">
-      <UniqueIdentifier>{28189b49-b5b5-469c-a975-9a2aa24c8adc}</UniqueIdentifier>
-    </Filter>
     <Filter Include="lib">
       <UniqueIdentifier>{44371096-0fc0-45fa-8a10-a0d7034ba8f4}</UniqueIdentifier>
     </Filter>
@@ -39,14 +33,8 @@
     <ClCompile Include="TextDisplay.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CoverConfig.cpp">
-      <Filter>Source Files\Helpers</Filter>
-    </ClCompile>
     <ClCompile Include="MyActions.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TrackDropSource.cpp">
-      <Filter>Source Files\Helpers</Filter>
     </ClCompile>
     <ClCompile Include="DbReloadWorker.cpp">
       <Filter>Source Files</Filter>
@@ -117,6 +105,12 @@
     <ClCompile Include="world_state.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CoverConfig.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TrackDropSource.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DbAlbumCollection.h">
@@ -133,15 +127,6 @@
     </ClInclude>
     <ClInclude Include="TextDisplay.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CoverConfig.h">
-      <Filter>Header Files\Helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="TrackDropSource.h">
-      <Filter>Header Files\Helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="BlockingQueue.h">
-      <Filter>Header Files\Helpers</Filter>
     </ClInclude>
     <ClInclude Include="DbReloadWorker.h">
       <Filter>Header Files</Filter>
@@ -213,6 +198,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="world_state.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BlockingQueue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CoverConfig.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TrackDropSource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
