@@ -122,12 +122,15 @@ void TextureCache::updateLoadingQueue(const DBIter& queueCenter) {
           loadNext->tracks[0]});
     }
 
+    if (i == maxLoad - 1)
+      break;
     if ((((i % 2) != 0u) || leftLoaded == db.begin()) &&
         ++DBIter(rightLoaded) != db.end()) {
       ++rightLoaded;
       loadNext = rightLoaded;
       PFC_ASSERT(loadNext != db.end());
     } else {
+      PFC_ASSERT(leftLoaded != db.begin());
       --leftLoaded;
       loadNext = leftLoaded;
     }
