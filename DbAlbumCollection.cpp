@@ -5,17 +5,148 @@
 #include "EngineThread.h"
 #include "config.h"
 
-DbAlbumCollection::DbAlbumCollection()
-    : keyIndex(albums.get<db_structure::key>()),
-      sortIndex(albums.get<db_structure::sortKey>()),
-      titleIndex(albums.get<db_structure::title>()) {
-  static_api_ptr_t<titleformat_compiler> compiler;
-  compiler->compile_safe_ex(cfgAlbumTitleScript, cfgAlbumTitle);
+namespace db_structure {
+
+DB::DB(t_uint64 libraryVersion, const std::string& filterQuery,
+       const std::string& keyFormat, const std::string& sortFormat,
+       const std::string& titleFormat)
+    : keyIndex(container.get<key>()), sortIndex(container.get<sortKey>()),
+      titleIndex(container.get<title>()), libraryVersion(libraryVersion) {
+  if (!filterQuery.empty()) {
+    try {
+      filter ^= search_filter_manager::get()->create(filterQuery.c_str());
+    } catch (pfc::exception&) {
+    };
+  }
+  titleformat_compiler::get()->compile_safe_ex(keyBuilder, keyFormat.c_str());
+  titleformat_compiler::get()->compile_safe_ex(titleFormatter, titleFormat.c_str());
+  if (!sortFormat.empty())
+    titleformat_compiler::get()->compile_safe(sortFormatter, sortFormat.c_str());
+}
+
+}  // namespace db_structure
+
+void DBWriter::add_tracks(metadb_handle_list_cref tracks, abort_callback& abort) {
+  pfc::array_t<bool> filterMask;
+  filterMask.set_size(tracks.get_count());
+  if (db.filter.is_valid()) {
+    db.filter->test_multi_ex(tracks, filterMask.get_ptr(), abort);
+  } else {
+    filterMask.fill(true);
+  }
+  abort.check();
+
+  for (t_size i = 0; i < tracks.get_size(); i++) {
+    if (!filterMask[i])
+      continue;
+    abort.check();
+
+    const metadb_handle_ptr& track = tracks[i];
+    add_track(track);
+  }
+}
+
+void DBWriter::modify_tracks(metadb_handle_list_cref tracks) {
+  pfc::array_t<bool> filterMask;
+  filterMask.set_size(tracks.get_count());
+  if (db.filter.is_valid()) {
+    db.filter->test_multi(tracks, filterMask.get_ptr());
+  } else {
+    filterMask.fill(true);
+  }
+  for (t_size i = 0; i < tracks.get_size(); i++) {
+    const metadb_handle_ptr& track = tracks[i];
+    bool want = filterMask[i];
+    auto kv = db.trackMap.find(track);
+    bool didContain = kv != db.trackMap.end();
+    if (!didContain && !want) {
+      continue;
+    } else if (!didContain && want) {
+      add_track(track);
+    } else if (didContain && !want) {
+      remove_track(track);
+    } else {  // didContain && want
+      auto& album = kv->second;
+      track->format_title(nullptr, keyBuffer, db.keyBuilder, nullptr);
+      if (album.key != keyBuffer.c_str()) {
+        remove_track(track);
+        add_track(track);
+      } else {
+        if (album.tracks.find_item(track) == 0) {
+          update_album_metadata(album);
+        }
+      }
+    }
+  }
+}
+
+void DBWriter::add_track(const metadb_handle_ptr& track) {
+  track->format_title(nullptr, keyBuffer, db.keyBuilder, nullptr);
+  auto album = db.keyIndex.find(keyBuffer.get_ptr());
+  if (album == db.keyIndex.end()) {
+    if (db.sortFormatter.is_valid()) {
+      track->format_title(nullptr, sortBuffer, db.sortFormatter, nullptr);
+      sortBufferWide.convert(sortBuffer);
+    } else {
+      sortBufferWide.convert(keyBuffer);
+    }
+    track->format_title(nullptr, titleBuffer, db.titleFormatter, nullptr);
+    std::tie(album, std::ignore) =
+        db.container.emplace(keyBuffer, sortBufferWide, titleBuffer);
+  }
+  album->tracks.add_item(track);
+  db.trackMap.emplace(track, std::ref(*album));
+}
+
+void DBWriter::remove_track(const metadb_handle_ptr& track) {
+  auto kv = db.trackMap.find(track);
+  if (kv == db.trackMap.end())
+    return;
+  auto& album = kv->second;
+  db.trackMap.erase(kv);
+  if (album.tracks.get_size() == 1) {
+    db.container.erase(db.container.iterator_to(album));
+  } else {
+    t_size track_index = album.tracks.find_item(track);
+    album.tracks.remove_by_idx(track_index);
+    if (track_index == 0) {
+      update_album_metadata(album);
+    }
+  }
+}
+
+void DBWriter::update_album_metadata(const db_structure::Album& album) {
+  auto& track = album.tracks[0];
+  if (db.sortFormatter.is_valid()) {
+    track->format_title(nullptr, sortBuffer, db.sortFormatter, nullptr);
+    sortBufferWide.convert(sortBuffer);
+  } else {
+    sortBufferWide.convert(keyBuffer);
+  }
+  track->format_title(nullptr, titleBuffer, db.titleFormatter, nullptr);
+  if (album.sortKey != sortBufferWide.get_ptr() || album.title != titleBuffer.c_str()) {
+    PFC_ASSERT(
+        db.keyIndex.modify(db.keyIndex.iterator_to(album), [&](db_structure::Album& a) {
+          a.sortKey = sortBufferWide;
+          a.title = titleBuffer;
+        }));
+  }
+}
+
+void DBWriter::remove_tracks(metadb_handle_list_cref tracks) {
+  for (const auto& track : tracks) {
+    remove_track(track);
+  }
 }
 
 void DbAlbumCollection::onCollectionReload(DbReloadWorker&& worker) {
-  albums = std::move(worker.albums);
-  keyBuilder = std::move(worker.keyBuilder);
+  db = std::move(worker.db);
+
+  decltype(libraryChangeQueue) changeQueue;
+  std::swap(changeQueue, libraryChangeQueue);
+  for (auto& change : changeQueue) {
+    apply_method(&DbAlbumCollection::handleLibraryChange, *this, std::move(change));
+  }
 }
 
 void DbAlbumCollection::getTracks(DBIter pos, metadb_handle_list& out) {
@@ -24,25 +155,23 @@ void DbAlbumCollection::getTracks(DBIter pos, metadb_handle_list& out) {
 }
 
 std::optional<DBPos> DbAlbumCollection::getPosForTrack(const metadb_handle_ptr& track) {
-  if (!keyBuilder.is_valid())
+  if (!db)
     return std::nullopt;
-  pfc::string8_fast_aggressive albumKey;
-  track->format_title(nullptr, albumKey, keyBuilder, nullptr);
-  auto groupAlbum = albums.find(albumKey.get_ptr());
-  if (groupAlbum == albums.end())
+  auto kv = db->trackMap.find(track);
+  if (kv == db->trackMap.end())
     return std::nullopt;
-  return posFromIter(groupAlbum);
+  return posFromIter(db->keyIndex.iterator_to(kv->second));
 }
 
 std::optional<DBIter> DbAlbumCollection::iterFromPos(const DBPos& p) const {
-  if (albums.empty())
+  if (!db || db->container.empty())
     return std::nullopt;
-  auto groupItem = albums.find(p.key);
-  if (groupItem != albums.end()) {
-    return albums.project<1>(groupItem);
+  auto groupItem = db->keyIndex.find(p.key);
+  if (groupItem != db->keyIndex.end()) {
+    return db->container.project<db_structure::sortKey>(groupItem);
   }
-  auto sortItem = sortIndex.lower_bound(p.sortKey);
-  if (sortItem == sortIndex.end()) {
+  auto sortItem = db->sortIndex.lower_bound(p.sortKey);
+  if (sortItem == db->sortIndex.end()) {
     --sortItem;
   }
   return sortItem;
@@ -55,9 +184,11 @@ AlbumInfo DbAlbumCollection::getAlbumInfo(DBIter pos) {
 }
 
 std::optional<DBPos> DbAlbumCollection::performFayt(const std::string& input) {
+  if (!db)
+    return std::nullopt;
   size_t inputLen = pfc::strlen_utf8(input.c_str());
   auto range =
-      titleIndex.equal_range(input, [&](const std::string& a, const std::string& b) {
+      db->titleIndex.equal_range(input, [&](const std::string& a, const std::string& b) {
         return stricmp_utf8_partial(a.c_str(), b.c_str(), inputLen) < 0;
       });
 
@@ -70,8 +201,8 @@ std::optional<DBPos> DbAlbumCollection::performFayt(const std::string& input) {
   // Find the item with the lowest index.
   // This is important to select the leftmost album
   for (auto it = range.first; it != range.second; ++it) {
-    DBIter thisPos = albums.project<db_structure::sortKey>(it);
-    t_size thisIdx = sortIndex.rank(thisPos);
+    DBIter thisPos = db->container.project<db_structure::sortKey>(it);
+    t_size thisIdx = db->sortIndex.rank(thisPos);
     if (thisIdx < resRank) {
       resRank = thisIdx;
       res = thisPos;
@@ -81,24 +212,46 @@ std::optional<DBPos> DbAlbumCollection::performFayt(const std::string& input) {
 }
 
 DBIter DbAlbumCollection::begin() const {
-  return sortIndex.begin();
+  PFC_ASSERT(db);
+  return db->sortIndex.begin();
 }
 
 DBIter DbAlbumCollection::end() const {
-  return sortIndex.end();
+  PFC_ASSERT(db);
+  return db->sortIndex.end();
 }
 
 int DbAlbumCollection::difference(DBIter a, DBIter b) {
-  return sortIndex.rank(a) - sortIndex.rank(b);
+  PFC_ASSERT(db);
+  return db->sortIndex.rank(a) - db->sortIndex.rank(b);
 }
 
 DBIter DbAlbumCollection::moveIterBy(const DBIter& p, int n) const {
-  auto& sortIndex = albums.get<1>();
-  int rank = sortIndex.rank(p) + n;
+  PFC_ASSERT(db);
+  int rank = db->sortIndex.rank(p) + n;
   if (rank <= 0)
-    return sortIndex.begin();
-  if (size_t(rank) >= sortIndex.size()) {
-    return --sortIndex.end();
+    return db->sortIndex.begin();
+  if (size_t(rank) >= db->sortIndex.size()) {
+    return --db->sortIndex.end();
   }
-  return sortIndex.nth(rank);
+  return db->sortIndex.nth(rank);
+}
+
+void DbAlbumCollection::handleLibraryChange(t_uint64 version, LibraryChangeType type,
+                                            metadb_handle_list tracks) {
+  if (!db || version > db->libraryVersion) {
+    libraryChangeQueue.emplace_back(version, type, std::move(tracks));
+    return;
+  }
+  if (version < db->libraryVersion)
+    return;
+  DBWriter writer(*db);
+  if (type == items_added) {
+    abort_callback_dummy aborter{};
+    writer.add_tracks(tracks, aborter);
+  } else if (type == items_removed) {
+    writer.remove_tracks(tracks);
+  } else if (type == items_modified) {
+    writer.modify_tracks(tracks);
+  }
 }

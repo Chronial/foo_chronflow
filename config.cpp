@@ -85,7 +85,6 @@ cfg_bool cfgShowAlbumTitle(guid_cfgShowAlbumTitle, true);
 static const GUID guid_cfgAlbumTitle = {
     0x85c3038a, 0xec62, 0x416f, {0x9d, 0x76, 0x2b, 0x86, 0xd0, 0xf7, 0x49, 0x3c}};
 cfg_string cfgAlbumTitle(guid_cfgAlbumTitle, "%album artist% - %album%");
-service_ptr_t<titleformat_object> cfgAlbumTitleScript;
 
 // {6B35F73F-C754-40ab-A8EB-3BA86CB43AF5}
 static const GUID guid_cfgTitlePosH = {

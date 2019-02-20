@@ -113,3 +113,21 @@ void EM::CollectionReloadedMessage::run(Engine& e) {
 void EM::PlaybackNewTrack::run(Engine& e, metadb_handle_ptr track) {
   e.playbackTracer.onPlaybackNewTrack(track);
 }
+
+void EM::LibraryItemsAdded::run(Engine& e, metadb_handle_list tracks, t_uint64 version) {
+  e.db.handleLibraryChange(version, DbAlbumCollection::items_added, std::move(tracks));
+  e.texCache.startLoading(e.worldState.getTarget());
+  e.thread.invalidateWindow();
+}
+void EM::LibraryItemsRemoved::run(Engine& e, metadb_handle_list tracks,
+                                  t_uint64 version) {
+  e.db.handleLibraryChange(version, DbAlbumCollection::items_removed, std::move(tracks));
+  e.texCache.startLoading(e.worldState.getTarget());
+  e.thread.invalidateWindow();
+}
+void EM::LibraryItemsModified::run(Engine& e, metadb_handle_list tracks,
+                                   t_uint64 version) {
+  e.db.handleLibraryChange(version, DbAlbumCollection::items_modified, std::move(tracks));
+  e.texCache.startLoading(e.worldState.getTarget());
+  e.thread.invalidateWindow();
+}

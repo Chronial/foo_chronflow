@@ -1,5 +1,6 @@
 #pragma once
 #include "BlockingQueue.h"
+#include "utils.h"
 
 class EngineWindow;
 
@@ -20,13 +21,11 @@ class CallbackHolder {
   void addCallback(std::function<void()> f);
 };
 
-class EngineThread : public play_callback_impl_base {
+class EngineThread : public play_callback_impl_base,
+                     public library_callback_dynamic_impl_base {
  public:
   explicit EngineThread(EngineWindow& engineWindow);
-  EngineThread(const EngineThread&) = delete;
-  EngineThread& operator=(const EngineThread&) = delete;
-  EngineThread(EngineThread&&) = delete;
-  EngineThread& operator=(EngineThread&&) = delete;
+  NO_MOVE_NO_COPY(EngineThread);
   ~EngineThread();
 
   void sendMessage(unique_ptr<engine_messages::Message>&& msg);
@@ -50,12 +49,18 @@ class EngineThread : public play_callback_impl_base {
   void invalidateWindow();
 
   void on_playback_new_track(metadb_handle_ptr p_track) final;
+  void on_items_added(metadb_handle_list_cref p_data) final;
+  void on_items_removed(metadb_handle_list_cref p_data) final;
+  void on_items_modified(metadb_handle_list_cref p_data) final;
 
   /// Runs a function in the foobar2000 mainthread
   /// Guarantees that the callback runs only if this thread is still alive.
   void runInMainThread(std::function<void()> f);
 
   static void forEach(std::function<void(EngineThread&)>);
+
+  /// Library version tag – only access from mainthread
+  t_uint64 libraryVersion{0};
 
  private:
   void run();

@@ -43,6 +43,7 @@ using std::unique_ptr;  // NOLINT
 #include <boost/multi_index_container.hpp>
 
 #include <boost/range/adaptor/reversed.hpp>
+#include <boost/range/combine.hpp>
 #include <boost/range/sub_range.hpp>
 
 // Require windows vista

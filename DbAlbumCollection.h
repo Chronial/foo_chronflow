@@ -42,32 +42,78 @@ struct title {};
 struct Album {
   Album(const char* key, const wchar_t* sortKey, const char* title)
       : key(key), sortKey(sortKey), title(title){};
+  // We want to have permanent references to albums for our reversemap
+  NO_MOVE_NO_COPY(Album);
+
   std::string key;
   std::wstring sortKey;
   std::string title;
   mutable metadb_handle_list tracks;
 };
 
-using DB = bomi::multi_index_container<
+using Container = bomi::multi_index_container<
     Album, bomi::indexed_by<
                bomi::hashed_unique<bomi::tag<key>,
-                                   bomi::member<Album, std::string, &Album::key> >,
+                                   bomi::member<Album, std::string, &Album::key>>,
                bomi::ranked_non_unique<bomi::tag<sortKey>,
                                        bomi::member<Album, std::wstring, &Album::sortKey>,
                                        CompWLogical>,
                bomi::ordered_non_unique<bomi::tag<title>,
                                         bomi::member<Album, std::string, &Album::title>,
-                                        CompIUtf8> > >;
+                                        CompIUtf8>>>;
+
+class DB {
+ public:
+  DB(t_uint64 libraryVersion, const std::string& filterQuery,
+     const std::string& keyFormat, const std::string& sortFormat,
+     const std::string& titleFormat);
+  NO_MOVE_NO_COPY(DB);
+
+  Container container;
+  Container::index<key>::type& keyIndex;
+  Container::index<sortKey>::type& sortIndex;
+  Container::index<title>::type& titleIndex;
+  std::map<const metadb_handle_ptr, const db_structure::Album&> trackMap;
+  t_uint64 libraryVersion;
+
+  search_filter_v2::ptr filter;
+  titleformat_object::ptr keyBuilder;
+  titleformat_object::ptr sortFormatter;
+  titleformat_object::ptr titleFormatter;
+};
+using DBIter = Container::index<sortKey>::type::iterator;
+
 }  // namespace db_structure
 
-using DBIter = db_structure::DB::index<db_structure::sortKey>::type::iterator;
+using db_structure::DBIter;
+
+class DBWriter {
+ public:
+  explicit DBWriter(db_structure::DB& db) : db(db){};
+  NO_MOVE_NO_COPY(DBWriter);
+  void add_tracks(metadb_handle_list_cref tracks, abort_callback& abort);
+  void remove_tracks(metadb_handle_list_cref tracks);
+  void modify_tracks(metadb_handle_list_cref tracks);
+
+ private:
+  void add_track(const metadb_handle_ptr& track);
+  void remove_track(const metadb_handle_ptr& track);
+  void update_album_metadata(const db_structure::Album& album);
+  db_structure::DB& db;
+
+  pfc::string8_fast_aggressive keyBuffer;
+  pfc::string8_fast_aggressive sortBuffer;
+  pfc::string8_fast_aggressive titleBuffer;
+  pfc::stringcvt::string_wide_from_utf8_fast sortBufferWide;
+};
 
 class DbAlbumCollection {
  public:
-  DbAlbumCollection();
+  DbAlbumCollection(){};
+  NO_MOVE_NO_COPY(DbAlbumCollection);
 
-  bool empty() { return albums.empty(); }
-  int size() { return albums.size(); }
+  bool empty() { return db ? db->container.empty() : true; }
+  int size() { return db ? db->container.size() : 0; }
 
   AlbumInfo getAlbumInfo(DBIter pos);
   void getTracks(DBIter pos, metadb_handle_list& out);
@@ -100,11 +146,12 @@ class DbAlbumCollection {
     return posFromIter(moveIterBy(iter.value(), n));
   }
 
+  enum LibraryChangeType { items_added, items_removed, items_modified };
+  void handleLibraryChange(t_uint64 version, LibraryChangeType type,
+                           metadb_handle_list tracks);
+
  private:
-  /******************************* INTERN DATABASE ***************************/
-  db_structure::DB albums;
-  db_structure::DB::index<db_structure::key>::type& keyIndex;
-  db_structure::DB::index<db_structure::sortKey>::type& sortIndex;
-  db_structure::DB::index<db_structure::title>::type& titleIndex;
-  service_ptr_t<titleformat_object> keyBuilder;
+  std::vector<std::tuple<t_uint64, LibraryChangeType, metadb_handle_list>>
+      libraryChangeQueue;
+  unique_ptr<db_structure::DB> db;
 };

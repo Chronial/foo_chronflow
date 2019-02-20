@@ -44,6 +44,15 @@ void EngineThread::forEach(std::function<void(EngineThread&)> f) {
 void EngineThread::on_playback_new_track(metadb_handle_ptr p_track) {
   send<EM::PlaybackNewTrack>(p_track);
 }
+void EngineThread::on_items_added(metadb_handle_list_cref p_data) {
+  send<EM::LibraryItemsAdded>(p_data, libraryVersion);
+}
+void EngineThread::on_items_removed(metadb_handle_list_cref p_data) {
+  send<EM::LibraryItemsRemoved>(p_data, libraryVersion);
+}
+void EngineThread::on_items_modified(metadb_handle_list_cref p_data) {
+  send<EM::LibraryItemsModified>(p_data, libraryVersion);
+}
 
 void EngineThread::runInMainThread(std::function<void()> f) {
   callbackHolder.addCallback(f);

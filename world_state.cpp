@@ -8,6 +8,7 @@ WorldState::WorldState(DbAlbumCollection& db) : db(db) {
   pfc::string8 selected;
   sessionSelectedCover.get(selected);
   targetPos.key = selected.c_str();
+  centeredPos = targetPos;
 }
 
 const DBPos& WorldState::getTarget() {

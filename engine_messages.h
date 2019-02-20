@@ -1,5 +1,6 @@
 #pragma once
 #include "DbAlbumCollection.h"
+#include "utils.h"
 
 class Engine;
 
@@ -8,10 +9,7 @@ namespace engine_messages {
 struct Message {
  public:
   Message() = default;
-  Message(const Message&) = delete;
-  Message& operator=(const Message&) = delete;
-  Message(Message&&) = delete;
-  Message& operator=(Message&&) = delete;
+  NO_MOVE_NO_COPY(Message);
   virtual ~Message() = default;
   virtual void execute(Engine&){};
 };
@@ -74,6 +72,9 @@ struct Engine::Messages {
   E_ANSWER_MSG(GetTargetAlbum, std::optional<AlbumInfo>);
   E_MSG(Run, std::function<void()>);
   E_MSG(PlaybackNewTrack, metadb_handle_ptr);
+  E_MSG(LibraryItemsAdded, metadb_handle_list, t_uint64);
+  E_MSG(LibraryItemsRemoved, metadb_handle_list, t_uint64);
+  E_MSG(LibraryItemsModified, metadb_handle_list, t_uint64);
 };
 
 #undef E_MSG

@@ -1,5 +1,6 @@
 #pragma once
 #include "DbAlbumCollection.h"
+#include "utils.h"
 
 class EngineThread;
 
@@ -7,20 +8,18 @@ class DbReloadWorker {
   metadb_handle_list library;
   EngineThread& engineThread;
   std::promise<void> copyDone;
-  std::atomic<bool> kill = false;
-  std::thread thread;
+  abort_callback_impl abort;
 
  public:
   explicit DbReloadWorker(EngineThread& engineThread);
-  DbReloadWorker(DbReloadWorker&) = delete;
-  DbReloadWorker(DbReloadWorker&&) = delete;
-  DbReloadWorker& operator=(DbReloadWorker&) = delete;
-  DbReloadWorker& operator=(DbReloadWorker&&) = delete;
+  NO_MOVE_NO_COPY(DbReloadWorker);
   ~DbReloadWorker();
-  db_structure::DB albums;
-  service_ptr_t<titleformat_object> keyBuilder;
+
+  unique_ptr<db_structure::DB> db;
 
  private:
   void threadProc();
-  void generateData();
+
+  // Needs to be the last member so the others are initialized when the thread starts
+  std::thread thread;
 };

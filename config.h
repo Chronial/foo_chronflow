@@ -24,7 +24,6 @@ extern cfg_string cfgEnterKey;
 /******************************** Display tab ********************************/
 extern cfg_bool cfgShowAlbumTitle;
 extern cfg_string cfgAlbumTitle;
-extern service_ptr_t<titleformat_object> cfgAlbumTitleScript;
 extern cfg_struct_t<double> cfgTitlePosH;
 extern cfg_struct_t<double> cfgTitlePosV;
 extern cfg_int_t<COLORREF> cfgTitleColor;

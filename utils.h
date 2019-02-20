@@ -175,3 +175,25 @@ std::string windows_lineendings(const std::string& s);
 #define Tu(x) (pfc::stringcvt::string_utf8_from_os(x).get_ptr())
 #define TSu(x, s) (pfc::stringcvt::string_utf8_from_os(x, s).get_ptr())
 #endif
+
+template <typename F, typename T, typename U>
+decltype(auto) apply_method(F&& func, T&& first, U&& tuple) {
+  return std::apply(
+      std::forward<F>(func), std::tuple_cat(std::forward_as_tuple(std::forward<T>(first)),
+                                            std::forward<U>(tuple)));
+}
+
+inline std::function<void(void)> catchThreadExceptions(std::string threadName,
+                                                       std::function<void(void)> f) {
+  return [=] {
+    try {
+      f();
+    } catch (exception_aborted) {
+    } catch (std::exception& e) {
+      errorPopup(PFC_string_formatter() << threadName.c_str() << " crashed:\n"
+                                        << e.what());
+    } catch (...) {
+      errorPopup(PFC_string_formatter() << threadName.c_str() << " crashed.");
+    }
+  };
+}

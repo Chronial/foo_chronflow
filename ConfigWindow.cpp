@@ -391,13 +391,12 @@ class DisplayTab : public ConfigTab {
 
           switch (LOWORD(wParam)) {
             case IDC_ALBUM_FORMAT: {
-              static_api_ptr_t<titleformat_compiler> compiler;
-              static_api_ptr_t<metadb> db;
-              compiler->compile_safe_ex(cfgAlbumTitleScript, cfgAlbumTitle);
-              pfc::string8 preview;
               metadb_handle_ptr aTrack;
-              if (db->g_get_random_handle(aTrack)) {
-                aTrack->format_title(nullptr, preview, cfgAlbumTitleScript, nullptr);
+              if (metadb::get()->g_get_random_handle(aTrack)) {
+                pfc::string8 preview;
+                titleformat_object::ptr titleformat;
+                titleformat_compiler::get()->compile_safe_ex(titleformat, cfgAlbumTitle);
+                aTrack->format_title(nullptr, preview, titleformat, nullptr);
                 uSendDlgItemMessageText(hWnd, IDC_TITLE_PREVIEW, WM_SETTEXT, 0, preview);
               }
               redrawMainWin();

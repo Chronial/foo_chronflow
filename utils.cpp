@@ -6,13 +6,13 @@ void errorPopup(const char* message) {
   // This should be:
   // popup_message::g_show(... , popup_message::icon_error);
   // But we sometimes need this to be modal (as it will be followed by crash)
-  MessageBoxA(nullptr,
-              PFC_string_formatter()
-                  << "foo_chronflow: " << message
-                  << "\r\n\r\nIf this happens more than once, please report this error "
-                     "in the foo_chronflow "
-                     "thread on Hydrogenaudo or via mail to foocomp@chronial.de",
-              "Error in foo_chronflow", MB_OK | MB_ICONERROR);  //
+  MessageBoxW(nullptr,
+              uT(PFC_string_formatter()
+                 << "foo_chronflow: " << message
+                 << "\r\n\r\nIf this happens more than once, please report this error "
+                    "in the foo_chronflow "
+                    "thread on Hydrogenaudo or via mail to foocomp@chronial.de"),
+              L"Error in foo_chronflow", MB_OK | MB_ICONERROR);
 }
 
 void errorPopupWin32(const char* message) {
