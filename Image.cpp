@@ -118,7 +118,8 @@ std::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_ptr& track) {
   static_api_ptr_t<album_art_manager_v2> aam;
   abort_callback_impl abortCallback;
   auto extractor =
-      aam->open(pfc_list({track}), pfc_list({album_art_ids::cover_front}), abortCallback);
+      aam->open(pfc::list_single_ref_t(track),
+                pfc::list_single_ref_t(album_art_ids::cover_front), abortCallback);
   try {
     auto art = extractor->query(album_art_ids::cover_front, abortCallback);
     Image image = Image::fromFileBuffer(art->get_ptr(), art->get_size());
