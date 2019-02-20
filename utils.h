@@ -15,6 +15,12 @@
 
 #define IDT_CHECK_MINIMIZED 665
 
+#define NO_MOVE_NO_COPY(C) \
+  C(const C&) = delete; \
+  C& operator=(const C&) = delete; \
+  C(C&&) = delete; \
+  C& operator=(C&&) = delete;
+
 // {37835416-4578-4aaa-A229-E09AB9E2CB9C}
 const GUID guid_configWindow = {
     0x37835416, 0x4578, 0x4aaa, {0xa2, 0x29, 0xe0, 0x9a, 0xb9, 0xe2, 0xcb, 0x9c}};
@@ -151,6 +157,7 @@ class Timer {
 namespace console {
 class out : public std::wostringstream {
  public:
+  NO_MOVE_NO_COPY(out);
   ~out() final;
 };
 void create();
@@ -159,12 +166,6 @@ void println(const wchar_t* str);
 void printf(const wchar_t* format, ...);
 };  // namespace console
 #endif
-
-#define NO_MOVE_NO_COPY(C) \
-  C(const C&) = delete; \
-  C& operator=(const C&) = delete; \
-  C(C&&) = delete; \
-  C& operator=(C&&) = delete;
 
 std::string linux_lineendings(const std::string& s);
 std::string windows_lineendings(const std::string& s);
@@ -188,7 +189,7 @@ inline std::function<void(void)> catchThreadExceptions(std::string threadName,
   return [=] {
     try {
       f();
-    } catch (exception_aborted) {
+    } catch (exception_aborted&) {
     } catch (std::exception& e) {
       errorPopup(PFC_string_formatter() << threadName.c_str() << " crashed:\n"
                                         << e.what());

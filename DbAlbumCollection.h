@@ -109,9 +109,6 @@ class DBWriter {
 
 class DbAlbumCollection {
  public:
-  DbAlbumCollection(){};
-  NO_MOVE_NO_COPY(DbAlbumCollection);
-
   bool empty() { return db ? db->container.empty() : true; }
   int size() { return db ? db->container.size() : 0; }
 
@@ -121,10 +118,11 @@ class DbAlbumCollection {
 
   template <class T>
   DBPos posFromIter(T iter) const {
-    if (iter == iter.owner()->end())
+    if (iter == iter.owner()->end()) {
       return {};
-    else
+    } else {
       return {iter->key, iter->sortKey};
+    }
   };
   // Returns a valid (non-end) iterator or nullopt if db is empty
   std::optional<DBIter> iterFromPos(const DBPos&) const;

@@ -13,7 +13,7 @@ class EngineThread;
 
 struct TextureCacheMeta {
   std::string groupString;
-  unsigned int collectionVersion;
+  unsigned int collectionVersion{0};
   // (generation, -distance to center)
   std::pair<unsigned int, int> priority;
 };
