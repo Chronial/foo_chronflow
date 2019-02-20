@@ -46,7 +46,7 @@ class TextureLoadingThreads {
   void finishJob(const std::string&, std::optional<UploadReadyImage>);
 
   std::vector<std::thread> threads;
-  std::atomic<bool> shouldStop = false;
+  abort_callback_impl abort;
   std::atomic<bool> highPriority = false;
   std::shared_mutex pauseMutex;
   std::unique_lock<std::shared_mutex> pauseLock{pauseMutex, std::defer_lock};

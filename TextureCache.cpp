@@ -142,8 +142,7 @@ void TextureCache::updateLoadingQueue(const DBIter& queueCenter) {
 TextureLoadingThreads::TextureLoadingThreads() {
   unsigned int threadCount = std::thread::hardware_concurrency();
   for (unsigned int i = 0; i < threadCount; i++) {
-    // NOLINTNEXTLINE(modernize-use-emplace)
-    threads.push_back(std::thread(&TextureLoadingThreads::run, this));
+    threads.emplace_back(catchThreadExceptions("TextureLoader", [&] { this->run(); }));
     check(
         SetThreadPriority(threads.back().native_handle(), THREAD_PRIORITY_BELOW_NORMAL));
     // Disable dynamic priority boost. We don't want the texture loaders to ever have
@@ -154,7 +153,7 @@ TextureLoadingThreads::TextureLoadingThreads() {
 }
 
 TextureLoadingThreads::~TextureLoadingThreads() {
-  shouldStop = true;
+  abort.set();
   resume();
   inCondition.notify_all();
   for (auto& thread : threads) {
@@ -166,14 +165,13 @@ TextureLoadingThreads::~TextureLoadingThreads() {
 
 void TextureLoadingThreads::run() {
   bool inBackground = false;
-  while (!shouldStop) {
+  for (;;) {
+    abort.check();
     pauseMutex.lock_shared();
     pauseMutex.unlock_shared();
-    if (shouldStop)
-      break;
+    abort.check();
     auto [jobId, track] = takeJob();
-    if (shouldStop)
-      break;
+    abort.check();
 
     bool shouldBackground = !highPriority.load(std::memory_order_relaxed);
     if (shouldBackground != inBackground) {
@@ -183,9 +181,8 @@ void TextureLoadingThreads::run() {
       inBackground = shouldBackground;
     }
 
-    auto art = loadAlbumArt(track);
-    if (shouldStop)
-      break;
+    auto art = loadAlbumArt(track, abort);
+    abort.check();
     finishJob(jobId, std::move(art));
   }
 }
@@ -236,10 +233,8 @@ void TextureLoadingThreads::setQueue(std::list<LoadRequest>&& data) {
 
 std::pair<std::string, metadb_handle_ptr> TextureLoadingThreads::takeJob() {
   std::unique_lock lock{mutex};
-  inCondition.wait(lock, [&] { return shouldStop || !inQueue.empty(); });
-  if (shouldStop) {
-    return {};
-  }
+  inCondition.wait(lock, [&] { return abort.is_aborting() || !inQueue.empty(); });
+  abort.check();
   LoadRequest rc(std::move(inQueue.front()));
   inQueue.pop_front();
   inProgress[rc.meta.groupString] = rc.meta;

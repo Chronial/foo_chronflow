@@ -113,15 +113,14 @@ Image Image::resize(int width, int height) const {
   return Image{std::move(new_buffer), width, height};
 }
 
-std::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_ptr& track) {
+std::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_ptr& track,
+                                             abort_callback& abort) {
   IF_DEBUG(double preLoad = Helpers::getHighresTimer());
   static_api_ptr_t<album_art_manager_v2> aam;
-  abort_callback_impl abortCallback;
-  auto extractor =
-      aam->open(pfc::list_single_ref_t(track),
-                pfc::list_single_ref_t(album_art_ids::cover_front), abortCallback);
+  auto extractor = aam->open(pfc::list_single_ref_t(track),
+                             pfc::list_single_ref_t(album_art_ids::cover_front), abort);
   try {
-    auto art = extractor->query(album_art_ids::cover_front, abortCallback);
+    auto art = extractor->query(album_art_ids::cover_front, abort);
     Image image = Image::fromFileBuffer(art->get_ptr(), art->get_size());
     IF_DEBUG(gsl::finally([&] {
       console::printf(
@@ -132,6 +131,8 @@ std::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_ptr& track) {
     IF_DEBUG(console::printf(L"Missing image file in %.2f ms\n",
                              (Helpers::getHighresTimer() - preLoad) * 1000));
     return std::nullopt;
+  } catch (const exception_aborted&) {
+    throw;
   } catch (...) {
     IF_DEBUG(console::printf(L"Failed to load image in %.2f ms\n",
                              (Helpers::getHighresTimer() - preLoad) * 1000));
