@@ -49,7 +49,7 @@ bool ScriptedCoverPositions::setScript(const char* script, pfc::string_base& err
     // TODO: error handling – raise exception instead of errorMsg
     cInfo = make_shared<CompiledCPInfo>(compileCPScript(script));
     return true;
-  } catch (_com_error& ce) {
+  } catch (_com_error&) {
     errorMsg = "Unexpected com error";
     return false;
   } catch (script_error& e) {

@@ -26,8 +26,9 @@ VARIANT getIDispatchProperty(LPDISPATCH dispatch, LPOLESTR propertyName) {
 
 template <int vector_size>
 std::array<double, vector_size> scoVectorFun(CScriptObject& scriptObj,
-                                             const wchar_t* func, LPSAFEARRAY sa) {
-  _variant_t varRet = scriptObj.RunProcedure(func, sa);
+                                             const wchar_t* func,
+                                             const CSafeArrayHelper& sa) {
+  _variant_t varRet = scriptObj.RunProcedure(func, sa.GetArray());
   if (varRet.vt != VT_DISPATCH) {
     throw script_error(PFC_string_formatter()
                        << "Error: " << Tu(func) << "() did not return an array.");
@@ -78,30 +79,21 @@ std::array<double, vector_size> scoVectorFun(CScriptObject& scriptObj,
 template <int vector_size>
 std::array<double, vector_size> scoVectorFun(CScriptObject& scriptObj,
                                              const wchar_t* func, double param) {
-  CSafeArrayHelper sfHelper;
-  sfHelper.Create(VT_VARIANT, 1, 0, 1);
-  _variant_t var;
-  var.vt = VT_R8;
-  var.dblVal = param;
-  sfHelper.PutElement(0, reinterpret_cast<void*>(&var));
-  LPSAFEARRAY sa = sfHelper.GetArray();
-  return scoVectorFun<vector_size>(scriptObj, func, sa);
+  CSafeArrayHelper sfHelper(1);
+  _variant_t var{param};
+  sfHelper.PutElement(0, var);
+  return scoVectorFun<vector_size>(scriptObj, func, sfHelper);
 }
 
 template <int vector_size>
 std::array<double, vector_size> scoVectorFun(CScriptObject& scriptObj,
                                              const wchar_t* func) {
-  CSafeArrayHelper sfHelper;
-  sfHelper.Create(VT_VARIANT, 1, 0, 0);
-  LPSAFEARRAY sa = sfHelper.GetArray();
-  return scoVectorFun<vector_size>(scriptObj, func, sa);
+  return scoVectorFun<vector_size>(scriptObj, func, CSafeArrayHelper(0));
 }
 
 bool scoShowMirrorPlane(CScriptObject& scriptObj) {
-  CSafeArrayHelper sfHelper;
-  sfHelper.Create(VT_VARIANT, 1, 0, 0);
-  LPSAFEARRAY sa = sfHelper.GetArray();
-  _variant_t varRet = scriptObj.RunProcedure(L"showMirrorPlane", sa);
+  _variant_t varRet =
+      scriptObj.RunProcedure(L"showMirrorPlane", CSafeArrayHelper(0).GetArray());
   varRet.ChangeType(VT_BOOL);
   return varRet.boolVal != 0;
 }

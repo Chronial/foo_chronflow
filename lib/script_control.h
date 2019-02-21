@@ -16,8 +16,7 @@ class CScriptObject {
 
  public:
   [[noreturn]] void RethrowError(const _com_error& e);
-  VARIANT RunProcedure(LPCTSTR szProcName, SAFEARRAY*& saParameters);
-  std::vector<std::wstring> GetMethodNames();
+  VARIANT RunProcedure(LPCTSTR szProcName, SAFEARRAY* saParameters);
 
  private:
   IScriptControlPtr m_pScript;  // The one and only script control
@@ -25,27 +24,16 @@ class CScriptObject {
 
 class CSafeArrayHelper {
  public:
-  CSafeArrayHelper();
+  CSafeArrayHelper(UINT size);
+  CSafeArrayHelper(const CSafeArrayHelper&) = delete;
+  CSafeArrayHelper& operator=(const CSafeArrayHelper&) = delete;
+  CSafeArrayHelper(CSafeArrayHelper&&) = delete;
+  CSafeArrayHelper& operator=(CSafeArrayHelper&&) = delete;
   ~CSafeArrayHelper();
 
-  bool Create(VARTYPE vt, UINT cDims, UINT lBound, UINT cCount);
-  bool Destroy();
-  UINT GetDimension();
-
-  bool Attach(LPSAFEARRAY psa);
-  bool AttachFromVariant(VARIANT* pVariant);
-  LPSAFEARRAY Detach();
-  LPSAFEARRAY GetArray();
-  bool AccessData(void FAR* FAR* pvData);
-  bool UnaccessData();
-  bool Lock();
-  bool Unlock();
-  bool PutElement(long lIndices, void FAR* vData);
-  bool GetElement(long lIndices, void FAR* vData);
-  VARIANT GetAsVariant();
-
- protected:
-  LPSAFEARRAY m_pSA;
+  void PutElement(long idx, _variant_t& vData);
+  LPSAFEARRAY GetArray() const;
 
  private:
+  LPSAFEARRAY array;
 };
