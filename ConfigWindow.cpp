@@ -83,27 +83,21 @@ class ConfigTab {
   bool initializing{};
 
  public:
-  const t_size idx;
-  HWND hWnd{};
-  ConfigTab(char* title, UINT id, HWND parent, int& i)
-      : id(id), parent(parent), title(title), idx(i) {
-    i++;
-  }
-  ConfigTab(const ConfigTab&) = delete;
-  ConfigTab& operator=(const ConfigTab&) = delete;
-  ConfigTab(ConfigTab&&) = delete;
-  ConfigTab& operator=(ConfigTab&&) = delete;
-  virtual ~ConfigTab() { DestroyWindow(hWnd); }
-
-  void createDialog() {
+  HWND hWnd = nullptr;
+  ConfigTab(char* title, UINT id, HWND parent) : id(id), parent(parent), title(title) {
     HWND hWndTab = uGetDlgItem(parent, IDC_TABS);
     uTCITEM tabItem = {0};
     tabItem.mask = TCIF_TEXT;
     tabItem.pszText = title;
+    int idx = TabCtrl_GetItemCount(hWndTab);
     uTabCtrl_InsertItem(hWndTab, idx, &tabItem);
-
-    hWnd = uCreateDialog(id, parent, dialogProxy, reinterpret_cast<LPARAM>(this));
   }
+  NO_MOVE_NO_COPY(ConfigTab);
+  virtual ~ConfigTab() {
+    if (hWnd != nullptr)
+      DestroyWindow(hWnd);
+  }
+
   virtual BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam,
                                    LPARAM lParam) = 0;
   static BOOL CALLBACK dialogProxy(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -119,7 +113,20 @@ class ConfigTab {
       return FALSE;
     return configTab->dialogProc(hWnd, uMsg, wParam, lParam);
   }
-  void show() { ShowWindow(hWnd, SW_SHOW); }
+  void show() {
+    if (hWnd == nullptr) {
+      hWnd = uCreateDialog(id, parent, dialogProxy, reinterpret_cast<LPARAM>(this));
+      HWND hWndTab = uGetDlgItem(parent, IDC_TABS);
+
+      RECT rcTab;
+      GetChildWindowRect(parent, IDC_TABS, &rcTab);
+      uSendMessage(hWndTab, TCM_ADJUSTRECT, FALSE, reinterpret_cast<LPARAM>(&rcTab));
+      SetWindowPos(hWnd, nullptr, rcTab.left, rcTab.top, rcTab.right - rcTab.left,
+                   rcTab.bottom - rcTab.top, SWP_NOZORDER | SWP_NOACTIVATE);
+    }
+
+    ShowWindow(hWnd, SW_SHOW);
+  }
   void hide() { ShowWindow(hWnd, SW_HIDE); }
   void loadConfig() {
     initializing = true;
@@ -170,10 +177,6 @@ class ConfigTab {
       }
     }
   }
-  void setPos(RECT fitInto) {
-    SetWindowPos(hWnd, nullptr, fitInto.left, fitInto.top, fitInto.right - fitInto.left,
-                 fitInto.bottom - fitInto.top, SWP_NOZORDER | SWP_NOACTIVATE);
-  }
 
  protected:
   void redrawMainWin() {
@@ -182,7 +185,7 @@ class ConfigTab {
 };
 
 #define CONFIG_TAB(CLASS, TITLE, IDD) \
-  CLASS(HWND parent, int& i) : ConfigTab(TITLE, IDD, parent, i) { createDialog(); }
+  CLASS(HWND parent) : ConfigTab(TITLE, IDD, parent) {}
 
 #if 0
 // minimal Tab setup
@@ -780,7 +783,6 @@ class CoverTab : public ConfigTab {
           hWnd, IDC_DISPLAY_CONFIG, windows_lineendings(config.script).c_str());
       uSendDlgItemMessage(
           hWnd, IDC_DISPLAY_CONFIG, EM_SETREADONLY, static_cast<int>(config.buildIn), 0);
-      // uEnableWindow(uGetDlgItem(hWnd, IDC_DISPLAY_CONFIG), !config->buildIn);
       uEnableWindow(
           uGetDlgItem(hWnd, IDC_SAVED_REMOVE), static_cast<BOOL>(!config.buildIn));
       uEnableWindow(
@@ -914,26 +916,21 @@ class ConfigWindow : public preferences_page {
   BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM /*wParam*/, LPARAM lParam) {
     switch (uMsg) {
       case WM_INITDIALOG: {
-        int j = 0;
-        tabs.emplace_back(make_unique<BehaviourTab>(hWnd, j));
-        tabs.emplace_back(make_unique<SourcesTab>(hWnd, j));
-        tabs.emplace_back(make_unique<DisplayTab>(hWnd, j));
-        tabs.emplace_back(make_unique<CoverTab>(hWnd, j));
-        tabs.emplace_back(make_unique<PerformanceTab>(hWnd, j));
-
         HWND hWndTab = uGetDlgItem(hWnd, IDC_TABS);
-
         RECT rcTab;
         GetChildWindowRect(hWnd, IDC_TABS, &rcTab);
         uSendMessage(hWndTab, TCM_ADJUSTRECT, FALSE, reinterpret_cast<LPARAM>(&rcTab));
 
-        for (auto& tab : tabs) {
-          tab->setPos(rcTab);
-        }
+        tabs.emplace(tabs.begin(), make_unique<BehaviourTab>(hWnd));
+        tabs.emplace(tabs.begin(), make_unique<SourcesTab>(hWnd));
+        tabs.emplace(tabs.begin(), make_unique<DisplayTab>(hWnd));
+        tabs.emplace(tabs.begin(), make_unique<CoverTab>(hWnd));
+        tabs.emplace(tabs.begin(), make_unique<PerformanceTab>(hWnd));
+
         currentTab = sessionSelectedConfigTab;
-        if (currentTab > tabs.size())
+        if (currentTab >= tabs.size())
           currentTab = 0;
-        uSendMessage(hWndTab, TCM_SETCURSEL, tabs[currentTab]->idx, 0);
+        uSendMessage(hWndTab, TCM_SETCURSEL, currentTab, 0);
         tabs[currentTab]->show();
       } break;
 
@@ -948,15 +945,8 @@ class ConfigWindow : public preferences_page {
           if (msg.code == TCN_SELCHANGE) {
             if (currentTab < tabs.size())
               tabs[currentTab]->hide();
-            currentTab = ~0u;
-            UINT32 currentIdx = SendDlgItemMessage(hWnd, IDC_TABS, TCM_GETCURSEL, 0, 0);
-            for (t_size i = 0; i < tabs.size(); i++) {
-              if (currentIdx == tabs[i]->idx) {
-                currentTab = i;
-                break;
-              }
-            }
-            if (currentTab != ~0u)
+            currentTab = SendDlgItemMessage(hWnd, IDC_TABS, TCM_GETCURSEL, 0, 0);
+            if (currentTab < tabs.size())
               tabs[currentTab]->show();
           }
         }
