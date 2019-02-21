@@ -46,20 +46,14 @@ ScriptedCoverPositions::ScriptedCoverPositions() {
 
 bool ScriptedCoverPositions::setScript(const char* script, pfc::string_base& errorMsg) {
   try {
-    auto compiled = make_shared<CompiledCPInfo>();
-    CPScriptCompiler compiler;
-    if (compiler.compileScript(script, *compiled, errorMsg)) {
-      sessionCompiledCPInfo.set(compiled);
-      cInfo = std::move(compiled);
-      return true;
-    } else {
-      return false;
-    }
-  } catch (_com_error&) {
-    errorMsg =
-        "Windows Script Control not installed. Download it from "
-        "<http://www.microsoft.com/downloads/"
-        "details.aspx?FamilyId=D7E31492-2595-49E6-8C02-1426FEC693AC>.";
+    // TODO: error handling – raise exception instead of errorMsg
+    cInfo = make_shared<CompiledCPInfo>(compileCPScript(script));
+    return true;
+  } catch (_com_error& ce) {
+    errorMsg = "Unexpected com error";
+    return false;
+  } catch (script_error& e) {
+    errorMsg = e.what();
     return false;
   }
 }

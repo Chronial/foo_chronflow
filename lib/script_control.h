@@ -1,43 +1,26 @@
 #pragma once
 
-#include <list>
-#include <xstring>
+#include <string>
+#include <vector>
 
 //#import "msscript.ocx" no_namespace
 #include "msscript.h"
 
-#define LANGUAGE_DEFAULT _T("VBScript")
-#define RT_SCRIPT _T("SCRIPT")
-#define LANGUAGE_NAME_LEN 40
-#define ERROR_DESC_LEN 256
+struct CScriptError : public std::runtime_error {
+  using std::runtime_error::runtime_error;
+};
 
 class CScriptObject {
  public:
-  CScriptObject();
-  ~CScriptObject();
+  CScriptObject(const wchar_t* code);
 
  public:
-  LPCTSTR GetLanguage();
-  void SetLanguage(LPCTSTR szLanguage);
-  int GetMethodsCount() const;
-  LPCTSTR GetNameAt(int index);
-  void Reset();
-  bool LoadScript(LPCTSTR szFilename);
-  bool LoadScriptResource(LPCTSTR lpName, LPCTSTR lpType, HINSTANCE hInstance);
-  bool AddScript(LPCTSTR szCode);
-  LPCTSTR GetErrorString();
-  bool ExecuteStatement(LPCTSTR szStatement);
-  bool RunProcedure(LPCTSTR szProcName, SAFEARRAY** saParameters, VARIANT* varRet);
+  [[noreturn]] void RethrowError(const _com_error& e);
+  VARIANT RunProcedure(LPCTSTR szProcName, SAFEARRAY*& saParameters);
+  std::vector<std::wstring> GetMethodNames();
 
- protected:
-  void CommonConstruct();
-  bool GetMethodsName();
-  LPCTSTR GetScriptFunction(LPCTSTR name);
-
-  IScriptControlPtr m_pScript;                // The one and only script control
-  std::list<std::wstring> m_FunctionList;     // Function list
-  TCHAR m_szLanguage[LANGUAGE_NAME_LEN + 1];  // Current language
-  TCHAR m_szError[ERROR_DESC_LEN + 1];        // Description error
+ private:
+  IScriptControlPtr m_pScript;  // The one and only script control
 };
 
 class CSafeArrayHelper {

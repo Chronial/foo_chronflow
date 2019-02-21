@@ -35,7 +35,7 @@ class TextureLoadingThreads {
   };
 
   void flushQueue();
-  void setQueue(std::list<LoadRequest>&& data);
+  void setQueue(std::vector<LoadRequest>&& data);
   std::optional<LoadResponse> getLoaded();
   void pause();
   void resume();

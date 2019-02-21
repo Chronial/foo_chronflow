@@ -103,7 +103,7 @@ void TextureCache::updateLoadingQueue(const DBIter& queueCenter) {
   uploadTextures();
   size_t maxLoad = maxCacheSize();
 
-  std::list<TextureLoadingThreads::LoadRequest> requests;
+  std::vector<TextureLoadingThreads::LoadRequest> requests;
 
   DBIter leftLoaded = queueCenter;
   DBIter rightLoaded = queueCenter;
@@ -215,7 +215,7 @@ void TextureLoadingThreads::flushQueue() {
   inQueue.clear();
 }
 
-void TextureLoadingThreads::setQueue(std::list<LoadRequest>&& data) {
+void TextureLoadingThreads::setQueue(std::vector<LoadRequest>&& data) {
   {
     std::scoped_lock lock{mutex};
     inQueue.clear();

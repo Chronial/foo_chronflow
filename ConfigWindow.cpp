@@ -733,27 +733,9 @@ class CoverTab : public ConfigTab {
       dialog.value.skip_trailing_char(' ');
       if (dialog.value.get_length()) {
         if (cfgCoverConfigs.count(dialog.value.c_str()) == 0) {
-          pfc::string8 script;
-          bool useClipboard = false;
-          if (uGetClipboardString(script)) {
-            bool allFound = true;
-            pfc::stringcvt::string_wide_from_utf8 clipboard_w(script);
-            for (size_t i = 0; i < CPScriptFuncInfos::knownFunctions.size(); i++) {
-              if (CPScriptFuncInfos::neededFunctions[i]) {
-                if (nullptr == wcsstr(clipboard_w,
-                                      CPScriptFuncInfos::knownFunctions.at(i).c_str())) {
-                  allFound = false;
-                  break;
-                }
-              }
-            }
-            if (allFound)
-              useClipboard = true;
-          }
-          if (!useClipboard)
-            script = builtInCoverConfigs()[defaultCoverConfig].script.c_str();
-          pfc::string8& name = dialog.value;
-          cfgCoverConfigs.insert({name.c_str(), CoverConfig{script.c_str(), false}});
+          auto& script = builtInCoverConfigs()[defaultCoverConfig].script;
+          auto& name = dialog.value;
+          cfgCoverConfigs.insert({name.c_str(), CoverConfig{script, false}});
           cfgCoverConfigSel = name;
           loadConfigList();
           configSelectionChanged();

@@ -15,6 +15,7 @@
 #include <memory>
 #include <mutex>
 #include <regex>
+#include <set>
 #include <shared_mutex>
 #include <sstream>
 #include <thread>

@@ -198,3 +198,13 @@ inline std::function<void(void)> catchThreadExceptions(std::string threadName,
     }
   };
 }
+
+template <typename Array, std::size_t... I>
+auto array2tuple_impl(const Array& a, std::index_sequence<I...>) {
+  return std::make_tuple(a[I]...);
+}
+
+template <typename T, std::size_t N, typename Indices = std::make_index_sequence<N>>
+auto array2tuple(const std::array<T, N>& a) {
+  return array2tuple_impl(a, Indices{});
+}

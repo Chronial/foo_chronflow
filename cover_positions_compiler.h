@@ -55,11 +55,8 @@ struct CoverPosInfo {  // When changing this you have to update CompiledCPInfo::
 };
 
 class CompiledCPInfo {
-  static const int tableRes = 20;  // if you change this, you have to change version
-
-  friend class CPScriptCompiler;
-
  public:
+  static const int tableRes = 20;  // if you change this, you have to change version
   static const int version = 1;
 
   bool showMirrorPlane{};
@@ -116,25 +113,8 @@ class CompiledCPInfo {
   }
 };
 
-struct CPScriptFuncInfos {
-  static const std::vector<std::wstring> knownFunctions;
-
-  static const bit_array_range neededFunctions;
-  static const bit_array_range mirrorFunctions;
+struct script_error : public std::runtime_error {
+  using std::runtime_error::runtime_error;
 };
 
-class CPScriptCompiler {
- public:
-  CPScriptCompiler();
-  bool compileScript(const char*, CompiledCPInfo& out, pfc::string_base& message);
-
- private:
-  CScriptObject scriptObj;
-  bool scShowMirrorPlane(bool& res, pfc::string_base& message);
-  bool scCallDArrayFunction(const wchar_t* func, pfc::list_t<double>& res,
-                            pfc::string_base& message);
-  bool scCallDArrayFunction(const wchar_t* func, pfc::list_t<double>& res,
-                            pfc::string_base& message, double param);
-  bool scCallDArrayFunction(const wchar_t* func, pfc::list_t<double>& res,
-                            pfc::string_base& message, LPSAFEARRAY sa);
-};
+CompiledCPInfo compileCPScript(const char*);
