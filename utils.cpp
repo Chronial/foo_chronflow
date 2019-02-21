@@ -20,14 +20,15 @@ void errorPopupWin32(const char* message) {
                                     << format_win32_error(GetLastError()));
 }
 
-std::string linux_lineendings(const std::string& s) {
-  static std::regex regex{"\r\n"};
-  return std::regex_replace(s, regex, "\n");
+std::string linux_lineendings(std::string s) {
+  boost::replace_all(s, "\r\n", "\n");
+  return std::move(s);
 }
 
-std::string windows_lineendings(const std::string& s) {
-  static std::regex regex{"\r?\n"};
-  return std::regex_replace(s, regex, "\r\n");
+std::string windows_lineendings(std::string s) {
+  boost::replace_all(s, "\r\n", "\n");
+  boost::replace_all(s, "\n", "\r\n");
+  return std::move(s);
 }
 
 // Returns the time in seconds with maximum resolution

@@ -15,7 +15,6 @@
 #include <map>
 #include <memory>
 #include <mutex>
-#include <regex>
 #include <shared_mutex>
 #include <sstream>
 #include <thread>
@@ -45,6 +44,7 @@ using std::unique_ptr;  // NOLINT
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/multi_index_container.hpp>
 
+#include <boost/algorithm/string/replace.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <boost/range/combine.hpp>
 #include <boost/range/sub_range.hpp>

@@ -171,8 +171,8 @@ void printf(const wchar_t* format, ...);
 };  // namespace console
 #endif
 
-std::string linux_lineendings(const std::string& s);
-std::string windows_lineendings(const std::string& s);
+std::string linux_lineendings(std::string s);
+std::string windows_lineendings(std::string s);
 
 #ifndef uT
 #define uT(x) (pfc::stringcvt::string_os_from_utf8(x).get_ptr())

@@ -1,5 +1,7 @@
 #include <boost/range/iterator_range.hpp>
 
+#include <windowsx.h>
+
 #include "../foobar2000/helpers/dialog_resize_helper.h"
 #include "../foobar2000/helpers/win32_dialog.h"
 #include "lib/win32_helpers.h"
@@ -301,8 +303,10 @@ class BehaviourTab : public ConfigTab {
     return FALSE;
   }
   void loadActionList(UINT id, const char* selectedItem) {
-    uSendDlgItemMessage(hWnd, id, CB_RESETCONTENT, 0, 0);
-    uSendDlgItemMessageText(hWnd, id, CB_ADDSTRING, 0, "");
+    HWND list = GetDlgItem(hWnd, id);
+    SetWindowRedraw(list, false);
+    SendMessage(list, CB_RESETCONTENT, 0, 0);
+    uSendMessageText(list, CB_ADDSTRING, 0, "");
 
     service_enum_t<contextmenu_item> menus;
     service_ptr_t<contextmenu_item> menu;
@@ -318,13 +322,14 @@ class BehaviourTab : public ConfigTab {
           continue;
         }
         menuPath.add_string(menuName);
-        uSendDlgItemMessageText(hWnd, id, CB_ADDSTRING, 0, menuPath);
+        uSendMessageText(list, CB_ADDSTRING, 0, menuPath);
       }
     }
     for (auto action : boost::adaptors::reverse(g_customActions)) {
-      uSendDlgItemMessageText(hWnd, id, CB_INSERTSTRING, 0, action->actionName);
+      uSendMessageText(list, CB_INSERTSTRING, 0, action->actionName);
     }
-    uSendDlgItemMessageText(hWnd, id, CB_SELECTSTRING, 1, selectedItem);
+    uSendMessageText(list, CB_SELECTSTRING, 1, selectedItem);
+    SetWindowRedraw(list, true);
   }
 };
 
@@ -767,14 +772,14 @@ class CoverTab : public ConfigTab {
     }
   }
   void loadConfigList() {
-    uSendDlgItemMessage(hWnd, IDC_SAVED_SELECT, CB_RESETCONTENT, 0, 0);
-
+    HWND list = GetDlgItem(hWnd, IDC_SAVED_SELECT);
+    SetWindowRedraw(list, false);
+    SendMessage(list, CB_RESETCONTENT, 0, 0);
     for (auto& [name, config] : cfgCoverConfigs) {
-      uSendDlgItemMessageText(hWnd, IDC_SAVED_SELECT, CB_ADDSTRING, 0, name.c_str());
+      uSendMessageText(list, CB_ADDSTRING, 0, name.c_str());
     }
-
-    uSendDlgItemMessageText(
-        hWnd, IDC_SAVED_SELECT, CB_SELECTSTRING, 1, cfgCoverConfigSel);
+    uSendMessageText(list, CB_SELECTSTRING, 1, cfgCoverConfigSel);
+    SetWindowRedraw(list, true);
   }
   void configSelectionChanged() {
     try {
@@ -921,11 +926,11 @@ class ConfigWindow : public preferences_page {
         GetChildWindowRect(hWnd, IDC_TABS, &rcTab);
         uSendMessage(hWndTab, TCM_ADJUSTRECT, FALSE, reinterpret_cast<LPARAM>(&rcTab));
 
-        tabs.emplace(tabs.begin(), make_unique<BehaviourTab>(hWnd));
-        tabs.emplace(tabs.begin(), make_unique<SourcesTab>(hWnd));
-        tabs.emplace(tabs.begin(), make_unique<DisplayTab>(hWnd));
-        tabs.emplace(tabs.begin(), make_unique<CoverTab>(hWnd));
-        tabs.emplace(tabs.begin(), make_unique<PerformanceTab>(hWnd));
+        tabs.emplace_back(make_unique<BehaviourTab>(hWnd));
+        tabs.emplace_back(make_unique<SourcesTab>(hWnd));
+        tabs.emplace_back(make_unique<DisplayTab>(hWnd));
+        tabs.emplace_back(make_unique<CoverTab>(hWnd));
+        tabs.emplace_back(make_unique<PerformanceTab>(hWnd));
 
         currentTab = sessionSelectedConfigTab;
         if (currentTab >= tabs.size())
