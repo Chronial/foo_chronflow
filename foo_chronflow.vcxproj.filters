@@ -75,9 +75,6 @@
     <ClCompile Include="lib\cover_configs.cpp">
       <Filter>lib</Filter>
     </ClCompile>
-    <ClCompile Include="lib\script_control.cpp">
-      <Filter>lib</Filter>
-    </ClCompile>
     <ClCompile Include="cover_positions_compiler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -172,9 +169,6 @@
     </ClInclude>
     <ClInclude Include="cover_positions_compiler.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="lib\script_control.h">
-      <Filter>lib</Filter>
     </ClInclude>
     <ClInclude Include="cover_positions.h">
       <Filter>Header Files</Filter>

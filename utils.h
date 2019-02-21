@@ -10,8 +10,12 @@
 #ifndef M_PI
 #define M_PI 3.1415926535897932385
 #endif
-#define deg2rad(X) ((X)*M_PI / 180)
-#define rad2deg(X) ((X)*180 / M_PI)
+constexpr double deg2rad(double deg) {
+  return deg * M_PI / 180;
+};
+constexpr double rad2deg(double rad) {
+  return rad * 180 / M_PI;
+};
 
 #define IDT_CHECK_MINIMIZED 665
 
@@ -208,3 +212,16 @@ template <typename T, std::size_t N, typename Indices = std::make_index_sequence
 auto array2tuple(const std::array<T, N>& a) {
   return array2tuple_impl(a, Indices{});
 }
+
+// clang-format off
+template <std::size_t I = 0, typename FuncT, typename... Tp>
+inline typename std::enable_if<I == sizeof...(Tp), void>::type
+for_each(std::tuple<Tp...>&, FuncT /* f */) {}
+
+template <std::size_t I = 0, typename FuncT, typename... Tp>
+inline typename std::enable_if<I < sizeof...(Tp), void>::type
+for_each(std::tuple<Tp...>& t, FuncT f) {
+  f(std::get<I>(t));
+  for_each<I + 1, FuncT, Tp...>(t, f);
+}
+// clang-format on

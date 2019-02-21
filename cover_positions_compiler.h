@@ -2,7 +2,6 @@
 #include "cover_positions_compiler.h"
 
 #include "lib/gl_structs.h"
-#include "lib/script_control.h"
 
 #include "CoverConfig.h"
 #include "config.h"
@@ -27,26 +26,7 @@ struct CoverPosInfo {  // When changing this you have to update CompiledCPInfo::
   } sizeLim;
 
   static CoverPosInfo interpolate(const CoverPosInfo& a, const CoverPosInfo& b,
-                                  float bWeight) {
-    CoverPosInfo out{};
-
-    out.position.x = interpolF(a.position.x, b.position.x, bWeight);
-    out.position.y = interpolF(a.position.y, b.position.y, bWeight);
-    out.position.z = interpolF(a.position.z, b.position.z, bWeight);
-
-    out.rotation.a = interpolF(a.rotation.a, b.rotation.a, bWeight);
-    out.rotation.axis.x = interpolF(a.rotation.axis.x, b.rotation.axis.x, bWeight);
-    out.rotation.axis.y = interpolF(a.rotation.axis.y, b.rotation.axis.y, bWeight);
-    out.rotation.axis.z = interpolF(a.rotation.axis.z, b.rotation.axis.z, bWeight);
-
-    out.alignment.x = interpolF(a.alignment.x, b.alignment.x, bWeight);
-    out.alignment.y = interpolF(a.alignment.y, b.alignment.y, bWeight);
-
-    out.sizeLim.w = interpolF(a.sizeLim.w, b.sizeLim.w, bWeight);
-    out.sizeLim.h = interpolF(a.sizeLim.h, b.sizeLim.h, bWeight);
-
-    return out;
-  }
+                                  float bWeight);
 
  private:
   static inline float interpolF(float a, float b, float bWeight) {
@@ -115,6 +95,7 @@ class CompiledCPInfo {
 
 struct script_error : public std::runtime_error {
   using std::runtime_error::runtime_error;
+  static script_error from_com_error(const class _com_error&);
 };
 
 CompiledCPInfo compileCPScript(const char*);

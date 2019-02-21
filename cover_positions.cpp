@@ -1,7 +1,6 @@
 #include "cover_positions.h"
 
 #include "cover_positions_compiler.h"
-#include "lib/script_control.h"
 
 void cfg_compiledCPInfoPtr::get_data_raw(stream_writer* p_stream,
                                          abort_callback& p_abort) {
@@ -46,12 +45,8 @@ ScriptedCoverPositions::ScriptedCoverPositions() {
 
 bool ScriptedCoverPositions::setScript(const char* script, pfc::string_base& errorMsg) {
   try {
-    // TODO: error handling – raise exception instead of errorMsg
     cInfo = make_shared<CompiledCPInfo>(compileCPScript(script));
     return true;
-  } catch (_com_error&) {
-    errorMsg = "Unexpected com error";
-    return false;
   } catch (script_error& e) {
     errorMsg = e.what();
     return false;

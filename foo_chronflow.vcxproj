@@ -156,7 +156,6 @@
     <ClCompile Include="lib\cover_configs.cpp" />
     <ClCompile Include="lib\glad.cpp" />
     <ClCompile Include="lib\msscript.cpp" />
-    <ClCompile Include="lib\script_control.cpp" />
     <ClCompile Include="cover_positions.cpp" />
     <ClCompile Include="lib\win32_helpers.cpp" />
     <ClCompile Include="TextureCache.cpp" />
@@ -191,7 +190,6 @@
     <ClInclude Include="lib\gl_structs.h" />
     <ClInclude Include="lib\khrplatform.h" />
     <ClInclude Include="lib\msscript.h" />
-    <ClInclude Include="lib\script_control.h" />
     <ClInclude Include="lib\stb_image.h" />
     <ClInclude Include="lib\stb_image_resize.h" />
     <ClInclude Include="lib\win32_helpers.h" />

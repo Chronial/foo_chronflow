@@ -12,13 +12,15 @@
 #include <future>
 #include <iterator>
 #include <limits>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <regex>
-#include <set>
 #include <shared_mutex>
 #include <sstream>
 #include <thread>
+#include <tuple>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <valarray>
@@ -63,7 +65,7 @@ using std::unique_ptr;  // NOLINT
 #define NOMEMMGR
 #define NOOPENFILE
 #define NOSCROLL
-#define NOTEXTMETRIC
+//#define NOTEXTMETRIC
 #define NOWH
 #define NOCOMM
 #define NOHELP
