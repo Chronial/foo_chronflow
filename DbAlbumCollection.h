@@ -118,7 +118,8 @@ class DbAlbumCollection {
 
   template <class T>
   DBPos posFromIter(T iter) const {
-    if (iter == iter.owner()->end()) {
+    auto i = db->container.project<0>(iter);
+    if (i == db->container.get<0>().end()) {
       return {};
     } else {
       return {iter->key, iter->sortKey};
