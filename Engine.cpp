@@ -62,56 +62,52 @@ void Engine::mainLoop() {
   double lastSwapTime = 0;
   std::optional<HighTimerResolution> timerResolution;
   while (!shouldStop) {
-    while (!shouldStop) {
-      std::unique_ptr<engine_messages::Message> msg = nullptr;
-      if (windowDirty) {
-        auto maybeMsg = thread.messageQueue.popMaybe();
-        if (!maybeMsg)
-          break;
-        msg = std::move(maybeMsg.value());
-      } else {
-        msg = thread.messageQueue.pop();
+    if (!windowDirty && !cacheDirty)
+      thread.messageQueue.wait();
+    if (auto msg = thread.messageQueue.popMaybe()) {
+      msg.value()->execute(*this);
+    } else if (cacheDirty) {
+      texCache.startLoading(worldState.getTarget());
+      cacheDirty = false;
+    } else if (windowDirty) {
+      if (!timerResolution)
+        timerResolution.emplace();
+      texCache.setPriority(true);
+
+      // Housekeeping
+      texCache.uploadTextures();
+      texCache.trimCache();
+
+      // Update state
+      worldState.update();
+
+      // Render
+      render();
+      windowDirty = worldState.isMoving() || renderer.wasMissingTextures;
+
+      // Handle V-Sync
+      renderer.ensureVSync(cfgVSyncMode != VSYNC_SLEEP_ONLY);
+      if (cfgVSyncMode == VSYNC_AND_SLEEP || cfgVSyncMode == VSYNC_SLEEP_ONLY) {
+        double currentTime = Helpers::getHighresTimer();
+        // time we have - time we already have spend
+        int sleepTime = int((1000.0 / refreshRate) - 1000 * (currentTime - lastSwapTime));
+        if (cfgVSyncMode == VSYNC_AND_SLEEP) {
+          sleepTime -= 2 * timerResolution->get();
+        } else {
+          sleepTime -= timerResolution->get();
+        }
+        if (sleepTime >= 0) {
+          Sleep(sleepTime);
+        }
       }
-      msg->execute(*this);
+      window.swapBuffers();
+      glFinish();  // Wait for GPU
+      lastSwapTime = Helpers::getHighresTimer();
+
+      texCache.setPriority(windowDirty);
+      if (!windowDirty)
+        timerResolution.reset();
     }
-
-    if (!timerResolution)
-      timerResolution.emplace();
-    texCache.setPriority(true);
-
-    // Housekeeping
-    texCache.uploadTextures();
-    texCache.trimCache();
-
-    // Update state
-    worldState.update();
-
-    // Render
-    render();
-    windowDirty = worldState.isMoving() || renderer.wasMissingTextures;
-
-    // Handle V-Sync
-    renderer.ensureVSync(cfgVSyncMode != VSYNC_SLEEP_ONLY);
-    if (cfgVSyncMode == VSYNC_AND_SLEEP || cfgVSyncMode == VSYNC_SLEEP_ONLY) {
-      double currentTime = Helpers::getHighresTimer();
-      // time we have - time we already have spend
-      int sleepTime = int((1000.0 / refreshRate) - 1000 * (currentTime - lastSwapTime));
-      if (cfgVSyncMode == VSYNC_AND_SLEEP) {
-        sleepTime -= 2 * timerResolution->get();
-      } else {
-        sleepTime -= timerResolution->get();
-      }
-      if (sleepTime >= 0) {
-        Sleep(sleepTime);
-      }
-    }
-    window.swapBuffers();
-    glFinish();  // Wait for GPU
-    lastSwapTime = Helpers::getHighresTimer();
-
-    texCache.setPriority(windowDirty);
-    if (!windowDirty)
-      timerResolution.reset();
   }
   // Synchronize with GPU before shutdown to avoid crashes
   glFinish();
@@ -140,7 +136,7 @@ void Engine::updateRefreshRate() {
 
 void Engine::setTarget(DBPos target, bool userInitiated) {
   worldState.setTarget(target);
-  texCache.startLoading(target);
+  cacheDirty = true;
   if (userInitiated)
     playbackTracer.delay(1);
 

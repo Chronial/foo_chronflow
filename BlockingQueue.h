@@ -20,6 +20,10 @@ class BlockingQueue {
     }
     this->d_condition.notify_one();
   }
+  void wait() {
+    std::unique_lock lock{this->d_mutex};
+    this->d_condition.wait(lock, [=] { return !this->d_queue.empty(); });
+  }
   T pop() {
     std::unique_lock lock{this->d_mutex};
     this->d_condition.wait(lock, [=] { return !this->d_queue.empty(); });

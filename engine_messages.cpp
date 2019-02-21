@@ -23,8 +23,8 @@ void EM::ChangeCPScriptMessage::run(Engine& e, pfc::string8 script) {
   pfc::string8 tmp;
   e.coverPos.setScript(script, tmp);
   e.renderer.setProjectionMatrix();
-  e.texCache.startLoading(e.worldState.getTarget());
-  e.windowDirty = true;
+  e.cacheDirty = true;
+  e.thread.invalidateWindow();
 }
 
 void EM::WindowHideMessage::run(Engine& e) {
@@ -36,7 +36,7 @@ void EM::WindowHideMessage::run(Engine& e) {
 
 void EM::WindowShowMessage::run(Engine& e) {
   if (cfgEmptyCacheOnMinimize) {
-    e.texCache.startLoading(e.worldState.getTarget());
+    e.cacheDirty = true;
   }
   e.texCache.resumeLoading();
 }
@@ -106,7 +106,7 @@ void EM::CollectionReloadedMessage::run(Engine& e) {
   e.db.onCollectionReload(std::move(*e.reloadWorker));
   e.reloadWorker.reset();
   e.texCache.onCollectionReload();
-  e.texCache.startLoading(e.worldState.getTarget());
+  e.cacheDirty = true;
   e.thread.invalidateWindow();
 }
 
@@ -116,18 +116,18 @@ void EM::PlaybackNewTrack::run(Engine& e, metadb_handle_ptr track) {
 
 void EM::LibraryItemsAdded::run(Engine& e, metadb_handle_list tracks, t_uint64 version) {
   e.db.handleLibraryChange(version, DbAlbumCollection::items_added, std::move(tracks));
-  e.texCache.startLoading(e.worldState.getTarget());
+  e.cacheDirty = true;
   e.thread.invalidateWindow();
 }
 void EM::LibraryItemsRemoved::run(Engine& e, metadb_handle_list tracks,
                                   t_uint64 version) {
   e.db.handleLibraryChange(version, DbAlbumCollection::items_removed, std::move(tracks));
-  e.texCache.startLoading(e.worldState.getTarget());
+  e.cacheDirty = true;
   e.thread.invalidateWindow();
 }
 void EM::LibraryItemsModified::run(Engine& e, metadb_handle_list tracks,
                                    t_uint64 version) {
   e.db.handleLibraryChange(version, DbAlbumCollection::items_modified, std::move(tracks));
-  e.texCache.startLoading(e.worldState.getTarget());
+  e.cacheDirty = true;
   e.thread.invalidateWindow();
 }

@@ -47,8 +47,9 @@ class Engine {
  private:
   void render();
   bool windowDirty = false;
+  bool cacheDirty = true;
   int refreshRate = 60;
-  bool shouldStop = false;
+  std::atomic<bool> shouldStop = false;
 
  public:
   struct Messages;
