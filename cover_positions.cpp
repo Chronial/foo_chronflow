@@ -46,6 +46,7 @@ ScriptedCoverPositions::ScriptedCoverPositions() {
 bool ScriptedCoverPositions::setScript(const char* script, pfc::string_base& errorMsg) {
   try {
     cInfo = make_shared<CompiledCPInfo>(compileCPScript(script));
+    sessionCompiledCPInfo.set(cInfo);
     return true;
   } catch (script_error& e) {
     errorMsg = e.what();
