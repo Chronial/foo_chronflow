@@ -161,6 +161,7 @@ class Timer {
 namespace console {
 class out : public std::wostringstream {
  public:
+  out() = default;
   NO_MOVE_NO_COPY(out);
   ~out() final;
 };
