@@ -59,7 +59,8 @@ void Engine::mainLoop() {
   updateRefreshRate();
   EM::ReloadCollection().execute(*this);
 
-  double lastSwapTime = 0;
+  double lastSwapEnd = 0;
+  double swapEstimate = 1;
   std::optional<HighTimerResolution> timerResolution;
   while (!shouldStop) {
     if (!windowDirty && !cacheDirty)
@@ -90,24 +91,23 @@ void Engine::mainLoop() {
       windowDirty = worldState.isMoving() || renderer.wasMissingTextures;
 
       // Handle V-Sync
-
       renderer.ensureVSync(cfgVSyncMode != VSYNC_SLEEP_ONLY);
       if (cfgVSyncMode == VSYNC_AND_SLEEP || cfgVSyncMode == VSYNC_SLEEP_ONLY) {
         double currentTime = Helpers::getHighresTimer();
-        // time we have - time we already have spend
-        int sleepTime = int((1000.0 / refreshRate) - 1000 * (currentTime - lastSwapTime));
-        if (cfgVSyncMode == VSYNC_AND_SLEEP) {
-          sleepTime -= 2 * timerResolution->get();
-        } else {
-          sleepTime -= timerResolution->get();
-        }
-        if (sleepTime >= 0) {
-          Sleep(sleepTime);
+        double sleepTime =
+            (1.0 / refreshRate) - (currentTime - lastSwapEnd) - swapEstimate;
+        sleepTime -= 0.002 * timerResolution->get();
+        if (sleepTime >= 0.001 * timerResolution->get()) {
+          SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+          Sleep(int(1000 * sleepTime));
+          SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL);
         }
       }
+      double swapStart = Helpers::getHighresTimer();
       window.swapBuffers();
       glFinish();  // Wait for GPU
-      lastSwapTime = Helpers::getHighresTimer();
+      lastSwapEnd = Helpers::getHighresTimer();
+      swapEstimate = 0.2 * (lastSwapEnd - swapStart) + 0.8 * swapEstimate;
 
       texCache.setPriority(windowDirty);
       if (!windowDirty) {
