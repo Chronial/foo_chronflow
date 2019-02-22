@@ -16,7 +16,7 @@ class BlockingQueue {
   void push(U&& value) {
     {
       std::scoped_lock lock{this->d_mutex};
-      d_queue.push_front(std::forward<U>(value));
+      d_queue.push_back(std::forward<U>(value));
     }
     this->d_condition.notify_one();
   }
@@ -27,8 +27,8 @@ class BlockingQueue {
   T pop() {
     std::unique_lock lock{this->d_mutex};
     this->d_condition.wait(lock, [=] { return !this->d_queue.empty(); });
-    T rc(std::move(this->d_queue.back()));
-    this->d_queue.pop_back();
+    T rc(std::move(this->d_queue.front()));
+    this->d_queue.pop_front();
     return rc;
   }
   void clear() {
@@ -39,8 +39,8 @@ class BlockingQueue {
     std::scoped_lock lock{this->d_mutex};
     if (this->d_queue.empty())
       return std::nullopt;
-    T rc(std::move(this->d_queue.back()));
-    this->d_queue.pop_back();
+    T rc(std::move(this->d_queue.front()));
+    this->d_queue.pop_front();
     return {std::move(rc)};
   }
 };
