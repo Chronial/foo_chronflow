@@ -10,26 +10,32 @@
 #include "config.h"
 #include "utils.h"
 
-namespace {
-bool initGlfw() {
-  glfwSetErrorCallback([](int error, const char* description) {
-    pfc::string8 msg = "foo_chronflow glfw error: ";
-    msg.add_string(description);
-    console::print(msg);
-  });
-  if (!glfwInit()) {
-    throw std::runtime_error("Failed to initialize glfw");
+int GLFWContext::count = 0;
+
+GLFWContext::GLFWContext() {
+  if (count == 0) {
+    glfwSetErrorCallback([](int error, const char* description) {
+      throw std::runtime_error(PFC_string_formatter() << "glfw error: " << description);
+    });
+    if (!glfwInit()) {
+      throw std::runtime_error("Failed to initialize glfw");
+    }
   }
-  return true;
+  ++count;
 }
-}  // namespace
+
+GLFWContext::~GLFWContext() {
+  --count;
+  if (count == 0) {
+    glfwTerminate();
+  }
+}
 
 EngineWindow::EngineWindow(ContainerWindow& container,
                            ui_element_instance_callback_ptr defaultUiCallback)
     : defaultUiCallback(std::move(defaultUiCallback)), container(container) {
   TRACK_CALL_TEXT("EngineWindow::EngineWindow");
 
-  static auto glfwInit = initGlfw();
   createWindow();
   engineThread.emplace(*this);
   glfwShowWindow(glfwWindow.get());
@@ -48,7 +54,7 @@ void EngineWindow::createWindow() {
   glfwWindow.reset(
       glfwCreateWindow(640, 480, "foo_chronflow render window", nullptr, nullptr));
   if (!glfwWindow) {
-    throw std::runtime_error("Failed to create opengl window");
+    throw std::runtime_error("Unknown error while creating opengl window");
   }
   hWnd = glfwGetWin32Window(glfwWindow.get());
 

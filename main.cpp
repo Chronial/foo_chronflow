@@ -11,9 +11,3 @@ DECLARE_COMPONENT_VERSION("Chronial's Coverflow", VERSION,
                           " - " __TIME__);
 
 VALIDATE_COMPONENT_FILENAME("foo_chronflow.dll");
-
-class QuitHandler : public initquit {
- public:
-  void on_quit() final { glfwTerminate(); }
-};
-static service_factory_single_t<QuitHandler> quitHandler;

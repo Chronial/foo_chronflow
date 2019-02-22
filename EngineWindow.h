@@ -5,7 +5,18 @@
 
 class ContainerWindow;
 
+class GLFWContext {
+ public:
+  GLFWContext();
+  NO_MOVE_NO_COPY(GLFWContext);
+  ~GLFWContext();
+
+ private:
+  static int count;
+};
+
 class EngineWindow {
+  GLFWContext glfwContext;
   unique_ptr_del<GLFWwindow, glfwDestroyWindow> glfwWindow;
   double scrollAggregator = 0;
   ui_element_instance_callback_ptr defaultUiCallback;
