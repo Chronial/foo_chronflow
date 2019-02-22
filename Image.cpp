@@ -67,7 +67,7 @@ Image Image::fromFile(const char* filename) {
   int channels_in_file;
   gsl::owner<FILE*> f;
   stbi_set_flip_vertically_on_load(TRUE);
-  if (!_wfopen_s(&f, wideName, L"r"))
+  if (0 != _wfopen_s(&f, wideName, L"rb"))
     throw std::runtime_error{"Failed to open image file"};
   malloc_ptr data{
       static_cast<void*>(stbi_load_from_file(f, &width, &height, &channels_in_file, 3))};
