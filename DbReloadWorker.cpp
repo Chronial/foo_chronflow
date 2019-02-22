@@ -25,6 +25,7 @@ DbReloadWorker::~DbReloadWorker() {
 
 void DbReloadWorker::threadProc() {
   TRACK_CALL_TEXT("Chronflow DbReloadWorker");
+  console::timer_scope timer("foo_chronflow collection generated in");
 
   engineThread.runInMainThread([&] {
     ++engineThread.libraryVersion;
@@ -42,12 +43,7 @@ void DbReloadWorker::threadProc() {
   copyDone.get_future().wait();
   abort.check();
 
-  {
-    console::timer_scope timer("foo_chronflow collection generated in");
-
-    DBWriter writer(*db);
-    writer.add_tracks(std::move(library), abort);
-  }
+  DBWriter(*db).add_tracks(std::move(library), abort);
   abort.check();
 
   engineThread.send<EM::CollectionReloadedMessage>();
