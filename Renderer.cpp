@@ -259,14 +259,19 @@ void Renderer::drawGui() {
   if (cfgShowFps) {
     double fps, msPerFrame, longestFrame, minFPS;
     engine.fpsCounter.getFPS(fps, msPerFrame, longestFrame, minFPS);
-    pfc::string8 dispStringA;
-    pfc::string8 dispStringB;
-    dispStringA << "FPS:  " << pfc::format_float(fps, 4, 1);
-    dispStringB << " min: " << pfc::format_float(minFPS, 4, 1);
-    dispStringA << "  cpu-ms/f: " << pfc::format_float(msPerFrame, 5, 2);
-    dispStringB << "   max:     " << pfc::format_float(longestFrame, 5, 2);
-    textDisplay.displayBitmapText(dispStringA, winWidth - 250, winHeight - 20);
-    textDisplay.displayBitmapText(dispStringB, winWidth - 250, winHeight - 35);
+    std::ostringstream dispStringA;
+    std::ostringstream dispStringB;
+    dispStringA.flags(std::ios_base::fixed | std::ios_base::right);
+    dispStringB.flags(std::ios_base::fixed | std::ios_base::right);
+    dispStringA << "     FPS: " << std::setw(4) << std::setprecision(1) << fps;
+    dispStringB << "max ms/f: " << std::setw(5) << std::setprecision(2)
+                << (1000 / minFPS);
+    dispStringA << "   cpu: " << std::setw(5) << std::setprecision(2) << msPerFrame;
+    dispStringB << "  max: " << std::setw(5) << std::setprecision(2) << longestFrame;
+    textDisplay.displayBitmapText(
+        dispStringA.str().c_str(), winWidth - 250, winHeight - 20);
+    textDisplay.displayBitmapText(
+        dispStringB.str().c_str(), winWidth - 250, winHeight - 35);
   }
 }
 
