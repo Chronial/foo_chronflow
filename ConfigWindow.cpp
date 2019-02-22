@@ -741,8 +741,8 @@ class CoverTab : public ConfigTab {
       dialog.value.skip_trailing_char(' ');
       if (dialog.value.get_length()) {
         if (cfgCoverConfigs.count(dialog.value.c_str()) == 0) {
-          auto& script = builtInCoverConfigs()[defaultCoverConfig].script;
-          auto& name = dialog.value;
+          auto script = builtInCoverConfigs()[defaultCoverConfig].script;
+          auto name = dialog.value;
           cfgCoverConfigs.insert({name.c_str(), CoverConfig{script, false}});
           cfgCoverConfigSel = name;
           loadConfigList();
