@@ -37,26 +37,47 @@ EngineWindow::EngineWindow(ContainerWindow& container,
   const ULONG_PTR cNewStyle = GetClassLongPtr(hWnd, GCL_STYLE) | CS_DBLCLKS;
   SetClassLongPtr(hWnd, GCL_STYLE, cNewStyle);
   SetWindowSubclass(hWnd,
-                    WINLAMBDA([](HWND, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR,
-                                 DWORD_PTR dwRefData) {
-                      return reinterpret_cast<EngineWindow*>(dwRefData)->messageHandler(
-                          uMsg, wParam, lParam);
+                    WINLAMBDA([](HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+                                 UINT_PTR, DWORD_PTR dwRefData) noexcept {
+                      try {
+                        return reinterpret_cast<EngineWindow*>(dwRefData)->messageHandler(
+                            uMsg, wParam, lParam);
+                      } catch (std::exception& e) {
+                        FB2K_console_formatter()
+                            << "Exception in foo_chronflow EngineWindow MessageHandler: "
+                            << e.what();
+                        return DefSubclassProc(hwnd, uMsg, wParam, lParam);
+                      }
                     }),
                     0, reinterpret_cast<DWORD_PTR>(this));
 
+  static auto wrap = [](auto f) noexcept {
+    try {
+      f();
+    } catch (std::exception& e) {
+      FB2K_console_formatter()
+          << "Exception in foo_chronflow EngineWindow event handler: " << e.what();
+    }
+  };
   glfwSetWindowUserPointer(glfwWindow.get(), this);
   glfwSetScrollCallback(
       glfwWindow.get(), [](GLFWwindow* window, double xoffset, double yoffset) {
-        static_cast<EngineWindow*>(glfwGetWindowUserPointer(window))
-            ->onScroll(xoffset, yoffset);
+        wrap([&] {
+          static_cast<EngineWindow*>(glfwGetWindowUserPointer(window))
+              ->onScroll(xoffset, yoffset);
+        });
       });
   glfwSetWindowRefreshCallback(glfwWindow.get(), [](GLFWwindow* window) {
-    static_cast<EngineWindow*>(glfwGetWindowUserPointer(window))->onDamage();
+    wrap([&] {
+      static_cast<EngineWindow*>(glfwGetWindowUserPointer(window))->onDamage();
+    });
   });
   glfwSetWindowSizeCallback(
       glfwWindow.get(), [](GLFWwindow* window, int width, int height) {
-        static_cast<EngineWindow*>(glfwGetWindowUserPointer(window))
-            ->onWindowSize(width, height);
+        wrap([&] {
+          static_cast<EngineWindow*>(glfwGetWindowUserPointer(window))
+              ->onWindowSize(width, height);
+        });
       });
 
   engineThread.emplace(*this);
