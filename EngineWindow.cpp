@@ -15,6 +15,12 @@ EngineWindow::EngineWindow(ContainerWindow& container,
     : defaultUiCallback(std::move(defaultUiCallback)), container(container) {
   TRACK_CALL_TEXT("EngineWindow::EngineWindow");
 
+  createWindow();
+  engineThread.emplace(*this);
+  glfwShowWindow(glfwWindow.get());
+}
+
+void EngineWindow::createWindow() {
   glfwDefaultWindowHints();
   glfwWindowHint(GLFW_DECORATED, FALSE);
   glfwWindowHint(GLFW_SAMPLES, cfgMultisampling ? cfgMultisamplingPasses : 0);
@@ -79,9 +85,6 @@ EngineWindow::EngineWindow(ContainerWindow& container,
               ->onWindowSize(width, height);
         });
       });
-
-  engineThread.emplace(*this);
-  glfwShowWindow(glfwWindow.get());
 }
 
 void EngineWindow::setWindowSize(int width, int height) {

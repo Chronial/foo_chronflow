@@ -24,6 +24,7 @@ class EngineWindow {
   void onDamage();
 
  private:
+  void createWindow();
   LRESULT messageHandler(UINT uMsg, WPARAM wParam, LPARAM lParam);
   bool onChar(WPARAM wParam);
   void onMouseClick(UINT uMsg, WPARAM wParam, LPARAM lParam);
