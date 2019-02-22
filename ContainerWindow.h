@@ -25,9 +25,9 @@ class ContainerWindow {
 
  private:
   HWND createWindow(HWND parent);
+  static LRESULT CALLBACK WndProc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp);
+  LRESULT MessageHandler(UINT msg, WPARAM wp, LPARAM lp);
   void drawErrorMessage();
-  static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-  LRESULT MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
   GdiContext gdiContext;
   bool mainWinMinimized = true;

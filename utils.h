@@ -17,8 +17,6 @@ constexpr double rad2deg(double rad) {
   return rad * 180 / M_PI;
 };
 
-#define IDT_CHECK_MINIMIZED 665
-
 #define NO_MOVE_NO_COPY(C) \
   C(const C&) = delete; \
   C& operator=(const C&) = delete; \

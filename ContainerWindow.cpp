@@ -6,13 +6,14 @@
 #include "utils.h"
 
 constexpr int minimizeCheckTimeout = 10'000;  // milliseconds
+constexpr int minimizeCheckTimerId = 665;
 
 ContainerWindow::ContainerWindow(HWND parent,
                                  ui_element_instance_callback_ptr duiCallback) {
   TRACK_CALL_TEXT("ContainerWindow::startup");
   IF_DEBUG(console::create());
 
-  hwnd = createWindow(parent);
+  createWindow(parent);
   try {
     engineWindow = make_unique<EngineWindow>(*this, duiCallback);
   } catch (std::exception& e) {
@@ -54,19 +55,38 @@ ContainerWindow::~ContainerWindow() {
     DestroyWindow(hwnd);
 }
 
-LRESULT ContainerWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam,
-                                        LPARAM lParam) {
-  switch (uMsg) {
+LRESULT CALLBACK ContainerWindow::WndProc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp) {
+  ContainerWindow* self = nullptr;
+  if (msg == WM_NCCREATE) {
+    self = static_cast<ContainerWindow*>(
+        (reinterpret_cast<CREATESTRUCT*>(lp))->lpCreateParams);
+    SetWindowLongPtr(wnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(self));
+    if (self != nullptr)
+      self->hwnd = wnd;
+  } else {
+    self = reinterpret_cast<ContainerWindow*>(GetWindowLongPtr(wnd, GWLP_USERDATA));
+  }
+  if (self == nullptr)
+    return DefWindowProc(wnd, msg, wp, lp);
+
+  PFC_ASSERT(wnd == self->hwnd);
+  if (msg == WM_NCDESTROY) {
+    self->hwnd = nullptr;
+    SetWindowLongPtr(wnd, GWLP_USERDATA, NULL);
+    return DefWindowProc(wnd, msg, wp, lp);
+  } else {
+    return self->MessageHandler(msg, wp, lp);
+  }
+}
+
+LRESULT ContainerWindow::MessageHandler(UINT msg, WPARAM wp, LPARAM lp) {
+  switch (msg) {
     case WM_DESTROY:
       engineWindow.reset();
       break;
-    case WM_NCDESTROY:
-      this->hwnd = nullptr;
-      break;
     case WM_SIZE: {
-      if (engineWindow) {
-        engineWindow->setWindowSize(LOWORD(lParam), HIWORD(lParam));
-      }
+      if (engineWindow)
+        engineWindow->setWindowSize(LOWORD(lp), HIWORD(lp));
       return 0;
     }
     case WM_DISPLAYCHANGE:
@@ -76,21 +96,21 @@ LRESULT ContainerWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam,
       return 0;
     }
     case WM_TIMER:
-      switch (wParam) {
-        case IDT_CHECK_MINIMIZED:
+      switch (wp) {
+        case minimizeCheckTimerId:
           if (!mainWinMinimized && !ui_control::get()->is_visible()) {
             mainWinMinimized = true;
             if (engineWindow)
               engineWindow->engineThread->send<EM::WindowHideMessage>();
-            KillTimer(hWnd, IDT_CHECK_MINIMIZED);
+            KillTimer(hwnd, minimizeCheckTimerId);
           }
-          break;
+          return 0;
       }
-      return 0;
+      break;
     case WM_ERASEBKGND:
       return TRUE;
     case WM_PAINT: {
-      if (GetUpdateRect(hWnd, nullptr, FALSE)) {
+      if (GetUpdateRect(hwnd, nullptr, FALSE)) {
         if (mainWinMinimized) {
           mainWinMinimized = false;
           if (engineWindow)
@@ -102,11 +122,12 @@ LRESULT ContainerWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam,
           drawErrorMessage();
           return 0;
         }
-        SetTimer(hWnd, IDT_CHECK_MINIMIZED, minimizeCheckTimeout, nullptr);
+        SetTimer(hwnd, minimizeCheckTimerId, minimizeCheckTimeout, nullptr);
       }
+      break;
     }
   }
-  return DefWindowProc(hWnd, uMsg, wParam, lParam);
+  return DefWindowProc(hwnd, msg, wp, lp);
 }
 
 void ContainerWindow::drawErrorMessage() {
@@ -128,21 +149,6 @@ void ContainerWindow::drawErrorMessage() {
                                      << engineError.c_str()),
            -1, &rc, DT_WORDBREAK | DT_CENTER | DT_NOCLIP | DT_NOPREFIX);
   EndPaint(hwnd, &ps);
-}
-
-LRESULT CALLBACK ContainerWindow::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam,
-                                          LPARAM lParam) {
-  ContainerWindow* chronflow = nullptr;
-  if (uMsg == WM_NCCREATE) {
-    chronflow = static_cast<ContainerWindow*>(
-        (reinterpret_cast<CREATESTRUCT*>(lParam))->lpCreateParams);
-    SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(chronflow));
-  } else {
-    chronflow = reinterpret_cast<ContainerWindow*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
-  }
-  if (chronflow == nullptr)
-    return DefWindowProc(hWnd, uMsg, wParam, lParam);
-  return chronflow->MessageHandler(hWnd, uMsg, wParam, lParam);
 }
 
 void ContainerWindow::destroyEngineWindow(std::string errorMessage) {
