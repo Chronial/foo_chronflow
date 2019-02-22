@@ -10,11 +10,26 @@
 #include "config.h"
 #include "utils.h"
 
+namespace {
+bool initGlfw() {
+  glfwSetErrorCallback([](int error, const char* description) {
+    pfc::string8 msg = "foo_chronflow glfw error: ";
+    msg.add_string(description);
+    console::print(msg);
+  });
+  if (!glfwInit()) {
+    throw std::runtime_error("Failed to initialize glfw");
+  }
+  return true;
+}
+}  // namespace
+
 EngineWindow::EngineWindow(ContainerWindow& container,
                            ui_element_instance_callback_ptr defaultUiCallback)
     : defaultUiCallback(std::move(defaultUiCallback)), container(container) {
   TRACK_CALL_TEXT("EngineWindow::EngineWindow");
 
+  static auto glfwInit = initGlfw();
   createWindow();
   engineThread.emplace(*this);
   glfwShowWindow(glfwWindow.get());

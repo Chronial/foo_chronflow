@@ -12,29 +12,6 @@ DECLARE_COMPONENT_VERSION("Chronial's Coverflow", VERSION,
 
 VALIDATE_COMPONENT_FILENAME("foo_chronflow.dll");
 
-class InitHandler : public init_stage_callback {
- public:
-  void on_init_stage(t_uint32 stage) final {
-    if (stage == init_stages::after_library_init) {
-      initGlfw();
-    }
-  }
-
- private:
-  void initGlfw() {
-    glfwSetErrorCallback([](int error, const char* description) {
-      pfc::string8 msg = "foo_chronflow glfw error: ";
-      msg.add_string(description);
-      console::print(msg);
-    });
-    if (!glfwInit()) {
-      console::print("foo_chronflow failed to initialize glfw.");
-      // TODO: Handle this somehow
-    }
-  }
-};
-static service_factory_single_t<InitHandler> initHandler;
-
 class QuitHandler : public initquit {
  public:
   void on_quit() final { glfwTerminate(); }
