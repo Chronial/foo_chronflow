@@ -3,17 +3,20 @@
 #include "EngineThread.h"
 #include "utils.h"
 
+class ContainerWindow;
+
 class EngineWindow {
   unique_ptr_del<GLFWwindow, glfwDestroyWindow> glfwWindow;
   double scrollAggregator = 0;
   ui_element_instance_callback_ptr defaultUiCallback;
 
  public:
+  ContainerWindow& container;
   std::optional<EngineThread> engineThread;
   HWND hWnd = nullptr;
 
-  EngineWindow(HWND parent, ui_element_instance_callback_ptr defaultUiCallback);
-  ;
+  EngineWindow(ContainerWindow& container,
+               ui_element_instance_callback_ptr defaultUiCallback);
 
   void setWindowSize(int width, int height);
   void makeContextCurrent();

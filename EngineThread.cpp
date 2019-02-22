@@ -1,5 +1,6 @@
 #include "EngineThread.h"
 
+#include "ContainerWindow.h"
 #include "Engine.h"
 #include "EngineWindow.h"
 #include "utils.h"
@@ -8,22 +9,44 @@ void EngineThread::run() {
   TRACK_CALL_TEXT("foo_chronflow EngineThread");
   CoInitializeScope com_enable{};  // Required for compiling CoverPos Scripts
   engineWindow.makeContextCurrent();
-  Engine engine(*this, engineWindow);
-  engine.mainLoop();
+
+  // We can only destroy the Engine while EngineThread is beeing destroyed,
+  // since mainthread callbacks held by EngineThread might reference Engine objects.
+  std::optional<Engine> engine;
+  try {
+    engine.emplace(*this, engineWindow);
+    engine->mainLoop();
+  } catch (std::exception& e) {
+    runInMainThread([&] {
+      engineWindow.container.destroyEngineWindow((PFC_string_formatter()
+                                                  << "Engine died with exception:\n"
+                                                  << e.what())
+                                                     .c_str());
+    });
+    while (nullptr == dynamic_cast<EM::StopThread*>(messageQueue.pop().get())) {
+      // Going through the message queue has two purposes:
+      // 1. We wait for and find StopThread messages
+      // 2. We abandon any promises that are enqueued
+    }
+  }
 }
 
 void EngineThread::sendMessage(unique_ptr<engine_messages::Message>&& msg) {
   messageQueue.push(std::move(msg));
 }
 
-EngineThread::EngineThread(EngineWindow& engineWindow)
-    : engineWindow(engineWindow), thread(&EngineThread::run, this) {
+EngineThread::EngineThread(EngineWindow& engineWindow) : engineWindow(engineWindow) {
   instances.insert(this);
   play_callback_reregister(flag_on_playback_new_track, true);
+  std::packaged_task<void(EngineThread*)> task(&EngineThread::run);
+  thread = std::thread(std::move(task), this);
 }
 
 EngineThread::~EngineThread() {
   instances.erase(this);
+  this->send<EM::StopThread>();
+  // If the shutdown causes an exception, we need a second
+  // message to shut down the exception handler.
   this->send<EM::StopThread>();
   if (thread.joinable())
     thread.join();

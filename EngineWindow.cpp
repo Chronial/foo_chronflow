@@ -2,6 +2,7 @@
 
 #include "lib/win32_helpers.h"
 
+#include "ContainerWindow.h"
 #include "Engine.h"
 #include "MyActions.h"
 #include "PlaybackTracer.h"
@@ -9,9 +10,9 @@
 #include "config.h"
 #include "utils.h"
 
-EngineWindow::EngineWindow(HWND parent,
+EngineWindow::EngineWindow(ContainerWindow& container,
                            ui_element_instance_callback_ptr defaultUiCallback)
-    : defaultUiCallback(std::move(defaultUiCallback)) {
+    : defaultUiCallback(std::move(defaultUiCallback)), container(container) {
   TRACK_CALL_TEXT("EngineWindow::EngineWindow");
 
   glfwDefaultWindowHints();
@@ -30,7 +31,7 @@ EngineWindow::EngineWindow(HWND parent,
   }
   hWnd = glfwGetWin32Window(glfwWindow.get());
 
-  SetParent(hWnd, parent);
+  SetParent(hWnd, container.hwnd);
   const LONG nNewStyle = (GetWindowLong(hWnd, GWL_STYLE) & ~WS_POPUP) | WS_CHILDWINDOW;
   SetWindowLong(hWnd, GWL_STYLE, nNewStyle);
   const ULONG_PTR cNewStyle = GetClassLongPtr(hWnd, GCL_STYLE) | CS_DBLCLKS;

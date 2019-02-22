@@ -16,9 +16,9 @@ ContainerWindow::ContainerWindow(HWND parent,
 
   hwnd = createWindow(parent);
   try {
-    engineWindow.emplace(hwnd, duiCallback);
-  } catch (std::runtime_error&) {
-    // We live on without the render window, so we can display the error
+    engineWindow = make_unique<EngineWindow>(*this, duiCallback);
+  } catch (std::runtime_error& e) {
+    engineError = e.what();
   }
 }
 
@@ -83,18 +83,7 @@ LRESULT ContainerWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam,
         if (engineWindow) {
           engineWindow->onDamage();
         } else {
-          PAINTSTRUCT ps;
-          HDC hdc;
-          RECT rc;
-          hdc = BeginPaint(hWnd, &ps);
-          GetClientRect(hWnd, &rc);
-          FillRect(hdc, &rc, static_cast<HBRUSH>(GetStockObject(WHITE_BRUSH)));
-          rc.top += 10;
-          DrawText(hdc,
-                   L"foo_chronflow failed to open an opengl window :(.\nSee Console for "
-                   L"details.",
-                   -1, &rc, DT_CENTER | DT_VCENTER);
-          EndPaint(hWnd, &ps);
+          drawErrorMessage();
           return 0;
         }
         SetTimer(hWnd, IDT_CHECK_MINIMIZED, minimizeCheckTimeout, nullptr);
@@ -102,6 +91,27 @@ LRESULT ContainerWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam,
     }
   }
   return DefWindowProc(hWnd, uMsg, wParam, lParam);
+}
+
+void ContainerWindow::drawErrorMessage() {
+  PAINTSTRUCT ps;
+  HDC hdc = BeginPaint(hwnd, &ps);
+  RECT rc;
+  GetClientRect(hwnd, &rc);
+  FillRect(hdc, &rc, static_cast<HBRUSH>(GetStockObject(WHITE_BRUSH)));
+  if (rc.bottom > 50)
+    rc.top += 10;
+  if (rc.right - rc.left > 200) {
+    rc.left += 10;
+    rc.right -= 10;
+  }
+  SelectObject(hdc, GetStockObject(DEFAULT_GUI_FONT));
+  SetTextColor(hdc, RGB(40, 0, 0));
+  DrawText(hdc,
+           uT(PFC_string_formatter() << "foo_chronflow error:\n"
+                                     << engineError.c_str()),
+           -1, &rc, DT_WORDBREAK | DT_CENTER | DT_NOCLIP | DT_NOPREFIX);
+  EndPaint(hwnd, &ps);
 }
 
 LRESULT CALLBACK ContainerWindow::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam,
@@ -117,6 +127,13 @@ LRESULT CALLBACK ContainerWindow::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam,
   if (chronflow == nullptr)
     return DefWindowProc(hWnd, uMsg, wParam, lParam);
   return chronflow->MessageHandler(hWnd, uMsg, wParam, lParam);
+}
+
+void ContainerWindow::destroyEngineWindow(std::string errorMessage) {
+  if (!engineWindow)
+    return;
+  engineWindow.reset();
+  engineError = errorMessage;
 }
 
 HWND ContainerWindow::createWindow(HWND parent) {

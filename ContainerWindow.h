@@ -15,27 +15,27 @@ struct GdiContext {
 };
 
 class ContainerWindow {
-  GdiContext gdiContext;
-  bool mainWinMinimized = true;
-
  public:
-  HWND hwnd = nullptr;
+  static bool registerWindowClass();
 
   explicit ContainerWindow(HWND parent,
                            ui_element_instance_callback_ptr duiCallback = nullptr);
-  ContainerWindow(const ContainerWindow&) = delete;
-  ContainerWindow& operator=(const ContainerWindow&) = delete;
-  ContainerWindow(const ContainerWindow&&) = delete;
-  ContainerWindow& operator=(ContainerWindow&&) = delete;
+  NO_MOVE_NO_COPY(ContainerWindow);
   ~ContainerWindow();
 
-  static bool registerWindowClass();
+  HWND hwnd = nullptr;
 
-  std::optional<EngineWindow> engineWindow;
+  void destroyEngineWindow(std::string errorMessage);
 
  private:
   HWND createWindow(HWND parent);
+  GdiContext gdiContext;
+  bool mainWinMinimized = true;
 
+  std::unique_ptr<EngineWindow> engineWindow;
+  std::string engineError{};
+
+  void drawErrorMessage();
   static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
   LRESULT MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 };
