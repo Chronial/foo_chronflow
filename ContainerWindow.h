@@ -16,8 +16,6 @@ struct GdiContext {
 
 class ContainerWindow {
  public:
-  static bool registerWindowClass();
-
   explicit ContainerWindow(HWND parent,
                            ui_element_instance_callback_ptr duiCallback = nullptr);
   NO_MOVE_NO_COPY(ContainerWindow);

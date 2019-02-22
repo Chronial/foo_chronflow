@@ -5,8 +5,6 @@
 #include "EngineWindow.h"
 #include "utils.h"
 
-constexpr wchar_t* mainwindowClassname = L"foo_chronflow MainWindow";
-
 constexpr int minimizeCheckTimeout = 10'000;  // milliseconds
 
 ContainerWindow::ContainerWindow(HWND parent,
@@ -22,26 +20,37 @@ ContainerWindow::ContainerWindow(HWND parent,
   }
 }
 
+HWND ContainerWindow::createWindow(HWND parent) {
+  constexpr wchar_t* mainwindowClassname = L"foo_chronflow ContainerWindow";
+
+  static bool classRegistered = [&] {
+    WNDCLASS wc = {0};
+    wc.lpszClassName = mainwindowClassname;
+    wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC | CS_DBLCLKS | CS_NOCLOSE;
+    wc.lpfnWndProc = ContainerWindow::WndProc;
+    wc.cbClsExtra = 0;
+    wc.cbWndExtra = sizeof(ContainerWindow*);
+    wc.hInstance = core_api::get_my_instance();
+    wc.hIcon = LoadIcon(nullptr, IDI_HAND);  // NOLINT
+    wc.hCursor = LoadCursor(nullptr, IDC_ARROW);  // NOLINT
+    wc.hbrBackground = nullptr;
+    wc.lpszMenuName = nullptr;
+    check(RegisterClass(&wc));
+    return true;
+  }();
+
+  return check(CreateWindowEx(0,  // Extended Style For The Window
+                              mainwindowClassname,  // Class Name
+                              L"ChronFlow MainWin",  //  Title
+                              WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,  // Style
+                              CW_USEDEFAULT, CW_USEDEFAULT,  // Window Position
+                              CW_USEDEFAULT, CW_USEDEFAULT,  // Window Dimensions
+                              parent, nullptr, core_api::get_my_instance(),
+                              static_cast<void*>(this)));
+};
+
 ContainerWindow::~ContainerWindow() {
   DestroyWindow(hwnd);
-}
-
-bool ContainerWindow::registerWindowClass() {
-  HINSTANCE myInstance = core_api::get_my_instance();
-
-  WNDCLASS wc = {0};
-  wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC | CS_DBLCLKS | CS_NOCLOSE;
-  wc.lpfnWndProc = ContainerWindow::WndProc;
-  wc.cbClsExtra = 0;
-  wc.cbWndExtra = sizeof(ContainerWindow*);
-  wc.hInstance = myInstance;
-  wc.hIcon = LoadIcon(nullptr, IDI_HAND);  // NOLINT
-  wc.hCursor = LoadCursor(nullptr, IDC_ARROW);  // NOLINT
-  wc.hbrBackground = nullptr;
-  wc.lpszMenuName = nullptr;
-  wc.lpszClassName = mainwindowClassname;
-
-  return RegisterClass(&wc) != 0;
 }
 
 LRESULT ContainerWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam,
@@ -138,18 +147,3 @@ void ContainerWindow::destroyEngineWindow(std::string errorMessage) {
   engineWindow.reset();
   engineError = errorMessage;
 }
-
-HWND ContainerWindow::createWindow(HWND parent) {
-  return check(CreateWindowEx(0,  // Extended Style For The Window
-                              mainwindowClassname,  // Class Name
-                              L"ChronFlow MainWin",  // Window Title
-                              WS_CHILD |  // Defined Window Style
-                                  WS_CLIPSIBLINGS |  // Required Window Style
-                                  WS_CLIPCHILDREN,  // Required Window Style*/
-                              CW_USEDEFAULT, CW_USEDEFAULT,  // Window Position
-                              CW_USEDEFAULT, CW_USEDEFAULT,  // Window Dimensions
-                              parent,  // No Parent Window
-                              nullptr,  // No Menu
-                              core_api::get_my_instance(),  // Instance
-                              static_cast<void*>(this)));
-};

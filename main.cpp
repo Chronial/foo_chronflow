@@ -17,8 +17,6 @@ class InitHandler : public init_stage_callback {
   void on_init_stage(t_uint32 stage) final {
     if (stage == init_stages::after_library_init) {
       initGlfw();
-    } else if (stage == init_stages::before_ui_init) {
-      registerWindowClasses();
     }
   }
 
@@ -32,13 +30,6 @@ class InitHandler : public init_stage_callback {
     if (!glfwInit()) {
       console::print("foo_chronflow failed to initialize glfw.");
       // TODO: Handle this somehow
-    }
-  }
-  void registerWindowClasses() {
-    // Note: We do not need to unregister these classes as it happens automatically when
-    // foobar quits
-    if (!ContainerWindow::registerWindowClass()) {
-      errorPopupWin32("Failed to register MainWindow class");
     }
   }
 };
