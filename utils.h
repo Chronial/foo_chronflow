@@ -159,16 +159,12 @@ class Timer {
 
 #ifdef _DEBUG
 namespace console {
-class out : public std::wostringstream {
+class out : public std::ostringstream {
  public:
-  out() = default;
+  out();
   NO_MOVE_NO_COPY(out);
   ~out() final;
 };
-void create();
-void print(const wchar_t* str);
-void println(const wchar_t* str);
-void printf(const wchar_t* format, ...);
 };  // namespace console
 #endif
 

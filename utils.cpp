@@ -93,31 +93,17 @@ void Helpers::fixPath(pfc::string_base& path) {
 
 #ifdef _DEBUG
 namespace console {
-static HANDLE screenBuffer = nullptr;
-
+out::out() {
+  *this << " " << std::fixed << std::setprecision(2);
+}
 out::~out() {
-  println(this->str().c_str());
-}
-
-void create() {
-  AllocConsole();
-  screenBuffer = GetStdHandle(STD_OUTPUT_HANDLE);
-}
-
-void print(const wchar_t* str) {
-  WriteConsole(screenBuffer, str, wcslen(str), nullptr, nullptr);
-}
-
-void println(const wchar_t* str) {
-  print((std::wstring(str) + L"\n").c_str());
-}
-
-void printf(const wchar_t* format, ...) {
-  va_list args;
-  va_start(args, format);  // NOLINT
-  wchar_t out[1024];
-  int len = vswprintf_s(out, 1024, format, args);  // NOLINT
-  WriteConsole(screenBuffer, out, len, nullptr, nullptr);  // NOLINT
+  static HANDLE console = [] {
+    AllocConsole();
+    return GetStdHandle(STD_OUTPUT_HANDLE);
+  }();
+  *this << "\n";
+  auto str = pfc::stringcvt::string_wide_from_utf8(this->str().c_str());
+  WriteConsole(console, str.get_ptr(), str.length(), nullptr, nullptr);
 }
 }  // namespace console
 #endif

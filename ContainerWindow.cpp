@@ -11,8 +11,6 @@ constexpr int minimizeCheckTimerId = 665;
 ContainerWindow::ContainerWindow(HWND parent,
                                  ui_element_instance_callback_ptr duiCallback) {
   TRACK_CALL_TEXT("ContainerWindow::startup");
-  IF_DEBUG(console::create());
-
   createWindow(parent);
   try {
     engineWindow = make_unique<EngineWindow>(*this, duiCallback);
