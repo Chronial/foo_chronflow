@@ -25,16 +25,21 @@ class cui_chronflow : public ui_extension::window {
   unsigned get_type() const final { return ui_extension::type_panel; }
 
   bool is_available(const ui_extension::window_host_ptr& p_host) const final {
-    return !p_host.is_valid() || !m_host.is_valid() ||
-           p_host->get_host_guid() != m_host->get_host_guid();
+    return !m_host.is_valid() || p_host->get_host_guid() != m_host->get_host_guid();
   }
 
   HWND create_or_transfer_window(HWND wnd_parent,
                                  const ui_extension::window_host_ptr& p_host,
                                  const ui_helpers::window_position_t& p_position) final {
-    if (!window) {
+    if (!window || !window->getHWND()) {
+      try {
+        window.emplace(wnd_parent);
+      } catch (std::exception& e) {
+        FB2K_console_formatter()
+            << "foo_chronflow panel failed to initialize: " << e.what();
+        return nullptr;
+      }
       m_host = p_host;
-      window.emplace(wnd_parent);
       ShowWindow(window->getHWND(), SW_HIDE);
       SetWindowPos(window->getHWND(), nullptr, p_position.x, p_position.y, p_position.cx,
                    p_position.cy, SWP_NOZORDER);
