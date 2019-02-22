@@ -32,7 +32,7 @@ class dui_chronflow : public ui_element_instance {
     return ui_element_config::g_create_empty(g_get_guid());
   }
 
-  HWND get_wnd() final { return window.hwnd; };
+  HWND get_wnd() final { return window.getHWND(); };
 
   void set_configuration(ui_element_config::ptr config) final { this->config = config; }
   ui_element_config::ptr get_configuration() final { return config; }

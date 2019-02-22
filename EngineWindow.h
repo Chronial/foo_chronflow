@@ -16,16 +16,7 @@ class GLFWContext {
 };
 
 class EngineWindow {
-  GLFWContext glfwContext;
-  unique_ptr_del<GLFWwindow, glfwDestroyWindow> glfwWindow;
-  double scrollAggregator = 0;
-  ui_element_instance_callback_ptr defaultUiCallback;
-
  public:
-  ContainerWindow& container;
-  std::optional<EngineThread> engineThread;
-  HWND hWnd = nullptr;
-
   EngineWindow(ContainerWindow& container,
                ui_element_instance_callback_ptr defaultUiCallback);
 
@@ -45,4 +36,17 @@ class EngineWindow {
   void onWindowSize(int width, int height);
   void onScroll(double xoffset, double yoffset);
   void onContextMenu(int x, int y);
+
+ public:
+  ContainerWindow& container;
+
+ private:
+  double scrollAggregator = 0;
+  ui_element_instance_callback_ptr defaultUiCallback;
+  GLFWContext glfwContext;
+  unique_ptr_del<GLFWwindow, glfwDestroyWindow> glfwWindow;
+
+ public:
+  HWND hWnd = nullptr;
+  std::optional<EngineThread> engineThread;
 };

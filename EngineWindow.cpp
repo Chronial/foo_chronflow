@@ -58,7 +58,7 @@ void EngineWindow::createWindow() {
   }
   hWnd = glfwGetWin32Window(glfwWindow.get());
 
-  WIN32_OP_D(SetParent(hWnd, container.hwnd));
+  WIN32_OP_D(SetParent(hWnd, container.getHWND()));
   const LONG nNewStyle = (GetWindowLong(hWnd, GWL_STYLE) & ~WS_POPUP) | WS_CHILDWINDOW;
   SetWindowLong(hWnd, GWL_STYLE, nNewStyle);
   const ULONG_PTR cNewStyle = GetClassLongPtr(hWnd, GCL_STYLE) | CS_DBLCLKS;
@@ -122,9 +122,6 @@ void EngineWindow::swapBuffers() {
 
 LRESULT EngineWindow::messageHandler(UINT uMsg, WPARAM wParam, LPARAM lParam) {
   switch (uMsg) {
-    case WM_DESTROY:
-      engineThread.reset();
-      break;
     case WM_MOUSEACTIVATE:
       SetFocus(hWnd);
       return MA_ACTIVATE;

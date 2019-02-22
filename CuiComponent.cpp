@@ -35,19 +35,19 @@ class cui_chronflow : public ui_extension::window {
     if (!window) {
       m_host = p_host;
       window.emplace(wnd_parent);
-      ShowWindow(window->hwnd, SW_HIDE);
-      SetWindowPos(window->hwnd, nullptr, p_position.x, p_position.y, p_position.cx,
+      ShowWindow(window->getHWND(), SW_HIDE);
+      SetWindowPos(window->getHWND(), nullptr, p_position.x, p_position.y, p_position.cx,
                    p_position.cy, SWP_NOZORDER);
     } else {
-      ShowWindow(window->hwnd, SW_HIDE);
-      SetParent(window->hwnd, wnd_parent);
-      SetWindowPos(window->hwnd, nullptr, p_position.x, p_position.y, p_position.cx,
+      ShowWindow(window->getHWND(), SW_HIDE);
+      SetParent(window->getHWND(), wnd_parent);
+      SetWindowPos(window->getHWND(), nullptr, p_position.x, p_position.y, p_position.cx,
                    p_position.cy, SWP_NOZORDER);
-      m_host->relinquish_ownership(window->hwnd);
+      m_host->relinquish_ownership(window->getHWND());
       m_host = p_host;
     }
 
-    return window->hwnd;
+    return window->getHWND();
   }
 
   void destroy_window() final {
@@ -55,7 +55,7 @@ class cui_chronflow : public ui_extension::window {
     m_host.release();
   }
 
-  HWND get_wnd() const final { return window->hwnd; }
+  HWND get_wnd() const final { return window->getHWND(); }
   const bool get_is_single_instance() const final { return true; }
 };
 

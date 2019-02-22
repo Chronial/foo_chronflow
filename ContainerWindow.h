@@ -20,20 +20,20 @@ class ContainerWindow {
                            ui_element_instance_callback_ptr duiCallback = nullptr);
   NO_MOVE_NO_COPY(ContainerWindow);
   ~ContainerWindow();
-
-  HWND hwnd = nullptr;
-
   void destroyEngineWindow(std::string errorMessage);
+  HWND getHWND() const { return hwnd; };
 
  private:
   HWND createWindow(HWND parent);
-  GdiContext gdiContext;
-  bool mainWinMinimized = true;
-
-  std::unique_ptr<EngineWindow> engineWindow;
-  std::string engineError{};
-
   void drawErrorMessage();
   static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
   LRESULT MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+  GdiContext gdiContext;
+  bool mainWinMinimized = true;
+  std::string engineError{};
+  // Note that the HWND might be destroyed by its parent via DestroyWindow()
+  // before this class is destroyed.
+  HWND hwnd = nullptr;
+  std::unique_ptr<EngineWindow> engineWindow;
 };

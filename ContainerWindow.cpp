@@ -15,7 +15,7 @@ ContainerWindow::ContainerWindow(HWND parent,
   hwnd = createWindow(parent);
   try {
     engineWindow = make_unique<EngineWindow>(*this, duiCallback);
-  } catch (std::runtime_error& e) {
+  } catch (std::exception& e) {
     engineError = e.what();
   }
 }
@@ -50,7 +50,8 @@ HWND ContainerWindow::createWindow(HWND parent) {
 };
 
 ContainerWindow::~ContainerWindow() {
-  DestroyWindow(hwnd);
+  if (hwnd)
+    DestroyWindow(hwnd);
 }
 
 LRESULT ContainerWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam,
@@ -58,6 +59,9 @@ LRESULT ContainerWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam,
   switch (uMsg) {
     case WM_DESTROY:
       engineWindow.reset();
+      break;
+    case WM_NCDESTROY:
+      this->hwnd = nullptr;
       break;
     case WM_SIZE: {
       if (engineWindow) {
