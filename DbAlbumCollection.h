@@ -109,6 +109,7 @@ class DBWriter {
 
 class DbAlbumCollection {
  public:
+  bool initializing() { return !db; }
   bool empty() { return db ? db->container.empty() : true; }
   int size() { return db ? db->container.size() : 0; }
 

@@ -241,15 +241,15 @@ void Renderer::drawScene(bool selectionPass) {
 }
 
 void Renderer::drawGui() {
-  if (cfgShowAlbumTitle || engine.db.empty()) {
+  if (cfgShowAlbumTitle || engine.db.initializing()) {
     std::string albumTitle;
-    if (!engine.db.empty()) {
+    if (engine.db.initializing()) {
+      albumTitle = "Generating Cover Display ...";
+    } else if (engine.db.empty()) {
+      albumTitle = "No Covers to Display";
+    } else {
       DBIter iter = engine.db.iterFromPos(engine.worldState.getTarget()).value();
       albumTitle = engine.db.getAlbumInfo(iter).title;
-    } else if (engine.reloadWorker) {
-      albumTitle = "Generating Cover Display ...";
-    } else {
-      albumTitle = "No Covers to Display";
     }
     textDisplay.displayText(albumTitle, int(winWidth * cfgTitlePosH),
                             int(winHeight * (1 - cfgTitlePosV)), TextDisplay::center,
@@ -294,47 +294,59 @@ void Renderer::drawCovers(bool showTarget) {
   if (cfgHighlightWidth == 0)
     showTarget = false;
 
-  if (engine.db.empty())
+  if (engine.db.empty() && !engine.db.initializing())
     return;
 
-  float centerOffset = engine.worldState.getCenteredOffset();
-  // We can assume that iterFromPos succeeds, because we already checked for empty db
-  DBIter targetCover = engine.db.iterFromPos(engine.worldState.getTarget()).value();
-  DBIter centerCover = engine.db.iterFromPos(engine.worldState.getCenteredPos()).value();
-  DBIter firstCover =
-      engine.db.moveIterBy(centerCover, engine.coverPos.getFirstCover() + 1);
-  DBIter lastCover = engine.db.moveIterBy(centerCover, engine.coverPos.getLastCover());
-  lastCover++;  // moveIterBy never returns the end() element
-
-  int offset = engine.db.difference(firstCover, centerCover);
-
-  for (DBIter p = firstCover; p != lastCover; ++p, ++offset) {
-    float co = -centerOffset + offset;
-
-    auto tex = engine.texCache.getAlbumTexture(p->key);
-    if (tex == nullptr) {
-      wasMissingTextures = true;
-      tex = &engine.texCache.getLoadingTexture();
+  struct Cover {
+    const GLTexture* tex;
+    float offset;
+    int index;
+    bool isTarget;
+  };
+  std::vector<Cover> covers;
+  if (engine.db.initializing()) {
+    auto tex = &engine.texCache.getLoadingTexture();
+    for (int i = engine.coverPos.getFirstCover(); i <= engine.coverPos.getLastCover();
+         ++i) {
+      covers.push_back(Cover{tex, float(i), i, i == 0});
     }
-    tex->bind();
+  } else {
+    float centerOffset = engine.worldState.getCenteredOffset();
+    // We can assume that iterFromPos succeeds, because we already checked for empty db
+    DBIter targetCover = engine.db.iterFromPos(engine.worldState.getTarget()).value();
+    DBIter centerCover =
+        engine.db.iterFromPos(engine.worldState.getCenteredPos()).value();
+    DBIter firstCover =
+        engine.db.moveIterBy(centerCover, engine.coverPos.getFirstCover() + 1);
+    DBIter lastCover = engine.db.moveIterBy(centerCover, engine.coverPos.getLastCover());
+    lastCover++;  // moveIterBy never returns the end() element
+
+    int offset = engine.db.difference(firstCover, centerCover);
+
+    for (DBIter p = firstCover; p != lastCover; ++p, ++offset) {
+      float co = -centerOffset + offset;
+
+      auto tex = engine.texCache.getAlbumTexture(p->key);
+      if (tex == nullptr) {
+        wasMissingTextures = true;
+        tex = &engine.texCache.getLoadingTexture();
+      }
+      covers.push_back(Cover{tex, co, offset, p == targetCover});
+    }
+  }
+
+  for (Cover cover : covers) {
+    cover.tex->bind();
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     // calculate darkening
-    float g = 1 - (std::min(1.0f, (abs(co) - 2) / 5)) * 0.5f;
-    if (abs(co) < 2)
+    float g = 1 - (std::min(1.0f, (abs(cover.offset) - 2) / 5)) * 0.5f;
+    if (abs(cover.offset) < 2)
       g = 1;
-    /*float g = 1 - (abs(co)-2)*0.2f;
-    g = 1 - abs(co)*0.1f;
-    g = 1 - abs(zRot)/80;
-    g= 1;
-    if (g < 0) g = 0;*/
     glColor3f(g, g, g);
-    glVectord origin(0, 0.5, 0);
 
-    glQuad coverQuad = engine.coverPos.getCoverQuad(co, tex->getAspect());
-
-    glPushName(SELECTION_CENTER + offset);
-
+    glQuad coverQuad = engine.coverPos.getCoverQuad(cover.offset, cover.tex->getAspect());
+    glPushName(SELECTION_CENTER + cover.index);
     glBegin(GL_QUADS);
     glFogCoordf(
         static_cast<GLfloat>(engine.coverPos.distanceToMirror(coverQuad.topLeft)));
@@ -358,37 +370,33 @@ void Renderer::drawCovers(bool showTarget) {
     glEnd();
     glPopName();
 
-    if (showTarget) {
-      if (p == targetCover) {
-        bool clipPlane = false;
-        if (glIsEnabled(GL_CLIP_PLANE0)) {
-          glDisable(GL_CLIP_PLANE0);
-          clipPlane = true;
-        }
-
-        showTarget = false;
-
-        glColor3f(GetRValue(cfgTitleColor) / 255.0f, GetGValue(cfgTitleColor) / 255.0f,
-                  GetBValue(cfgTitleColor) / 255.0f);
-
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        glDisable(GL_TEXTURE_2D);
-
-        glLineWidth(GLfloat(cfgHighlightWidth));
-        glPolygonOffset(-1.0f, -1.0f);
-        glEnable(GL_POLYGON_OFFSET_LINE);
-
-        glEnable(GL_VERTEX_ARRAY);
-        glVertexPointer(3, GL_FLOAT, 0, static_cast<void*>(&coverQuad));
-        glDrawArrays(GL_QUADS, 0, 4);
-
-        glDisable(GL_POLYGON_OFFSET_LINE);
-
-        glEnable(GL_TEXTURE_2D);
-
-        if (clipPlane)
-          glEnable(GL_CLIP_PLANE0);
+    if (showTarget && cover.isTarget) {
+      bool clipPlane = false;
+      if (glIsEnabled(GL_CLIP_PLANE0)) {
+        glDisable(GL_CLIP_PLANE0);
+        clipPlane = true;
       }
+
+      glColor3f(GetRValue(cfgTitleColor) / 255.0f, GetGValue(cfgTitleColor) / 255.0f,
+                GetBValue(cfgTitleColor) / 255.0f);
+
+      glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+      glDisable(GL_TEXTURE_2D);
+
+      glLineWidth(GLfloat(cfgHighlightWidth));
+      glPolygonOffset(-1.0f, -1.0f);
+      glEnable(GL_POLYGON_OFFSET_LINE);
+
+      glEnable(GL_VERTEX_ARRAY);
+      glVertexPointer(3, GL_FLOAT, 0, static_cast<void*>(&coverQuad));
+      glDrawArrays(GL_QUADS, 0, 4);
+
+      glDisable(GL_POLYGON_OFFSET_LINE);
+
+      glEnable(GL_TEXTURE_2D);
+
+      if (clipPlane)
+        glEnable(GL_CLIP_PLANE0);
     }
   }
 }
