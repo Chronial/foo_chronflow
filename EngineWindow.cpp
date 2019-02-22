@@ -98,6 +98,9 @@ void EngineWindow::swapBuffers() {
 
 LRESULT EngineWindow::messageHandler(UINT uMsg, WPARAM wParam, LPARAM lParam) {
   switch (uMsg) {
+    case WM_DESTROY:
+      engineThread.reset();
+      break;
     case WM_MOUSEACTIVATE:
       SetFocus(hWnd);
       return MA_ACTIVATE;

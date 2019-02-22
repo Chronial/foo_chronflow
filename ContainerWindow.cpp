@@ -47,6 +47,9 @@ bool ContainerWindow::registerWindowClass() {
 LRESULT ContainerWindow::MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam,
                                         LPARAM lParam) {
   switch (uMsg) {
+    case WM_DESTROY:
+      engineWindow.reset();
+      break;
     case WM_SIZE: {
       if (engineWindow) {
         engineWindow->setWindowSize(LOWORD(lParam), HIWORD(lParam));
