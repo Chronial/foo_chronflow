@@ -18,7 +18,7 @@ const DBPos& WorldState::getTarget() {
 void WorldState::setTarget(DBPos target) {
   targetPos = target;
   if (!rendering) {
-    lastMovement = Helpers::getHighresTimer() - 0.02;
+    lastMovement = time() - 0.02;
     rendering = true;
   }
   sessionSelectedCover.set(target.key.c_str());
@@ -27,7 +27,7 @@ void WorldState::setTarget(DBPos target) {
 void WorldState::update() {
   if (db.empty())
     return;
-  double currentTime = Helpers::getHighresTimer();
+  double currentTime = time();
   if (isMoving()) {
     float dist = db.difference(db.iterFromPos(targetPos).value(),
                                db.iterFromPos(centeredPos).value()) -

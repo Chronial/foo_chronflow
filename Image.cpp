@@ -115,7 +115,7 @@ Image Image::resize(int width, int height) const {
 
 std::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_ptr& track,
                                              abort_callback& abort) {
-  IF_DEBUG(double preLoad = Helpers::getHighresTimer());
+  IF_DEBUG(double preLoad = time());
   static_api_ptr_t<album_art_manager_v2> aam;
   auto extractor = aam->open(pfc::list_single_ref_t(track),
                              pfc::list_single_ref_t(album_art_ids::cover_front), abort);
@@ -123,19 +123,18 @@ std::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_ptr& track,
     auto art = extractor->query(album_art_ids::cover_front, abort);
     Image image = Image::fromFileBuffer(art->get_ptr(), art->get_size());
     IF_DEBUG(gsl::finally([&] {
-      console::printf(
-          L"Load image file in %.2f ms\n", (Helpers::getHighresTimer() - preLoad) * 1000);
+      console::printf(L"Load image file in %.2f ms\n", (time() - preLoad) * 1000);
     }));
     return UploadReadyImage(std::move(image));
   } catch (const exception_album_art_not_found&) {
-    IF_DEBUG(console::printf(L"Missing image file in %.2f ms\n",
-                             (Helpers::getHighresTimer() - preLoad) * 1000));
+    IF_DEBUG(
+        console::printf(L"Missing image file in %.2f ms\n", (time() - preLoad) * 1000));
     return std::nullopt;
   } catch (const exception_aborted&) {
     throw;
   } catch (...) {
-    IF_DEBUG(console::printf(L"Failed to load image in %.2f ms\n",
-                             (Helpers::getHighresTimer() - preLoad) * 1000));
+    IF_DEBUG(
+        console::printf(L"Failed to load image in %.2f ms\n", (time() - preLoad) * 1000));
     return std::nullopt;
   }
 }
@@ -193,7 +192,7 @@ UploadReadyImage& UploadReadyImage::operator=(UploadReadyImage&& other) {
 
 GLTexture UploadReadyImage::upload() const {
   TRACK_CALL_TEXT("UploadReadyImage::upload");
-  IF_DEBUG(double preLoad = Helpers::getHighresTimer());
+  IF_DEBUG(double preLoad = time());
   // TODO: handle opengl errors?
   GLuint glTexture;
   glGenTextures(1, &glTexture);
@@ -211,8 +210,7 @@ GLTexture UploadReadyImage::upload() const {
 
   glTexImage2D(GL_TEXTURE_2D, 0, glInternalFormat, image.width, image.height, 0, GL_RGB,
                GL_UNSIGNED_BYTE, image.data.get());
-  IF_DEBUG(console::printf(
-      L"    UPLOAD (%.3f ms)\n", (Helpers::getHighresTimer() - preLoad) * 1000));
+  IF_DEBUG(console::printf(L"    UPLOAD (%.3f ms)\n", (time() - preLoad) * 1000));
   return GLTexture(glTexture, static_cast<float>(originalAspect));
 }
 

@@ -93,7 +93,7 @@ void Engine::mainLoop() {
       // Handle V-Sync
       renderer.ensureVSync(cfgVSyncMode != VSYNC_SLEEP_ONLY);
       if (cfgVSyncMode == VSYNC_AND_SLEEP || cfgVSyncMode == VSYNC_SLEEP_ONLY) {
-        double currentTime = Helpers::getHighresTimer();
+        double currentTime = time();
         double sleepTime =
             (1.0 / refreshRate) - (currentTime - lastSwapEnd) - swapEstimate;
         sleepTime -= 0.002 * timerResolution->get();
@@ -103,10 +103,10 @@ void Engine::mainLoop() {
           SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL);
         }
       }
-      double swapStart = Helpers::getHighresTimer();
+      double swapStart = time();
       window.swapBuffers();
       glFinish();  // Wait for GPU
-      lastSwapEnd = Helpers::getHighresTimer();
+      lastSwapEnd = time();
       swapEstimate = 0.2 * (lastSwapEnd - swapStart) + 0.8 * swapEstimate;
 
       texCache.setPriority(windowDirty);

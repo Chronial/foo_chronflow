@@ -55,11 +55,11 @@ void errorPopupWin32(
 
 class Helpers {
  public:
-  // Returns the time in seconds with maximum resolution
-  static bool isPerformanceCounterSupported();
-  static double getHighresTimer();
   static void fixPath(pfc::string_base& path);
 };
+
+/// Returns the time in seconds with maximum resolution
+double time();
 
 class FpsCounter {
   struct Frame {
@@ -70,9 +70,9 @@ class FpsCounter {
   double frameStart = 0;
 
  public:
-  void startFrame() { frameStart = Helpers::getHighresTimer(); }
+  void startFrame() { frameStart = time(); }
   void endFrame() {
-    double now = Helpers::getHighresTimer();
+    double now = time();
     // if (frames.size() > 0)
     //   FB2K_console_formatter() << (now - frames.back().end) << ";" << now - frameStart;
     frames.push_back(Frame{now, now - frameStart});

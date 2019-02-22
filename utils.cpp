@@ -31,35 +31,17 @@ std::string windows_lineendings(std::string s) {
   return std::move(s);
 }
 
-// Returns the time in seconds with maximum resolution
-double Helpers::getHighresTimer() {
-  static double timerResolution = 0;
-  static __int64 timerOffset = 0;
-  static bool timerSupported;
-  if (timerResolution == 0) {
-    LARGE_INTEGER res;
-    if (!QueryPerformanceFrequency(&res) || res.QuadPart == 0) {
-      timerSupported = false;
-      timerResolution = 1;
-    } else {
-      timerSupported = true;
-      timerResolution = 1.0 / static_cast<double>(res.QuadPart);
-      LARGE_INTEGER count;
-      QueryPerformanceCounter(&count);
-      timerOffset = count.QuadPart;
-    }
-  }
-  if (timerSupported) {
-    LARGE_INTEGER count;
-    QueryPerformanceCounter(&count);
-    return timerResolution * (count.QuadPart - timerOffset);
-  } else {
-    return timeGetTime() / 1000.0;
-  }
-}
-bool Helpers::isPerformanceCounterSupported() {
-  LARGE_INTEGER res;
-  return QueryPerformanceFrequency(&res) == TRUE && res.QuadPart > 0;
+double time() {
+  static std::array<t_int64, 2> resolution_and_offset = [] {
+    LARGE_INTEGER resolution;
+    QueryPerformanceFrequency(&resolution);
+    LARGE_INTEGER offset;
+    QueryPerformanceCounter(&offset);
+    return std::array<t_int64, 2>{resolution.QuadPart, offset.QuadPart};
+  }();
+  LARGE_INTEGER count;
+  QueryPerformanceCounter(&count);
+  return double(count.QuadPart - resolution_and_offset[1]) / resolution_and_offset[0];
 }
 
 // adjusts a given path for certain discrepancies between how foobar2000
