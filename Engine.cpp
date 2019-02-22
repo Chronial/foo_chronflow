@@ -70,6 +70,7 @@ void Engine::mainLoop() {
       texCache.startLoading(worldState.getTarget());
       cacheDirty = false;
     } else if (windowDirty) {
+      fpsCounter.startFrame();
       if (!timerResolution)
         timerResolution.emplace();
       texCache.setPriority(true);
@@ -82,10 +83,14 @@ void Engine::mainLoop() {
       worldState.update();
 
       // Render
-      render();
+      renderer.drawFrame();
+      glFinish();
+      fpsCounter.endFrame();
+
       windowDirty = worldState.isMoving() || renderer.wasMissingTextures;
 
       // Handle V-Sync
+
       renderer.ensureVSync(cfgVSyncMode != VSYNC_SLEEP_ONLY);
       if (cfgVSyncMode == VSYNC_AND_SLEEP || cfgVSyncMode == VSYNC_SLEEP_ONLY) {
         double currentTime = Helpers::getHighresTimer();
@@ -105,21 +110,14 @@ void Engine::mainLoop() {
       lastSwapTime = Helpers::getHighresTimer();
 
       texCache.setPriority(windowDirty);
-      if (!windowDirty)
+      if (!windowDirty) {
         timerResolution.reset();
+        fpsCounter.flush();
+      }
     }
   }
   // Synchronize with GPU before shutdown to avoid crashes
   glFinish();
-}
-
-void Engine::render() {
-  TRACK_CALL_TEXT("EngineThread::render");
-  double frameStart = Helpers::getHighresTimer();
-  renderer.drawFrame();
-  glFinish();
-  double frameEnd = Helpers::getHighresTimer();
-  fpsCounter.recordFrame(frameStart, frameEnd);
 }
 
 void Engine::updateRefreshRate() {

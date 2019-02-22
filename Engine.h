@@ -45,7 +45,6 @@ class Engine {
   void setTarget(DBPos target, bool userInitiated);
 
  private:
-  void render();
   bool windowDirty = false;
   bool cacheDirty = true;
   int refreshRate = 60;

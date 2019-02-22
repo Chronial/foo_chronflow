@@ -257,17 +257,18 @@ void Renderer::drawGui() {
   }
 
   if (cfgShowFps) {
-    double fps, msPerFrame, longestFrame, minFPS;
-    engine.fpsCounter.getFPS(fps, msPerFrame, longestFrame, minFPS);
+    double avgDur, maxDur, avgCPU, maxCPU;
+    engine.fpsCounter.getFPS(avgDur, maxDur, avgCPU, maxCPU);
     std::ostringstream dispStringA;
     std::ostringstream dispStringB;
     dispStringA.flags(std::ios_base::fixed | std::ios_base::right);
     dispStringB.flags(std::ios_base::fixed | std::ios_base::right);
-    dispStringA << "     FPS: " << std::setw(4) << std::setprecision(1) << fps;
-    dispStringB << "max ms/f: " << std::setw(5) << std::setprecision(2)
-                << (1000 / minFPS);
-    dispStringA << "   cpu: " << std::setw(5) << std::setprecision(2) << msPerFrame;
-    dispStringB << "  max: " << std::setw(5) << std::setprecision(2) << longestFrame;
+    dispStringA.precision(1);
+    dispStringB.precision(1);
+    dispStringA << "     FPS: " << std::setw(4) << 1 / avgDur;
+    dispStringB << "max ms/f: " << std::setw(5) << (1000 * maxDur);
+    dispStringA << "   cpu: " << std::setw(5) << avgCPU * 1000;
+    dispStringB << "  max: " << std::setw(5) << maxCPU * 1000;
     textDisplay.displayBitmapText(
         dispStringA.str().c_str(), winWidth - 250, winHeight - 20);
     textDisplay.displayBitmapText(

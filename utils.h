@@ -62,48 +62,50 @@ class Helpers {
 };
 
 class FpsCounter {
-  std::array<double, 60> frameTimes{};
-  std::array<double, 60> frameDur{};
-  int frameTimesP = 0;
+  struct Frame {
+    double end;
+    double cpu_ms;
+  };
+  std::deque<Frame> frames;
+  double frameStart = 0;
 
  public:
-  void recordFrame(double start, double end) {
-    double thisFrame = end - start;
-    frameTimes.at(frameTimesP) = end;
-    frameDur.at(frameTimesP) = thisFrame;
-    if (++frameTimesP == 60)
-      frameTimesP = 0;
+  void startFrame() { frameStart = Helpers::getHighresTimer(); }
+  void endFrame() {
+    double now = Helpers::getHighresTimer();
+    // if (frames.size() > 0)
+    //   FB2K_console_formatter() << (now - frames.back().end) << ";" << now - frameStart;
+    frames.push_back(Frame{now, now - frameStart});
+    while (frames.size() > 2 && (now - frames.at(1).end) > 1) frames.pop_front();
   }
+  void flush() { frames.clear(); }
 
-  void getFPS(double& fps, double& msPerFrame, double& longestFrame, double& minFps) {
-    double frameDurSum = 0;
-    longestFrame = -1;
-    double longestFrameTime = -1;
-    double thisFrameTime;
-    int frameTimesT = frameTimesP - 1;
-    if (frameTimesT < 0)
-      frameTimesT = 59;
-
-    double lastTime = frameTimes.at(frameTimesT);
-    double endTime = lastTime;
-    for (int i = 0; i < 30; i++, frameTimesT--) {
-      if (frameTimesT < 0)
-        frameTimesT = 59;
-
-      frameDurSum += frameDur.at(frameTimesT);
-      if (frameDur.at(frameTimesT) > longestFrame)
-        longestFrame = frameDur.at(frameTimesT);
-
-      thisFrameTime = lastTime - frameTimes.at(frameTimesT);
-      if (thisFrameTime > longestFrameTime)
-        longestFrameTime = thisFrameTime;
-      lastTime = frameTimes.at(frameTimesT);
+  void getFPS(double& avgDur, double& maxDur, double& avgCPU, double& maxCPU) {
+    if (frames.size() > 1) {
+      double prevEnd = 0;
+      for (auto frame : frames) {
+        if (prevEnd != 0) {
+          double frameDur = frame.end - prevEnd;
+          maxDur = std::max(maxDur, frameDur);
+        }
+        prevEnd = frame.end;
+      }
+      avgDur = (frames.back().end - frames.front().end) / (frames.size() - 1);
+    } else {
+      avgDur = std::numeric_limits<double>::quiet_NaN();
+      maxDur = std::numeric_limits<double>::quiet_NaN();
     }
-
-    fps = 1 / ((endTime - lastTime) / 29);
-    msPerFrame = frameDurSum * 1000 / 30;
-    longestFrame *= 1000;
-    minFps = 1 / longestFrameTime;
+    if (frames.size() > 0) {
+      maxCPU = std::max_element(frames.begin(), frames.end(),
+                                [](Frame a, Frame b) { return a.cpu_ms < b.cpu_ms; })
+                   ->cpu_ms;
+      avgCPU = std::reduce(frames.begin(), frames.end(), 0.0,
+                           [](double a, Frame b) { return a + b.cpu_ms; }) /
+               frames.size();
+    } else {
+      maxCPU = std::numeric_limits<double>::quiet_NaN();
+      avgCPU = std::numeric_limits<double>::quiet_NaN();
+    }
   }
 };
 
