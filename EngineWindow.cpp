@@ -31,25 +31,25 @@ EngineWindow::EngineWindow(ContainerWindow& container,
   }
   hWnd = glfwGetWin32Window(glfwWindow.get());
 
-  SetParent(hWnd, container.hwnd);
+  WIN32_OP_D(SetParent(hWnd, container.hwnd));
   const LONG nNewStyle = (GetWindowLong(hWnd, GWL_STYLE) & ~WS_POPUP) | WS_CHILDWINDOW;
   SetWindowLong(hWnd, GWL_STYLE, nNewStyle);
   const ULONG_PTR cNewStyle = GetClassLongPtr(hWnd, GCL_STYLE) | CS_DBLCLKS;
-  SetClassLongPtr(hWnd, GCL_STYLE, cNewStyle);
-  SetWindowSubclass(hWnd,
-                    WINLAMBDA([](HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
-                                 UINT_PTR, DWORD_PTR dwRefData) noexcept {
-                      try {
-                        return reinterpret_cast<EngineWindow*>(dwRefData)->messageHandler(
-                            uMsg, wParam, lParam);
-                      } catch (std::exception& e) {
-                        FB2K_console_formatter()
-                            << "Exception in foo_chronflow EngineWindow MessageHandler: "
-                            << e.what();
-                        return DefSubclassProc(hwnd, uMsg, wParam, lParam);
-                      }
-                    }),
-                    0, reinterpret_cast<DWORD_PTR>(this));
+  WIN32_OP_D(SetClassLongPtr(hWnd, GCL_STYLE, cNewStyle));
+  WIN32_OP_D(SetWindowSubclass(
+      hWnd,
+      WINLAMBDA([](HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR,
+                   DWORD_PTR dwRefData) noexcept {
+        try {
+          return reinterpret_cast<EngineWindow*>(dwRefData)->messageHandler(
+              uMsg, wParam, lParam);
+        } catch (std::exception& e) {
+          FB2K_console_formatter()
+              << "Exception in foo_chronflow EngineWindow MessageHandler: " << e.what();
+          return DefSubclassProc(hwnd, uMsg, wParam, lParam);
+        }
+      }),
+      0, reinterpret_cast<DWORD_PTR>(this)));
 
   static auto wrap = [](auto f) noexcept {
     try {
