@@ -53,11 +53,6 @@ void errorPopup(const char* message);
 void errorPopupWin32(
     const char* message);  // Display the given message and the GetLastError() info
 
-class Helpers {
- public:
-  static void fixPath(pfc::string_base& path);
-};
-
 /// Returns the time in seconds with maximum resolution
 double time();
 

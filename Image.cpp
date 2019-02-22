@@ -8,6 +8,55 @@
 #include "config.h"
 #include "utils.h"
 
+namespace {
+/// adjusts a given path for certain discrepancies between how foobar2000
+/// and GDI+ handle paths, and other oddities
+///
+/// Currently fixes:
+///   - User might use a forward-slash instead of a
+///     backslash for the directory separator
+///   - GDI+ ignores trailing periods '.' in directory names
+///   - GDI+ and FindFirstFile ignore double-backslashes
+///   - makes relative paths absolute to core_api::get_profile_path()
+/// Copied from foo_uie_albumart
+void fixPath(pfc::string_base& path) {
+  if (path.get_length() == 0)
+    return;
+
+  pfc::string8 temp;
+  titleformat_compiler::remove_forbidden_chars_string(temp, path, ~0u, "*?<>|\"");
+
+  // fix directory separators
+  temp.replace_char('/', '\\');
+
+  bool is_unc = (pfc::strcmp_partial(temp, "\\\\") == 0);
+  if ((temp[1] != ':') && (!is_unc)) {
+    pfc::string8 profilePath;
+    filesystem::g_get_display_path(core_api::get_profile_path(), profilePath);
+    profilePath.add_byte('\\');
+
+    temp.insert_chars(0, profilePath);
+  }
+
+  // fix double-backslashes and trailing periods in directory names
+  t_size temp_len = temp.get_length();
+  path.reset();
+  path.add_byte(temp[0]);
+  for (t_size n = 1; n < temp_len - 1; n++) {
+    if (temp[n] == '\\') {
+      if (temp[n + 1] == '\\')
+        continue;
+    } else if (temp[n] == '.') {
+      if ((temp[n - 1] != '.' && temp[n - 1] != '\\') && temp[n + 1] == '\\')
+        continue;
+    }
+    path.add_byte(temp[n]);
+  }
+  if (temp_len > 1)
+    path.add_byte(temp[temp_len - 1]);
+}
+}  // namespace
+
 Image::Image(malloc_ptr data, int width, int height)
     : width(width), height(height), data(std::move(data)) {}
 
@@ -144,7 +193,7 @@ std::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_ptr& track,
 UploadReadyImage loadSpecialArt(WORD resource, pfc::string8 userImage) {
   userImage.skip_trailing_char(' ');
   if (userImage.get_length() > 0) {
-    Helpers::fixPath(userImage);
+    fixPath(userImage);
     try {
       return UploadReadyImage(Image::fromFile(userImage));
     } catch (...) {
