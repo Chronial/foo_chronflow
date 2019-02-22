@@ -186,7 +186,7 @@ void EngineWindow::onMouseClick(UINT uMsg, WPARAM /*wParam*/, LPARAM lParam) {
   onClickOnAlbum(clickedAlbum.value(), uMsg);
 }
 
-void EngineWindow::doDragStart(AlbumInfo album) {
+void EngineWindow::doDragStart(const AlbumInfo& album) {
   static_api_ptr_t<playlist_incoming_item_filter> piif;
   pfc::com_ptr_t<IDataObject> pDataObject = piif->create_dataobject_ex(album.tracks);
   pfc::com_ptr_t<IDropSource> pDropSource = TrackDropSource::g_create(hWnd);
@@ -195,7 +195,7 @@ void EngineWindow::doDragStart(AlbumInfo album) {
   DoDragDrop(pDataObject.get_ptr(), pDropSource.get_ptr(), DROPEFFECT_COPY, &effect);
 }
 
-void EngineWindow::onClickOnAlbum(AlbumInfo album, UINT uMsg) {
+void EngineWindow::onClickOnAlbum(const AlbumInfo& album, UINT uMsg) {
   if (uMsg == WM_LBUTTONDOWN) {
     engineThread->send<EM::MoveToAlbumMessage>(album);
   } else if (uMsg == WM_MBUTTONDOWN) {

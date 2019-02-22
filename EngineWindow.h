@@ -1,8 +1,8 @@
 #pragma once
-#include "DbAlbumCollection.h"
 #include "EngineThread.h"
 #include "utils.h"
 
+struct AlbumInfo;
 class ContainerWindow;
 
 class GLFWContext {
@@ -30,8 +30,8 @@ class EngineWindow {
   LRESULT messageHandler(UINT uMsg, WPARAM wParam, LPARAM lParam);
   bool onChar(WPARAM wParam);
   void onMouseClick(UINT uMsg, WPARAM wParam, LPARAM lParam);
-  void doDragStart(AlbumInfo album);
-  void onClickOnAlbum(AlbumInfo album, UINT uMsg);
+  void doDragStart(const AlbumInfo& album);
+  void onClickOnAlbum(const AlbumInfo& album, UINT uMsg);
   bool onKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam);
   void onWindowSize(int width, int height);
   void onScroll(double xoffset, double yoffset);
