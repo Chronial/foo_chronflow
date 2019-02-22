@@ -67,7 +67,7 @@ struct Engine::Messages {
   E_MSG(MoveTargetMessage, int, bool);
   E_MSG(MoveToAlbumMessage, AlbumInfo);
   E_MSG(MoveToCurrentTrack, metadb_handle_ptr);
-  E_MSG(ChangeCPScriptMessage, pfc::string8);
+  E_MSG(ChangeCPScriptMessage, std::string);
   E_ANSWER_MSG(GetAlbumAtCoords, std::optional<AlbumInfo>, int, int);
   E_ANSWER_MSG(GetTargetAlbum, std::optional<AlbumInfo>);
   E_MSG(Run, std::function<void()>);

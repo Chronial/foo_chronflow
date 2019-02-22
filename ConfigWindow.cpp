@@ -583,7 +583,7 @@ class CoverTab : public ConfigTab {
       return;
     }
     EngineThread::forEach(
-        [script](EngineThread& t) { t.send<EM::ChangeCPScriptMessage>(script); });
+        [script](EngineThread& t) { t.send<EM::ChangeCPScriptMessage>(script.c_str()); });
   }
   void setUpEditBox() {
     int tabstops[1] = {14};
