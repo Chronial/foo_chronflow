@@ -127,8 +127,6 @@ void Engine::updateRefreshRate() {
 
   if (0 != EnumDisplaySettings(nullptr, ENUM_CURRENT_SETTINGS, &dispSettings)) {
     refreshRate = dispSettings.dmDisplayFrequency;
-    if (refreshRate >= 100)  // we do not need 100fps - 50 is enough
-      refreshRate /= 2;
   }
 }
 
