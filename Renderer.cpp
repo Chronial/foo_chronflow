@@ -350,22 +350,22 @@ void Renderer::drawCovers(bool showTarget) {
     glBegin(GL_QUADS);
     glFogCoordf(
         static_cast<GLfloat>(engine.coverPos.distanceToMirror(coverQuad.topLeft)));
-    glTexCoord2f(0.0f, 1.0f);  // top left
+    glTexCoord2f(0.0f, 0.0f);
     glVertex3fv(coverQuad.topLeft.as_3fv());
 
     glFogCoordf(
         static_cast<GLfloat>(engine.coverPos.distanceToMirror(coverQuad.topRight)));
-    glTexCoord2f(1.0f, 1.0f);  // top right
+    glTexCoord2f(1.0f, 0.0f);
     glVertex3fv(coverQuad.topRight.as_3fv());
 
     glFogCoordf(
         static_cast<GLfloat>(engine.coverPos.distanceToMirror(coverQuad.bottomRight)));
-    glTexCoord2f(1.0f, 0.0f);  // bottom right
+    glTexCoord2f(1.0f, 1.0f);
     glVertex3fv(coverQuad.bottomRight.as_3fv());
 
     glFogCoordf(
         static_cast<GLfloat>(engine.coverPos.distanceToMirror(coverQuad.bottomLeft)));
-    glTexCoord2f(0.0f, 0.0f);  // bottom left
+    glTexCoord2f(0.0f, 1.0f);
     glVertex3fv(coverQuad.bottomLeft.as_3fv());
     glEnd();
     glPopName();

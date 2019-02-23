@@ -66,7 +66,6 @@ Image Image::fromFile(const char* filename) {
   int height;
   int channels_in_file;
   gsl::owner<FILE*> f;
-  stbi_set_flip_vertically_on_load(TRUE);
   if (0 != _wfopen_s(&f, wideName, L"rb"))
     throw std::runtime_error{"Failed to open image file"};
   malloc_ptr data{
@@ -82,7 +81,6 @@ Image Image::fromFileBuffer(const void* buffer, size_t len) {
   int width;
   int height;
   int channels_in_file;
-  stbi_set_flip_vertically_on_load(TRUE);
   malloc_ptr data{static_cast<void*>(stbi_load_from_memory(
       static_cast<const stbi_uc*>(buffer), len, &width, &height, &channels_in_file, 3))};
   if (data == nullptr) {
@@ -131,7 +129,6 @@ Image Image::fromGdiBitmap(Gdiplus::Bitmap& bitmap) {
     throw std::bad_alloc{};
   }
   memcpy(outBuffer.get(), bitmapData.Scan0, bufferSize);
-  stbi__vertical_flip(outBuffer.get(), bitmapData.Width, bitmapData.Height, 3);
 
   // convert bgr to rgb
   auto* p = static_cast<uint8_t*>(outBuffer.get());
