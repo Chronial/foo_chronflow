@@ -32,6 +32,10 @@ GLContext::GLContext(EngineWindow& window) {
   glFogi(GL_FOG_COORD_SRC, GL_FOG_COORD);  // Set Fog Based On Vertice Coordinates
 }
 
+GLContext::~GLContext() {
+  glFinish();
+}
+
 HighTimerResolution::HighTimerResolution() {
   timeBeginPeriod(get());
 }

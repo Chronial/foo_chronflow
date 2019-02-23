@@ -13,6 +13,8 @@
 class GLContext {
  public:
   explicit GLContext(class EngineWindow&);
+  NO_MOVE_NO_COPY(GLContext);
+  ~GLContext();
 };
 
 class HighTimerResolution {
