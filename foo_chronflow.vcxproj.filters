@@ -218,9 +218,6 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="TODO.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="cpp.hint" />
     <None Include="CoverPositionsCompile.py" />
     <None Include=".clang-format" />

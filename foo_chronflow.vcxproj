@@ -223,9 +223,6 @@
     <ResourceCompile Include="resource.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="TODO.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\columns_ui-sdk\columns_ui-sdk.vcxproj">
       <Project>{93ec0ede-01cd-4fb0-b8e8-4f2a027e026e}</Project>
     </ProjectReference>
