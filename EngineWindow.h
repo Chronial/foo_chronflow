@@ -44,7 +44,9 @@ class EngineWindow {
   double scrollAggregator = 0;
   ui_element_instance_callback_ptr defaultUiCallback;
   GLFWContext glfwContext;
-  unique_ptr_del<GLFWwindow, glfwDestroyWindow> glfwWindow;
+  unique_ptr<GLFWwindow,
+             std::integral_constant<decltype(&glfwDestroyWindow), glfwDestroyWindow>>
+      glfwWindow;
 
  public:
   HWND hWnd = nullptr;
