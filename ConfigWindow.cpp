@@ -73,10 +73,6 @@ std::multimap<UINT, int> disableMap{
     {IDC_MULTI_SAMPLING, IDC_MULTI_SAMPLING_PASSES},
 };
 
-inline int bounded(int min, int max, int value) {
-  return std::max(min, std::min(max, value));
-}
-
 class ConfigTab {
  protected:
   UINT id;
@@ -290,8 +286,8 @@ class BehaviourTab : public ConfigTab {
         if (HIWORD(wParam) == EN_CHANGE) {
           textChanged(LOWORD(wParam));
           if (LOWORD(wParam) == IDC_FOLLOW_DELAY) {
-            cfgCoverFollowDelay =
-                bounded(1, 999, int(uGetDlgItemInt(hWnd, IDC_FOLLOW_DELAY, nullptr, 1)));
+            cfgCoverFollowDelay = std::clamp(
+                int(uGetDlgItemInt(hWnd, IDC_FOLLOW_DELAY, nullptr, 1)), 1, 999);
           }
         } else if (HIWORD(wParam) == BN_CLICKED) {
           buttonClicked(LOWORD(wParam));
@@ -412,7 +408,7 @@ class DisplayTab : public ConfigTab {
             case IDC_FRAME_WIDTH: {
               pfc::string_fixed_t<16> highlightWidth;
               uGetDlgItemText(hWnd, IDC_FRAME_WIDTH, highlightWidth);
-              cfgHighlightWidth = bounded(0, 30, atoi(highlightWidth));
+              cfgHighlightWidth = std::clamp(atoi(highlightWidth), 0, 30);
               redrawMainWin();
             } break;
           }
@@ -850,10 +846,10 @@ class PerformanceTab : public ConfigTab {
 
           if (LOWORD(wParam) == IDC_CACHE_SIZE) {
             cfgTextureCacheSize =
-                bounded(2, 999, int(uGetDlgItemInt(hWnd, IDC_CACHE_SIZE, nullptr, 1)));
+                std::clamp(int(uGetDlgItemInt(hWnd, IDC_CACHE_SIZE, nullptr, 1)), 2, 999);
           } else if (LOWORD(wParam) == IDC_TEXTURE_SIZE) {
-            cfgMaxTextureSize =
-                bounded(4, 2024, int(uGetDlgItemInt(hWnd, IDC_TEXTURE_SIZE, nullptr, 1)));
+            cfgMaxTextureSize = std::clamp(
+                int(uGetDlgItemInt(hWnd, IDC_TEXTURE_SIZE, nullptr, 1)), 4, 2024);
           }
         } else if (HIWORD(wParam) == BN_CLICKED) {
           buttonClicked(LOWORD(wParam));
