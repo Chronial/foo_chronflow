@@ -3,6 +3,7 @@
 #include "Engine.h"
 #include "EngineThread.h"
 #include "EngineWindow.h"
+#include "config.h"
 #include "utils.h"
 
 constexpr int minimizeCheckTimeout = 10'000;  // milliseconds
@@ -12,7 +13,9 @@ ContainerWindow::ContainerWindow(HWND parent,
                                  ui_element_instance_callback_ptr duiCallback) {
   TRACK_CALL_TEXT("ContainerWindow::startup");
   createWindow(parent);
+
   try {
+    sessionCompiledCPInfo.ensureIsSet();
     engineWindow = make_unique<EngineWindow>(*this, duiCallback);
   } catch (std::exception& e) {
     engineError = e.what();

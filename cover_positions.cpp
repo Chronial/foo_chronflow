@@ -26,32 +26,20 @@ void cfg_compiledCPInfoPtr::set_data_raw(stream_reader* p_stream, t_size /*p_siz
   }
 }
 
-ScriptedCoverPositions::ScriptedCoverPositions() {
-  // Do we have already compiled data?
-  cInfo = sessionCompiledCPInfo.get();
-  if (cInfo)
+void cfg_compiledCPInfoPtr::ensureIsSet() {
+  if (this->get())
     return;
-  // If not, try to compile the user's script
-  pfc::string8 errorMsg;
-  auto elem = cfgCoverConfigs.find(cfgCoverConfigSel.c_str());
-  if (elem != cfgCoverConfigs.end() && setScript(elem->second.script.c_str(), errorMsg))
-    return;
-  // If that fails, try to fall back to the default script
-  if (!setScript(builtInCoverConfigs()[defaultCoverConfig].script.c_str(), errorMsg)) {
-    popup_message::g_show(errorMsg, "JScript Compile Error", popup_message::icon_error);
-    throw std::runtime_error(errorMsg.c_str());
-  }
-}
 
-bool ScriptedCoverPositions::setScript(const char* script, pfc::string_base& errorMsg) {
+  // Try to compile the user's script
+  CompiledCPInfo cInfo;
   try {
-    cInfo = make_shared<CompiledCPInfo>(compileCPScript(script));
-    sessionCompiledCPInfo.set(cInfo);
-    return true;
-  } catch (script_error& e) {
-    errorMsg = e.what();
-    return false;
+    std::string config = cfgCoverConfigs.at(cfgCoverConfigSel.c_str()).script;
+    cInfo = compileCPScript(config.c_str());
+  } catch (std::exception&) {
+    // Fall back to the default script
+    cInfo = compileCPScript(builtInCoverConfigs()[defaultCoverConfig].script.c_str());
   }
+  this->set(make_shared<CompiledCPInfo>(cInfo));
 }
 
 const fovAspectBehaviour& ScriptedCoverPositions::getAspectBehaviour() {

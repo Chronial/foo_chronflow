@@ -56,8 +56,8 @@ int HighTimerResolution::get() {
 
 Engine::Engine(EngineThread& thread, EngineWindow& window)
     : window(window), thread(thread), glContext(window), findAsYouType(*this),
-      worldState(db), texCache(thread, db, coverPos), renderer(*this),
-      playbackTracer(thread) {}
+      coverPos(sessionCompiledCPInfo.get()), worldState(db),
+      texCache(thread, db, coverPos), renderer(*this), playbackTracer(thread) {}
 
 void Engine::mainLoop() {
   updateRefreshRate();

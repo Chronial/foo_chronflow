@@ -7,7 +7,6 @@
 
 void EngineThread::run() {
   TRACK_CALL_TEXT("foo_chronflow EngineThread");
-  CoInitializeScope com_enable{};  // Required for compiling CoverPos Scripts
   engineWindow.makeContextCurrent();
 
   // We can only destroy the Engine while EngineThread is beeing destroyed,

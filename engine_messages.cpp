@@ -19,9 +19,10 @@ void EM::WindowResizeMessage::run(Engine& e, int width, int height) {
   e.renderer.resizeGlScene(width, height);
 }
 
-void EM::ChangeCPScriptMessage::run(Engine& e, std::string script) {
+void EM::ChangeCoverPositionsMessage::run(Engine& e,
+                                          std::shared_ptr<CompiledCPInfo> cInfo) {
   pfc::string8 tmp;
-  e.coverPos.setScript(script.c_str(), tmp);
+  e.coverPos = ScriptedCoverPositions(cInfo);
   e.renderer.setProjectionMatrix();
   e.cacheDirty = true;
   e.thread.invalidateWindow();

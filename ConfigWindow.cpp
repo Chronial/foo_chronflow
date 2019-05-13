@@ -561,25 +561,18 @@ class CoverTab : public ConfigTab {
     return FALSE;
   }
   void compileConfig() {
-    pfc::string8 message;
     pfc::string8 script;
     uGetDlgItemText(hWnd, IDC_DISPLAY_CONFIG, script);
 
     try {
-      ScriptedCoverPositions testCovPos;
-      if (!testCovPos.setScript(script, message)) {
-        uSetDlgItemText(hWnd, IDC_COMPILE_STATUS, message);
-        return;
-      } else {
-        uSetDlgItemText(hWnd, IDC_COMPILE_STATUS, "Compilation successfull");
-      }
-    } catch (pfc::exception& e) {
-      message = e.what();
-      uSetDlgItemText(hWnd, IDC_COMPILE_STATUS, message);
-      return;
+      auto cInfo = make_shared<CompiledCPInfo>(compileCPScript(script));
+      sessionCompiledCPInfo.set(cInfo);
+      uSetDlgItemText(hWnd, IDC_COMPILE_STATUS, "Compilation successful");
+      EngineThread::forEach(
+          [&cInfo](EngineThread& t) { t.send<EM::ChangeCoverPositionsMessage>(cInfo); });
+    } catch (std::exception& e) {
+      uSetDlgItemText(hWnd, IDC_COMPILE_STATUS, e.what());
     }
-    EngineThread::forEach(
-        [script](EngineThread& t) { t.send<EM::ChangeCPScriptMessage>(script.c_str()); });
   }
   void setUpEditBox() {
     int tabstops[1] = {14};

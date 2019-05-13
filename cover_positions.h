@@ -28,13 +28,14 @@ class cfg_compiledCPInfoPtr : public cfg_var {
   void reset() { std::atomic_store(&this->data_, {}); }
 
   inline explicit cfg_compiledCPInfoPtr(const GUID& p_guid) : cfg_var(p_guid) {}
+
+  void ensureIsSet();
 };
 
 class ScriptedCoverPositions {
  public:
-  ScriptedCoverPositions();
+  ScriptedCoverPositions(shared_ptr<CompiledCPInfo> cInfo) : cInfo(std::move(cInfo)){};
 
-  bool setScript(const char* script, pfc::string_base& errorMsg);
   const fovAspectBehaviour& getAspectBehaviour();
   const glVectord& getLookAt();
   const glVectord& getUpVector();
