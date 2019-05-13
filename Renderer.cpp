@@ -265,14 +265,12 @@ void Renderer::drawGui() {
     dispStringB.flags(std::ios_base::fixed | std::ios_base::right);
     dispStringA.precision(1);
     dispStringB.precision(1);
-    dispStringA << "     FPS: " << std::setw(4) << 1 / avgDur;
+    dispStringA << "FPS:       " << std::setw(4) << 1 / avgDur;
     dispStringB << "max ms/f: " << std::setw(5) << (1000 * maxDur);
-    dispStringA << "   cpu: " << std::setw(5) << avgCPU * 1000;
+    dispStringA << "  cpu: " << std::setw(5) << avgCPU * 1000;
     dispStringB << "  max: " << std::setw(5) << maxCPU * 1000;
-    textDisplay.displayBitmapText(
-        dispStringA.str().c_str(), winWidth - 250, winHeight - 20);
-    textDisplay.displayBitmapText(
-        dispStringB.str().c_str(), winWidth - 250, winHeight - 35);
+    textDisplay.displayBitmapText(dispStringA.str().c_str(), 15, winHeight - 20);
+    textDisplay.displayBitmapText(dispStringB.str().c_str(), 15, winHeight - 35);
   }
 }
 
