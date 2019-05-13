@@ -60,6 +60,7 @@ void TextDisplay::clearCache() {
   for (auto& tex : texCache) {
     if (tex.glTex) {
       glDeleteTextures(1, &tex.glTex);
+      tex.glTex = 0;
     }
     tex.age = ~0u;
   }
