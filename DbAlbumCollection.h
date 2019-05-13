@@ -132,7 +132,7 @@ class DbAlbumCollection {
   // Gets the leftmost album whose title starts with `input`
   std::optional<DBPos> performFayt(const std::string& input);
 
-  void onCollectionReload(DbReloadWorker&& worker);
+  void onCollectionReload(std::unique_ptr<db_structure::DB> newDb);
 
   DBIter begin() const;
   DBIter end() const;

@@ -139,8 +139,8 @@ void DBWriter::remove_tracks(metadb_handle_list_cref tracks) {
   }
 }
 
-void DbAlbumCollection::onCollectionReload(DbReloadWorker&& worker) {
-  db = std::move(worker.db);
+void DbAlbumCollection::onCollectionReload(std::unique_ptr<db_structure::DB> newDb) {
+  db = std::move(newDb);
 
   decltype(libraryChangeQueue) changeQueue;
   std::swap(changeQueue, libraryChangeQueue);

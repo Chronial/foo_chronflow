@@ -25,7 +25,8 @@ DbReloadWorker::~DbReloadWorker() {
 
 void DbReloadWorker::threadProc() {
   TRACK_CALL_TEXT("Chronflow DbReloadWorker");
-  console::timer_scope timer("foo_chronflow collection generated in");
+  pfc::hires_timer timer;
+  timer.start();
 
   engineThread.runInMainThread([&] {
     ++engineThread.libraryVersion;
@@ -46,5 +47,8 @@ void DbReloadWorker::threadProc() {
   DBWriter(*db).add_tracks(std::move(library), abort);
   abort.check();
 
+  FB2K_console_formatter() << "foo_chronflow collection generated in: "
+                           << pfc::format_time_ex(timer.query(), 6);
+  completed = true;
   engineThread.send<EM::CollectionReloadedMessage>();
 };

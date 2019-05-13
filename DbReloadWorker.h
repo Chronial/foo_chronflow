@@ -16,6 +16,7 @@ class DbReloadWorker {
   ~DbReloadWorker();
 
   unique_ptr<db_structure::DB> db;
+  std::atomic<bool> completed = false;
 
  private:
   void threadProc();

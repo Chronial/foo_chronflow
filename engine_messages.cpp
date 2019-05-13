@@ -98,13 +98,14 @@ std::optional<AlbumInfo> EM::GetTargetAlbum::run(Engine& e) {
 }
 
 void EM::ReloadCollection::run(Engine& e) {
-  if (e.reloadWorker)
-    return;  // already running
+  // This will abort any already running reload worker
   e.reloadWorker = make_unique<DbReloadWorker>(e.thread);
 }
 
 void EM::CollectionReloadedMessage::run(Engine& e) {
-  e.db.onCollectionReload(std::move(*e.reloadWorker));
+  if (!e.reloadWorker || !e.reloadWorker->completed)
+    return;
+  e.db.onCollectionReload(std::move(e.reloadWorker->db));
   e.reloadWorker.reset();
   e.texCache.onCollectionReload();
   e.cacheDirty = true;
