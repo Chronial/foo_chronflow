@@ -415,6 +415,10 @@ class DisplayTab : public ConfigTab {
         } else if (HIWORD(wParam) == BN_CLICKED) {
           buttonClicked(LOWORD(wParam));
           switch (LOWORD(wParam)) {
+            case IDC_APPLY_TITLE: {
+              EngineThread::forEach(
+                  [](EngineThread& t) { t.send<EM::ReloadCollection>(); });
+            } break;
             case IDC_BG_COLOR: {
               COLORREF panelBg = cfgPanelBg;
               if (selectColor(panelBg)) {
