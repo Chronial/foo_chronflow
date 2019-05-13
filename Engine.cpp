@@ -103,7 +103,7 @@ void Engine::mainLoop() {
         sleepTime -= 0.002 * timerResolution->get();
         if (sleepTime >= 0.001 * timerResolution->get()) {
           SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
-          Sleep(int(1000 * sleepTime));
+          Sleep(int(1000 * std::min(sleepTime, 1.0)));
           SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL);
         }
       }
