@@ -296,3 +296,35 @@ void GLTexture::glDelete() noexcept {
 float GLTexture::getAspect() const {
   return originalAspect;
 }
+
+GLTexture loadSpinner() {
+  LPCWSTR pName = MAKEINTRESOURCE(IDB_SPINNER);
+  auto hInst = core_api::get_my_instance();
+
+  HRSRC hResource = check(FindResource(hInst, pName, L"PNG"));
+  DWORD resourceSize = check(SizeofResource(hInst, hResource));
+  HGLOBAL resourceHandle = check(LoadResource(hInst, hResource));
+  const void* resourceData = check(LockResource(resourceHandle));
+
+  int width;
+  int height;
+  int channels_in_file;
+  stbi_uc* data =
+      stbi_load_from_memory(static_cast<const stbi_uc*>(resourceData), resourceSize,
+                            &width, &height, &channels_in_file, 4);
+  auto free_data = gsl::finally([&] { stbi_image_free(data); });
+  if (data == nullptr) {
+    throw std::runtime_error{"Failed to load image buffer"};
+  }
+  GLuint glTexture;
+  glGenTextures(1, &glTexture);
+  glBindTexture(GL_TEXTURE_2D, glTexture);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexImage2D(
+      GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+  return GLTexture(glTexture, 1.0);
+}

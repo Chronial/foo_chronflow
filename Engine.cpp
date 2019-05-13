@@ -92,7 +92,7 @@ void Engine::mainLoop() {
       glFinish();
       fpsCounter.endFrame();
 
-      windowDirty = worldState.isMoving() || renderer.wasMissingTextures;
+      windowDirty = worldState.isMoving() || renderer.wasMissingTextures || reloadWorker;
 
       // Handle V-Sync
       renderer.ensureVSync(cfgVSyncMode != VSYNC_SLEEP_ONLY);

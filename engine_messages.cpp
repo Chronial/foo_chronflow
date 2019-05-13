@@ -100,6 +100,8 @@ std::optional<AlbumInfo> EM::GetTargetAlbum::run(Engine& e) {
 void EM::ReloadCollection::run(Engine& e) {
   // This will abort any already running reload worker
   e.reloadWorker = make_unique<DbReloadWorker>(e.thread);
+  // Start spinner animation
+  e.windowDirty = true;
 }
 
 void EM::CollectionReloadedMessage::run(Engine& e) {

@@ -57,3 +57,5 @@ class UploadReadyImage {
 std::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_ptr& track,
                                              abort_callback& abort);
 UploadReadyImage loadSpecialArt(WORD resource, pfc::string8 userImage);
+
+GLTexture loadSpinner();

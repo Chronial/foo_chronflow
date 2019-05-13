@@ -1,5 +1,6 @@
 #pragma once
 #include "DbAlbumCollection.h"
+#include "Image.h"
 #include "TextDisplay.h"
 #include "utils.h"
 
@@ -29,6 +30,7 @@ class Renderer {
   bool wasMissingTextures = false;
 
  private:
+  GLTexture spinnerTexture;
   void getFrustrumSize(double& right, double& top, double& zNear, double& zFar);
 
   int winWidth = 1;
@@ -38,6 +40,7 @@ class Renderer {
 
   void drawBg();
   void drawGui();
+  void drawSpinner();
   void drawScene(bool selectionPass);
 
   pfc::array_t<double> getMirrorClipPlane();

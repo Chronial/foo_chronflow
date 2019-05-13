@@ -211,6 +211,9 @@
     <Image Include="images\cover-no-img.jpg">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="images\spinner.png">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc">

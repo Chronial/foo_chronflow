@@ -218,6 +218,7 @@
   <ItemGroup>
     <Image Include="images\cover-loading.jpg" />
     <Image Include="images\cover-no-img.jpg" />
+    <Image Include="images\spinner.png" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

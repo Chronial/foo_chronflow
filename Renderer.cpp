@@ -4,6 +4,7 @@
 
 #include "DbAlbumCollection.h"
 #include "Engine.h"
+#include "Image.h"
 #include "TextureCache.h"
 #include "config.h"
 #include "utils.h"
@@ -13,7 +14,8 @@
 #define SELECTION_COVERS 1
 #define SELECTION_MIRROR 2
 
-Renderer::Renderer(Engine& engine) : textDisplay(this), engine(engine) {
+Renderer::Renderer(Engine& engine)
+    : textDisplay(this), engine(engine), spinnerTexture(loadSpinner()) {
   glfwSwapInterval(0);
   vSyncEnabled = false;
 }
@@ -272,6 +274,39 @@ void Renderer::drawGui() {
     textDisplay.displayBitmapText(dispStringA.str().c_str(), 15, winHeight - 20);
     textDisplay.displayBitmapText(dispStringB.str().c_str(), 15, winHeight - 35);
   }
+
+  if (engine.reloadWorker)
+    drawSpinner();
+}
+
+void Renderer::drawSpinner() {
+  glPushOrthoMatrix();
+
+  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  COLORREF c = cfgTitleColor.get_value();
+  glColor3f(GetRValue(c) / 255.0f, GetGValue(c) / 255.0f, GetBValue(c) / 255.0f);
+  spinnerTexture.bind();
+  int x = winWidth - 30;
+  int y = winHeight - 30;
+
+  double rot = -time() * 10;
+  double r = -sqrtf(2) * 16;
+  glBegin(GL_QUADS);
+  {
+    glTexCoord2f(0.0f, 1.0f);  // top left
+    glVertex3d(x + r * cos(rot + 0 * M_PI / 2), y + r * sin(rot + 0 * M_PI / 2), 0);
+    glTexCoord2f(1.0f, 1.0f);  // top right
+    glVertex3d(x + r * cos(rot + 1 * M_PI / 2), y + r * sin(rot + 1 * M_PI / 2), 0);
+    glTexCoord2f(1.0f, 0.0f);  // bottom right
+    glVertex3d(x + r * cos(rot + 2 * M_PI / 2), y + r * sin(rot + 2 * M_PI / 2), 0);
+    glTexCoord2f(0.0f, 0.0f);  // bottom left
+    glVertex3d(x + r * cos(rot + 3 * M_PI / 2), y + r * sin(rot + 3 * M_PI / 2), 0);
+  }
+  glEnd();
+  glDisable(GL_BLEND);
+  glPopOrthoMatrix();
 }
 
 void Renderer::drawBg() {

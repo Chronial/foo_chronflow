@@ -112,6 +112,7 @@ LRESULT ContainerWindow::MessageHandler(UINT msg, WPARAM wp, LPARAM lp) {
       return TRUE;
     case WM_PAINT: {
       if (GetUpdateRect(hwnd, nullptr, FALSE)) {
+        SetTimer(hwnd, minimizeCheckTimerId, minimizeCheckTimeout, nullptr);
         if (mainWinMinimized) {
           mainWinMinimized = false;
           if (engineWindow)
@@ -123,7 +124,6 @@ LRESULT ContainerWindow::MessageHandler(UINT msg, WPARAM wp, LPARAM lp) {
           drawErrorMessage();
           return 0;
         }
-        SetTimer(hwnd, minimizeCheckTimerId, minimizeCheckTimeout, nullptr);
       }
       break;
     }
