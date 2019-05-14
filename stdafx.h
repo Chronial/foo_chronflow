@@ -85,6 +85,8 @@ using std::unique_ptr;  // NOLINT
 #undef min
 #undef max
 
+#include <wil\Resource.h>
+
 #include "lib/glad.h"
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
