@@ -3,57 +3,54 @@
 #include "Renderer.h"
 #include "config.h"
 
-TextDisplay::~TextDisplay() {
-  clearCache();
-  if (bitmapFontInitialized)
-    glDeleteLists(bitmapDisplayList, 96);
-}
+BitmapFont::BitmapFont(Renderer& renderer) : renderer(renderer) {
+  wil::unique_hfont font{CreateFont(-14,  // Height Of Font
+                                    0,  // Width Of Font
+                                    0,  // Angle Of Escapement
+                                    0,  // Orientation Angle
+                                    FW_NORMAL,  // Font Weight
+                                    FALSE,  // Italic
+                                    FALSE,  // Underline
+                                    FALSE,  // Strikeout
+                                    ANSI_CHARSET,  // Character Set Identifier
+                                    OUT_TT_PRECIS,  // Output Precision
+                                    CLIP_DEFAULT_PRECIS,  // Clipping Precision
+                                    ANTIALIASED_QUALITY,  // Output Quality
+                                    FF_SCRIPT | DEFAULT_PITCH,  // Family And Pitch
+                                    L"Courier New")};  // Font Name
 
-void TextDisplay::buildDisplayFont() {
-  HFONT font = CreateFont(-14,  // Height Of Font
-                          0,  // Width Of Font
-                          0,  // Angle Of Escapement
-                          0,  // Orientation Angle
-                          FW_NORMAL,  // Font Weight
-                          FALSE,  // Italic
-                          FALSE,  // Underline
-                          FALSE,  // Strikeout
-                          ANSI_CHARSET,  // Character Set Identifier
-                          OUT_TT_PRECIS,  // Output Precision
-                          CLIP_DEFAULT_PRECIS,  // Clipping Precision
-                          ANTIALIASED_QUALITY,  // Output Quality
-                          FF_SCRIPT | DEFAULT_PITCH,  // Family And Pitch
-                          L"Courier New");  // Font Name
+  Gdiplus::Bitmap dcBitmap{5, 5, PixelFormat32bppARGB};
+  Gdiplus::Graphics dcGraphics{&dcBitmap};
 
-  Gdiplus::Bitmap dcBitmap(5, 5, PixelFormat32bppARGB);
-  Gdiplus::Graphics dcGraphics(&dcBitmap);
-
-  HDC hDC = dcGraphics.GetHDC();
+  HDC hdc = dcGraphics.GetHDC();
   // Select The Font We Want
-  SelectObject(hDC, font);
-  bitmapDisplayList = glGenLists(96);
+  SelectObject(hdc, font.get());
+  glDisplayList = glGenLists(96);
   // Build 96 Characters Starting At Character 32
-  wglUseFontBitmaps(hDC, 32, 96, bitmapDisplayList);
-  dcGraphics.ReleaseHDC(hDC);
-
-  DeleteObject(font);
-  bitmapFontInitialized = true;
+  wglUseFontBitmaps(hdc, 32, 96, glDisplayList);
+  dcGraphics.ReleaseHDC(hdc);
 }
 
-void TextDisplay::displayBitmapText(const char* text, int x, int y) {
-  if (!bitmapFontInitialized)
-    buildDisplayFont();
-  renderer->glPushOrthoMatrix();
+BitmapFont::~BitmapFont() {
+  glDeleteLists(glDisplayList, 96);
+}
+
+void BitmapFont::displayText(const char* text, int x, int y) {
+  renderer.glPushOrthoMatrix();
   glDisable(GL_TEXTURE_2D);
   glColor3f(GetRValue(cfgTitleColor) / 255.0f, GetGValue(cfgTitleColor) / 255.0f,
             GetBValue(cfgTitleColor) / 255.0f);
   glRasterPos2i(x, y);
   glPushAttrib(GL_LIST_BIT);
-  glListBase(bitmapDisplayList - 32);
+  glListBase(glDisplayList - 32);
   glCallLists(strlen(text), GL_UNSIGNED_BYTE, text);
   glPopAttrib();
   glEnable(GL_TEXTURE_2D);
-  renderer->glPopOrthoMatrix();
+  renderer.glPopOrthoMatrix();
+}
+
+TextDisplay::~TextDisplay() {
+  clearCache();
 }
 
 void TextDisplay::clearCache() {

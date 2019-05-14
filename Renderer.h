@@ -25,6 +25,7 @@ class Renderer {
   void glPopOrthoMatrix();
 
   TextDisplay textDisplay;
+  BitmapFont bitmapFont;
   class Engine& engine;
 
   bool wasMissingTextures = false;

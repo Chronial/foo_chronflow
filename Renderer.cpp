@@ -15,7 +15,8 @@
 #define SELECTION_MIRROR 2
 
 Renderer::Renderer(Engine& engine)
-    : textDisplay(this), engine(engine), spinnerTexture(loadSpinner()) {
+    : textDisplay(this), bitmapFont(*this), engine(engine),
+      spinnerTexture(loadSpinner()) {
   glfwSwapInterval(0);
   vSyncEnabled = false;
 }
@@ -271,8 +272,8 @@ void Renderer::drawGui() {
     dispStringB << "max ms/f: " << std::setw(5) << (1000 * maxDur);
     dispStringA << "  cpu: " << std::setw(5) << avgCPU * 1000;
     dispStringB << "  max: " << std::setw(5) << maxCPU * 1000;
-    textDisplay.displayBitmapText(dispStringA.str().c_str(), 15, winHeight - 20);
-    textDisplay.displayBitmapText(dispStringB.str().c_str(), 15, winHeight - 35);
+    bitmapFont.displayText(dispStringA.str().c_str(), 15, winHeight - 20);
+    bitmapFont.displayText(dispStringB.str().c_str(), 15, winHeight - 35);
   }
 
   if (engine.reloadWorker)
