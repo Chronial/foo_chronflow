@@ -172,15 +172,17 @@ TextDisplay::DisplayTexture TextDisplay::createTexture(const std::string& text,
       bitmap.get(), D2D1::RenderTargetProperties(), &renderTarget));
 
   wil::com_ptr<ID2D1SolidColorBrush> textBrush;
-  THROW_IF_FAILED(
-      renderTarget->CreateSolidColorBrush(D2D1::ColorF(cfgTitleColor, 1.0f), &textBrush));
+  THROW_IF_FAILED(renderTarget->CreateSolidColorBrush(
+      D2D1::ColorF(GetRValue(cfgTitleColor) / 255.0f, GetGValue(cfgTitleColor) / 255.0f,
+                   GetBValue(cfgTitleColor) / 255.0f, 1.0f),
+      &textBrush));
   if (highlight > 0) {
-    textBrush->SetOpacity(0.4f);
     wil::com_ptr<ID2D1SolidColorBrush> highlightBrush;
-    THROW_IF_FAILED(renderTarget->CreateSolidColorBrush(
-        D2D1::ColorF(cfgTitleColor, 1.0f), &highlightBrush));
+    THROW_IF_FAILED(
+        renderTarget->CreateSolidColorBrush(textBrush->GetColor(), &highlightBrush));
     textLayout->SetDrawingEffect(
         highlightBrush.get(), DWRITE_TEXT_RANGE{0, UINT32(highlight)});
+    textBrush->SetOpacity(0.4f);
   }
 
   renderTarget->BeginDraw();
