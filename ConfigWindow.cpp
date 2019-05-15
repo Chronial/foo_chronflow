@@ -401,6 +401,7 @@ class DisplayTab : public ConfigTab {
                 titleformat_object::ptr titleformat;
                 titleformat_compiler::get()->compile_safe_ex(titleformat, cfgAlbumTitle);
                 aTrack->format_title(nullptr, preview, titleformat, nullptr);
+                preview.replace_string("\r\n", "↵");
                 uSendDlgItemMessageText(hWnd, IDC_TITLE_PREVIEW, WM_SETTEXT, 0, preview);
               }
               redrawMainWin();
