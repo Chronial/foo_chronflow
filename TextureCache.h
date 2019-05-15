@@ -68,8 +68,8 @@ class TextureCache {
  public:
   TextureCache(EngineThread&, DbAlbumCollection&, ScriptedCoverPositions&);
 
-  const GLTexture* getAlbumTexture(const std::string& albumName);
-  GLTexture& getLoadingTexture();
+  const GLImage* getAlbumTexture(const std::string& albumName);
+  GLImage& getLoadingTexture();
 
   void trimCache();
   void clearCache();
@@ -87,15 +87,15 @@ class TextureCache {
   unsigned int collectionVersion = 0;
 
   void reloadSpecialTextures();
-  GLTexture noCoverTexture;
-  GLTexture loadingTexture;
+  GLImage noCoverTexture;
+  GLImage loadingTexture;
 
   unsigned int cacheGeneration = 0;
 
   struct CacheItem : TextureCacheMeta {
-    CacheItem(const TextureCacheMeta& meta, std::optional<GLTexture>&& texture)
+    CacheItem(const TextureCacheMeta& meta, std::optional<GLImage>&& texture)
         : TextureCacheMeta(meta), texture(std::move(texture)){};
-    std::optional<GLTexture> texture;
+    std::optional<GLImage> texture;
   };
   using t_textureCache = bomi::multi_index_container<
       CacheItem,

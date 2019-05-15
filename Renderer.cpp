@@ -332,7 +332,7 @@ void Renderer::drawCovers(bool showTarget) {
     return;
 
   struct Cover {
-    const GLTexture* tex;
+    const GLImage* tex;
     float offset;
     int index;
     bool isTarget;

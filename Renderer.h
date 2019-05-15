@@ -33,7 +33,7 @@ class Renderer {
   int winHeight = 1;
 
  private:
-  GLTexture spinnerTexture;
+  GLImage spinnerTexture;
   void getFrustrumSize(double& right, double& top, double& zNear, double& zFar);
 
   bool vSyncEnabled;

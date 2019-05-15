@@ -238,13 +238,12 @@ UploadReadyImage& UploadReadyImage::operator=(UploadReadyImage&& other) {
   return *this;
 }
 
-GLTexture UploadReadyImage::upload() const {
+GLImage UploadReadyImage::upload() const {
   TRACK_CALL_TEXT("UploadReadyImage::upload");
   IF_DEBUG(double preLoad = time());
   // TODO: handle opengl errors?
-  GLuint glTexture;
-  glGenTextures(1, &glTexture);
-  glBindTexture(GL_TEXTURE_2D, glTexture);
+  GLTexture texture{};
+  texture.bind();
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16);
@@ -261,45 +260,42 @@ GLTexture UploadReadyImage::upload() const {
   glTexImage2D(GL_TEXTURE_2D, 0, glInternalFormat, image.width, image.height, 0, GL_RGB,
                GL_UNSIGNED_BYTE, image.data.get());
   IF_DEBUG(console::out() << "GLUpload " << (time() - preLoad) * 1000 << " ms");
-  return GLTexture(glTexture, static_cast<float>(originalAspect));
+  return GLImage(std::move(texture), static_cast<float>(originalAspect));
 }
 
-GLTexture::GLTexture(GLuint glTexture, float originalAspect)
-    : glTexture(glTexture), originalAspect(originalAspect) {}
+GLTexture::GLTexture() {
+  glGenTextures(1, &glTexture);
+}
 
-GLTexture::GLTexture(GLTexture&& other) noexcept
-    : glTexture(other.glTexture), originalAspect(other.originalAspect) {
+GLTexture::GLTexture(GLTexture&& other) noexcept : glTexture(other.glTexture) {
   other.glTexture = 0;
 }
 
 GLTexture& GLTexture::operator=(GLTexture&& other) noexcept {
-  originalAspect = other.originalAspect;
-  glDelete();
+  reset();
   glTexture = other.glTexture;
   other.glTexture = 0;
   return *this;
 }
 
 GLTexture::~GLTexture() noexcept {
-  if (glTexture != 0)
-    glDelete();
+  reset();
+}
+
+void GLTexture::reset() noexcept {
+  if (glTexture != 0) {
+    IF_DEBUG(console::out() << "DELETE");
+    glDeleteTextures(1, &glTexture);
+    glTexture = 0;
+  }
 }
 
 void GLTexture::bind() const {
+  PFC_ASSERT(glTexture != 0);
   glBindTexture(GL_TEXTURE_2D, glTexture);
 }
 
-void GLTexture::glDelete() noexcept {
-  IF_DEBUG(console::out() << "DELETE");
-  glDeleteTextures(1, &glTexture);
-  glTexture = 0;
-}
-
-float GLTexture::getAspect() const {
-  return originalAspect;
-}
-
-GLTexture loadSpinner() {
+GLImage loadSpinner() {
   LPCWSTR pName = MAKEINTRESOURCE(IDB_SPINNER);
   auto hInst = core_api::get_my_instance();
 
@@ -318,9 +314,8 @@ GLTexture loadSpinner() {
   if (data == nullptr) {
     throw std::runtime_error{"Failed to load image buffer"};
   }
-  GLuint glTexture;
-  glGenTextures(1, &glTexture);
-  glBindTexture(GL_TEXTURE_2D, glTexture);
+  GLTexture texture{};
+  texture.bind();
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16);
@@ -328,5 +323,5 @@ GLTexture loadSpinner() {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexImage2D(
       GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-  return GLTexture(glTexture, 1.0);
+  return GLImage(std::move(texture), 1.0);
 }

@@ -18,7 +18,7 @@ void TextureCache::reloadSpecialTextures() {
   noCoverTexture = loadSpecialArt(IDR_COVER_NO_IMG, cfgImgNoCover.c_str()).upload();
 }
 
-const GLTexture* TextureCache::getAlbumTexture(const std::string& albumName) {
+const GLImage* TextureCache::getAlbumTexture(const std::string& albumName) {
   auto entry = textureCache.find(albumName);
   if (entry == textureCache.end())
     return nullptr;
@@ -29,7 +29,7 @@ const GLTexture* TextureCache::getAlbumTexture(const std::string& albumName) {
   }
 }
 
-GLTexture& TextureCache::getLoadingTexture() {
+GLImage& TextureCache::getLoadingTexture() {
   return loadingTexture;
 }
 
@@ -77,7 +77,7 @@ void TextureCache::uploadTextures() {
     if (existing != textureCache.end()) {
       textureCache.erase(existing);
     }
-    std::optional<GLTexture> texture{};
+    std::optional<GLImage> texture{};
     if (loaded->image)
       texture = loaded->image->upload();
     textureCache.emplace(loaded->meta, std::move(texture));

@@ -21,7 +21,7 @@ class Image {
 
 class GLTexture {
  public:
-  GLTexture(GLuint glTexture, float originalAspect);
+  GLTexture();
   GLTexture(const GLTexture&) = delete;
   GLTexture& operator=(const GLTexture&) = delete;
   GLTexture(GLTexture&&) noexcept;
@@ -29,12 +29,23 @@ class GLTexture {
   ~GLTexture() noexcept;
 
   void bind() const;
-  float getAspect() const;
 
  private:
-  GLuint glTexture;
+  void reset() noexcept;
+  GLuint glTexture = 0;
+};
+
+class GLImage {
+ public:
+  GLImage(GLTexture glTexture, float originalAspect)
+      : glTexture(std::move(glTexture)), originalAspect(originalAspect){};
+
+  void bind() const { glTexture.bind(); };
+  float getAspect() const { return originalAspect; };
+
+ private:
+  GLTexture glTexture;
   float originalAspect;
-  void glDelete() noexcept;
 };
 
 class UploadReadyImage {
@@ -47,7 +58,7 @@ class UploadReadyImage {
   UploadReadyImage& operator=(UploadReadyImage&&);
   ~UploadReadyImage() = default;
 
-  GLTexture upload() const;
+  GLImage upload() const;
 
  private:
   Image image;
@@ -58,4 +69,4 @@ std::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_ptr& track,
                                              abort_callback& abort);
 UploadReadyImage loadSpecialArt(WORD resource, pfc::string8 userImage);
 
-GLTexture loadSpinner();
+GLImage loadSpinner();
