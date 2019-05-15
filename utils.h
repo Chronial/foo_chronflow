@@ -127,19 +127,11 @@ inline T check(T a) {
 class Timer {
  public:
   Timer(double delay_s, std::function<void()> f) : f(std::move(f)) {
-    timer = check(CreateThreadpoolTimer(Timer::callback, this, nullptr));
-    int64_t delay_ns = static_cast<int>(-delay_s * 1000 * 1000 * 10);
-    FILETIME ftime = {static_cast<DWORD>(delay_ns), static_cast<DWORD>(delay_ns >> 32)};
-    SetThreadpoolTimer(timer, &ftime, 0, 0);
-  }
-  Timer(const Timer&) = delete;
-  Timer& operator=(const Timer&) = delete;
-  Timer(Timer&&) = delete;
-  Timer& operator=(Timer&&) = delete;
-  ~Timer() {
-    SetThreadpoolTimer(timer, nullptr, 0, 0);
-    WaitForThreadpoolTimerCallbacks(timer, 1);
-    CloseThreadpoolTimer(timer);
+    timer = wil::unique_threadpool_timer{
+        check(CreateThreadpoolTimer(Timer::callback, this, nullptr))};
+    FILETIME ftime =
+        wil::filetime::from_int64(int64_t(-delay_s * wil::filetime_duration::one_second));
+    SetThreadpoolTimer(timer.get(), &ftime, 0, 0);
   }
 
  private:
@@ -148,7 +140,7 @@ class Timer {
     reinterpret_cast<Timer*>(context)->f();
   }
 
-  PTP_TIMER timer;
+  wil::unique_threadpool_timer timer;
   std::function<void()> f;
 };
 

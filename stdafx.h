@@ -90,6 +90,7 @@ using std::unique_ptr;  // NOLINT
 
 #include <wil/com.h>
 #include <wil/resource.h>
+#include <wil/win32_helpers.h>
 
 #include "lib/glad.h"
 #define GLFW_INCLUDE_GLU
