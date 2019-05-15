@@ -90,6 +90,7 @@ CallbackHolder::~CallbackHolder() noexcept {
 
 void CallbackHolder::addCallback(std::function<void()> f) {
   fb2k::inMainThread([f, deadPtr = this->deadPtr] {
+    TRACK_CALL_TEXT("foo_chronflow mainthread callback");
     if (!*deadPtr) {
       f();
     }
