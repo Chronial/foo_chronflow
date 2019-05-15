@@ -49,6 +49,16 @@ void BitmapFont::displayText(const char* text, int x, int y) {
   renderer.glPopOrthoMatrix();
 }
 
+TextDisplay::TextDisplay(Renderer& renderer) : renderer(renderer) {
+  THROW_IF_FAILED(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &d2Factory));
+  THROW_IF_FAILED(DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED,
+                                      __uuidof(IDWriteFactory),
+                                      reinterpret_cast<IUnknown**>(&writeFactory)));
+  THROW_IF_FAILED(writeFactory->GetGdiInterop(&gdiInterop));
+  THROW_IF_FAILED(CoCreateInstance(
+      CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&wicFactory)));
+}
+
 TextDisplay::~TextDisplay() {
   clearCache();
 }
@@ -63,8 +73,7 @@ void TextDisplay::clearCache() {
   }
 }
 
-void TextDisplay::displayText(const std::string& text, int x, int y, HAlignment hAlign,
-                              VAlignment vAlign) {
+void TextDisplay::displayText(const std::string& text, int x, int y) {
   DisplayTexture* dTex = nullptr;
   DisplayTexture* oldestElem = &texCache.front();
   unsigned int maxAge = 0;
@@ -91,112 +100,115 @@ void TextDisplay::displayText(const std::string& text, int x, int y, HAlignment 
     dTex = oldestElem;
   }
 
-  renderer->glPushOrthoMatrix();
-  if (hAlign == right) {
-    x -= dTex->textWidth;
-  } else if (hAlign == center) {
-    x -= dTex->textWidth / 2;
-  }
-
-  if (vAlign == bottom) {
-    y -= dTex->textHeight;
-  } else if (vAlign == middle) {
-    y -= dTex->textHeight / 2;
-  }
+  renderer.glPushOrthoMatrix();
+  x -= dTex->centerX;
+  y += dTex->centerY;
 
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
   glColor3f(1.0f, 1.0f, 1.0f);
   glBindTexture(GL_TEXTURE_2D, dTex->glTex);
   glBegin(GL_QUADS);
   {
-    glTexCoord2f(0.0f, 1.0f);  // top left
-    glVertex3i(x, y + dTex->texHeight, 0);
-    glTexCoord2f(1.0f, 1.0f);  // top right
-    glVertex3i(x + dTex->texWidth, y + dTex->texHeight, 0);
-    glTexCoord2f(1.0f, 0.0f);  // bottom right
-    glVertex3i(x + dTex->texWidth, y, 0);
-    glTexCoord2f(0.0f, 0.0f);  // bottom left
+    glTexCoord2f(0.0f, 0.0f);  // top left
     glVertex3i(x, y, 0);
+    glTexCoord2f(1.0f, 0.0f);  // top right
+    glVertex3i(x + dTex->texWidth, y, 0);
+    glTexCoord2f(1.0f, 1.0f);  // bottom right
+    glVertex3i(x + dTex->texWidth, y - dTex->texHeight, 0);
+    glTexCoord2f(0.0f, 1.0f);  // bottom left
+    glVertex3i(x, y - dTex->texHeight, 0);
   }
   glEnd();
   glDisable(GL_BLEND);
-  renderer->glPopOrthoMatrix();
+  renderer.glPopOrthoMatrix();
 }
 
 TextDisplay::DisplayTexture TextDisplay::createTexture(const std::string& text) {
   DisplayTexture displayTex;
   displayTex.text = text;
-  unique_ptr<Gdiplus::Bitmap> bitmap;
+  displayTex.color = cfgTitleColor;
 
-  {
-    pfc::stringcvt::string_wide_from_utf8 w_text(text.c_str());
-    Gdiplus::StringFormat strFormat;
-    unique_ptr<Gdiplus::Font> font;
-    strFormat.SetAlignment(Gdiplus::StringAlignmentCenter);
-    strFormat.SetTrimming(Gdiplus::StringTrimmingNone);
-    strFormat.SetFormatFlags(Gdiplus::StringFormatFlagsNoFitBlackBox |
-                             Gdiplus::StringFormatFlagsNoWrap |
-                             Gdiplus::StringFormatFlagsNoClip);
-    Gdiplus::RectF stringSize(0, 0, 1024, 128);
+  wil::com_ptr<IDWriteTextFormat> textFormat;
+  {  // load font
+    wil::com_ptr<IDWriteFont> font{};
+    wil::com_ptr<IDWriteFontFamily> fontFamily{};
+    wil::com_ptr<IDWriteLocalizedStrings> familyNames{};
+    THROW_IF_FAILED(gdiInterop->CreateFontFromLOGFONT(&cfgTitleFont.get_value(), &font));
+    THROW_IF_FAILED(font->GetFontFamily(&fontFamily));
+    THROW_IF_FAILED(fontFamily->GetFamilyNames(&familyNames));
 
-    {  // calculate Text Size
-      Gdiplus::Bitmap calcBitmap(5, 5, PixelFormat32bppARGB);
-      Gdiplus::Graphics graphics(&calcBitmap);
-
-      HDC fontDC = graphics.GetHDC();
-      font = make_unique<Gdiplus::Font>(fontDC, &(cfgTitleFont.get_value()));
-      graphics.ReleaseHDC(fontDC);
-      if (!font->IsAvailable()) {
-        font = make_unique<Gdiplus::Font>(L"Verdana", 8.0f);
-      }
-      graphics.MeasureString(w_text, -1, font.get(), Gdiplus::PointF(), &stringSize);
-    }
-
-    // round to multiples of two, so centering is consistent
-    stringSize.Width = ceil(stringSize.Width / 2.0f) * 2;
-    stringSize.Height = ceil(stringSize.Height);
-    displayTex.texWidth = displayTex.textWidth = static_cast<int>(stringSize.Width);
-    displayTex.texHeight = displayTex.textHeight = static_cast<int>(stringSize.Height);
-
-    // Make the texture size a power of two
-    displayTex.texWidth = 1;
-    while (displayTex.texWidth < displayTex.textWidth)
-      displayTex.texWidth = displayTex.texWidth << 1;
-
-    displayTex.texHeight = 1;
-    while (displayTex.texHeight < displayTex.textHeight)
-      displayTex.texHeight = displayTex.texHeight << 1;
-
-    bitmap = make_unique<Gdiplus::Bitmap>(
-        displayTex.texWidth, displayTex.texHeight, PixelFormat32bppARGB);
-    Gdiplus::Graphics drawer(bitmap.get());
-    drawer.SetTextRenderingHint(Gdiplus::TextRenderingHintAntiAliasGridFit);
-
-    Gdiplus::Color textColor(255, 255, 255);
-    textColor.SetFromCOLORREF(cfgTitleColor);
-    Gdiplus::SolidBrush textBrush(textColor);
-    displayTex.color = cfgTitleColor;
-
-    drawer.DrawString(w_text, -1, font.get(), stringSize, &strFormat, &textBrush);
+    std::wstring fontFamilyName{};
+    UINT32 fontFamilyLength = 0;
+    THROW_IF_FAILED(familyNames->GetStringLength(0, &fontFamilyLength));
+    fontFamilyName.resize(fontFamilyLength + 1);
+    THROW_IF_FAILED(
+        familyNames->GetString(0, fontFamilyName.data(), fontFamilyLength + 1));
+    float fontSize = float(abs(cfgTitleFont.get_value().lfHeight));
+    THROW_IF_FAILED(writeFactory->CreateTextFormat(
+        fontFamilyName.c_str(), NULL, font->GetWeight(), font->GetStyle(),
+        font->GetStretch(), fontSize, L"en-us", &textFormat));
   }
-  {
-    bitmap->RotateFlip(Gdiplus::RotateNoneFlipY);
-    Gdiplus::Rect rc(0, 0, bitmap->GetWidth(), bitmap->GetHeight());
-    Gdiplus::BitmapData bitmapData{};
-    bitmap->LockBits(&rc, Gdiplus::ImageLockModeRead, PixelFormat32bppARGB, &bitmapData);
+  THROW_IF_FAILED(textFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER));
+  THROW_IF_FAILED(textFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
 
-    glGenTextures(1, &displayTex.glTex);
-    glBindTexture(GL_TEXTURE_2D, displayTex.glTex);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  // calculate text size
+  pfc::stringcvt::string_wide_from_utf8 w_text(text.c_str());
+  wil::com_ptr<IDWriteTextLayout> textLayout;
+  THROW_IF_FAILED(writeFactory->CreateTextLayout(
+      w_text.get_ptr(), w_text.length(), textFormat.get(), float(renderer.winWidth),
+      float(renderer.winHeight), &textLayout));
 
-    void* data = bitmapData.Scan0;
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, displayTex.texWidth, displayTex.texHeight, 0,
-                 GL_BGRA_EXT, GL_UNSIGNED_BYTE, data);
+  DWRITE_TEXT_METRICS textMetrics{};
+  THROW_IF_FAILED(textLayout->GetMetrics(&textMetrics));
 
-    bitmap->UnlockBits(&bitmapData);
-  }
+  // Make the texture size a power of two
+  int minTexWidth = int(ceil(textMetrics.width));
+  int minTexHeight = int(ceil(textMetrics.height));
+  displayTex.centerX = int(ceil(textMetrics.width / 2));
+  displayTex.centerY = int(ceil(textMetrics.height / 2));
+  auto drawOffset = D2D1::Point2F(-ceil(textMetrics.left), -ceil(textMetrics.top));
+  displayTex.texWidth = 1;
+  while (displayTex.texWidth < minTexWidth)
+    displayTex.texWidth = displayTex.texWidth << 1;
+  displayTex.texHeight = 1;
+  while (displayTex.texHeight < minTexHeight)
+    displayTex.texHeight = displayTex.texHeight << 1;
+
+  wil::com_ptr<IWICBitmap> bitmap;
+  THROW_IF_FAILED(wicFactory->CreateBitmap(displayTex.texWidth, displayTex.texHeight,
+                                           GUID_WICPixelFormat32bppPRGBA,
+                                           WICBitmapCacheOnDemand, &bitmap));
+  wil::com_ptr<ID2D1RenderTarget> renderTarget;
+  THROW_IF_FAILED(d2Factory->CreateWicBitmapRenderTarget(
+      bitmap.get(), D2D1::RenderTargetProperties(), &renderTarget));
+
+  wil::com_ptr<ID2D1SolidColorBrush> textBrush;
+  THROW_IF_FAILED(renderTarget->CreateSolidColorBrush(
+      D2D1::ColorF(GetRValue(cfgTitleColor) / 255.0f, GetGValue(cfgTitleColor) / 255.0f,
+                   GetBValue(cfgTitleColor) / 255.0f, 1.0f),
+      &textBrush));
+
+  renderTarget->BeginDraw();
+  renderTarget->DrawTextLayout(drawOffset, textLayout.get(), textBrush.get());
+  renderTarget->EndDraw();
+
+  wil::com_ptr<IWICBitmapLock> bitmapLock;
+  WICRect lockRect{0, 0, displayTex.texWidth, displayTex.texHeight};
+  THROW_IF_FAILED(bitmap->Lock(&lockRect, WICBitmapLockRead, &bitmapLock));
+  WICInProcPointer bitmapData;
+  UINT dataSize;
+  THROW_IF_FAILED(bitmapLock->GetDataPointer(&dataSize, &bitmapData));
+
+  glGenTextures(1, &displayTex.glTex);
+  glBindTexture(GL_TEXTURE_2D, displayTex.glTex);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, displayTex.texWidth, displayTex.texHeight, 0,
+               GL_RGBA, GL_UNSIGNED_BYTE, bitmapData);
+
   return displayTex;
 }

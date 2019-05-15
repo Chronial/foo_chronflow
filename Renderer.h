@@ -29,13 +29,12 @@ class Renderer {
   class Engine& engine;
 
   bool wasMissingTextures = false;
+  int winWidth = 1;
+  int winHeight = 1;
 
  private:
   GLTexture spinnerTexture;
   void getFrustrumSize(double& right, double& top, double& zNear, double& zFar);
-
-  int winWidth = 1;
-  int winHeight = 1;
 
   bool vSyncEnabled;
 

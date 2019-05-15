@@ -15,7 +15,7 @@
 #define SELECTION_MIRROR 2
 
 Renderer::Renderer(Engine& engine)
-    : textDisplay(this), bitmapFont(*this), engine(engine),
+    : textDisplay(*this), bitmapFont(*this), engine(engine),
       spinnerTexture(loadSpinner()) {
   glfwSwapInterval(0);
   vSyncEnabled = false;
@@ -36,6 +36,7 @@ void Renderer::resizeGlScene(int width, int height) {
 
   glViewport(0, 0, width, height);  // Reset The Current Viewport
   setProjectionMatrix();
+  textDisplay.clearCache();
 }
 
 void Renderer::getFrustrumSize(double& right, double& top, double& zNear, double& zFar) {
@@ -254,9 +255,8 @@ void Renderer::drawGui() {
       DBIter iter = engine.db.iterFromPos(engine.worldState.getTarget()).value();
       albumTitle = engine.db.getAlbumInfo(iter).title;
     }
-    textDisplay.displayText(albumTitle, int(winWidth * cfgTitlePosH),
-                            int(winHeight * (1 - cfgTitlePosV)), TextDisplay::center,
-                            TextDisplay::middle);
+    textDisplay.displayText(
+        albumTitle, int(winWidth * cfgTitlePosH), int(winHeight * (1 - cfgTitlePosV)));
   }
 
   if (cfgShowFps) {

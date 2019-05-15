@@ -17,7 +17,11 @@ class BitmapFont {
 };
 
 class TextDisplay {
-  Renderer* renderer;
+  Renderer& renderer;
+  wil::com_ptr<IDWriteFactory> writeFactory;
+  wil::com_ptr<IDWriteGdiInterop> gdiInterop;
+  wil::com_ptr<ID2D1Factory> d2Factory;
+  wil::com_ptr<IWICImagingFactory> wicFactory;
 
  public:
   enum HAlignment {
@@ -31,15 +35,14 @@ class TextDisplay {
     bottom,
   };
 
-  explicit TextDisplay(Renderer* renderer) : renderer(renderer) {}
+  explicit TextDisplay(Renderer& renderer);
   TextDisplay(const TextDisplay&) = delete;
   TextDisplay& operator=(const TextDisplay&) = delete;
   TextDisplay(TextDisplay&&) = delete;
   TextDisplay& operator=(TextDisplay&&) = delete;
   ~TextDisplay();
 
-  void displayText(const std::string& text, int x, int y, HAlignment hAlign,
-                   VAlignment vAlign);
+  void displayText(const std::string& text, int x, int y);
   void clearCache();
 
  private:
@@ -48,10 +51,10 @@ class TextDisplay {
     GLuint glTex = 0;
     std::string text;
     COLORREF color{};
-    int textWidth{};
-    int textHeight{};
     int texWidth{};
     int texHeight{};
+    int centerX = 0;
+    int centerY = 0;
   };
 
   DisplayTexture createTexture(const std::string& text);

@@ -78,14 +78,18 @@ using std::unique_ptr;  // NOLINT
 #include <ActivScp.h>
 #include <Shlwapi.h>
 #include <commdlg.h>
+#include <d2d1.h>
+#include <dwrite.h>
 #include <gdiplus.h>
 #include <mmsystem.h>
 #include <process.h>
 #include <shellapi.h>
+#include <wincodec.h>
 #undef min
 #undef max
 
-#include <wil\Resource.h>
+#include <wil/com.h>
+#include <wil/resource.h>
 
 #include "lib/glad.h"
 #define GLFW_INCLUDE_GLU
