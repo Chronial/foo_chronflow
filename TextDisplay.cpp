@@ -59,67 +59,51 @@ TextDisplay::TextDisplay(Renderer& renderer) : renderer(renderer) {
       CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&wicFactory)));
 }
 
-TextDisplay::~TextDisplay() {
-  clearCache();
+void TextDisplay::clearCache() {
+  texCache.clear();
 }
 
-void TextDisplay::clearCache() {
-  for (auto& tex : texCache) {
-    if (tex.glTex) {
-      glDeleteTextures(1, &tex.glTex);
-      tex.glTex = 0;
-    }
-    tex.age = ~0u;
+const TextDisplay::DisplayTexture& TextDisplay::getTexture(const std::string& text) {
+  auto cached =
+      std::find_if(texCache.begin(), texCache.end(), [&](const DisplayTexture& e) {
+        return e.text == text && e.color == cfgTitleColor;
+      });
+  if (cached != texCache.end()) {
+    cached->age = 0;
+    return *cached;
   }
+  if (texCache.size() >= cache_size) {
+    auto oldest = std::max_element(
+        texCache.begin(), texCache.end(),
+        [](const DisplayTexture& a, const DisplayTexture& b) { return a.age < b.age; });
+    texCache.erase(oldest);
+  }
+  texCache.push_back(createTexture(text));
+  return texCache.back();
 }
 
 void TextDisplay::displayText(const std::string& text, int x, int y) {
-  DisplayTexture* dTex = nullptr;
-  DisplayTexture* oldestElem = &texCache.front();
-  unsigned int maxAge = 0;
-  for (auto& tex : texCache) {
-    if (tex.glTex && tex.text == text && tex.color == cfgTitleColor) {
-      dTex = &tex;
-      tex.age = 0;
-    } else {
-      if (tex.age < ~0)
-        tex.age++;
-      if (tex.age > maxAge) {
-        maxAge = tex.age;
-        oldestElem = &tex;
-      }
-    }
-  }
-  if (dTex == nullptr) {  // not in cache
-    if (oldestElem->glTex) {  // is oldest Element initialized?
-      glDeleteTextures(1, &oldestElem->glTex);
-      oldestElem->glTex = 0;
-    }
-    *oldestElem = createTexture(text);
-    oldestElem->age = 0;
-    dTex = oldestElem;
-  }
-
+  const DisplayTexture& texture = getTexture(text);
   renderer.glPushOrthoMatrix();
-  x -= dTex->centerX;
-  y += dTex->centerY;
+  x -= texture.centerX;
+  y += texture.centerY;
 
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   glEnable(GL_BLEND);
   glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
   glColor3f(1.0f, 1.0f, 1.0f);
-  glBindTexture(GL_TEXTURE_2D, dTex->glTex);
+  texture.glTex.bind();
   glBegin(GL_QUADS);
   {
     glTexCoord2f(0.0f, 0.0f);  // top left
     glVertex3i(x, y, 0);
     glTexCoord2f(1.0f, 0.0f);  // top right
-    glVertex3i(x + dTex->texWidth, y, 0);
+    glVertex3i(x + texture.texWidth, y, 0);
     glTexCoord2f(1.0f, 1.0f);  // bottom right
-    glVertex3i(x + dTex->texWidth, y - dTex->texHeight, 0);
+    glVertex3i(x + texture.texWidth, y - texture.texHeight, 0);
     glTexCoord2f(0.0f, 1.0f);  // bottom left
-    glVertex3i(x, y - dTex->texHeight, 0);
+    glVertex3i(x, y - texture.texHeight, 0);
   }
   glEnd();
   glDisable(GL_BLEND);
@@ -202,8 +186,7 @@ TextDisplay::DisplayTexture TextDisplay::createTexture(const std::string& text) 
   UINT dataSize;
   THROW_IF_FAILED(bitmapLock->GetDataPointer(&dataSize, &bitmapData));
 
-  glGenTextures(1, &displayTex.glTex);
-  glBindTexture(GL_TEXTURE_2D, displayTex.glTex);
+  displayTex.glTex.bind();
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 

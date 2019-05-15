@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Image.h"
 #include "utils.h"
 
 class Renderer;
@@ -36,28 +37,24 @@ class TextDisplay {
   };
 
   explicit TextDisplay(Renderer& renderer);
-  TextDisplay(const TextDisplay&) = delete;
-  TextDisplay& operator=(const TextDisplay&) = delete;
-  TextDisplay(TextDisplay&&) = delete;
-  TextDisplay& operator=(TextDisplay&&) = delete;
-  ~TextDisplay();
 
   void displayText(const std::string& text, int x, int y);
   void clearCache();
 
  private:
   struct DisplayTexture {
-    unsigned int age{};
-    GLuint glTex = 0;
+    unsigned int age = 0;
+    GLTexture glTex;
     std::string text;
     COLORREF color{};
-    int texWidth{};
-    int texHeight{};
+    int texWidth = 0;
+    int texHeight = 0;
     int centerX = 0;
     int centerY = 0;
   };
 
+  const DisplayTexture& getTexture(const std::string& text);
   DisplayTexture createTexture(const std::string& text);
-  static const int CACHE_SIZE = 20;
-  std::array<DisplayTexture, CACHE_SIZE> texCache;
+  static const int cache_size = 10;
+  std::vector<DisplayTexture> texCache;
 };
