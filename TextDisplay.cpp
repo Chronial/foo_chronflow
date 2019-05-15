@@ -63,10 +63,11 @@ void TextDisplay::clearCache() {
   texCache.clear();
 }
 
-const TextDisplay::DisplayTexture& TextDisplay::getTexture(const std::string& text) {
+const TextDisplay::DisplayTexture& TextDisplay::getTexture(const std::string& text,
+                                                           int highlight) {
   auto cached =
       std::find_if(texCache.begin(), texCache.end(), [&](const DisplayTexture& e) {
-        return e.text == text && e.color == cfgTitleColor;
+        return e.text == text && e.highlight == highlight && e.color == cfgTitleColor;
       });
   if (cached != texCache.end()) {
     cached->age = 0;
@@ -78,12 +79,12 @@ const TextDisplay::DisplayTexture& TextDisplay::getTexture(const std::string& te
         [](const DisplayTexture& a, const DisplayTexture& b) { return a.age < b.age; });
     texCache.erase(oldest);
   }
-  texCache.push_back(createTexture(text));
+  texCache.push_back(createTexture(text, highlight));
   return texCache.back();
 }
 
-void TextDisplay::displayText(const std::string& text, int x, int y) {
-  const DisplayTexture& texture = getTexture(text);
+void TextDisplay::displayText(const std::string& text, int highlight, int x, int y) {
+  const DisplayTexture& texture = getTexture(text, highlight);
   renderer.glPushOrthoMatrix();
   x -= texture.centerX;
   y += texture.centerY;
@@ -110,9 +111,11 @@ void TextDisplay::displayText(const std::string& text, int x, int y) {
   renderer.glPopOrthoMatrix();
 }
 
-TextDisplay::DisplayTexture TextDisplay::createTexture(const std::string& text) {
+TextDisplay::DisplayTexture TextDisplay::createTexture(const std::string& text,
+                                                       int highlight) {
   DisplayTexture displayTex;
   displayTex.text = text;
+  displayTex.highlight = highlight;
   displayTex.color = cfgTitleColor;
 
   wil::com_ptr<IDWriteTextFormat> textFormat;
@@ -170,10 +173,16 @@ TextDisplay::DisplayTexture TextDisplay::createTexture(const std::string& text) 
       bitmap.get(), D2D1::RenderTargetProperties(), &renderTarget));
 
   wil::com_ptr<ID2D1SolidColorBrush> textBrush;
-  THROW_IF_FAILED(renderTarget->CreateSolidColorBrush(
-      D2D1::ColorF(GetRValue(cfgTitleColor) / 255.0f, GetGValue(cfgTitleColor) / 255.0f,
-                   GetBValue(cfgTitleColor) / 255.0f, 1.0f),
-      &textBrush));
+  THROW_IF_FAILED(
+      renderTarget->CreateSolidColorBrush(D2D1::ColorF(cfgTitleColor, 1.0f), &textBrush));
+  if (highlight > 0) {
+    textBrush->SetOpacity(0.4f);
+    wil::com_ptr<ID2D1SolidColorBrush> highlightBrush;
+    THROW_IF_FAILED(renderTarget->CreateSolidColorBrush(
+        D2D1::ColorF(cfgTitleColor, 1.0f), &highlightBrush));
+    textLayout->SetDrawingEffect(
+        highlightBrush.get(), DWRITE_TEXT_RANGE{0, UINT32(highlight)});
+  }
 
   renderTarget->BeginDraw();
   renderTarget->DrawTextLayout(drawOffset, textLayout.get(), textBrush.get());

@@ -47,6 +47,7 @@ void FindAsYouType::removeChar() {
 void FindAsYouType::reset() {
   timeoutTimer.reset();
   enteredString.reset();
+  engine.thread.invalidateWindow();
 }
 
 bool FindAsYouType::updateSearch(const char* searchFor) {

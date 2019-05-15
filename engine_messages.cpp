@@ -61,6 +61,7 @@ void EM::MoveToNowPlayingMessage::run(Engine& e) {
 void EM::MoveTargetMessage::run(Engine& e, int moveBy, bool moveToEnd) {
   if (e.db.empty())
     return;
+  e.findAsYouType.reset();
   if (!moveToEnd) {
     auto target = e.worldState.getTarget();
     e.setTarget(e.db.movePosBy(target, moveBy), true);

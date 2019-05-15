@@ -38,7 +38,7 @@ class TextDisplay {
 
   explicit TextDisplay(Renderer& renderer);
 
-  void displayText(const std::string& text, int x, int y);
+  void displayText(const std::string& text, int highlight, int x, int y);
   void clearCache();
 
  private:
@@ -47,14 +47,15 @@ class TextDisplay {
     GLTexture glTex;
     std::string text;
     COLORREF color{};
+    int highlight;
     int texWidth = 0;
     int texHeight = 0;
     int centerX = 0;
     int centerY = 0;
   };
 
-  const DisplayTexture& getTexture(const std::string& text);
-  DisplayTexture createTexture(const std::string& text);
+  const DisplayTexture& getTexture(const std::string& text, int highlight);
+  DisplayTexture createTexture(const std::string& text, int highlight);
   static const int cache_size = 10;
   std::vector<DisplayTexture> texCache;
 };
