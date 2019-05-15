@@ -43,11 +43,12 @@ class TextDisplay {
 
  private:
   struct DisplayTexture {
-    unsigned int age = 0;
-    GLTexture glTex;
     std::string text;
-    COLORREF color{};
     int highlight;
+
+    unsigned int age = 0;
+
+    GLTexture glTex;
     int texWidth = 0;
     int texHeight = 0;
     int centerX = 0;

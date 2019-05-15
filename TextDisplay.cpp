@@ -67,7 +67,7 @@ const TextDisplay::DisplayTexture& TextDisplay::getTexture(const std::string& te
                                                            int highlight) {
   auto cached =
       std::find_if(texCache.begin(), texCache.end(), [&](const DisplayTexture& e) {
-        return e.text == text && e.highlight == highlight && e.color == cfgTitleColor;
+        return e.text == text && e.highlight == highlight;
       });
   if (cached != texCache.end()) {
     cached->age = 0;
@@ -116,7 +116,6 @@ TextDisplay::DisplayTexture TextDisplay::createTexture(const std::string& text,
   DisplayTexture displayTex;
   displayTex.text = text;
   displayTex.highlight = highlight;
-  displayTex.color = cfgTitleColor;
 
   wil::com_ptr<IDWriteTextFormat> textFormat;
   {  // load font

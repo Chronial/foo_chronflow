@@ -432,6 +432,8 @@ class DisplayTab : public ConfigTab {
               if (selectColor(titleColor)) {
                 cfgTitleColor = titleColor;
                 InvalidateRect(uGetDlgItem(hWnd, IDC_TEXTCOLOR_PREV), nullptr, TRUE);
+                EngineThread::forEach(
+                    [](EngineThread& t) { t.send<EM::TextFormatChangedMessage>(); });
               }
             } break;
             case IDC_FONT: {
