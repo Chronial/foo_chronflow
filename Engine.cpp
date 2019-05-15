@@ -5,7 +5,18 @@
 #include "PlaybackTracer.h"
 #include "TextureCache.h"
 #include "config.h"
+#include "utils.h"
 #include "world_state.h"
+
+#ifdef _DEBUG
+void GLAPIENTRY glMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity,
+                                  GLsizei length, const GLchar* message,
+                                  const void* userParam) {
+  console::out() << "GL: " << message;
+  if (type == GL_DEBUG_TYPE_ERROR || severity == GL_DEBUG_SEVERITY_HIGH)
+    __debugbreak();
+}
+#endif
 
 GLContext::GLContext(EngineWindow& window) {
   window.makeContextCurrent();
@@ -17,6 +28,9 @@ GLContext::GLContext(EngineWindow& window) {
         GLAD_GL_EXT_bgra)) {
     throw std::exception("Glad failed to initialize OpenGl");
   }
+
+  IF_DEBUG(glEnable(GL_DEBUG_OUTPUT));
+  IF_DEBUG(glDebugMessageCallback(glMessageCallback, 0));
 
   glShadeModel(GL_SMOOTH);
   glClearDepth(1.0f);
