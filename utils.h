@@ -41,6 +41,7 @@ struct ILessUtf8 {
 
 extern const char** builtInCoverConfigArray;
 constexpr char* defaultCoverConfig = "Default (build-in)";
+constexpr char* coverConfigTemplate = "Template (build-in)";
 
 #define TEST_BIT_PTR(BITSET_PTR, BIT) _bittest(BITSET_PTR, BIT)
 #ifdef _DEBUG

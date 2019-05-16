@@ -11,6 +11,7 @@ CoverConfigMap builtInCoverConfigs() {
     map[name] = CoverConfig{script, true};
   }
   PFC_ASSERT(map.count(defaultCoverConfig) == 1);
+  PFC_ASSERT(map.count(coverConfigTemplate) == 1);
   return map;
 }
 

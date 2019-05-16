@@ -36,31 +36,17 @@ Some general notes:
 //
 // Returns: (leftmostCover, rightmostCover)
 function drawCovers(){
-   return new Array(-40, 40);
+   return new Array(-10, 10);
 }
 
 // Set the position of a point on each cover.
 //
 // See also coverAlign() below
 function coverPosition(coverId){
-   var coverSpacing = 0.07;
    var x, y, z;
+   x = coverId*1.1;
    y = 0;
-   if (Math.abs(coverId) <= 1){ // The centered cover
-      var z_logit = -0.04 + 0.55 / (
-       1 + Math.pow(Math.E, Math.abs(6.5 * coverId) - 4));
-      var z_root = z = 0.5 *
-       Math.pow(1 - Math.abs(coverId), 1.1);
-      var alpha = 0.3;
-      z = 4 + alpha * z_logit + (1 - alpha) * z_root;
-      x = coverId * 0.875;
-   } else { // The covers on the side
-      z = 4 - (Math.abs(coverId) - 1) * 0.01
-            - Math.pow((Math.abs(coverId) - 1)*0.025, 2);
-      x = 0.875 + coverSpacing * (Math.abs(coverId)-1);
-      if (coverId < 0)
-         x *= -1;
-   }
+   z = -Math.abs(coverId)*0.6;
    return new Array(x, y, z);
 }
 
@@ -80,16 +66,7 @@ function coverAlign(coverId){
 //   `angle` degrees around the axis along (x,y,z). Per
 //   default, the covers are parallel to the x-y-plane.
 function coverRotation(coverId){
-   var angle;
-   if (Math.abs(coverId) < 1){ // The centered cover
-      angle = coverId * -60;
-   } else { // The covers on the side
-      if (coverId > 0)
-         angle = -60;
-      else
-         angle = 60;
-   }
-   return new Array(angle, 0, 1, 0);
+   return new Array(0, 0, 1, 0);
 }
 
 // Set the the size boundaries for the cover.
@@ -99,7 +76,7 @@ function coverRotation(coverId){
 //
 // Returns: (width, height)
 function coverSizeLimits(coverId){
-   return new Array(1, 1);
+   return new Array(1, 2);
 }
 
 /*********************************************************/
@@ -118,14 +95,15 @@ function aspectBehaviour(){
    return new Array(0, 1);
 }
 
+
 // Set the position of the camera.
 function eyePos(){
-   return new Array(0, 1.15, 6.1);
+	return new Array(0, 0.5, 2);
 }
 
 // Set the point that the camera is looking at.
 function lookAt(){
-   return new Array(0, -1.15, 0);
+   return new Array(0, 0.5, 0);
 }
 
 // Set where up is.
@@ -133,7 +111,7 @@ function lookAt(){
 // This can be used to rotate the view. The returned vector
 // will point upwards in the viewport.
 function upVector(){
-   return new Array(0, 1, 0);
+   return new Array(0, 1, 0);   
 }
 
 /*********************************************************/

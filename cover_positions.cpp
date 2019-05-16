@@ -30,9 +30,9 @@ void cfg_compiledCPInfoPtr::ensureIsSet() {
   if (this->get())
     return;
 
-  // Try to compile the user's script
   CompiledCPInfo cInfo;
   try {
+    // Try to compile the user's script
     std::string config = cfgCoverConfigs.at(cfgCoverConfigSel.c_str()).script;
     cInfo = compileCPScript(config.c_str());
   } catch (std::exception&) {
