@@ -7,6 +7,7 @@
 #include "Image.h"
 #include "TextureCache.h"
 #include "config.h"
+#include "style_manager.h"
 #include "utils.h"
 #include "world_state.h"
 
@@ -15,7 +16,7 @@
 #define SELECTION_MIRROR 2
 
 Renderer::Renderer(Engine& engine)
-    : textDisplay(*this), bitmapFont(*this), engine(engine),
+    : textDisplay(*this, engine.styleManager), bitmapFont(*this), engine(engine),
       spinnerTexture(loadSpinner()) {
   glfwSwapInterval(0);
   vSyncEnabled = false;
@@ -134,10 +135,9 @@ void Renderer::drawMirrorPass() {
   double rotAngle = rad2deg(scaleAxis.intersectAng(mirrorNormal));
   rotAngle = -2 * rotAngle;
 
-  glFogfv(GL_FOG_COLOR, std::array<GLfloat, 4>{GetRValue(cfgPanelBg) / 255.0f,
-                                               GetGValue(cfgPanelBg) / 255.0f,
-                                               GetBValue(cfgPanelBg) / 255.0f, 1.0f}
-                            .data());
+  auto bgColor = engine.styleManager.getBgColorF();
+  glFogfv(GL_FOG_COLOR,
+          std::array<GLfloat, 4>{bgColor[0], bgColor[1], bgColor[2], 1.0f}.data());
   glEnable(GL_FOG);
 
   glPushMatrix();
@@ -153,8 +153,9 @@ void Renderer::drawMirrorPass() {
 
 void Renderer::drawMirrorOverlay() {
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-  glColor4f(GetRValue(cfgPanelBg) / 255.0f, GetGValue(cfgPanelBg) / 255.0f,
-            GetBValue(cfgPanelBg) / 255.0f, 0.60f);
+
+  auto bgColor = engine.styleManager.getBgColorF();
+  glColor4f(bgColor[0], bgColor[1], bgColor[2], 0.60f);
 
   glShadeModel(GL_FLAT);
   glDisable(GL_TEXTURE_2D);
@@ -274,8 +275,10 @@ void Renderer::drawGui() {
     dispStringB << "max ms/f: " << std::setw(5) << (1000 * maxDur);
     dispStringA << "  cpu: " << std::setw(5) << avgCPU * 1000;
     dispStringB << "  max: " << std::setw(5) << maxCPU * 1000;
-    bitmapFont.displayText(dispStringA.str().c_str(), 15, winHeight - 20);
-    bitmapFont.displayText(dispStringB.str().c_str(), 15, winHeight - 35);
+    bitmapFont.displayText(dispStringA.str().c_str(), engine.styleManager.getTitleColor(),
+                           15, winHeight - 20);
+    bitmapFont.displayText(dispStringB.str().c_str(), engine.styleManager.getTitleColor(),
+                           15, winHeight - 35);
   }
 
   if (engine.reloadWorker)
@@ -288,8 +291,9 @@ void Renderer::drawSpinner() {
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  COLORREF c = cfgTitleColor.get_value();
-  glColor3f(GetRValue(c) / 255.0f, GetGValue(c) / 255.0f, GetBValue(c) / 255.0f);
+
+  auto color = engine.styleManager.getTitleColorF();
+  glColor3f(color[0], color[1], color[2]);
   spinnerTexture.bind();
   int x = winWidth - 30;
   int y = winHeight - 30;
@@ -313,8 +317,8 @@ void Renderer::drawSpinner() {
 }
 
 void Renderer::drawBg() {
-  glClearColor(GetRValue(cfgPanelBg) / 255.0f, GetGValue(cfgPanelBg) / 255.0f,
-               GetBValue(cfgPanelBg) / 255.0f, 0);
+  auto bgColor = engine.styleManager.getBgColorF();
+  glClearColor(bgColor[0], bgColor[1], bgColor[2], 0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
@@ -413,8 +417,8 @@ void Renderer::drawCovers(bool showTarget) {
         clipPlane = true;
       }
 
-      glColor3f(GetRValue(cfgTitleColor) / 255.0f, GetGValue(cfgTitleColor) / 255.0f,
-                GetBValue(cfgTitleColor) / 255.0f);
+      auto color = engine.styleManager.getTitleColorF();
+      glColor3f(color[0], color[1], color[2]);
 
       glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
       glDisable(GL_TEXTURE_2D);

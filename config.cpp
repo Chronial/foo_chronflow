@@ -96,10 +96,20 @@ static const GUID guid_cfgTitlePosV = {
     0x8441c311, 0x7ef1, 0x47d0, {0xbc, 0xbf, 0xd7, 0xb6, 0xce, 0xf5, 0x39, 0x2c}};
 cfg_struct_t<double> cfgTitlePosV(guid_cfgTitlePosV, 0.92);
 
+// {8A670C75-F5CE-41C7-9665-9761D6A859CE}
+static const GUID guid_cfgTitleColorCustom = {
+    0x8a670c75, 0xf5ce, 0x41c7, {0x96, 0x65, 0x97, 0x61, 0xd6, 0xa8, 0x59, 0xce}};
+cfg_bool cfgTitleColorCustom(guid_cfgTitleColorCustom, false);
+
 // {10820ADB-EAC6-403f-89B3-A33E2F800DD7}
 static const GUID guid_cfgTitleColor = {
     0x10820adb, 0xeac6, 0x403f, {0x89, 0xb3, 0xa3, 0x3e, 0x2f, 0x80, 0xd, 0xd7}};
 cfg_int_t<COLORREF> cfgTitleColor(guid_cfgTitleColor, RGB(0, 0, 0));
+
+// {7A88CA29-F766-477D-9068-AE7CE8890605}
+static const GUID guid_cfgTitleFontCustom = {
+    0x7a88ca29, 0xf766, 0x477d, {0x90, 0x68, 0xae, 0x7c, 0xe8, 0x89, 0x6, 0x5}};
+cfg_bool cfgTitleFontCustom(guid_cfgTitleFontCustom, true);
 
 // {3BBA50BD-207E-43b2-95F1-44B67B898C26}
 static const GUID guid_cfgTitleFont = {
@@ -112,6 +122,11 @@ static inline LOGFONT def_cfgTitleFont() {
   return out;
 }
 cfg_struct_t<LOGFONT> cfgTitleFont(guid_cfgTitleFont, def_cfgTitleFont());
+
+// {EEA7821B-6800-4D8F-931C-D9141DDD4760}
+static const GUID guid_cfgPanelBgCustom = {
+    0xeea7821b, 0x6800, 0x4d8f, {0x93, 0x1c, 0xd9, 0x14, 0x1d, 0xdd, 0x47, 0x60}};
+cfg_bool cfgPanelBgCustom(guid_cfgPanelBgCustom, false);
 
 // {8AC48B7A-E38E-40fb-B6BE-1A0CD0D81D30}
 static const GUID guid_cfgPanelBg = {

@@ -4,6 +4,7 @@
 
 struct AlbumInfo;
 class ContainerWindow;
+class StyleManager;
 
 class GLFWContext {
  public:
@@ -17,7 +18,7 @@ class GLFWContext {
 
 class EngineWindow {
  public:
-  EngineWindow(ContainerWindow& container,
+  EngineWindow(ContainerWindow& container, StyleManager& styleManager,
                ui_element_instance_callback_ptr defaultUiCallback);
 
   void setWindowSize(int width, int height);

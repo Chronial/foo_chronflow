@@ -14,7 +14,7 @@ void EngineThread::run() {
   // since mainthread callbacks held by EngineThread might reference Engine objects.
   std::optional<Engine> engine;
   try {
-    engine.emplace(*this, engineWindow);
+    engine.emplace(*this, engineWindow, styleManager);
     engine->mainLoop();
   } catch (std::exception& e) {
     runInMainThread([&] {
@@ -35,8 +35,10 @@ void EngineThread::sendMessage(unique_ptr<engine_messages::Message>&& msg) {
   messageQueue.push(std::move(msg));
 }
 
-EngineThread::EngineThread(EngineWindow& engineWindow) : engineWindow(engineWindow) {
+EngineThread::EngineThread(EngineWindow& engineWindow, StyleManager& styleManager)
+    : engineWindow(engineWindow), styleManager(styleManager) {
   instances.insert(this);
+  styleManager.setChangeHandler([&] { this->on_style_change(); });
   play_callback_reregister(flag_on_playback_new_track, true);
   std::packaged_task<void(EngineThread*)> task(&EngineThread::run);
   thread = std::thread(std::move(task), this);
@@ -44,6 +46,7 @@ EngineThread::EngineThread(EngineWindow& engineWindow) : engineWindow(engineWind
 
 EngineThread::~EngineThread() {
   instances.erase(this);
+  styleManager.setChangeHandler([] {});
   this->send<EM::StopThread>();
   // If the shutdown causes an exception, we need a second
   // message to shut down the exception handler.
@@ -62,6 +65,11 @@ void EngineThread::forEach(std::function<void(EngineThread&)> f) {
   for (auto instance : instances) {
     f(*instance);
   }
+}
+
+void EngineThread::on_style_change() {
+  send<EM::TextFormatChangedMessage>();
+  invalidateWindow();
 }
 
 void EngineThread::on_playback_new_track(metadb_handle_ptr p_track) {

@@ -72,6 +72,9 @@
 #define IDC_ALBUM_TITLE 1111
 #define IDC_FIND_AS_YOU_TYPE 1112
 #define IDC_TARGET_PL 1115
+#define IDC_TEXTCOLOR_CUSTOM 1116
+#define IDC_FONT_CUSTOM 1117
+#define IDC_BG_COLOR_CUSTOM 1118
 
 // Next default values for new objects
 //
@@ -80,7 +83,7 @@
 #define _APS_NO_MFC 1
 #define _APS_NEXT_RESOURCE_VALUE 131
 #define _APS_NEXT_COMMAND_VALUE 40004
-#define _APS_NEXT_CONTROL_VALUE 1116
+#define _APS_NEXT_CONTROL_VALUE 1117
 #define _APS_NEXT_SYMED_VALUE 101
 #endif
 #endif

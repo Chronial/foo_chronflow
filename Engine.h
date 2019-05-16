@@ -29,6 +29,7 @@ class Engine {
  public:
   EngineWindow& window;
   class EngineThread& thread;
+  class StyleManager& styleManager;
 
   GLContext glContext;
   DbAlbumCollection db;
@@ -41,7 +42,7 @@ class Engine {
   PlaybackTracer playbackTracer;
   unique_ptr<DbReloadWorker> reloadWorker;
 
-  Engine(EngineThread&, EngineWindow&);
+  Engine(EngineThread&, EngineWindow&, StyleManager& styleManager);
   void mainLoop();
   void updateRefreshRate();
   void setTarget(DBPos target, bool userInitiated);

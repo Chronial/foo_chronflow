@@ -54,6 +54,9 @@ std::unordered_map<UINT, cfg_bool*> boolVarMap{
 
     // Display
     {IDC_ALBUM_TITLE, &cfgShowAlbumTitle},
+    {IDC_FONT_CUSTOM, &cfgTitleFontCustom},
+    {IDC_TEXTCOLOR_CUSTOM, &cfgTitleColorCustom},
+    {IDC_BG_COLOR_CUSTOM, &cfgPanelBgCustom},
 
     // Performance
     {IDC_MULTI_SAMPLING, &cfgMultisampling},
@@ -68,6 +71,14 @@ std::multimap<UINT, int> disableMap{
 
     // Behaviour
     {IDC_FOLLOW_PLAYBACK, IDC_FOLLOW_DELAY},
+
+    // Display
+    {IDC_FONT_CUSTOM, IDC_FONT},
+    {IDC_FONT_CUSTOM, IDC_FONT_PREV},
+    {IDC_TEXTCOLOR_CUSTOM, IDC_TEXTCOLOR},
+    {IDC_TEXTCOLOR_CUSTOM, IDC_TEXTCOLOR_PREV},
+    {IDC_BG_COLOR_CUSTOM, IDC_BG_COLOR},
+    {IDC_BG_COLOR_CUSTOM, IDC_BG_COLOR_PREV},
 
     // Performance
     {IDC_MULTI_SAMPLING, IDC_MULTI_SAMPLING_PASSES},
@@ -446,7 +457,13 @@ class DisplayTab : public ConfigTab {
                 EngineThread::forEach(
                     [](EngineThread& t) { t.send<EM::TextFormatChangedMessage>(); });
               }
-            }
+            } break;
+            case IDC_TEXTCOLOR_CUSTOM:
+            case IDC_FONT_CUSTOM:
+            case IDC_BG_COLOR_CUSTOM: {
+              EngineThread::forEach(
+                  [](EngineThread& t) { t.send<EM::TextFormatChangedMessage>(); });
+            } break;
           }
           redrawMainWin();
         }

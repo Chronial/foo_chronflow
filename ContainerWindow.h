@@ -1,5 +1,6 @@
 #pragma once
 #include "EngineWindow.h"
+#include "style_manager.h"
 
 struct GdiContext {
   ULONG_PTR token{};
@@ -16,7 +17,7 @@ struct GdiContext {
 
 class ContainerWindow {
  public:
-  explicit ContainerWindow(HWND parent,
+  explicit ContainerWindow(HWND parent, StyleManager& styleManager,
                            ui_element_instance_callback_ptr duiCallback = nullptr);
   NO_MOVE_NO_COPY(ContainerWindow);
   ~ContainerWindow();

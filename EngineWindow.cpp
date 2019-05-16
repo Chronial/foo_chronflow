@@ -31,13 +31,13 @@ GLFWContext::~GLFWContext() {
   }
 }
 
-EngineWindow::EngineWindow(ContainerWindow& container,
+EngineWindow::EngineWindow(ContainerWindow& container, StyleManager& styleManager,
                            ui_element_instance_callback_ptr defaultUiCallback)
     : defaultUiCallback(std::move(defaultUiCallback)), container(container) {
   TRACK_CALL_TEXT("EngineWindow::EngineWindow");
 
   createWindow();
-  engineThread.emplace(*this);
+  engineThread.emplace(*this, styleManager);
   glfwShowWindow(glfwWindow.get());
 }
 

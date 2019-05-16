@@ -9,14 +9,14 @@
 constexpr int minimizeCheckTimeout = 10'000;  // milliseconds
 constexpr int minimizeCheckTimerId = 665;
 
-ContainerWindow::ContainerWindow(HWND parent,
+ContainerWindow::ContainerWindow(HWND parent, StyleManager& styleManager,
                                  ui_element_instance_callback_ptr duiCallback) {
   TRACK_CALL_TEXT("ContainerWindow::startup");
   createWindow(parent);
 
   try {
     sessionCompiledCPInfo.ensureIsSet();
-    engineWindow = make_unique<EngineWindow>(*this, duiCallback);
+    engineWindow = make_unique<EngineWindow>(*this, styleManager, duiCallback);
   } catch (std::exception& e) {
     engineError = e.what();
   }

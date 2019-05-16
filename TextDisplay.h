@@ -4,13 +4,14 @@
 #include "utils.h"
 
 class Renderer;
+class StyleManager;
 
 class BitmapFont {
  public:
   BitmapFont(Renderer& renderer);
   ~BitmapFont();
   NO_MOVE_NO_COPY(BitmapFont);
-  void displayText(const char* text, int x, int y);
+  void displayText(const char* text, COLORREF color, int x, int y);
 
  private:
   Renderer& renderer;
@@ -19,6 +20,7 @@ class BitmapFont {
 
 class TextDisplay {
   Renderer& renderer;
+  StyleManager& styleManager;
   wil::com_ptr<IDWriteFactory> writeFactory;
   wil::com_ptr<IDWriteGdiInterop> gdiInterop;
   wil::com_ptr<ID2D1Factory> d2Factory;
@@ -36,7 +38,7 @@ class TextDisplay {
     bottom,
   };
 
-  explicit TextDisplay(Renderer& renderer);
+  explicit TextDisplay(Renderer& renderer, StyleManager& styleManager);
 
   void displayText(const std::string& text, int highlight, int x, int y);
   void clearCache();

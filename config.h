@@ -26,8 +26,11 @@ extern cfg_bool cfgShowAlbumTitle;
 extern cfg_string cfgAlbumTitle;
 extern cfg_struct_t<double> cfgTitlePosH;
 extern cfg_struct_t<double> cfgTitlePosV;
+extern cfg_bool cfgTitleColorCustom;
 extern cfg_int_t<COLORREF> cfgTitleColor;
+extern cfg_bool cfgTitleFontCustom;
 extern cfg_struct_t<LOGFONT> cfgTitleFont;
+extern cfg_bool cfgPanelBgCustom;
 extern cfg_int cfgPanelBg;
 extern cfg_int cfgHighlightWidth;
 

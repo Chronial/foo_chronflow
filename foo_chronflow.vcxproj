@@ -193,6 +193,7 @@
     <ClInclude Include="lib\stb_image.h" />
     <ClInclude Include="lib\stb_image_resize.h" />
     <ClInclude Include="lib\win32_helpers.h" />
+    <ClInclude Include="style_manager.h" />
     <ClInclude Include="TextureCache.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="ContainerWindow.h" />

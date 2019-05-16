@@ -1,7 +1,7 @@
 #include "TextDisplay.h"
 
 #include "Renderer.h"
-#include "config.h"
+#include "style_manager.h"
 
 BitmapFont::BitmapFont(Renderer& renderer) : renderer(renderer) {
   wil::unique_hfont font{CreateFont(-14,  // Height Of Font
@@ -35,11 +35,11 @@ BitmapFont::~BitmapFont() {
   glDeleteLists(glDisplayList, 96);
 }
 
-void BitmapFont::displayText(const char* text, int x, int y) {
+void BitmapFont::displayText(const char* text, COLORREF color, int x, int y) {
   renderer.glPushOrthoMatrix();
   glDisable(GL_TEXTURE_2D);
-  glColor3f(GetRValue(cfgTitleColor) / 255.0f, GetGValue(cfgTitleColor) / 255.0f,
-            GetBValue(cfgTitleColor) / 255.0f);
+  glColor3f(
+      GetRValue(color) / 255.0f, GetGValue(color) / 255.0f, GetBValue(color) / 255.0f);
   glRasterPos2i(x, y);
   glPushAttrib(GL_LIST_BIT);
   glListBase(glDisplayList - 32);
@@ -49,7 +49,8 @@ void BitmapFont::displayText(const char* text, int x, int y) {
   renderer.glPopOrthoMatrix();
 }
 
-TextDisplay::TextDisplay(Renderer& renderer) : renderer(renderer) {
+TextDisplay::TextDisplay(Renderer& renderer, StyleManager& styleManager)
+    : renderer(renderer), styleManager(styleManager) {
   THROW_IF_FAILED(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &d2Factory));
   THROW_IF_FAILED(DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED,
                                       __uuidof(IDWriteFactory),
@@ -122,7 +123,8 @@ TextDisplay::DisplayTexture TextDisplay::createTexture(const std::string& text,
     wil::com_ptr<IDWriteFont> font{};
     wil::com_ptr<IDWriteFontFamily> fontFamily{};
     wil::com_ptr<IDWriteLocalizedStrings> familyNames{};
-    THROW_IF_FAILED(gdiInterop->CreateFontFromLOGFONT(&cfgTitleFont.get_value(), &font));
+    LOGFONT logFont = styleManager.getTitleFont();
+    THROW_IF_FAILED(gdiInterop->CreateFontFromLOGFONT(&logFont, &font));
     THROW_IF_FAILED(font->GetFontFamily(&fontFamily));
     THROW_IF_FAILED(fontFamily->GetFamilyNames(&familyNames));
 
@@ -132,7 +134,7 @@ TextDisplay::DisplayTexture TextDisplay::createTexture(const std::string& text,
     fontFamilyName.resize(fontFamilyLength + 1);
     THROW_IF_FAILED(
         familyNames->GetString(0, fontFamilyName.data(), fontFamilyLength + 1));
-    float fontSize = float(abs(cfgTitleFont.get_value().lfHeight));
+    float fontSize = float(abs(logFont.lfHeight));
     THROW_IF_FAILED(writeFactory->CreateTextFormat(
         fontFamilyName.c_str(), NULL, font->GetWeight(), font->GetStyle(),
         font->GetStretch(), fontSize, L"en-us", &textFormat));
@@ -172,10 +174,9 @@ TextDisplay::DisplayTexture TextDisplay::createTexture(const std::string& text,
       bitmap.get(), D2D1::RenderTargetProperties(), &renderTarget));
 
   wil::com_ptr<ID2D1SolidColorBrush> textBrush;
+  auto color = styleManager.getTitleColorF();
   THROW_IF_FAILED(renderTarget->CreateSolidColorBrush(
-      D2D1::ColorF(GetRValue(cfgTitleColor) / 255.0f, GetGValue(cfgTitleColor) / 255.0f,
-                   GetBValue(cfgTitleColor) / 255.0f, 1.0f),
-      &textBrush));
+      D2D1::ColorF(color[0], color[1], color[2], 1.0f), &textBrush));
   if (highlight > 0) {
     wil::com_ptr<ID2D1SolidColorBrush> highlightBrush;
     THROW_IF_FAILED(

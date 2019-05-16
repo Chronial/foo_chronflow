@@ -3,6 +3,7 @@
 #include "utils.h"
 
 class EngineWindow;
+class StyleManager;
 
 namespace engine_messages {
 struct Message;
@@ -24,7 +25,7 @@ class CallbackHolder {
 class EngineThread : public play_callback_impl_base,
                      public library_callback_dynamic_impl_base {
  public:
-  explicit EngineThread(EngineWindow& engineWindow);
+  explicit EngineThread(EngineWindow& engineWindow, StyleManager& styleManager);
   NO_MOVE_NO_COPY(EngineThread);
   ~EngineThread();
 
@@ -48,6 +49,8 @@ class EngineThread : public play_callback_impl_base,
 
   void invalidateWindow();
 
+  void on_style_change();
+
   void on_playback_new_track(metadb_handle_ptr p_track) final;
   void on_items_added(metadb_handle_list_cref p_data) final;
   void on_items_removed(metadb_handle_list_cref p_data) final;
@@ -65,6 +68,7 @@ class EngineThread : public play_callback_impl_base,
  private:
   void run();
   EngineWindow& engineWindow;
+  StyleManager& styleManager;
   BlockingQueue<unique_ptr<engine_messages::Message>> messageQueue;
   CallbackHolder callbackHolder;
   std::thread thread;

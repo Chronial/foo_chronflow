@@ -68,9 +68,9 @@ int HighTimerResolution::get() {
   return resolution;
 }
 
-Engine::Engine(EngineThread& thread, EngineWindow& window)
-    : window(window), thread(thread), glContext(window), findAsYouType(*this),
-      coverPos(sessionCompiledCPInfo.get()), worldState(db),
+Engine::Engine(EngineThread& thread, EngineWindow& window, StyleManager& styleManager)
+    : window(window), thread(thread), styleManager(styleManager), glContext(window),
+      findAsYouType(*this), coverPos(sessionCompiledCPInfo.get()), worldState(db),
       texCache(thread, db, coverPos), renderer(*this), playbackTracer(thread) {}
 
 void Engine::mainLoop() {

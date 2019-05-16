@@ -203,6 +203,9 @@
     <ClInclude Include="TrackDropSource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="style_manager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="images\cover-loading.jpg">
