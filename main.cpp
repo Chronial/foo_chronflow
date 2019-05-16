@@ -1,7 +1,7 @@
 #include "ContainerWindow.h"
 #include "utils.h"
 
-#define VERSION "0.4.5"
+#define VERSION "0.5.0"
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
 DECLARE_COMPONENT_VERSION("Coverflow", VERSION,
