@@ -27,6 +27,7 @@ GLFWContext::GLFWContext() {
 GLFWContext::~GLFWContext() {
   --count;
   if (count == 0) {
+    TRACK_CALL(glfwTerminate);
     glfwTerminate();
   }
 }
