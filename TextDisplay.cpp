@@ -166,12 +166,22 @@ TextDisplay::DisplayTexture TextDisplay::createTexture(const std::string& text,
     displayTex.texHeight = displayTex.texHeight << 1;
 
   wil::com_ptr<IWICBitmap> bitmap;
-  THROW_IF_FAILED(wicFactory->CreateBitmap(displayTex.texWidth, displayTex.texHeight,
-                                           GUID_WICPixelFormat32bppPRGBA,
-                                           WICBitmapCacheOnDemand, &bitmap));
   wil::com_ptr<ID2D1RenderTarget> renderTarget;
-  THROW_IF_FAILED(d2Factory->CreateWicBitmapRenderTarget(
-      bitmap.get(), D2D1::RenderTargetProperties(), &renderTarget));
+  try {
+    THROW_IF_FAILED(wicFactory->CreateBitmap(displayTex.texWidth, displayTex.texHeight,
+                                             GUID_WICPixelFormat32bppPRGBA,
+                                             WICBitmapCacheOnDemand, &bitmap));
+    THROW_IF_FAILED(d2Factory->CreateWicBitmapRenderTarget(
+        bitmap.get(), D2D1::RenderTargetProperties(), &renderTarget));
+  } catch (const wil::ResultException& e) {
+    throw std::runtime_error(
+        PFC_string_formatter()
+        << "Failed to create WIC bitmap or render target for DirectWrite:\n"
+        << std::system_category().message(e.GetErrorCode()).c_str() << " [0x"
+        << pfc::format_hex((unsigned int)e.GetErrorCode()) << "]\n\n"
+        << "If you are running Windows Vista, please install the \"Platform Update "
+           "for Windows Vista\".");
+  }
 
   wil::com_ptr<ID2D1SolidColorBrush> textBrush;
   auto color = styleManager.getTitleColorF();
