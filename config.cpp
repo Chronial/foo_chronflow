@@ -58,7 +58,7 @@ cfg_bool cfgFindAsYouType(guid_cfgFindAsYouType, true);
 // {A5763153-444A-4649-82E4-E5E3D395DD42}
 static const GUID guid_cfgTargetPlaylist = {
     0xa5763153, 0x444a, 0x4649, {0x82, 0xe4, 0xe5, 0xe3, 0xd3, 0x95, 0xdd, 0x42}};
-cfg_string cfgTargetPlaylist(guid_cfgTargetPlaylist, "#Chronflow");
+cfg_string cfgTargetPlaylist(guid_cfgTargetPlaylist, "Coverflow");
 
 // {C34448FB-11B2-4f6f-87BB-D0E31CE77C45}
 static const GUID guid_cfgDoubleClick = {

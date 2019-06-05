@@ -343,7 +343,7 @@ void EngineWindow::onContextMenu(const int x, const int y) {
       uAppendMenu(hMenu, MF_SEPARATOR, 0, nullptr);
     }
   }
-  uAppendMenu(hMenu, MF_STRING, ID_PREFERENCES, "Chronflow Preferences...");
+  uAppendMenu(hMenu, MF_STRING, ID_PREFERENCES, "Coverflow Preferences...");
 
   menu_helpers::win32_auto_mnemonics(hMenu);
   const int cmd = TrackPopupMenu(

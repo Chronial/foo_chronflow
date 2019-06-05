@@ -45,7 +45,7 @@ class dui_chronflow : public ui_element_instance {
         window(parent, style_manager, p_callback) {}
   HWND get_wnd() final { return window.getHWND(); };
 
-  static void g_get_name(pfc::string_base& out) { out = "Chronflow"; }
+  static void g_get_name(pfc::string_base& out) { out = "Coverflow"; }
   static const char* g_get_description() {
     return "Displays a 3D rendering of the Album Art in your Media Library";
   }

@@ -175,6 +175,8 @@ decltype(auto) apply_method(F&& func, T&& first, U&& tuple) {
 
 inline std::function<void(void)> catchThreadExceptions(std::string threadName,
                                                        std::function<void(void)> f) {
+  TRACK_CALL_TEXT(PFC_string_formatter()
+                  << "foo_chronflow thread: " << threadName.c_str());
   return [=] {
     try {
       f();

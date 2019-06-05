@@ -24,7 +24,7 @@ DbReloadWorker::~DbReloadWorker() {
 }
 
 void DbReloadWorker::threadProc() {
-  TRACK_CALL_TEXT("Chronflow DbReloadWorker");
+  TRACK_CALL_TEXT("DbReloadWorker::threadProc");
   pfc::hires_timer timer;
   timer.start();
 

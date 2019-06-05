@@ -68,7 +68,7 @@ class cui_chronflow : public ui_extension::window {
     return guid_foo_chronflow;
   }
 
-  void get_name(pfc::string_base& out) const final { out = "Chronflow"; }
+  void get_name(pfc::string_base& out) const final { out = "Coverflow"; }
 
   unsigned get_type() const final { return ui_extension::type_panel; }
 

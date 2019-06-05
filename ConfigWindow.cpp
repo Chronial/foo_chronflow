@@ -992,7 +992,7 @@ class ConfigWindow : public preferences_page {
         IDD_CONFIG_TABS, parent, dialogProxy, reinterpret_cast<LPARAM>(this));
   }
 
-  const char* get_name() final { return "Chronflow"; }
+  const char* get_name() final { return "Coverflow"; }
 
   GUID get_guid() final { return guid_configWindow; }
 

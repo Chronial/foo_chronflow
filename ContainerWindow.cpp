@@ -43,7 +43,7 @@ HWND ContainerWindow::createWindow(HWND parent) {
 
   return check(CreateWindowEx(0,  // Extended Style For The Window
                               mainwindowClassname,  // Class Name
-                              L"ChronFlow MainWin",  //  Title
+                              L"foo_chronflow container",  //  Title
                               WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,  // Style
                               CW_USEDEFAULT, CW_USEDEFAULT,  // Window Position
                               CW_USEDEFAULT, CW_USEDEFAULT,  // Window Dimensions

@@ -186,7 +186,7 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,29,224,10
     EDITTEXT        IDC_FOLLOW_DELAY,237,27,30,14,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER,WS_EX_RIGHT
     CONTROL         "",IDC_FOLLOW_DELAY_SPINNER,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,285,27,10,14
-    CONTROL         "Enable Find As You Type (disables alphanumeric hotkeys in chronflow panel)",IDC_FIND_AS_YOU_TYPE,
+    CONTROL         "Enable Find As You Type (disables alphanumeric hotkeys in coverflow panel)",IDC_FIND_AS_YOU_TYPE,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,17,259,10
     RTEXT           "Target Playlist:",IDC_STATIC,10,189,50,8
     EDITTEXT        IDC_TARGET_PL,66,186,229,14,ES_AUTOHSCROLL
