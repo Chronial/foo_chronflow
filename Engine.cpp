@@ -149,6 +149,14 @@ void Engine::updateRefreshRate() {
 }
 
 void Engine::setTarget(DBPos target, bool userInitiated) {
+  if (auto dbIter = db.iterFromPos(target)) {
+    metadb_handle_list tracks;
+    db.getTracks(dbIter.value(), tracks);
+    thread.runInMainThread([tracks = std::move(tracks), &engineWindow = window] {
+      engineWindow.setSelection(tracks);
+    });
+  }
+
   worldState.setTarget(target);
   cacheDirty = true;
   if (userInitiated)

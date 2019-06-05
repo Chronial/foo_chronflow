@@ -126,6 +126,15 @@ LRESULT EngineWindow::messageHandler(UINT uMsg, WPARAM wParam, LPARAM lParam) {
     case WM_MOUSEACTIVATE:
       SetFocus(hWnd);
       return MA_ACTIVATE;
+    case WM_SETFOCUS: {
+      selectionHolder = ui_selection_manager::get()->acquire();
+      setSelection(selection);
+      break;
+    }
+    case WM_KILLFOCUS: {
+      selectionHolder.release();
+      break;
+    }
     case WM_GETDLGCODE:
       return DLGC_WANTALLKEYS;
     case WM_LBUTTONDOWN:
@@ -259,6 +268,13 @@ bool EngineWindow::onKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam) {
 
 void EngineWindow::onDamage() {
   engineThread->send<EM::RedrawMessage>();
+}
+
+void EngineWindow::setSelection(metadb_handle_list selection) {
+  this->selection = selection;
+  if (selection.get_count() && selectionHolder.is_valid())
+    selectionHolder->set_selection_ex(
+        selection, contextmenu_item::caller_media_library_viewer);
 }
 
 void EngineWindow::onWindowSize(int width, int height) {

@@ -25,6 +25,7 @@ class EngineWindow {
   void makeContextCurrent();
   void swapBuffers();
   void onDamage();
+  void setSelection(metadb_handle_list selection);
 
  private:
   void createWindow();
@@ -44,6 +45,9 @@ class EngineWindow {
  private:
   double scrollAggregator = 0;
   ui_element_instance_callback_ptr defaultUiCallback;
+  metadb_handle_list selection;
+  ui_selection_holder::ptr selectionHolder;
+
   GLFWContext glfwContext;
   unique_ptr<GLFWwindow,
              std::integral_constant<decltype(&glfwDestroyWindow), glfwDestroyWindow>>
