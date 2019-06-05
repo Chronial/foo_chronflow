@@ -15,6 +15,8 @@
 #include "cover_positions_compiler.h"
 #include "utils.h"
 
+namespace {
+
 // NOLINTNEXTLINE(cppcoreguidelines-interfaces-global-init)
 std::unordered_map<UINT, cfg_string*> stringVarMap{
     // Sources
@@ -1000,4 +1002,18 @@ class ConfigWindow : public preferences_page {
   void reset() final {}
 };
 
-static service_factory_single_t<ConfigWindow> x_configWindow;
+static service_factory_single_t<ConfigWindow> g_configWindow;
+
+class LibraryViewer : public library_viewer {
+  GUID get_guid() final {
+    return {0xa68951b7, 0x1497, 0x4ed2, {0xa2, 0xba, 0xcf, 0xaf, 0xd, 0xaa, 0xb8, 0x84}};
+  };
+  const char* get_name() final { return "Coverflow"; };
+  GUID get_preferences_page() final { return guid_configWindow; }
+  bool have_activate() final { return false; };
+  void activate() final{};
+};
+
+static library_viewer_factory_t<LibraryViewer> g_libraryViewer;
+
+}  // namespace
