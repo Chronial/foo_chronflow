@@ -19,6 +19,7 @@ ContainerWindow::ContainerWindow(HWND parent, StyleManager& styleManager,
     engineWindow = make_unique<EngineWindow>(*this, styleManager, duiCallback);
   } catch (std::exception& e) {
     engineError = e.what();
+    FB2K_console_formatter() << "foo_chronflow failed to initialize:\n" << e.what();
   }
 }
 
@@ -157,4 +158,6 @@ void ContainerWindow::destroyEngineWindow(std::string errorMessage) {
     return;
   engineWindow.reset();
   engineError = errorMessage;
+  FB2K_console_formatter() << "foo_chronflow encountered an error:\n"
+                           << errorMessage.c_str();
 }
