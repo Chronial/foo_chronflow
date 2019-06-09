@@ -17,6 +17,8 @@ GLFWContext::GLFWContext() {
     glfwSetErrorCallback([](int error, const char* description) {
       throw std::runtime_error(PFC_string_formatter() << "glfw error: " << description);
     });
+    TRACK_CALL_TEXT("glfwInit");
+    TRACK_CODE("ensure_main_thread()", core_api::ensure_main_thread());
     if (!glfwInit()) {
       throw std::runtime_error("Failed to initialize glfw");
     }
@@ -27,7 +29,8 @@ GLFWContext::GLFWContext() {
 GLFWContext::~GLFWContext() {
   --count;
   if (count == 0) {
-    TRACK_CALL(glfwTerminate);
+    TRACK_CALL_TEXT("glfwTerminate");
+    TRACK_CODE("ensure_main_thread()", core_api::ensure_main_thread());
     glfwTerminate();
   }
 }
