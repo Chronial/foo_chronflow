@@ -168,8 +168,9 @@ TextDisplay::DisplayTexture TextDisplay::createTexture(const std::string& text,
   wil::com_ptr<IWICBitmap> bitmap;
   wil::com_ptr<ID2D1RenderTarget> renderTarget;
   try {
+    // Use GBR for Vista support
     THROW_IF_FAILED(wicFactory->CreateBitmap(displayTex.texWidth, displayTex.texHeight,
-                                             GUID_WICPixelFormat32bppPRGBA,
+                                             GUID_WICPixelFormat32bppPBGRA,
                                              WICBitmapCacheOnDemand, &bitmap));
     THROW_IF_FAILED(d2Factory->CreateWicBitmapRenderTarget(
         bitmap.get(), D2D1::RenderTargetProperties(), &renderTarget));
@@ -185,8 +186,9 @@ TextDisplay::DisplayTexture TextDisplay::createTexture(const std::string& text,
 
   wil::com_ptr<ID2D1SolidColorBrush> textBrush;
   auto color = styleManager.getTitleColorF();
+  // Swap Red and Blue so we can treat this BGR image as RGB
   THROW_IF_FAILED(renderTarget->CreateSolidColorBrush(
-      D2D1::ColorF(color[0], color[1], color[2], 1.0f), &textBrush));
+      D2D1::ColorF(color[2], color[1], color[0], 1.0f), &textBrush));
   if (highlight > 0) {
     wil::com_ptr<ID2D1SolidColorBrush> highlightBrush;
     THROW_IF_FAILED(
