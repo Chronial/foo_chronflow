@@ -24,8 +24,7 @@ GLContext::GLContext(EngineWindow& window) {
   // This also takes care of multithread synchronization.
   static const bool glad =
       (0 != gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)));
-  if (!(glad && GLAD_GL_VERSION_2_1 && GLAD_GL_EXT_texture_filter_anisotropic &&
-        GLAD_GL_EXT_bgra)) {
+  if (!(glad && GLAD_GL_VERSION_2_1 && GLAD_GL_EXT_texture_filter_anisotropic)) {
     throw std::exception("Glad failed to initialize OpenGl");
   }
 
