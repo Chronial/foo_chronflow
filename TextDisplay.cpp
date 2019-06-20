@@ -168,7 +168,7 @@ TextDisplay::DisplayTexture TextDisplay::createTexture(const std::string& text,
   wil::com_ptr<IWICBitmap> bitmap;
   wil::com_ptr<ID2D1RenderTarget> renderTarget;
   try {
-    // Use GBR for Vista support
+    // Use BGR for Vista support
     THROW_IF_FAILED(wicFactory->CreateBitmap(displayTex.texWidth, displayTex.texHeight,
                                              GUID_WICPixelFormat32bppPBGRA,
                                              WICBitmapCacheOnDemand, &bitmap));
