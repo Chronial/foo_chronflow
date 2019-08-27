@@ -11,7 +11,7 @@ DB::DB(t_uint64 libraryVersion, const std::string& filterQuery,
        const std::string& keyFormat, const std::string& sortFormat,
        const std::string& titleFormat)
     : keyIndex(container.get<key>()), sortIndex(container.get<sortKey>()),
-      titleIndex(container.get<title>()), libraryVersion(libraryVersion) {
+      libraryVersion(libraryVersion) {
   if (!filterQuery.empty()) {
     try {
       filter ^= search_filter_manager::get()->create(filterQuery.c_str());
@@ -186,29 +186,16 @@ AlbumInfo DbAlbumCollection::getAlbumInfo(DBIter pos) {
 std::optional<DBPos> DbAlbumCollection::performFayt(const std::string& input) {
   if (!db)
     return std::nullopt;
+
+  // input should be already whitespace-cleaned
   size_t inputLen = pfc::strlen_utf8(input.c_str());
-  auto range =
-      db->titleIndex.equal_range(input, [&](const std::string& a, const std::string& b) {
-        return stricmp_utf8_partial(a.c_str(), b.c_str(), inputLen) < 0;
-      });
-
-  if (range.first == range.second)
-    return std::nullopt;
-
-  t_size resRank = ~0u;
-  DBIter res;
-
-  // Find the item with the lowest index.
-  // This is important to select the leftmost album
-  for (auto it = range.first; it != range.second; ++it) {
-    DBIter thisPos = db->container.project<db_structure::sortKey>(it);
-    t_size thisIdx = db->sortIndex.rank(thisPos);
-    if (thisIdx < resRank) {
-      resRank = thisIdx;
-      res = thisPos;
+  for (auto it = db->sortIndex.begin(); it != db->sortIndex.end(); ++it) {
+    if (0 == stricmp_utf8_partial(
+                 input.c_str(), remove_whitespace(it->title).c_str(), inputLen)) {
+      return posFromIter(it);
     }
   }
-  return posFromIter(res);
+  return std::nullopt;
 }
 
 DBIter DbAlbumCollection::begin() const {

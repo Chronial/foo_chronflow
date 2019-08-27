@@ -29,15 +29,8 @@ struct CompWLogical {
   }
 };
 
-struct CompIUtf8 {
-  bool operator()(const std::string& a, const std::string& b) const {
-    return stricmp_utf8(a.c_str(), b.c_str()) < 0;
-  }
-};
-
 struct key {};
 struct sortKey {};
-struct title {};
 
 struct Album {
   Album(const char* key, const wchar_t* sortKey, const char* title)
@@ -57,10 +50,7 @@ using Container = bomi::multi_index_container<
                                    bomi::member<Album, std::string, &Album::key>>,
                bomi::ranked_non_unique<bomi::tag<sortKey>,
                                        bomi::member<Album, std::wstring, &Album::sortKey>,
-                                       CompWLogical>,
-               bomi::ordered_non_unique<bomi::tag<title>,
-                                        bomi::member<Album, std::string, &Album::title>,
-                                        CompIUtf8>>>;
+                                       CompWLogical>>>;
 
 class DB {
  public:
@@ -72,7 +62,6 @@ class DB {
   Container container;
   Container::index<key>::type& keyIndex;
   Container::index<sortKey>::type& sortIndex;
-  Container::index<title>::type& titleIndex;
   std::map<const metadb_handle_ptr, const db_structure::Album&> trackMap;
   t_uint64 libraryVersion;
 

@@ -256,7 +256,7 @@ void Renderer::drawGui() {
     } else {
       DBIter iter = engine.db.iterFromPos(engine.worldState.getTarget()).value();
       albumTitle = engine.db.getAlbumInfo(iter).title;
-      highlight = engine.findAsYouType.enteredLength();
+      highlight = engine.findAsYouType.highlightLength(albumTitle);
     }
     textDisplay.displayText(albumTitle, highlight, int(winWidth * cfgTitlePosH),
                             int(winHeight * (1 - cfgTitlePosV)));

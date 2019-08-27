@@ -12,7 +12,7 @@ class FindAsYouType {
   explicit FindAsYouType(Engine& engine) : engine(engine){};
   void onChar(WPARAM wParam);
   void reset();
-  int enteredLength() { return strlen_utf8(enteredString); };
+  int highlightLength(const std::string& albumTitle);
 
  private:
   void enterChar(wchar_t c);
