@@ -38,7 +38,8 @@ void FindAsYouType::enterChar(wchar_t c) {
 }
 
 void FindAsYouType::removeChar() {
-  enteredString.truncate(enteredString.length() - 1);
+  enteredString.truncate(
+      pfc::utf8_chars_to_bytes(enteredString, pfc::strlen_utf8(enteredString) - 1));
   if (enteredString.length() > 0) {
     updateSearch(enteredString);
   }
