@@ -31,19 +31,6 @@ std::string windows_lineendings(std::string s) {
   return std::move(s);
 }
 
-std::string remove_whitespace(const std::string& in) {
-  std::string out{};
-  out.reserve(in.length());
-  for (const char& c : in) {
-    if (c == ' ' || c == '\r' || c == '\n') {
-      continue;
-    } else {
-      out.push_back(c);
-    }
-  }
-  return out;
-}
-
 double time() {
   static std::array<t_int64, 2> resolution_and_offset = [] {
     LARGE_INTEGER resolution;

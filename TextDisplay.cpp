@@ -64,8 +64,8 @@ void TextDisplay::clearCache() {
   texCache.clear();
 }
 
-const TextDisplay::DisplayTexture& TextDisplay::getTexture(const std::string& text,
-                                                           int highlight) {
+const TextDisplay::DisplayTexture& TextDisplay::getTexture(
+    const std::string& text, const std::vector<size_t>& highlight) {
   auto cached =
       std::find_if(texCache.begin(), texCache.end(), [&](const DisplayTexture& e) {
         return e.text == text && e.highlight == highlight;
@@ -84,7 +84,8 @@ const TextDisplay::DisplayTexture& TextDisplay::getTexture(const std::string& te
   return texCache.back();
 }
 
-void TextDisplay::displayText(const std::string& text, int highlight, int x, int y) {
+void TextDisplay::displayText(const std::string& text, std::vector<size_t> highlight,
+                              int x, int y) {
   const DisplayTexture& texture = getTexture(text, highlight);
   renderer.glPushOrthoMatrix();
   x -= texture.centerX;
@@ -112,8 +113,8 @@ void TextDisplay::displayText(const std::string& text, int highlight, int x, int
   renderer.glPopOrthoMatrix();
 }
 
-TextDisplay::DisplayTexture TextDisplay::createTexture(const std::string& text,
-                                                       int highlight) {
+TextDisplay::DisplayTexture TextDisplay::createTexture(
+    const std::string& text, const std::vector<size_t>& highlight) {
   DisplayTexture displayTex;
   displayTex.text = text;
   displayTex.highlight = highlight;
@@ -189,13 +190,14 @@ TextDisplay::DisplayTexture TextDisplay::createTexture(const std::string& text,
   // Swap Red and Blue so we can treat this BGR image as RGB
   THROW_IF_FAILED(renderTarget->CreateSolidColorBrush(
       D2D1::ColorF(color[2], color[1], color[0], 1.0f), &textBrush));
-  if (highlight > 0) {
+  if (highlight.size() > 0) {
     wil::com_ptr<ID2D1SolidColorBrush> highlightBrush;
     THROW_IF_FAILED(
         renderTarget->CreateSolidColorBrush(textBrush->GetColor(), &highlightBrush));
-    textLayout->SetDrawingEffect(
-        highlightBrush.get(), DWRITE_TEXT_RANGE{0, UINT32(highlight)});
     textBrush->SetOpacity(0.4f);
+    for (t_size pos : highlight) {
+      textLayout->SetDrawingEffect(highlightBrush.get(), DWRITE_TEXT_RANGE{pos, 1});
+    }
   }
 
   renderTarget->BeginDraw();

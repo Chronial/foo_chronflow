@@ -3,6 +3,7 @@
 #include "DbReloadWorker.h"
 #include "Engine.h"
 #include "EngineThread.h"
+#include "FindAsYouType.h"
 #include "config.h"
 
 namespace db_structure {
@@ -187,15 +188,22 @@ std::optional<DBPos> DbAlbumCollection::performFayt(const std::string& input) {
   if (!db)
     return std::nullopt;
 
-  // input should be already whitespace-cleaned
-  size_t inputLen = pfc::strlen_utf8(input.c_str());
-  for (auto it = db->sortIndex.begin(); it != db->sortIndex.end(); ++it) {
-    if (0 == stricmp_utf8_partial(
-                 input.c_str(), remove_whitespace(it->title).c_str(), inputLen)) {
-      return posFromIter(it);
+  FuzzyMatcher matcher(input);
+
+  int maxScore = -1;
+  const db_structure::Album* maxAlbum = nullptr;
+  for (const auto& album : db->sortIndex) {
+    int score = matcher.match(album.title);
+    if (score > maxScore) {
+      maxScore = score;
+      maxAlbum = &album;
     }
   }
-  return std::nullopt;
+  if (maxScore > -1) {
+    return posFromIter(db->sortIndex.iterator_to(*maxAlbum));
+  } else {
+    return std::nullopt;
+  }
 }
 
 DBIter DbAlbumCollection::begin() const {

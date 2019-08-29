@@ -12,10 +12,19 @@ class FindAsYouType {
   explicit FindAsYouType(Engine& engine) : engine(engine){};
   void onChar(WPARAM wParam);
   void reset();
-  int highlightLength(const std::string& albumTitle);
+  std::vector<size_t> highlightPositions(const std::string& albumTitle);
 
  private:
   void enterChar(wchar_t c);
   void removeChar();
   bool updateSearch(const char* searchFor);
+};
+
+class FuzzyMatcher {
+ public:
+  explicit FuzzyMatcher(const std::string& pattern);
+  int match(const std::string& input, std::vector<size_t>* positions = nullptr);
+
+ private:
+  std::wstring pattern;
 };

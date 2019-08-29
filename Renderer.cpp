@@ -248,7 +248,7 @@ void Renderer::drawScene(bool selectionPass) {
 void Renderer::drawGui() {
   if (cfgShowAlbumTitle || engine.db.initializing()) {
     std::string albumTitle;
-    int highlight = 0;
+    std::vector<size_t> highlight;
     if (engine.db.initializing()) {
       albumTitle = "Generating Cover Display ...";
     } else if (engine.db.empty()) {
@@ -256,7 +256,7 @@ void Renderer::drawGui() {
     } else {
       DBIter iter = engine.db.iterFromPos(engine.worldState.getTarget()).value();
       albumTitle = engine.db.getAlbumInfo(iter).title;
-      highlight = engine.findAsYouType.highlightLength(albumTitle);
+      highlight = engine.findAsYouType.highlightPositions(albumTitle);
     }
     textDisplay.displayText(albumTitle, highlight, int(winWidth * cfgTitlePosH),
                             int(winHeight * (1 - cfgTitlePosV)));

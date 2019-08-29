@@ -40,13 +40,13 @@ class TextDisplay {
 
   explicit TextDisplay(Renderer& renderer, StyleManager& styleManager);
 
-  void displayText(const std::string& text, int highlight, int x, int y);
+  void displayText(const std::string& text, std::vector<size_t> highlight, int x, int y);
   void clearCache();
 
  private:
   struct DisplayTexture {
     std::string text;
-    int highlight;
+    std::vector<size_t> highlight;
 
     unsigned int age = 0;
 
@@ -57,8 +57,10 @@ class TextDisplay {
     int centerY = 0;
   };
 
-  const DisplayTexture& getTexture(const std::string& text, int highlight);
-  DisplayTexture createTexture(const std::string& text, int highlight);
+  const DisplayTexture& getTexture(const std::string& text,
+                                   const std::vector<size_t>& highlight);
+  DisplayTexture createTexture(const std::string& text,
+                               const std::vector<size_t>& highlight);
   static const int cache_size = 10;
   std::vector<DisplayTexture> texCache;
 };

@@ -166,7 +166,14 @@ std::string windows_lineendings(std::string s);
 #define TSu(x, s) (pfc::stringcvt::string_utf8_from_os(x, s).get_ptr())
 #endif
 
-std::string remove_whitespace(const std::string& in);
+inline std::wstring wstring_from_utf8(const std::string& s) {
+  std::wstring out;
+  out.resize(pfc::stringcvt::estimate_utf8_to_wide_quick(s.c_str()));
+  auto size =
+      pfc::stringcvt::convert_utf8_to_wide(out.data(), out.size(), s.c_str(), s.size());
+  out.resize(size);
+  return out;
+}
 
 template <typename F, typename T, typename U>
 decltype(auto) apply_method(F&& func, T&& first, U&& tuple) {
