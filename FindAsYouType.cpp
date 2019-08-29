@@ -14,21 +14,18 @@ using score_t = t_int16;
 namespace {
 
 const score_t scoreMatch = 16;
-const score_t penaltyGapStart = -3;
+const score_t penaltyGapStart = -8;
 const score_t penaltyGapExtention = -1;
 
 // We prefer matches at the beginning of a word, but the bonus should not be
 // too great to prevent the longer acronym matches from always winning over
-// shorter fuzzy matches. The bonus point here was specifically chosen that
-// the bonus is cancelled when the gap between the acronyms grows over
-// 8 characters, which is approximately the average length of the words found
-// in web2 dictionary and my file system.
-const score_t bonusBoundary = scoreMatch / 2;
+// shorter fuzzy matches.
+const score_t bonusBoundary = 8;
 
 // Although bonus point for non-word characters is non-contextual, we need it
 // for computing bonus points for consecutive chunks starting with a non-word
 // character.
-const score_t bonusNonWord = scoreMatch / 2;
+const score_t bonusNonWord = 0;
 
 // Minimum bonus point given to characters in consecutive chunks.
 // Note that bonus points for consecutive matches shouldn't have needed if
