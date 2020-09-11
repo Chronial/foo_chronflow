@@ -304,7 +304,7 @@ void EngineWindow::onContextMenu(const int x, const int y) {
     pt.y = y;
     POINT clientPt = pt;
     ScreenToClient(hWnd, &clientPt);
-    auto future = engineThread->sendSync<EM::GetAlbumAtCoords>(pt.x, pt.y);
+    auto future = engineThread->sendSync<EM::GetAlbumAtCoords>(clientPt.x, clientPt.y);
     target = future.get();
   }
   if (!target) {
