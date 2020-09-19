@@ -6,7 +6,7 @@
 #include "utils.h"
 
 void EngineThread::run() {
-  TRACK_CALL_TEXT("foo_chronflow EngineThread");
+  ThreadEntryPoint threadEntry("EngineThread");
   CoInitializeScope com_enable{};
   engineWindow.makeContextCurrent();
 

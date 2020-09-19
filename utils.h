@@ -115,6 +115,18 @@ inline pfc::list_t<T> pfc_list(std::initializer_list<T> elems) {
   return out;
 }
 
+class ThreadEntryPoint {
+ public:
+  [[nodiscard]] ThreadEntryPoint(std::string const& name)
+      : stackTracker(("foo_chronflow thread: " + name).c_str()) {
+    SetThreadDescription(GetCurrentThread(), pfc::stringcvt::string_wide_from_utf8(
+                                                 ("foo_chronflow " + name).c_str()));
+  }
+
+ private:
+  uCallStackTracker stackTracker;
+};
+
 // Wrapper for win32 api calls to raise an exception on failure
 template <typename T>
 inline T check(T a) {
@@ -184,9 +196,8 @@ decltype(auto) apply_method(F&& func, T&& first, U&& tuple) {
 
 inline std::function<void(void)> catchThreadExceptions(std::string threadName,
                                                        std::function<void(void)> f) {
-  TRACK_CALL_TEXT(PFC_string_formatter()
-                  << "foo_chronflow thread: " << threadName.c_str());
   return [=] {
+    ThreadEntryPoint thread(threadName);
     try {
       f();
     } catch (exception_aborted&) {
