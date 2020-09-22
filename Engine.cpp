@@ -50,6 +50,7 @@ GLContext::GLContext(EngineWindow& window) {
 
 GLContext::~GLContext() {
   glFinish();
+  glfwMakeContextCurrent(nullptr);
 }
 
 HighTimerResolution::HighTimerResolution() {
