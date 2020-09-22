@@ -82,12 +82,13 @@ void EngineWindow::createWindow() {
       }),
       0, reinterpret_cast<DWORD_PTR>(this)));
 
-  static auto wrap = [](auto f) noexcept {
+  static const auto wrap = [](auto f) noexcept {
     try {
       f();
     } catch (std::exception& e) {
       FB2K_console_formatter()
           << "Exception in foo_chronflow EngineWindow event handler: " << e.what();
+      IF_DEBUG(__debugbreak());
     }
   };
   glfwSetWindowUserPointer(glfwWindow.get(), this);
