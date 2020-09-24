@@ -8,51 +8,6 @@
 #include "utils.h"
 #include "world_state.h"
 
-#ifdef _DEBUG
-void GLAPIENTRY glMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity,
-                                  GLsizei length, const GLchar* message,
-                                  const void* userParam) {
-  console::out() << "GL: " << message;
-  if (type == GL_DEBUG_TYPE_ERROR || severity == GL_DEBUG_SEVERITY_HIGH)
-    __debugbreak();
-}
-#endif
-
-GLContext::GLContext(EngineWindow& window) {
-  window.makeContextCurrent();
-  // Static, since we only want to initialize the extensions once.
-  // This also takes care of multithread synchronization.
-  static const bool glad =
-      (0 != gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)));
-  if (!glad)
-    throw std::exception("Glad could not initialize OpenGl");
-  if (!GLAD_GL_VERSION_2_1)
-    throw std::exception("OpenGL 2.1 is not supported");
-  if (!GLAD_GL_EXT_texture_filter_anisotropic)
-    throw std::exception("Missing support for anisotropic textures");
-
-  IF_DEBUG(glEnable(GL_DEBUG_OUTPUT));
-  IF_DEBUG(glDebugMessageCallback(glMessageCallback, 0));
-
-  glShadeModel(GL_SMOOTH);
-  glClearDepth(1.0f);
-  glEnable(GL_DEPTH_TEST);
-  glDepthFunc(GL_LEQUAL);
-  glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-  glHint(GL_TEXTURE_COMPRESSION_HINT, GL_FASTEST);
-  glEnable(GL_TEXTURE_2D);
-
-  glFogi(GL_FOG_MODE, GL_EXP);
-  glFogf(GL_FOG_DENSITY, 5);
-  glHint(GL_FOG_HINT, GL_NICEST);  // Per-Pixel Fog Calculation
-  glFogi(GL_FOG_COORD_SRC, GL_FOG_COORD);  // Set Fog Based On Vertice Coordinates
-}
-
-GLContext::~GLContext() {
-  glFinish();
-  glfwMakeContextCurrent(nullptr);
-}
-
 HighTimerResolution::HighTimerResolution() {
   timeBeginPeriod(get());
 }
@@ -89,10 +44,12 @@ void Engine::mainLoop() {
     if (auto msg = thread.messageQueue.popMaybe()) {
       msg.value()->execute(*this);
     } else if (cacheDirty) {
+      GLContext::checkGraphicsReset();
       texCache.startLoading(worldState.getTarget());
       cacheDirty = false;
     } else if (windowDirty) {
       fpsCounter.startFrame();
+      GLContext::checkGraphicsReset();
       if (!timerResolution)
         timerResolution.emplace();
       texCache.setPriority(true);
@@ -106,6 +63,7 @@ void Engine::mainLoop() {
 
       // Render
       renderer.drawFrame();
+      GLContext::checkGraphicsReset();
       glFinish();
       fpsCounter.endFrame();
 
@@ -125,7 +83,9 @@ void Engine::mainLoop() {
         }
       }
       double swapStart = time();
+      GLContext::checkGraphicsReset();
       window.swapBuffers();
+      GLContext::checkGraphicsReset();
       glFinish();  // Wait for GPU
       lastSwapEnd = time();
       swapEstimate = 0.2 * (lastSwapEnd - swapStart) + 0.8 * swapEstimate;
@@ -138,6 +98,7 @@ void Engine::mainLoop() {
     }
   }
   // Synchronize with GPU before shutdown to avoid crashes
+  GLContext::checkGraphicsReset();
   glFinish();
 }
 

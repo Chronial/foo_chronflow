@@ -3,19 +3,13 @@
 #include "DbAlbumCollection.h"
 #include "DbReloadWorker.h"
 #include "FindAsYouType.h"
+#include "GLContext.h"
 #include "PlaybackTracer.h"
 #include "Renderer.h"
 #include "TextureCache.h"
 #include "cover_positions.h"
 #include "utils.h"
 #include "world_state.h"
-
-class GLContext {
- public:
-  explicit GLContext(class EngineWindow&);
-  NO_MOVE_NO_COPY(GLContext);
-  ~GLContext();
-};
 
 class HighTimerResolution {
  public:

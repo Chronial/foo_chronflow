@@ -3,6 +3,7 @@
 #include "ContainerWindow.h"
 #include "Engine.h"
 #include "EngineWindow.h"
+#include "GLContext.h"
 #include "utils.h"
 
 void EngineThread::run() {
@@ -16,12 +17,10 @@ void EngineThread::run() {
   try {
     engine.emplace(*this, engineWindow, styleManager);
     engine->mainLoop();
-  } catch (std::exception& e) {
-    runInMainThread([&] {
-      engineWindow.container.destroyEngineWindow((PFC_string_formatter()
-                                                  << "Engine died with exception:\n"
-                                                  << e.what())
-                                                     .c_str());
+  } catch (std::exception const& e) {
+    runInMainThread([msg = std::string{e.what()}, &container = engineWindow.container] {
+      container.destroyEngineWindow("Engine died with exception:\n" + msg);
+      // Note: destroyEngineWindow destroyes this EngineThread, `this` is invalid now
     });
     while (nullptr == dynamic_cast<EM::StopThread*>(messageQueue.pop().get())) {
       // Going through the message queue has two purposes:

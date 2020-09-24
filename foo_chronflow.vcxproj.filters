@@ -108,6 +108,9 @@
     <ClCompile Include="TrackDropSource.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GLContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DbAlbumCollection.h">
@@ -204,6 +207,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="style_manager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GLContext.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -152,6 +152,7 @@
     <ClCompile Include="EngineWindow.cpp" />
     <ClCompile Include="engine_messages.cpp" />
     <ClCompile Include="FindAsYouType.cpp" />
+    <ClCompile Include="GLContext.cpp" />
     <ClCompile Include="Image.cpp" />
     <ClCompile Include="lib\cover_configs.cpp" />
     <ClCompile Include="lib\glad.cpp" />
@@ -185,6 +186,7 @@
     <ClInclude Include="cover_positions_compiler.h" />
     <ClInclude Include="Engine.h" />
     <ClInclude Include="engine_messages.h" />
+    <ClInclude Include="GLContext.h" />
     <ClInclude Include="Image.h" />
     <ClInclude Include="lib\glad.h" />
     <ClInclude Include="lib\gl_structs.h" />

@@ -5,6 +5,7 @@
 #include "lib/stb_image.h"
 #include "lib/stb_image_resize.h"
 
+#include "GLContext.h"
 #include "config.h"
 #include "utils.h"
 
@@ -241,7 +242,6 @@ UploadReadyImage& UploadReadyImage::operator=(UploadReadyImage&& other) {
 GLImage UploadReadyImage::upload() const {
   TRACK_CALL_TEXT("UploadReadyImage::upload");
   IF_DEBUG(double preLoad = time());
-  // TODO: handle opengl errors?
   GLTexture texture{};
   texture.bind();
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -257,6 +257,7 @@ GLImage UploadReadyImage::upload() const {
     glInternalFormat = GL_RGB;
   }
 
+  GLContext::checkGraphicsReset();
   glTexImage2D(GL_TEXTURE_2D, 0, glInternalFormat, image.width, image.height, 0, GL_RGB,
                GL_UNSIGNED_BYTE, image.data.get());
   IF_DEBUG(console::out() << "GLUpload " << (time() - preLoad) * 1000 << " ms");

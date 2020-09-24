@@ -41,6 +41,8 @@ EngineWindow::EngineWindow(ContainerWindow& container, StyleManager& styleManage
   TRACK_CALL_TEXT("EngineWindow::EngineWindow");
 
   createWindow();
+  glfwMakeContextCurrent(nullptr);
+
   engineThread.emplace(*this, styleManager);
   glfwShowWindow(glfwWindow.get());
 }
@@ -54,6 +56,9 @@ void EngineWindow::createWindow() {
   glfwWindowHint(GLFW_VISIBLE, FALSE);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+  glfwWindowHint(GLFW_CONTEXT_ROBUSTNESS, GLFW_LOSE_CONTEXT_ON_RESET);
+
+  // glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
   glfwWindow.reset(
       glfwCreateWindow(640, 480, "foo_chronflow render window", nullptr, nullptr));
