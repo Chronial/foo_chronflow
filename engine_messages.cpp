@@ -1,7 +1,13 @@
+// clang-format off
+#include "ConfigData.h"
 #include "Engine.h"
+#include "Renderer.h"
+// clang-format on
 
-#include "EngineThread.h"
-#include "config.h"
+namespace engine {
+
+using coverflow::configData;
+using db::db_structure::DBIter;
 
 void EM::StopThread::run(Engine& e) {
   e.shouldStop = true;

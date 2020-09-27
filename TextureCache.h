@@ -1,10 +1,18 @@
 #pragma once
+// clang-format off
 #include <utility>
-
-#include "BlockingQueue.h"
+#include "cover_positions.h"
 #include "DbAlbumCollection.h"
+#include "EngineThread.fwd.h" //optional fwd
+//#include "EngineThread.h"
 #include "Image.h"
 #include "utils.h"
+// clang-format on
+namespace render {
+using db::DbAlbumCollection;
+using db::DBIter;
+using db::DBPos;
+using engine::EngineThread;
 
 namespace bomi = boost::multi_index;
 
@@ -23,6 +31,8 @@ class TextureLoadingThreads {
   TextureLoadingThreads();
   NO_MOVE_NO_COPY(TextureLoadingThreads);
   ~TextureLoadingThreads();
+
+  metadb_handle_ptr tltmetatarget;
 
   struct LoadRequest {
     TextureCacheMeta meta;
@@ -112,5 +122,6 @@ class TextureCache {
 
   TextureLoadingThreads bgLoader;
 
-  friend class TextureLoadingThreads;
+  friend TextureLoadingThreads;
 };
+} // namespace render

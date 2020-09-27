@@ -4,6 +4,8 @@
 #include <deque>
 #include <mutex>
 
+namespace engine {
+
 template <typename T>
 class BlockingQueue {
  private:
@@ -44,3 +46,4 @@ class BlockingQueue {
     return {std::move(rc)};
   }
 };
+} // namespace

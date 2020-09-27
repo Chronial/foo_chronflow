@@ -6,6 +6,9 @@
 
 namespace {
 
+using engine::ContainerWindow;
+using render::StyleManager;
+
 class DuiStyleManager : public StyleManager {
  public:
   DuiStyleManager(ui_element_instance_callback::ptr instance_callback)
@@ -92,4 +95,4 @@ class UiElement : public ui_element {
 
 static service_factory_single_t<UiElement> uiElement;
 
-}  // namespace
+} // namespace

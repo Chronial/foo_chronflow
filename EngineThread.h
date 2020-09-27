@@ -1,13 +1,20 @@
 #pragma once
+// clang-format off
+#include "EngineWindow.fwd.h"
+#include "PlaybackTracer.fwd.h"
+#include "PlaylistCallback.h"
 #include "BlockingQueue.h"
+#include "style_manager.h"
 #include "utils.h"
-
-class EngineWindow;
-class StyleManager;
+// clang-format on
 
 namespace engine_messages {
 struct Message;
 }
+
+namespace engine {
+
+using render::StyleManager;
 
 class CallbackHolder {
   std::shared_ptr<bool> deadPtr;
@@ -76,3 +83,4 @@ class EngineThread : public play_callback_impl_base,
   static std::unordered_set<EngineThread*> instances;
   friend class Engine;
 };
+} // namespace

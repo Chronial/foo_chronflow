@@ -1,8 +1,14 @@
 #pragma once
+// clang-format off
 #include "DbAlbumCollection.h"
+#include "EngineThread.h"
+// clang-format on
+#include "pfc/synchro_win.h"
 #include "utils.h"
 
-class EngineThread;
+namespace db {
+
+using engine::EngineThread;
 
 class DbReloadWorker {
   metadb_handle_list library;
@@ -24,3 +30,4 @@ class DbReloadWorker {
   // Needs to be the last member so the others are initialized when the thread starts
   std::thread thread;
 };
+}  // namespace db

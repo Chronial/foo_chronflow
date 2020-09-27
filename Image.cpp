@@ -8,6 +8,8 @@
 #include "config.h"
 #include "utils.h"
 
+using coverflow::configData;
+
 namespace {
 /// adjusts a given path for certain discrepancies between how foobar2000
 /// and GDI+ handle paths, and other oddities

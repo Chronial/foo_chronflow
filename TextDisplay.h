@@ -1,10 +1,10 @@
 #pragma once
-
+#include "Renderer.fwd.h"
+#include "style_manager.h"
 #include "Image.h"
 #include "utils.h"
 
-class Renderer;
-class StyleManager;
+namespace render {
 
 class BitmapFont {
  public:
@@ -64,3 +64,4 @@ class TextDisplay {
   static const int cache_size = 10;
   std::vector<DisplayTexture> texCache;
 };
+}  // render namespace

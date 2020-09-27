@@ -1,26 +1,10 @@
 #pragma once
+#include "DbAlbumInfo.h"
 #include "utils.h"
 
-class DbReloadWorker;
-
-struct DBPos {
-  std::string key;
-  std::wstring sortKey;
-};
-inline bool operator==(const DBPos& lhs, const DBPos& rhs) {
-  return lhs.key == rhs.key;
-}
-inline bool operator!=(const DBPos& lhs, const DBPos& rhs) {
-  return !(lhs == rhs);
-}
-
-struct AlbumInfo {
-  std::string title;
-  DBPos pos;
-  metadb_handle_list tracks;
-};
-
+namespace db {
 namespace db_structure {
+
 namespace bomi = boost::multi_index;
 
 struct CompWLogical {
@@ -75,6 +59,7 @@ using DBIter = Container::index<sortKey>::type::iterator;
 }  // namespace db_structure
 
 using db_structure::DBIter;
+using db_structure::DB;
 
 class DBWriter {
  public:
@@ -144,3 +129,4 @@ class DbAlbumCollection {
       libraryChangeQueue;
   unique_ptr<db_structure::DB> db;
 };
+} // namespace

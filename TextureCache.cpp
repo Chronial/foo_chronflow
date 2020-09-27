@@ -1,11 +1,14 @@
+// clang-format off
 #include "TextureCache.h"
 
-#include "DbAlbumCollection.h"
-#include "EngineThread.h"
-#include "Image.h"
-#include "config.h"
-#include "cover_positions.h"
+#include "ConfigData.h"
+//#include "EngineThread.h"
 #include "utils.h"
+// clang-format on
+namespace render {
+
+using coverflow::configData;
+// namespace bomi = boost::multi_index;
 
 TextureCache::TextureCache(EngineThread& thread, DbAlbumCollection& db,
                            ScriptedCoverPositions& coverPos)
@@ -247,3 +250,4 @@ void TextureLoadingThreads::finishJob(const std::string& id,
   auto job = inProgress.extract(id);
   outQueue.push_back(LoadResponse{std::move(job.mapped()), std::move(result)});
 }
+}  // namespace render

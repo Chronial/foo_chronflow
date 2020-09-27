@@ -1,14 +1,27 @@
 #pragma once
-#include "BlockingQueue.h"
+// clang-format off
+#include "EngineThread.fwd.h"
+#include "Renderer.fwd.h"
 #include "DbAlbumCollection.h"
 #include "DbReloadWorker.h"
-#include "FindAsYouType.h"
-#include "PlaybackTracer.h"
-#include "Renderer.h"
+
 #include "TextureCache.h"
+#include "EngineWindow.fwd.h" // (optional fwd)
+// clang-format on
+#include "FindAsYouType.h"
 #include "cover_positions.h"
-#include "utils.h"
 #include "world_state.h"
+#include "style_manager.h"
+#include "PlaybackTracer.h"
+
+namespace engine {
+
+using namespace worldstate;
+
+using db::DbReloadWorker;
+using render::Renderer;
+using render::TextureCache;
+using render::StyleManager;
 
 class GLContext {
  public:
@@ -56,7 +69,7 @@ class Engine {
  public:
   struct Messages;
 };
+} // namespace
 
-using EM = Engine::Messages;
-
+using EM = engine::Engine::Messages;
 #include "engine_messages.h"

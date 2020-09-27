@@ -7,6 +7,13 @@
 #include "DbAlbumCollection.h"
 #include "Engine.h"
 #include "EngineThread.h"
+#include "Engine.h"
+#include "PlaybackTracer.h"
+#include "ConfigData.h"
+// clang-format on
+namespace engine {
+using coverflow::configData;
+using EM = engine::Engine::Messages;
 
 void PlaybackTracer::delay(double extra_time) {
   delayTimer.emplace(cfgCoverFollowDelay + extra_time, [&] {
@@ -32,3 +39,4 @@ void PlaybackTracer::onPlaybackNewTrack(metadb_handle_ptr /*p_track*/) {
     return;
   moveToNowPlaying();
 }
+} // namespace

@@ -1,6 +1,17 @@
 #pragma once
-#include "EngineWindow.h"
+// clang-format off
+#include "EngineWindow.fwd.h"
 #include "style_manager.h"
+
+#include "cover_positions_compiler.h"
+#include "utils.h"
+#include "ConfigData.h"
+// clang-format off
+
+namespace engine {
+
+using render::StyleManager;
+using coverflow::configData;
 
 struct GdiContext {
   ULONG_PTR token{};
@@ -38,3 +49,4 @@ class ContainerWindow {
   HWND hwnd = nullptr;
   std::unique_ptr<EngineWindow> engineWindow;
 };
+} // namespace

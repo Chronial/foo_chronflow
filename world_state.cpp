@@ -1,5 +1,6 @@
+// clang-format off
 #include "world_state.h"
-
+#include "DbAlbumCollection.h"
 #include "PlaybackTracer.h"
 #include "config.h"
 #include "utils.h"
@@ -89,3 +90,4 @@ float WorldState::getCenteredOffset() const {
 void WorldState::hardSetCenteredPos(DBPos pos) {
   centeredPos = std::move(pos);
 }
+} // namespace worldstate

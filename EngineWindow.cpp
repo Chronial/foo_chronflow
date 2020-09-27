@@ -1,14 +1,21 @@
-#include "EngineWindow.h"
-
-#include "lib/win32_helpers.h"
-
+// clang-format off
+#include "EngineThread.h"  //(1)
+#include "EngineWindow.h"  //(2)
 #include "ContainerWindow.h"
 #include "Engine.h"
+// clang-format on
+
 #include "MyActions.h"
 #include "PlaybackTracer.h"
 #include "TrackDropSource.h"
-#include "config.h"
-#include "utils.h"
+
+//#include "PlaybackTracer.h"
+//#include "SDK\library_manager.h"
+
+namespace engine {
+
+  using namespace coverflow;
+  using EM = engine::Engine::Messages;
 
 int GLFWContext::count = 0;
 

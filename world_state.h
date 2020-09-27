@@ -1,5 +1,11 @@
 #pragma once
-#include "DbAlbumCollection.h"
+// clang-format off
+#include "DbAlbumCollection.fwd.h"
+#include "DbAlbumInfo.h"
+// clang-format on
+namespace worldstate {
+using db::DbAlbumCollection;
+using db::DBPos;
 
 class WorldState {
   DbAlbumCollection& db;
@@ -29,3 +35,4 @@ class WorldState {
   float lastSpeed = 0.0f;
   double lastMovement = 0.0;
 };
+} // namespace worldstate

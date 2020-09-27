@@ -1,10 +1,10 @@
 #include "FindAsYouType.h"
-
-#include "DbAlbumCollection.h"
 #include "Engine.h"
 #include "EngineThread.h"
 #include "PlaybackTracer.h"
 
+namespace engine {
+using coverflow::configData;
 // The fuzzy matching algorithm is adapted from fzf
 namespace {
 
@@ -348,3 +348,4 @@ bool FindAsYouType::updateSearch(const char* searchFor) {
       typeTimeout, [&] { engine.thread.send<EM::Run>([&] { reset(); }); });
   return result.has_value();
 }
+} // namespace

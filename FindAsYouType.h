@@ -1,5 +1,8 @@
 #pragma once
+#include "engine.fwd.h"
 #include "utils.h"
+
+namespace engine {
 
 class FindAsYouType {
   inline static const double typeTimeout = 1.0;
@@ -28,3 +31,5 @@ class FuzzyMatcher {
  private:
   std::wstring pattern;
 };
+
+} // namespace

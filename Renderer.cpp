@@ -1,19 +1,27 @@
-#include "Renderer.h"
+// clang-format off
+#include "Engine.h"    //(1)
+#include "Renderer.h"  //(2)
 
 #include "lib/gl_structs.h"
 
 #include "DbAlbumCollection.h"
-#include "Engine.h"
 #include "Image.h"
 #include "TextureCache.h"
-#include "config.h"
+#include "cover_fovAspectBehaviour.h"
+#include "lib/gl_structs.h"
 #include "style_manager.h"
 #include "utils.h"
 #include "world_state.h"
-
+// clang-format off
 #define SELECTION_CENTER INT_MAX  // Selection is an unsigned int, so this is center
 #define SELECTION_COVERS 1
 #define SELECTION_MIRROR 2
+
+namespace render {
+using coverflow::configData;
+using namespace engine;
+
+using ::db::DBIter;
 
 Renderer::Renderer(Engine& engine)
     : textDisplay(*this, engine.styleManager), bitmapFont(*this), engine(engine),
@@ -440,3 +448,4 @@ void Renderer::drawCovers(bool showTarget) {
     }
   }
 }
+}  // namespace render

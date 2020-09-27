@@ -7,6 +7,9 @@
 
 namespace {
 
+using engine::ContainerWindow;
+using render::StyleManager;
+
 class StyleCallback : public columns_ui::colours::common_callback,
                       public columns_ui::fonts::common_callback {
   static_api_ptr_t<cui::colours::manager> colorManager;

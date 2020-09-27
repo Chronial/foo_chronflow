@@ -1,7 +1,8 @@
 #include "TextDisplay.h"
 
 #include "Renderer.h"
-#include "style_manager.h"
+
+namespace render {
 
 BitmapFont::BitmapFont(Renderer& renderer) : renderer(renderer) {
   wil::unique_hfont font{CreateFont(-14,  // Height Of Font
@@ -220,3 +221,4 @@ TextDisplay::DisplayTexture TextDisplay::createTexture(
 
   return displayTex;
 }
+} // namespace

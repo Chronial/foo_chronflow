@@ -1,8 +1,13 @@
 #pragma once
+// clang-format off
+#include "EngineThread.fwd.h"
 #include "utils.h"
+// clang-format on
+
+namespace engine {
 
 class PlaybackTracer {
-  class EngineThread& thread;
+  EngineThread& thread;
 
  public:
   explicit PlaybackTracer(EngineThread& thread) : thread(thread){};
@@ -13,3 +18,4 @@ class PlaybackTracer {
  private:
   std::optional<Timer> delayTimer;
 };
+} // namespace

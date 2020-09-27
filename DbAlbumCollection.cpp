@@ -4,7 +4,11 @@
 #include "Engine.h"
 #include "EngineThread.h"
 #include "FindAsYouType.h"
-#include "config.h"
+//#include "pfc/range_based_for.h"
+
+namespace db {
+using namespace coverflow;
+using FuzzyMatcher = engine::FuzzyMatcher;
 
 namespace db_structure {
 
@@ -250,3 +254,4 @@ void DbAlbumCollection::handleLibraryChange(t_uint64 version, LibraryChangeType 
     writer.modify_tracks(tracks);
   }
 }
+}  // namespace db

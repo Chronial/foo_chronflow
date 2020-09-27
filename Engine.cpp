@@ -1,12 +1,22 @@
+// clang-format off
 #include "Engine.h"
 
-#include "EngineWindow.h"
+#include "EngineThread.h" //(1)
+#include "EngineWindow.h" //(2)
+
+#include "renderer.h"
+// clang-format on
+
 #include "MyActions.h"
-#include "PlaybackTracer.h"
-#include "TextureCache.h"
-#include "config.h"
-#include "utils.h"
-#include "world_state.h"
+#include "ConfigData.h"
+
+namespace engine {
+
+using coverflow::configData;
+using namespace render;
+using namespace ::engine_messages;
+
+using EM = engine::Engine::Messages;
 
 #ifdef _DEBUG
 void GLAPIENTRY glMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity,
@@ -166,3 +176,4 @@ void Engine::setTarget(DBPos target, bool userInitiated) {
 
   thread.invalidateWindow();
 }
+} // namespace engine

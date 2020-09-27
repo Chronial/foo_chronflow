@@ -1,10 +1,15 @@
 #pragma once
-#include "DbAlbumCollection.h"
+// clang-format off
+//#include "DbAlbumCollection.h"
+//#include "engine.fwd.h"
+#include "DbAlbumInfo.h"
+#include "cover_positions_compiler.h"
 #include "utils.h"
-
-class Engine;
+// clang-format on
 
 namespace engine_messages {
+
+using namespace engine;
 
 struct Message {
  public:
@@ -37,7 +42,11 @@ struct AnswerMessage : Message {
   std::tuple<Types...> data;
 };
 
-}  // namespace engine_messages
+} // namespace engine_messages
+
+namespace engine {
+//using namespace engine_messages;
+using ::db::AlbumInfo;
 
 #define E_MSG(NAME, ...) \
   struct NAME : public engine_messages::DataMessage<__VA_ARGS__> { \
@@ -79,3 +88,5 @@ struct Engine::Messages {
 
 #undef E_MSG
 #undef E_ANSWER_MSG
+
+} // namespace engine

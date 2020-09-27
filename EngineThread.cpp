@@ -1,9 +1,16 @@
+// clang-format off
 #include "EngineThread.h"
 
 #include "ContainerWindow.h"
 #include "Engine.h"
 #include "EngineWindow.h"
+#include "helpers\win32_misc.h"
 #include "utils.h"
+// clang-format on
+
+namespace engine {
+
+using EM = engine::Engine::Messages;
 
 void EngineThread::run() {
   TRACK_CALL_TEXT("foo_chronflow EngineThread");
@@ -104,3 +111,4 @@ void CallbackHolder::addCallback(std::function<void()> f) {
     }
   });
 }
+}  // namespace engine

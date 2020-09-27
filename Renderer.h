@@ -1,17 +1,16 @@
 #pragma once
-#include "DbAlbumCollection.h"
-#include "Image.h"
+// clang-format off
+#include "Engine.fwd.h"
+#include "DbAlbumInfo.h"
 #include "TextDisplay.h"
 #include "utils.h"
-
-class TextureCache;
-class WorldState;
-class Engine;
+// clang-format on
+namespace render {
+using ::db::AlbumInfo;
 
 class Renderer {
  public:
-  explicit Renderer(Engine& engine);
-
+  explicit Renderer(engine::Engine& engine);
   void resizeGlScene(int width, int height);
   void setProjectionMatrix(bool pickMatrix = false, int x = 0, int y = 0);
 
@@ -26,7 +25,7 @@ class Renderer {
 
   TextDisplay textDisplay;
   BitmapFont bitmapFont;
-  class Engine& engine;
+  engine::Engine& engine;
 
   bool wasMissingTextures = false;
   int winWidth = 1;
@@ -48,3 +47,4 @@ class Renderer {
   void drawMirrorOverlay();
   void drawCovers(bool showTarget = false);
 };
+} // namespace render

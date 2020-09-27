@@ -1,5 +1,12 @@
 #pragma once
-#include "EngineThread.h"
+// clang-format off
+#include "ContainerWindow.fwd.h"
+#include "DbAlbumInfo.h"
+#include "EngineThread.fwd.h"
+// clang-format on
+#include "configdata.h"
+#include "myactions.h"
+#include "style_manager.h"
 #include "utils.h"
 
 struct AlbumInfo;
@@ -57,3 +64,4 @@ class EngineWindow {
   HWND hWnd = nullptr;
   std::optional<EngineThread> engineThread;
 };
+}  // namespace engine

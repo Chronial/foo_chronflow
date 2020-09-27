@@ -1,16 +1,15 @@
+// clang-format off
 #include "DbReloadWorker.h"
 
+#include "ConfigData.h"
+#include "DbAlbumCollection.h"
 #include "Engine.h"
-#include "EngineThread.h"
-#include "config.h"
-#include "utils.h"
+// clang-format on
+namespace db {
 
-DbReloadWorker::DbReloadWorker(EngineThread& engineThread)
-    : engineThread(engineThread),
-      thread(catchThreadExceptions("DBReloadWorker", [&] { this->threadProc(); })) {
-  SetThreadPriority(thread.native_handle(), THREAD_PRIORITY_BELOW_NORMAL);
-  SetThreadPriorityBoost(thread.native_handle(), TRUE);
-};
+using coverflow::configData;
+using engine::EngineThread;
+using EM = engine::Engine::Messages;
 
 DbReloadWorker::~DbReloadWorker() {
   abort.set();
@@ -52,3 +51,4 @@ void DbReloadWorker::threadProc() {
   completed = true;
   engineThread.send<EM::CollectionReloadedMessage>();
 };
+}  // namespace db

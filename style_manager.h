@@ -1,21 +1,20 @@
 #pragma once
-#include "config.h"
+namespace render {
 
 class StyleManager {
  public:
+  COLORREF getTitleColor();
+  LOGFONT getTitleFont();
+  COLORREF getBgColor();
+
   void setChangeHandler(std::function<void()> handler) { changeHandler = handler; };
 
-  COLORREF getTitleColor() {
-    return cfgTitleColorCustom ? cfgTitleColor : cachedTitleColor;
-  };
   std::array<float, 3> getTitleColorF() {
     return std::array<GLfloat, 3>{GetRValue(getTitleColor()) / 255.0f,
                                   GetGValue(getTitleColor()) / 255.0f,
                                   GetBValue(getTitleColor()) / 255.0f};
   }
-  LOGFONT getTitleFont() { return cfgTitleFontCustom ? cfgTitleFont : cachedTitleFont; };
 
-  COLORREF getBgColor() { return cfgPanelBgCustom ? cfgPanelBg : cachedBgColor; };
   std::array<float, 3> getBgColorF() {
     return std::array<GLfloat, 3>{GetRValue(getBgColor()) / 255.0f,
                                   GetGValue(getBgColor()) / 255.0f,
@@ -45,3 +44,4 @@ class StyleManager {
   LOGFONT cachedTitleFont{};
   COLORREF cachedBgColor{};
 };
+} // namespace

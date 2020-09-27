@@ -1,5 +1,7 @@
+// clang-format off
 #include "ContainerWindow.h"
-
+#include "EngineThread.h" //(1)
+#include "EngineWindow.h" //(2)
 #include "Engine.h"
 #include "EngineThread.h"
 #include "EngineWindow.h"
@@ -161,3 +163,4 @@ void ContainerWindow::destroyEngineWindow(std::string errorMessage) {
   FB2K_console_formatter() << "foo_chronflow encountered an error:\n"
                            << errorMessage.c_str();
 }
+} // namespace engine
