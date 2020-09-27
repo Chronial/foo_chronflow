@@ -166,8 +166,9 @@ void Engine::setTarget(DBPos target, bool userInitiated) {
   if (auto dbIter = db.iterFromPos(target)) {
     metadb_handle_list tracks;
     db.getTracks(dbIter.value(), tracks);
-    thread.runInMainThread([tracks = std::move(tracks), &engineWindow = window] {
-      engineWindow.setSelection(tracks);
+    thread.runInMainThread([target, tracks = std::move(tracks), userInitiated, &engineWindow = window]{
+      //console::out() << "Engine::setTarget key:" << target.key << " sk:" << target.sortKey.c_str() <<", userInitiated: " << userInitiated ? "true" : "false";
+      engineWindow.setSelection(tracks, userInitiated);
     });
   }
 

@@ -50,17 +50,58 @@ class GLFWContext {
  private:
   static int count;
 };
+class external_selection_callback
+    : public ui_selection_callback_impl_base_ex<
+          playlist_callback::flag_on_items_selection_change> {
+
+ public:
+  external_selection_callback(EngineWindow& ew) : engineWindow(ew){};
+  void on_selection_changed(metadb_handle_list_cref p_selection);
+  void reregister(unsigned int flags) {
+      auto api = ui_selection_manager_v2::get();
+      api->unregister_callback(this);
+      api->register_callback(this, flags);
+  }
+
+ private:
+  EngineWindow& engineWindow;
+};
+
+using ::db::AlbumInfo;
 
 class EngineWindow {
  public:
-  EngineWindow(ContainerWindow& container, StyleManager& styleManager,
-               ui_element_instance_callback_ptr defaultUiCallback);
+  EngineWindow(ContainerWindow& container, render::StyleManager& styleManager,
+               ui_element_instance_callback_ptr defaultUiCallback)
+      : defaultUiCallback(std::move(defaultUiCallback)), container(container),
+        externalSelectionCallback(*this) {
+    TRACK_CALL_TEXT("EngineWindow::EngineWindow");
+    createWindow();
+    engineThread.emplace(*this, styleManager);
+    glfwShowWindow(glfwWindow.get());
 
+    // externalSelectionCallback.ui_selection_callback_activate(true);
+  }
+  // bool query_capability(const GUID& cap) override{}
   void setWindowSize(int width, int height);
   void makeContextCurrent();
   void swapBuffers();
   void onDamage();
-  void setSelection(metadb_handle_list selection);
+  void setSelection(metadb_handle_list selection, bool owner);
+  const metadb_handle_list_ref getSelection(bool fromLibrary) {
+    return fromLibrary? library_selection : playlist_selection;
+  }
+  LRESULT on_message(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) { int kk = 0; }
+
+  void cmdToggleActivePlaylistSource();
+  void cmdTogglePlaylistSource();
+  void cmdAssignPlaylistSource();
+  void cmdPlaylistSourcePlay(const AlbumInfo& album);
+  void cmdHighlightPlaylistContent();
+  bool cmdActivateVisualization(int ndx);
+  void cmdToggleLibraryFilterSelectorSource(bool lock);
+  void cmdToggleLibraryCoverFollowsSelection();
+  void cmdShowAlbumOnExternalViewer(AlbumInfo album);
 
  private:
   void createWindow();
@@ -74,6 +115,9 @@ class EngineWindow {
   void onScroll(double xoffset, double yoffset);
   void onContextMenu(int x, int y);
 
+  void setInnerSelection(metadb_handle_list selection, GUID selection_type,
+                         bool fromLibrary);
+
  public:
   ContainerWindow& container;
 
@@ -82,6 +126,7 @@ class EngineWindow {
   ui_element_instance_callback_ptr defaultUiCallback;
   metadb_handle_list selection;
   ui_selection_holder::ptr selectionHolder;
+  external_selection_callback externalSelectionCallback;
 
   GLFWContext glfwContext;
   unique_ptr<GLFWwindow,

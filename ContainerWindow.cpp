@@ -29,7 +29,50 @@ ContainerWindow::ContainerWindow(HWND parent, StyleManager& styleManager,
     engineWindow = make_unique<EngineWindow>(*this, styleManager, duiCallback);
   } catch (std::exception& e) {
     engineError = e.what();
-    FB2K_console_formatter() << "foo_chronflow failed to initialize:\n" << e.what();
+    FB2K_console_formatter() << AppNameInternal << " failed to initialize:\n" << e.what();
+  }
+}
+
+void ContainerWindow::ensureIsSet(int listposition, shared_ptr<CompiledCPInfo>& sessionCompiledCPInfo) {
+  shared_ptr<CompiledCPInfo> empty_ptr;
+  if (sessionCompiledCPInfo != empty_ptr)
+    return;
+
+  CompiledCPInfo cInfo;
+  try {
+    // Try to compile the user's script
+
+    std::string config = configData
+                         ->CoverConfigs.at(configData->CoverConfigSel.c_str()).script;
+    cInfo = compileCPScript(config.c_str());
+  } catch (std::exception&) {
+    // Fall back to the default script
+    cInfo = compileCPScript(builtInCoverConfigs()[defaultCoverConfig].script.c_str());
+  }
+  using CoverConfigMap = std::map<std::string, coverflow::CoverConfig, ILessUtf8>;
+
+  int listpos = configData->GetCCPosition();
+
+  configData->sessionCompiledCPInfo.set(listpos, make_shared<CompiledCPInfo>(cInfo));
+}
+
+void ContainerWindow::applyCoverConfig(bool bcompile) {
+  pfc::string8 script = configData->CoverConfigs.at(configData->CoverConfigSel.c_str()).
+                                    script.c_str();
+
+  try {
+    int settings_ndx = configData->GetCCPosition();
+    auto ccptr = make_shared<CompiledCPInfo>(compileCPScript(script));
+    configData->sessionCompiledCPInfo.set(settings_ndx, ccptr);
+    std::pair<int, shared_ptr<CompiledCPInfo>> cInfo = { settings_ndx, ccptr };
+    EngineThread::forEach(
+        [&cInfo](EngineThread& t) { t.send<EM::ChangeCoverPositionsMessage>(cInfo.second); });
+
+    //cfg_rw{Konfig};
+    //configData->sessionCompiledCPInfo.set(settings_ndx, cInfo);
+
+  } catch (std::exception& e) {
+    //todo: deliver exception
   }
 }
 

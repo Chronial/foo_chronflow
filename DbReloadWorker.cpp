@@ -19,6 +19,9 @@ DbReloadWorker::~DbReloadWorker() {
     copyDone.set_value();
   } catch (std::future_error&) {
   }  // copy was already done
+  shared_selection.reset();
+  //debug t_size d = shared_selection.use_count();
+
   if (thread.joinable())
     thread.join();
 }
@@ -72,10 +75,21 @@ void DbReloadWorker::threadProc() {
     ++engineThread.libraryVersion;
 
     db = make_unique<db_structure::DB>(
-        engineThread.libraryVersion, cfgFilter.c_str(), cfgGroup.c_str(),
-        (cfgSortGroup ? "" : cfgSort.c_str()), cfgAlbumTitle.c_str());
-    // copy whole library
-    library_manager::get()->get_all_items(library);
+        engineThread.libraryVersion, filter.c_str(), group.c_str(), sort.c_str() , albumtitle.c_str());
+
+    if (selection_count > 0) {
+      library = *shared_selection;
+      //debug t_size shr_count = shared_selection.use_count();
+    }
+    else
+    if (configData->IsWholeLibrary()) {
+      // copy whole library
+      library_manager::get()->get_all_items(library);
+    } else {
+      // playlist covers
+      const t_size playlist = configData->FindSourcePlaylist();
+      playlist_manager::get()->playlist_get_all_items(playlist, library);
+    }
     try {
       copyDone.set_value();
     } catch (std::future_error&) {

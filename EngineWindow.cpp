@@ -630,11 +630,31 @@ void EngineWindow::onDamage() {
   engineThread->send<EM::RedrawMessage>();
 }
 
-void EngineWindow::setSelection(metadb_handle_list selection) {
-  this->selection = selection;
-  if (selection.get_count() && selectionHolder.is_valid())
-    selectionHolder->set_selection_ex(
-        selection, contextmenu_item::caller_media_library_viewer);
+void EngineWindow::setInnerSelection(metadb_handle_list selection, GUID selection_type,
+                       bool fromLibrary) {
+  if (fromLibrary) {
+    this->library_selection = selection;
+    this->library_selection_type = selection_type;
+  } else {
+    this->playlist_selection = selection;
+    this->playlist_selection_type = selection_type;
+  }
+};
+void EngineWindow::setSelection(metadb_handle_list selection, bool owner) {
+  GUID selguid;
+  if (owner) {
+    selguid = configData->IsWholeLibrary()
+                  ? contextmenu_item::caller_media_library_viewer
+                  : contextmenu_item::caller_active_playlist_selection;
+  } else {
+    selguid = ui_selection_manager::get()->get_selection_type();
+  }
+
+  //this->selection = selection;
+  setInnerSelection(selection, selguid, configData->IsWholeLibrary());
+  //holder selection
+  if (owner && (selection.get_count() && selectionHolder.is_valid()))
+    selectionHolder->set_selection_ex(selection, selguid);
 }
 
 void EngineWindow::onWindowSize(int width, int height) {
@@ -705,7 +725,16 @@ void EngineWindow::onContextMenu(const int x, const int y) {
       uAppendMenu(hMenu, MF_SEPARATOR, 0, nullptr);
     }
   }
-  uAppendMenu(hMenu, MF_STRING, ID_PREFERENCES, "Coverflow Preferences...");
+
+  uAppendMenu(hMenu, MF_STRING, ID_PREFERENCES,
+              PFC_string_formatter() << component_NAME << " Preferences...");
+
+  if (!configData->CtxHideDisplayMenu)
+    AppendDisplayContextMenuOptions(&hMenu);
+  if (!configData->CtxHideSelectorMenu)
+    AppendSelectorContextMenuOptions(&hMenu);
+  if (!configData->CtxHidePlaylistMenu)
+    AppendPlaylistContextMenuOptions(&hMenu);
 
   menu_helpers::win32_auto_mnemonics(hMenu);
 
@@ -729,12 +758,121 @@ void EngineWindow::onContextMenu(const int x, const int y) {
   } else if (cmd == ID_OPENEXTERNALVIEWER) {
     cmdShowAlbumOnExternalViewer(target.value());
   } else if (cmd == ID_ENTER) {
-    executeAction(cfgEnterKey, target.value());
+    executeAction(configData->EnterKey, target.value(), this->hWnd,
+                  ActionGetBlockFlag(configData->CustomActionFlag, AB_ENTER));
   } else if (cmd == ID_DOUBLECLICK) {
-    executeAction(cfgDoubleClick, target.value());
+    executeAction(configData->DoubleClick, target.value(), this->hWnd,
+                  ActionGetBlockFlag(configData->CustomActionFlag, AB_DOUBLECLICK));
   } else if (cmd == ID_MIDDLECLICK) {
-    executeAction(cfgMiddleClick, target.value());
+    executeAction(configData->MiddleClick, target.value(), this->hWnd,
+                  ActionGetBlockFlag(configData->CustomActionFlag, AB_MIDDLECLICK));
   } else if (cmd >= ID_CONTEXT_FIRST && cmd <= ID_CONTEXT_LAST) {
     cmm->execute_by_id(cmd - ID_CONTEXT_FIRST);
   }
 }
+
+void external_selection_callback::on_selection_changed(metadb_handle_list_cref p_selection) {
+
+  if (engineWindow.getSelection(configData->IsWholeLibrary()) == p_selection) {
+
+    if (!configData->IsWholeLibrary() && configData->CoverHighLightPlaylistSelection) {
+      //highlight
+      engineWindow.cmdHighlightPlaylistContent();
+      //console log...
+    }
+
+    //
+    // Engine::setTarget(...) from EngineWindow::OnFocus or EM messages:
+    // MoveTargetMessage, MoveToCurrentTrack, MoveToAlbumMessage
+    // finish here
+
+    return;
+  }
+
+  GUID gui_sel_anon = contextmenu_item::caller_undefined;
+  GUID gui_sel_type = ui_selection_manager::get()->get_selection_type();
+
+  //Library viewers (Library Viewer, Coverflow in Library mode or ESPlaylist in Library mode, ...)
+  bool srcFromLibraryViewer = gui_sel_type == contextmenu_item::caller_media_library_viewer;
+  //Active Playlist selection (Coverflow playlist mode, ESPlaylist active playlist mode, ...)
+  bool srcFromActivePlaylistSelection = gui_sel_type == contextmenu_item::caller_active_playlist_selection;
+  //Undefined, ej. Spider monkey ListTree or ESPlaylist in Selected playlist mode
+  bool srcFromUndefined = gui_sel_type == contextmenu_item::caller_undefined;
+
+
+  //debug
+  //bool srcFromNowPlaying = gui_sel_type == contextmenu_item::caller_now_playing;
+  //if (srcFromNowPlaying)
+  //  srcFromNowPlaying = srcFromNowPlaying;
+  //if (srcFromUndefined) {
+  //  // console log...
+  //}
+  //
+
+  //not at function top to ease type debugging
+  if (p_selection.get_count() == 0)
+    return;  // do nothing
+
+  if (gui_sel_type == contextmenu_item::caller_media_library_viewer ||
+      (gui_sel_type == gui_sel_anon && configData->CoverFollowsAnonymSelection)) {
+    if (configData->CoverFollowsLibrarySelection && configData->IsWholeLibrary()) {
+      if (!engineWindow.engineThread.has_value())
+        return;
+
+      pfc::string8_fast_aggressive keyBuffer;
+      titleformat_object::ptr keyBuilder;
+      titleformat_compiler::get()->compile_safe_ex(keyBuilder, configData->Group);
+      p_selection.get_item(0)->format_title(nullptr, keyBuffer, keyBuilder, nullptr);
+
+      auto selection_albuminfo =
+          engineWindow.engineThread->sendSync<EM::GetTrackAlbum>(p_selection.get_item(0))
+              .get();
+      bool bselection_exist = selection_albuminfo.has_value();
+
+      auto target_albuminfo =
+          engineWindow.engineThread->sendSync<EM::GetTargetAlbum>().get();
+
+      pfc::string8_fast_aggressive sortBuffer;
+      pfc::stringcvt::string_wide_from_utf8_fast sortBufferWide;
+      titleformat_object::ptr sortBuilder;
+      titleformat_compiler::get()->compile_safe_ex(sortBuilder, configData->Sort);
+
+      shared_ptr<metadb_handle_list> shared_selection =
+          make_unique<metadb_handle_list>(p_selection);
+
+      //(A)    selection on external Library Viewer with Selector enabled
+      //       ReloadCollectionFromList loads while component remains unfocused
+      //       Selection will be refreshed when focus is restored
+      //       Holder is not refreshed letting selection ownership unmodified
+      //
+      //(B)    Selection on external Library Viewer without Selector or Selector Locked
+
+      if (configData->CoverFollowsLibrarySelection) {
+        if (configData->SourceLibrarySelector && (!configData->SourceLibrarySelectorLock)) {
+          //(A)
+          engineWindow.setSelection(p_selection, false);
+          engineWindow.engineThread->send<EM::ReloadCollectionFromList>(shared_selection);
+        } else {
+          //(B)
+          if (stricmp_utf8(target_albuminfo.value().pos.key.c_str(), keyBuffer) != 0)
+            engineWindow.engineThread->send<EM::MoveToCurrentTrack>( p_selection.get_item(0));
+        }
+      }
+    }
+  } else if (gui_sel_type == contextmenu_item::caller_active_playlist_selection) {
+    // this type of selection is processed by class PlaylistCallback
+  }
+}
+
+/*
+Debug
+AlbumInfo aaalbuminfo = AlbumInfo{
+    dbiter.value()->title,
+    keyBuffer.c_str(),
+    sortBufferWide
+};
+albuminfo = e.db.getAlbumInfo(dbiter.value());
+*/
+
+
+}  // namespace engine

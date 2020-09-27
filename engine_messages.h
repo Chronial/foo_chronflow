@@ -79,11 +79,14 @@ struct Engine::Messages {
   E_MSG(ChangeCoverPositionsMessage, std::shared_ptr<CompiledCPInfo>);
   E_ANSWER_MSG(GetAlbumAtCoords, std::optional<AlbumInfo>, int, int);
   E_ANSWER_MSG(GetTargetAlbum, std::optional<AlbumInfo>);
+  E_ANSWER_MSG(GetTrackAlbum, std::optional<AlbumInfo>, metadb_handle_ptr);
   E_MSG(Run, std::function<void()>);
   E_MSG(PlaybackNewTrack, metadb_handle_ptr);
   E_MSG(LibraryItemsAdded, metadb_handle_list, t_uint64);
   E_MSG(LibraryItemsRemoved, metadb_handle_list, t_uint64);
   E_MSG(LibraryItemsModified, metadb_handle_list, t_uint64);
+  E_MSG(SourceChangeMessage, bool, bool, bool, int);
+  E_MSG(ReloadCollectionFromList, std::shared_ptr<metadb_handle_list>);
 };
 
 #undef E_MSG

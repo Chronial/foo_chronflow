@@ -103,6 +103,15 @@ std::optional<AlbumInfo> EM::GetTargetAlbum::run(Engine& e) {
   return e.db.getAlbumInfo(iter.value());
 }
 
+std::optional<AlbumInfo> EM::GetTrackAlbum::run(Engine& e, metadb_handle_ptr track) {
+    // DBIter target;
+    if (auto pos = e.db.getPosForTrack(track)) {
+      auto iter = e.db.iterFromPos(pos.value());
+      return e.db.getAlbumInfo(iter.value());
+    }
+    return std::nullopt;
+}
+
 void EM::ReloadCollection::run(Engine& e) {
   // This will abort any already running reload worker
 //#ifdef DEBUG
@@ -168,3 +177,90 @@ void EM::LibraryItemsModified::run(Engine& e, metadb_handle_list tracks,
   e.cacheDirty = true;
   e.thread.invalidateWindow();
 }
+
+void EM::SourceChangeMessage::run(Engine& e, bool waswholelib, bool wasgroup, bool nextwholelib, int track_pos) {
+  // trying to fall back to the same album after next collection reload
+  // the position is undetermined when entering ungrouped playlist mode
+  // todo: should it be done in class DBWriter ?
+
+  titleformat_object::ptr keyBuilder;
+  titleformat_object::ptr sortBuilder;
+  pfc::string8_fast_aggressive keyBuffer;
+  pfc::string8_fast_aggressive sortBuffer;
+  pfc::stringcvt::string_wide_from_utf8_fast sortBufferWide;
+
+  DBPos pos = e.worldState.getTarget();
+  std::optional dbiter = e.db.iterFromPos(pos);
+
+  metadb_handle_list tracks;
+  e.db.getTracks(dbiter.value(), tracks);
+
+  if (waswholelib) {
+    titleformat_compiler::get()->compile_safe_ex(keyBuilder, configData->Group);
+    if (configData->SortGroup) {
+      titleformat_compiler::get()->compile_safe_ex(sortBuilder, configData->Sort);
+      tracks[0]->format_title(nullptr, sortBuffer, sortBuilder, nullptr);
+      if (sortBuilder.is_valid())
+          sortBufferWide.convert(sortBuffer);
+      else
+          sortBufferWide.convert(keyBuffer);
+    }
+
+    pos.key = keyBuffer.c_str();
+    pos.sortKey = sortBufferWide.get_ptr();
+  }
+  else {
+      if (wasgroup) {
+          //todo: reposition moving to ungroup
+
+      }
+      else {
+          //currently ungrouped, moving into grouped
+          //works but not pretty
+
+          titleformat_compiler::get()->compile_safe_ex(keyBuilder, configData->Group);
+          tracks[0]->format_title(nullptr, keyBuffer, keyBuilder, nullptr);
+          pos.key = keyBuffer.c_str();
+
+          //sort
+          DBPlaylistModeParams ps_params;
+          titleformat_compiler::get()->compile_safe_ex(sortBuilder, ps_params.sort);
+          tracks[0]->format_title(nullptr, sortBuffer, sortBuilder, nullptr);
+
+          if (sortBuilder.is_valid()) {
+              sortBufferWide.convert(sortBuffer);
+              pos.sortKey = sortBufferWide.get_ptr();  //"La Bien Querida|2010|Recompensarte";
+          }
+          else {
+              sortBufferWide.convert(keyBuffer);
+              pos.sortKey = sortBufferWide.get_ptr();
+          }
+          pos.sortKey = sortBufferWide;
+      }
+  }
+  e.worldState.setTarget(pos);
+  e.worldState.hardSetCenteredPos(pos);
+  e.worldState.update();
+}
+void EM::ReloadCollectionFromList::run(Engine& e, std::shared_ptr<metadb_handle_list> shared_selection) {
+  // This will abort any already running reload worker
+  try {
+    //release or crash dbworker
+    if (e.reloadWorker) {
+      e.reloadWorker.release();
+    }
+  } catch (std::exception) {
+  }
+  t_size count = shared_selection->get_count();
+  metadb_handle_list_ref p_selection = *shared_selection;
+  //debug count = p_selection.get_count();
+
+  e.reloadWorker = make_unique<DbReloadWorker>(e.thread, shared_selection);
+  if (!e.reloadWorker) {
+    PFC_ASSERT(true);
+  }
+  // Start spinner animation
+  e.windowDirty = true;
+}
+
+}  // namespace engine
