@@ -46,7 +46,7 @@ void DbReloadWorker::threadProc() {
   DBWriter(*db).add_tracks(std::move(library), abort);
   abort.check();
 
-  FB2K_console_formatter() << "foo_chronflow collection generated in: "
+  FB2K_console_formatter() << AppNameInternal << " collection generated in: "
                            << pfc::format_time_ex(timer.query(), 6);
   completed = true;
   engineThread.send<EM::CollectionReloadedMessage>();

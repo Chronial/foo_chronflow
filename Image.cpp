@@ -5,7 +5,7 @@
 #include "lib/stb_image.h"
 #include "lib/stb_image_resize.h"
 
-#include "config.h"
+#include "ConfigData.h"
 #include "utils.h"
 
 using coverflow::configData;

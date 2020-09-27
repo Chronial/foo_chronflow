@@ -1,8 +1,6 @@
 #include "DbAlbumCollection.h"
 
-#include "DbReloadWorker.h"
-#include "Engine.h"
-#include "EngineThread.h"
+#include "ConfigData.h"
 #include "FindAsYouType.h"
 //#include "pfc/range_based_for.h"
 
@@ -156,7 +154,7 @@ void DbAlbumCollection::onCollectionReload(std::unique_ptr<db_structure::DB> new
 
 void DbAlbumCollection::getTracks(DBIter pos, metadb_handle_list& out) {
   out = pos->tracks;
-  out.sort_by_format(cfgInnerSort, nullptr);
+  out.sort_by_format(configData->InnerSort, nullptr);
 }
 
 std::optional<DBPos> DbAlbumCollection::getPosForTrack(const metadb_handle_ptr& track) {

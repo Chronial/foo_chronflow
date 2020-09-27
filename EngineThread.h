@@ -36,7 +36,7 @@ class EngineThread : public play_callback_impl_base,
   NO_MOVE_NO_COPY(EngineThread);
   ~EngineThread();
 
-  void sendMessage(unique_ptr<engine_messages::Message>&& msg);
+  void sendMessage(unique_ptr<::engine_messages::Message>&& msg);
 
   /// Sends a message and get a future to wait for the response.
   /// You should only wait in the mainthread, as waiting in other threads
@@ -76,7 +76,7 @@ class EngineThread : public play_callback_impl_base,
   void run();
   EngineWindow& engineWindow;
   StyleManager& styleManager;
-  BlockingQueue<unique_ptr<engine_messages::Message>> messageQueue;
+  BlockingQueue<unique_ptr<::engine_messages::Message>> messageQueue;
   CallbackHolder callbackHolder;
   std::thread thread;
 

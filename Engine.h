@@ -24,8 +24,8 @@ using render::TextureCache;
 using render::StyleManager;
 
 class GLContext {
- public:
-  explicit GLContext(class EngineWindow&);
+public:
+  explicit GLContext(EngineWindow&);
   NO_MOVE_NO_COPY(GLContext);
   ~GLContext();
 };
@@ -40,9 +40,12 @@ class HighTimerResolution {
 
 class Engine {
  public:
+  EngineThread& thread;
   EngineWindow& window;
-  class EngineThread& thread;
-  class StyleManager& styleManager;
+  StyleManager& styleManager;
+
+  shared_ptr<Renderer> renderer;
+  unique_ptr<DbReloadWorker> reloadWorker;
 
   GLContext glContext;
   DbAlbumCollection db;
@@ -51,9 +54,7 @@ class Engine {
   WorldState worldState;
   TextureCache texCache;
   FpsCounter fpsCounter;
-  Renderer renderer;
   PlaybackTracer playbackTracer;
-  unique_ptr<DbReloadWorker> reloadWorker;
 
   Engine(EngineThread&, EngineWindow&, StyleManager& styleManager);
   void mainLoop();

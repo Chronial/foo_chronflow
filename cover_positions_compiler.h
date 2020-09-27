@@ -2,11 +2,8 @@
 #include "cover_fovAspectBehaviour.h"
 #include "lib/gl_structs.h"
 
-#include "CoverConfig.h"
-#include "config.h"
-#include "utils.h"
-
-struct CoverPosInfo {  // When changing this you have to update CompiledCPInfo::version
+struct CoverPosInfo {
+  // When changing this you have to update CompiledCPInfo::version
   glVectorf position;
 
   struct {
@@ -36,7 +33,7 @@ struct CoverPosInfo {  // When changing this you have to update CompiledCPInfo::
 class CompiledCPInfo {
  public:
   static const int tableRes = 20;  // if you change this, you have to change version
-  static const int version = 1;
+  static const int version = 2;
 
   bool showMirrorPlane{};
   glVectord mirrorNormal;  // guaranteed to have length 1

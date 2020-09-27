@@ -3,10 +3,17 @@
 #include "EngineThread.h" //(1)
 #include "EngineWindow.h" //(2)
 #include "Engine.h"
-#include "EngineThread.h"
-#include "EngineWindow.h"
-#include "config.h"
-#include "utils.h"
+
+#include "configData.h"
+#include "ConfigCoverConfigs.h"
+// clang-format off
+
+namespace engine {
+
+using coverflow::configData;
+using coverflow::builtInCoverConfigs;
+
+using EM = engine::Engine::Messages;
 
 constexpr int minimizeCheckTimeout = 10'000;  // milliseconds
 constexpr int minimizeCheckTimerId = 665;
@@ -17,7 +24,8 @@ ContainerWindow::ContainerWindow(HWND parent, StyleManager& styleManager,
   createWindow(parent);
 
   try {
-    sessionCompiledCPInfo.ensureIsSet();
+    auto cInfo = configData->sessionCompiledCPInfo.get();
+    ensureIsSet(cInfo.first, cInfo.second);
     engineWindow = make_unique<EngineWindow>(*this, styleManager, duiCallback);
   } catch (std::exception& e) {
     engineError = e.what();
@@ -26,7 +34,8 @@ ContainerWindow::ContainerWindow(HWND parent, StyleManager& styleManager,
 }
 
 HWND ContainerWindow::createWindow(HWND parent) {
-  constexpr wchar_t* mainwindowClassname = L"foo_chronflow ContainerWindow";
+  const wchar_t* mainwindowClassname = uT(
+      PFC_string_formatter() << AppNameInternal << " ContainerWindow");
 
   static bool classRegistered = [&] {
     WNDCLASS wc = {0};
@@ -46,7 +55,7 @@ HWND ContainerWindow::createWindow(HWND parent) {
 
   return check(CreateWindowEx(0,  // Extended Style For The Window
                               mainwindowClassname,  // Class Name
-                              L"foo_chronflow container",  //  Title
+                              uT(PFC_string_formatter() << AppNameInternal << " container"), //  Title
                               WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,  // Style
                               CW_USEDEFAULT, CW_USEDEFAULT,  // Window Position
                               CW_USEDEFAULT, CW_USEDEFAULT,  // Window Dimensions
@@ -149,7 +158,7 @@ void ContainerWindow::drawErrorMessage() {
   SelectObject(hdc, GetStockObject(DEFAULT_GUI_FONT));
   SetTextColor(hdc, RGB(40, 0, 0));
   DrawText(hdc,
-           uT(PFC_string_formatter() << "foo_chronflow error:\n"
+           uT(PFC_string_formatter() << AppNameInternal << " error:\n"
                                      << engineError.c_str()),
            -1, &rc, DT_WORDBREAK | DT_CENTER | DT_NOCLIP | DT_NOPREFIX);
   EndPaint(hwnd, &ps);
@@ -160,7 +169,7 @@ void ContainerWindow::destroyEngineWindow(std::string errorMessage) {
     return;
   engineWindow.reset();
   engineError = errorMessage;
-  FB2K_console_formatter() << "foo_chronflow encountered an error:\n"
+  FB2K_console_formatter() << AppNameInternal << " encountered an error:\n"
                            << errorMessage.c_str();
 }
 } // namespace engine

@@ -82,8 +82,10 @@ int HighTimerResolution::get() {
 
 Engine::Engine(EngineThread& thread, EngineWindow& window, StyleManager& styleManager)
     : window(window), thread(thread), styleManager(styleManager), glContext(window),
-      findAsYouType(*this), coverPos(sessionCompiledCPInfo.get()), worldState(db),
-      texCache(thread, db, coverPos), renderer(*this), playbackTracer(thread) {}
+      findAsYouType(*this), coverPos(std::move(configData->sessionCompiledCPInfo.get().second)), worldState(db),
+      texCache(thread, db, coverPos), playbackTracer(thread) {
+        renderer = make_unique<Renderer>(*this);
+}
 
 void Engine::mainLoop() {
   updateRefreshRate();

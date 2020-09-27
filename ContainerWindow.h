@@ -40,6 +40,8 @@ class ContainerWindow {
   static LRESULT CALLBACK WndProc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp);
   LRESULT MessageHandler(UINT msg, WPARAM wp, LPARAM lp);
   void drawErrorMessage();
+  void ensureIsSet(int listposition, shared_ptr<CompiledCPInfo>& sessionCompiledCPInfo);
+  void applyCoverConfig(bool bcompile);
 
   GdiContext gdiContext;
   bool mainWinMinimized = true;

@@ -2,12 +2,16 @@
 #include "world_state.h"
 #include "DbAlbumCollection.h"
 #include "PlaybackTracer.h"
-#include "config.h"
-#include "utils.h"
+#include "ConfigData.h"
+// clang-format on
+namespace worldstate {
+using namespace db;
+using namespace coverflow;
+using namespace fb2k;
 
 WorldState::WorldState(DbAlbumCollection& db) : db(db) {
   pfc::string8 selected;
-  sessionSelectedCover.get(selected);
+  selected = configData->sessionSelectedCover;
   targetPos.key = selected.c_str();
   centeredPos = targetPos;
 }
@@ -22,7 +26,8 @@ void WorldState::setTarget(DBPos target) {
     lastMovement = time() - 0.02;
     rendering = true;
   }
-  sessionSelectedCover.set(target.key.c_str());
+  //cfg_rw{Konfig};
+  configData->sessionSelectedCover.set_string(target.key.c_str());
 }
 
 void WorldState::update() {

@@ -13,7 +13,7 @@ namespace engine {
 using EM = engine::Engine::Messages;
 
 void EngineThread::run() {
-  TRACK_CALL_TEXT("foo_chronflow EngineThread");
+  TRACK_CALL_TEXT(PFC_string_formatter() << AppNameInternal << " EngineThread");
   CoInitializeScope com_enable{};
   engineWindow.makeContextCurrent();
 

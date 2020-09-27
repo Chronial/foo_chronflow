@@ -65,13 +65,13 @@ class cui_chronflow : public ui_extension::window {
   void get_category(pfc::string_base& out) const final { out = "Panels"; }
 
   const GUID& get_extension_guid() const final {
-    // {DA317C70-654F-4A75-A4F2-10F4873773FC}
+    // {3C880108-E9A8-454F-AB82-22B49D6BA105}
     static const GUID guid_foo_chronflow = {
-        0xda317c70, 0x654f, 0x4a75, {0xa4, 0xf2, 0x10, 0xf4, 0x87, 0x37, 0x73, 0xfc}};
+        0x3c880108, 0xe9a8, 0x454f, {0xab, 0x82, 0x22, 0xb4, 0x9d, 0x6b, 0xa1, 0x5}}; //modded
     return guid_foo_chronflow;
   }
 
-  void get_name(pfc::string_base& out) const final { out = "Coverflow"; }
+  void get_name(pfc::string_base& out) const final { out = component_NAME; }
 
   unsigned get_type() const final { return ui_extension::type_panel; }
 
@@ -89,7 +89,7 @@ class cui_chronflow : public ui_extension::window {
         window.emplace(wnd_parent, *style_manager);
       } catch (std::exception& e) {
         FB2K_console_formatter()
-            << "foo_chronflow panel failed to initialize: " << e.what();
+            << AppNameInternal << " panel failed to initialize: " << e.what();
         return nullptr;
       }
       m_host = p_host;
@@ -119,4 +119,4 @@ class cui_chronflow : public ui_extension::window {
 
 static service_factory_single_t<cui_chronflow> cui_chronflow_instance;
 
-}  // namespace
+} // namespace

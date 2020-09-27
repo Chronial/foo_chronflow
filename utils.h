@@ -1,5 +1,16 @@
 #pragma once
 #include "resource.h"
+//TODO: check redundancy in application name constants
+// 1. Utils.h (AppName, AppNameInternal, ...) used mostly for user logs and error messages
+// 2. ConfigGuids.h (component_NAME, component_DLL, component_PREF_VER)
+//      Used in DECLARE_COMPONENT_VERSION()
+//      ConfigWindow.h, ConfigDialog.h, ... function get_name()
+// 3. Main.cpp (VERSION) used in DECLARE_COMPONENT_VERSION()
+// 4. Resource.rc - VS_VERSION_INFO (FileVersion, InternalName, etc) used by windows file explorer (dll info)
+
+constexpr const char * const AppName = "CoverFlowMod";
+constexpr char * AppNameInternal = "foo_chronflow_mod";
+constexpr char * AppEMail = "foodayuyu@gmail.com"; //foocomp@chronial.de"
 
 #ifdef _DEBUG
 #define IF_DEBUG(X) X
@@ -185,7 +196,7 @@ decltype(auto) apply_method(F&& func, T&& first, U&& tuple) {
 inline std::function<void(void)> catchThreadExceptions(std::string threadName,
                                                        std::function<void(void)> f) {
   TRACK_CALL_TEXT(PFC_string_formatter()
-                  << "foo_chronflow thread: " << threadName.c_str());
+                  << AppNameInternal << " thread: " << threadName.c_str());
   return [=] {
     try {
       f();

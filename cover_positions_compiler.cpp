@@ -6,7 +6,6 @@
 
 //#import "msscript.ocx" no_namespace
 #include "lib/msscript.h"
-
 #include "utils.h"
 
 CoverPosInfo CoverPosInfo::interpolate(const CoverPosInfo& a, const CoverPosInfo& b,
@@ -41,9 +40,8 @@ script_error script_error::from_com_error(const _com_error& e) {
 }
 
 namespace {
-
 class CScriptObject {
- public:
+public:
   CScriptObject(const wchar_t* code) {
     try {
       _com_util::CheckError(script_control.CreateInstance(__uuidof(ScriptControl)));
@@ -55,7 +53,7 @@ class CScriptObject {
     }
   };
 
- public:
+public:
   [[noreturn]] void rethrow_error(const _com_error& e) {
     try {
       IScriptErrorPtr pError;
@@ -73,13 +71,14 @@ class CScriptObject {
   };
 
   template <typename Ret, typename... _Types>
-  Ret call(const char* func, _Types... _Args) {
+  Ret call(const char* func, _Types ... _Args) {
     std::tuple tuple = std::make_tuple(_Args...);
     ULONG length = sizeof...(_Args);
     CComSafeArray<VARIANT> params{length};
 
     long i = 0;
-    for_each(tuple, [&](auto p) {
+    for_each(tuple, [&](auto p)
+    {
       CComVariant v(p);
       if (S_OK != params.SetAt(i, v))
         throw std::bad_alloc{};
@@ -90,8 +89,8 @@ class CScriptObject {
       return Ret(script_control->Run(uT(func), params.GetSafeArrayPtr()));
     } catch (_com_error& e) {
       if (e.Error() == DISP_E_UNKNOWNNAME) {
-        throw script_error(PFC_string_formatter()
-                           << "Error: Function " << func << "() not found.");
+        throw script_error(
+            PFC_string_formatter() << "Error: Function " << func << "() not found.");
       } else {
         rethrow_error(e);
       }
@@ -99,7 +98,7 @@ class CScriptObject {
   };
 
   template <int vector_size, typename... Types>
-  std::array<double, vector_size> call_double_array(const char* func, Types... Args) {
+  std::array<double, vector_size> call_double_array(const char* func, Types ... Args) {
     _variant_t varRet = call<_variant_t>(func, Args...);
     try {
       CComPtr<IDispatch> dispatch(varRet);
@@ -122,21 +121,22 @@ class CScriptObject {
       }
       return res;
     } catch (...) {
-      throw script_error(PFC_string_formatter()
-                         << "Error: " << func << "() did not return an array "
-                         << "of " << vector_size << " valid numbers.");
+      throw script_error(
+          PFC_string_formatter() << "Error: " << func << "() did not return an array "
+          << "of " << vector_size << " valid numbers.");
     }
   }
+
   template <int len, typename... Types>
-  auto call_double_tuple(const char* func, Types... Args) {
+  auto call_double_tuple(const char* func, Types ... Args) {
     return array2tuple(call_double_array<len>(func, Args...));
   }
 
- private:
+private:
   IScriptControlPtr script_control;
 };
 
-}  // namespace
+} // namespace
 
 CompiledCPInfo compileCPScript(const char* script) {
 #pragma warning(push)
@@ -201,3 +201,5 @@ CompiledCPInfo compileCPScript(const char* script) {
   return out;
 #pragma warning(pop)
 }
+
+//} // namespace

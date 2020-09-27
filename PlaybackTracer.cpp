@@ -1,11 +1,4 @@
-#include "config.h"
-#include "stdafx.h"
-#include "utils.h"
-
-#include "PlaybackTracer.h"
-
-#include "DbAlbumCollection.h"
-#include "Engine.h"
+// clang-format off
 #include "EngineThread.h"
 #include "Engine.h"
 #include "PlaybackTracer.h"
@@ -16,9 +9,9 @@ using coverflow::configData;
 using EM = engine::Engine::Messages;
 
 void PlaybackTracer::delay(double extra_time) {
-  delayTimer.emplace(cfgCoverFollowDelay + extra_time, [&] {
+  delayTimer.emplace(configData->CoverFollowDelay + extra_time, [&] {
     this->thread.send<EM::Run>([&] {
-      if (cfgCoverFollowsPlayback)
+      if (configData->CoverFollowsPlayback)
         moveToNowPlaying();
       delayTimer.reset();
     });
@@ -30,12 +23,12 @@ void PlaybackTracer::moveToNowPlaying() {
     metadb_handle_ptr nowPlaying;
     if (playback_control_v2::get()->get_now_playing(nowPlaying)) {
       this->thread.send<EM::MoveToCurrentTrack>(nowPlaying);
-    }
+
   });
 }
 
 void PlaybackTracer::onPlaybackNewTrack(metadb_handle_ptr /*p_track*/) {
-  if (!cfgCoverFollowsPlayback || delayTimer.has_value())
+  if (!configData->CoverFollowsPlayback || delayTimer.has_value())
     return;
   moveToNowPlaying();
 }

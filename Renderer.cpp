@@ -2,8 +2,7 @@
 #include "Engine.h"    //(1)
 #include "Renderer.h"  //(2)
 
-#include "lib/gl_structs.h"
-
+#include "ConfigData.h"
 #include "DbAlbumCollection.h"
 #include "Image.h"
 #include "TextureCache.h"
@@ -254,7 +253,7 @@ void Renderer::drawScene(bool selectionPass) {
 }
 
 void Renderer::drawGui() {
-  if (cfgShowAlbumTitle || engine.db.initializing()) {
+  if (configData->ShowAlbumTitle || engine.db.initializing()) {
     std::string albumTitle;
     std::vector<size_t> highlight;
     if (engine.db.initializing()) {
@@ -337,9 +336,8 @@ void Renderer::drawFrame() {
   drawScene(false);
   drawGui();
 }
-
 void Renderer::drawCovers(bool showTarget) {
-  if (cfgHighlightWidth == 0)
+  if (configData->HighlightWidth == 0)
     showTarget = false;
 
   if (engine.db.empty() && !engine.db.initializing())

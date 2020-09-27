@@ -22,34 +22,33 @@ void EM::DeviceModeMessage::run(Engine& e) {
 }
 
 void EM::WindowResizeMessage::run(Engine& e, int width, int height) {
-  e.renderer.resizeGlScene(width, height);
+  e.renderer->resizeGlScene(width, height);
 }
 
 void EM::ChangeCoverPositionsMessage::run(Engine& e,
-                                          std::shared_ptr<CompiledCPInfo> cInfo) {
-  pfc::string8 tmp;
+                std::shared_ptr<CompiledCPInfo> cInfo) {
   e.coverPos = ScriptedCoverPositions(cInfo);
-  e.renderer.setProjectionMatrix();
+  e.renderer->setProjectionMatrix();
   e.cacheDirty = true;
   e.thread.invalidateWindow();
 }
 
 void EM::WindowHideMessage::run(Engine& e) {
   e.texCache.pauseLoading();
-  if (cfgEmptyCacheOnMinimize) {
+  if (configData->EmptyCacheOnMinimize) {
     e.texCache.clearCache();
   }
 }
 
 void EM::WindowShowMessage::run(Engine& e) {
-  if (cfgEmptyCacheOnMinimize) {
+  if (configData->EmptyCacheOnMinimize) {
     e.cacheDirty = true;
   }
   e.texCache.resumeLoading();
 }
 
 void EM::TextFormatChangedMessage::run(Engine& e) {
-  e.renderer.textDisplay.clearCache();
+  e.renderer->textDisplay.clearCache();
 }
 
 void EM::CharEntered::run(Engine& e, WPARAM wParam) {
@@ -83,7 +82,7 @@ void EM::MoveTargetMessage::run(Engine& e, int moveBy, bool moveToEnd) {
 }
 
 void EM::MoveToCurrentTrack::run(Engine& e, metadb_handle_ptr track) {
-  DBIter target;
+  // DBIter target;
   if (auto pos = e.db.getPosForTrack(track)) {
     e.setTarget(pos.value(), false);
   }
@@ -94,7 +93,7 @@ void EM::MoveToAlbumMessage::run(Engine& e, AlbumInfo album) {
 }
 
 std::optional<AlbumInfo> EM::GetAlbumAtCoords::run(Engine& e, int x, int y) {
-  return e.renderer.albumAtPoint(x, y);
+  return e.renderer->albumAtPoint(x, y);
 }
 
 std::optional<AlbumInfo> EM::GetTargetAlbum::run(Engine& e) {

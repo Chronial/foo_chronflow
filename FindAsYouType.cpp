@@ -1,7 +1,6 @@
 #include "FindAsYouType.h"
 #include "Engine.h"
-#include "EngineThread.h"
-#include "PlaybackTracer.h"
+#include "ConfigData.h"
 
 namespace engine {
 using coverflow::configData;
@@ -75,7 +74,8 @@ int fuzzy_match(const std::wstring& pattern, const std::string& input,
   index_t N = index_t(pfc::stringcvt::convert_utf8_to_wide(
       T.data(), T.size(), input.c_str(), input.size()));
   T.resize(N);
-  CharLowerW(T.data());
+  if (!configData->FindAsYouTypeCaseSens)
+    CharLowerW(T.data());
   for (auto& c : T) {
     if (c == '\r' || c == '\n')
       c = ' ';
@@ -252,7 +252,8 @@ FuzzyMatcher::FuzzyMatcher(const std::string& pattern) {
   this->pattern = wstring_from_utf8(pattern);
   this->pattern.resize(
       std::min(int(this->pattern.size()), std::numeric_limits<index_t>::max() - 1));
-  CharLowerW(this->pattern.data());
+  if (!configData->FindAsYouTypeCaseSens)
+      CharLowerW(this->pattern.data());
 }
 
 int FuzzyMatcher::match(const std::string& input, std::vector<size_t>* positions) {

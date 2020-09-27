@@ -180,7 +180,8 @@ LRESULT EngineWindow::messageHandler(UINT uMsg, WPARAM wParam, LPARAM lParam) {
 }
 
 bool EngineWindow::onChar(WPARAM wParam) {
-  if (cfgFindAsYouType) {
+  //todo: check compatibility with playlist mode
+  if (configData->FindAsYouType) {
     engineThread->send<EM::CharEntered>(wParam);
     return true;
   } else {

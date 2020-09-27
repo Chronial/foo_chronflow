@@ -8,11 +8,11 @@ void errorPopup(const char* message) {
   // But we sometimes need this to be modal (as it will be followed by crash)
   MessageBoxW(nullptr,
               uT(PFC_string_formatter()
-                 << "foo_chronflow: " << message
+                 << AppNameInternal << ": " << message
                  << "\r\n\r\nIf this happens more than once, please report this error "
-                    "in the foo_chronflow "
-                    "thread on Hydrogenaudo or via mail to foocomp@chronial.de"),
-              L"Error in foo_chronflow", MB_OK | MB_ICONERROR);
+                    "in the " << AppNameInternal <<
+                    " thread on Hydrogenaudo or via mail to " << AppEMail),
+              uT(PFC_string_formatter() << "Error in " << AppNameInternal), MB_OK | MB_ICONERROR);
 }
 
 void errorPopupWin32(const char* message) {

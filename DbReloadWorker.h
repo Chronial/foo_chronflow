@@ -21,7 +21,7 @@ class DbReloadWorker {
   NO_MOVE_NO_COPY(DbReloadWorker);
   ~DbReloadWorker();
 
-  unique_ptr<db_structure::DB> db;
+  unique_ptr<::db::db_structure::DB> db;
   std::atomic<bool> completed = false;
 
  private:

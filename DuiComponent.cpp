@@ -32,8 +32,9 @@ class DuiStyleManager : public StyleManager {
   ui_element_instance_callback::ptr instance_callback;
 };
 
+// {6D514EFE-4413-4978-94E0-3EB8D8981271}
 static const GUID guid_dui_foo_chronflow = {
-    0x1d56881c, 0xca24, 0x470c, {0x94, 0x4a, 0xde, 0xd8, 0x30, 0xf9, 0xe9, 0x5d}};
+     0x6d514efe, 0x4413, 0x4978, {0x94, 0xe0, 0x3e, 0xb8, 0xd8, 0x98, 0x12, 0x71}}; //modded
 static const GUID element_subclass = ui_element_subclass_media_library_viewers;
 
 class dui_chronflow : public ui_element_instance {
@@ -48,7 +49,7 @@ class dui_chronflow : public ui_element_instance {
         window(parent, style_manager, p_callback) {}
   HWND get_wnd() final { return window.getHWND(); };
 
-  static void g_get_name(pfc::string_base& out) { out = "Coverflow"; }
+  static void g_get_name(pfc::string_base& out) { out = component_NAME; }
   static const char* g_get_description() {
     return "Displays a 3D rendering of the Album Art in your Media Library";
   }

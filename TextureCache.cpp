@@ -57,7 +57,7 @@ void TextureCache::onCollectionReload() {
 
 int TextureCache::maxCacheSize() {
   int maxDisplay = 1 + std::max(-coverPos.getFirstCover(), coverPos.getLastCover());
-  return std::min(db.size(), std::max(int(cfgTextureCacheSize), 2 * maxDisplay));
+  return std::min(db.size(), std::max(configData->TextureCacheSize, 2 * maxDisplay));
 }
 
 void TextureCache::trimCache() {
