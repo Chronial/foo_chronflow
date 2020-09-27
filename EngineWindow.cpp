@@ -6,7 +6,10 @@
 // clang-format on
 
 #include "MyActions.h"
-#include "PlaybackTracer.h"
+#include "lib/win32_helpers.h"
+#include "ConfigContextPlaylist.h"
+#include "ConfigContextDisplay.h"
+#include "ConfigContextSelector.h"
 #include "TrackDropSource.h"
 
 //#include "PlaybackTracer.h"

@@ -38,15 +38,30 @@ void EngineThread::run() {
   }
 }
 
-void EngineThread::sendMessage(unique_ptr<engine_messages::Message>&& msg) {
+void EngineThread::sendMessage(unique_ptr<::engine_messages::Message>&& msg) {
   messageQueue.push(std::move(msg));
 }
 
 EngineThread::EngineThread(EngineWindow& engineWindow, StyleManager& styleManager)
-    : engineWindow(engineWindow), styleManager(styleManager) {
+    : engineWindow(engineWindow), styleManager(styleManager), PlaylistCallback(*this) {
   instances.insert(this);
   styleManager.setChangeHandler([&] { this->on_style_change(); });
   play_callback_reregister(flag_on_playback_new_track, true);
+  //reregister playlist manager
+  playlist_manager::get()->register_callback(this, flag_on_items_selection_change);
+
+  //playlist_manager::get()->register_callback(this, /*playlist_callback::flag_all ||*/
+  //    flag_on_items_added ||
+  //    flag_on_items_reordered ||
+  //    flag_on_items_removed ||*/
+  //    flag_on_items_selection_change /*||
+  //    flag_on_items_modified ||
+  //    flag_on_playlist_activate ||
+  //    flag_on_playlists_removed ||
+  //    flag_on_playlist_renamed ||
+  //    flag_on_playlist_locked*/
+  //    );
+
   std::packaged_task<void(EngineThread*)> task(&EngineThread::run);
   thread = std::thread(std::move(task), this);
 }
@@ -105,7 +120,7 @@ CallbackHolder::~CallbackHolder() noexcept {
 
 void CallbackHolder::addCallback(std::function<void()> f) {
   fb2k::inMainThread([f, deadPtr = this->deadPtr] {
-    TRACK_CALL_TEXT("foo_chronflow::inMainThread");
+  TRACK_CALL_TEXT(PFC_string_formatter() << AppNameInternal << "::inMainThread");
     if (!*deadPtr) {
       f();
     }

@@ -30,7 +30,8 @@ class CallbackHolder {
 };
 
 class EngineThread : public play_callback_impl_base,
-                     public library_callback_dynamic_impl_base {
+                     public library_callback_dynamic_impl_base,
+                     public PlaylistCallback {
  public:
   explicit EngineThread(EngineWindow& engineWindow, StyleManager& styleManager);
   NO_MOVE_NO_COPY(EngineThread);
