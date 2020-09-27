@@ -116,15 +116,15 @@ void Engine::mainLoop() {
       worldState.update();
 
       // Render
-      renderer.drawFrame();
+      renderer->drawFrame();
       glFinish();
       fpsCounter.endFrame();
 
-      windowDirty = worldState.isMoving() || renderer.wasMissingTextures || reloadWorker;
+      windowDirty = worldState.isMoving() || renderer->wasMissingTextures || reloadWorker;
 
       // Handle V-Sync
-      renderer.ensureVSync(cfgVSyncMode != VSYNC_SLEEP_ONLY);
-      if (cfgVSyncMode == VSYNC_AND_SLEEP || cfgVSyncMode == VSYNC_SLEEP_ONLY) {
+      renderer->ensureVSync(configData->VSyncMode != VSYNC_SLEEP_ONLY);
+      if (configData->VSyncMode == VSYNC_AND_SLEEP || configData->VSyncMode == VSYNC_SLEEP_ONLY) {
         double currentTime = time();
         double sleepTime =
             (1.0 / refreshRate) - (currentTime - lastSwapEnd) - swapEstimate;

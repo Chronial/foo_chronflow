@@ -9,7 +9,7 @@ class FindAsYouType {
   pfc::string8 enteredString;
   std::optional<Timer> timeoutTimer;
 
-  class Engine& engine;
+  Engine& engine;
 
  public:
   explicit FindAsYouType(Engine& engine) : engine(engine){};

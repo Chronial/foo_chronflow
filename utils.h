@@ -34,10 +34,6 @@ constexpr double rad2deg(double rad) {
   C(C&&) = delete; \
   C& operator=(C&&) = delete;
 
-// {37835416-4578-4aaa-A229-E09AB9E2CB9C}
-const GUID guid_configWindow = {
-    0x37835416, 0x4578, 0x4aaa, {0xa2, 0x29, 0xe0, 0x9a, 0xb9, 0xe2, 0xcb, 0x9c}};
-
 template <auto fn>
 using fn_class = std::integral_constant<decltype(fn), fn>;
 
@@ -50,9 +46,26 @@ struct ILessUtf8 {
   }
 };
 
+template <typename T>
+class release_deleter {
+public:
+    release_deleter() : released_(new bool(false)) {}
+    void release() { released_->set(true); }
+    void operator()(T* ptr) { if (!released_->get()) delete ptr; }
+private:
+    shared_ptr<bool> released_;
+};
+template <typename T, typename Deleter = typename std::default_delete<T> >
+struct DisarmableDelete : private Deleter {
+    void operator()(T* ptr) { if (_armed) Deleter::operator()(ptr); }
+    bool _armed = true;
+};
+
 extern const char** builtInCoverConfigArray;
 constexpr char* defaultCoverConfig = "Default (build-in)";
 constexpr char* coverConfigTemplate = "Template (build-in)";
+
+//__declspec(selectany) extern metadb_handle_list_cref p_selection;
 
 #define TEST_BIT_PTR(BITSET_PTR, BIT) _bittest(BITSET_PTR, BIT)
 #ifdef _DEBUG
