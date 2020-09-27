@@ -9,12 +9,12 @@ using namespace coverflow;
 using FuzzyMatcher = engine::FuzzyMatcher;
 
 namespace db_structure {
-
 DB::DB(t_uint64 libraryVersion, const std::string& filterQuery,
        const std::string& keyFormat, const std::string& sortFormat,
        const std::string& titleFormat)
     : keyIndex(container.get<key>()), sortIndex(container.get<sortKey>()),
       libraryVersion(libraryVersion) {
+
   if (!filterQuery.empty()) {
     try {
       filter ^= search_filter_manager::get()->create(filterQuery.c_str());
@@ -23,8 +23,10 @@ DB::DB(t_uint64 libraryVersion, const std::string& filterQuery,
   }
   titleformat_compiler::get()->compile_safe_ex(keyBuilder, keyFormat.c_str());
   titleformat_compiler::get()->compile_safe_ex(titleFormatter, titleFormat.c_str());
+
   if (!sortFormat.empty())
     titleformat_compiler::get()->compile_safe(sortFormatter, sortFormat.c_str());
+
 }
 
 }  // namespace db_structure
@@ -84,8 +86,19 @@ void DBWriter::modify_tracks(metadb_handle_list_cref tracks) {
 }
 
 void DBWriter::add_track(const metadb_handle_ptr& track) {
+
   track->format_title(nullptr, keyBuffer, db.keyBuilder, nullptr);
-  auto album = db.keyIndex.find(keyBuffer.get_ptr());
+
+  auto album = db.keyIndex.end();
+
+  if (!configData->IsWholeLibrary() && !configData->SourcePlaylistGroup) {
+    char tmp_str[4] = "";
+    itoa(db.container.size(), tmp_str, 10);
+    keyBuffer.replace_string("|[UNKNOWN FUNCTION]", "");
+    keyBuffer = keyBuffer << "|" << tmp_str;
+  } else {
+    album = db.keyIndex.find(keyBuffer.get_ptr());
+  }
   if (album == db.keyIndex.end()) {
     if (db.sortFormatter.is_valid()) {
       track->format_title(nullptr, sortBuffer, db.sortFormatter, nullptr);
@@ -137,7 +150,12 @@ void DBWriter::update_album_metadata(const db_structure::Album& album) {
 }
 
 void DBWriter::remove_tracks(metadb_handle_list_cref tracks) {
-  for (const auto& track : tracks) {
+  // for (const auto& track : tracks) {
+  //  remove_track(track);
+  //}
+  int count = tracks.get_count();
+  for (int i = 0; i < count; i++) {
+    const auto& track = tracks.get_item(i);
     remove_track(track);
   }
 }

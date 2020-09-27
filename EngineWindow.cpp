@@ -20,17 +20,17 @@ namespace engine {
   using namespace coverflow;
   using EM = engine::Engine::Messages;
 
-int GLFWContext::count = 0;
+  int GLFWContext::count = 0;
 
-GLFWContext::GLFWContext() {
-  if (count == 0) {
+  GLFWContext::GLFWContext() {
+    if (count == 0) {
     glfwSetErrorCallback([](int error, const char* description) {
-      throw std::runtime_error(PFC_string_formatter() << "glfw error: " << description);
+        throw std::runtime_error(PFC_string_formatter() << "glfw error: " << description);
     });
     TRACK_CALL_TEXT("glfwInit");
     TRACK_CODE("ensure_main_thread()", core_api::ensure_main_thread());
     if (!glfwInit()) {
-      throw std::runtime_error("Failed to initialize glfw");
+        throw std::runtime_error("Failed to initialize glfw");
     }
   }
   ++count;
@@ -72,64 +72,59 @@ void EngineWindow::createWindow() {
   }
   hWnd = glfwGetWin32Window(glfwWindow.get());
 
-  WIN32_OP_D(SetParent(hWnd, container.getHWND()));
-  const LONG nNewStyle = (GetWindowLong(hWnd, GWL_STYLE) & ~WS_POPUP) | WS_CHILDWINDOW;
-  SetWindowLong(hWnd, GWL_STYLE, nNewStyle);
-  const ULONG_PTR cNewStyle = GetClassLongPtr(hWnd, GCL_STYLE) | CS_DBLCLKS;
-  WIN32_OP_D(SetClassLongPtr(hWnd, GCL_STYLE, cNewStyle));
-  WIN32_OP_D(SetWindowSubclass(
-      hWnd,
+    WIN32_OP_D(SetParent(hWnd, container.getHWND()));
+    const LONG nNewStyle = (GetWindowLong(hWnd, GWL_STYLE) & ~WS_POPUP) | WS_CHILDWINDOW;
+    SetWindowLong(hWnd, GWL_STYLE, nNewStyle);
+    const ULONG_PTR cNewStyle = GetClassLongPtr(hWnd, GCL_STYLE) | CS_DBLCLKS;
+    WIN32_OP_D(SetClassLongPtr(hWnd, GCL_STYLE, cNewStyle));
+    WIN32_OP_D(SetWindowSubclass(hWnd,
       WINLAMBDA([](HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR,
-                   DWORD_PTR dwRefData) noexcept {
+        DWORD_PTR dwRefData) noexcept {
         try {
           return reinterpret_cast<EngineWindow*>(dwRefData)->messageHandler(
-              uMsg, wParam, lParam);
-        } catch (std::exception& e) {
-          FB2K_console_formatter()
-              << "Exception in foo_chronflow EngineWindow MessageHandler: " << e.what();
+            uMsg, wParam, lParam);
+        }
+        catch (std::exception & e) {
+          FB2K_console_formatter() << "Exception in " << AppNameInternal
+            << " EngineWindow MessageHandler: " << e.what();
           return DefSubclassProc(hwnd, uMsg, wParam, lParam);
         }
-      }),
-      0, reinterpret_cast<DWORD_PTR>(this)));
+     }), 0, reinterpret_cast<DWORD_PTR>(this)));
 
-  static auto wrap = [](auto f) noexcept {
-    try {
-      f();
-    } catch (std::exception& e) {
-      FB2K_console_formatter()
-          << "Exception in foo_chronflow EngineWindow event handler: " << e.what();
-    }
-  };
-  glfwSetWindowUserPointer(glfwWindow.get(), this);
-  glfwSetScrollCallback(
-      glfwWindow.get(), [](GLFWwindow* window, double xoffset, double yoffset) {
-        wrap([&] {
-          static_cast<EngineWindow*>(glfwGetWindowUserPointer(window))
-              ->onScroll(xoffset, yoffset);
-        });
+    static auto wrap = [](auto f) noexcept {
+      try {
+        f();
+      }
+      catch (std::exception & e) {
+        FB2K_console_formatter() << "Exception in " << AppNameInternal << " EngineWindow event handler: " << e.what();
+      }
+    };
+    glfwSetWindowUserPointer(glfwWindow.get(), this);
+    glfwSetScrollCallback(glfwWindow.get(), [](GLFWwindow* window, double xoffset, double yoffset) {
+      wrap([&] {
+        static_cast<EngineWindow*>(glfwGetWindowUserPointer(window))
+          ->onScroll(xoffset, yoffset);
       });
-  glfwSetWindowRefreshCallback(glfwWindow.get(), [](GLFWwindow* window) {
-    wrap([&] {
-      static_cast<EngineWindow*>(glfwGetWindowUserPointer(window))->onDamage();
     });
-  });
-  glfwSetWindowSizeCallback(
-      glfwWindow.get(), [](GLFWwindow* window, int width, int height) {
-        wrap([&] {
-          static_cast<EngineWindow*>(glfwGetWindowUserPointer(window))
-              ->onWindowSize(width, height);
-        });
+    glfwSetWindowRefreshCallback(glfwWindow.get(), [](GLFWwindow* window) {
+      wrap([&] {
+        static_cast<EngineWindow*>(glfwGetWindowUserPointer(window))->onDamage();
       });
+    });
+    glfwSetWindowSizeCallback(
+    glfwWindow.get(), [](GLFWwindow* window, int width, int height) {
+      wrap([&] {
+        static_cast<EngineWindow*>(glfwGetWindowUserPointer(window))
+            ->onWindowSize(width, height);
+      });
+    });
 }
-
 void EngineWindow::setWindowSize(int width, int height) {
   glfwSetWindowSize(glfwWindow.get(), width, height);
 }
-
 void EngineWindow::makeContextCurrent() {
   glfwMakeContextCurrent(glfwWindow.get());
 }
-
 void EngineWindow::swapBuffers() {
   glfwSwapBuffers(glfwWindow.get());
 }
@@ -171,8 +166,8 @@ LRESULT EngineWindow::messageHandler(UINT uMsg, WPARAM wParam, LPARAM lParam) {
     case WM_KEYDOWN:
     case WM_SYSKEYDOWN:
       if (onKeyDown(uMsg, wParam, lParam))
-        return 0;
-      break;
+       return 0;
+       break;
     case WM_CHAR:
       if (onChar(wParam))
         return 0;
@@ -191,10 +186,9 @@ bool EngineWindow::onChar(WPARAM wParam) {
     return false;
   }
 }
-
 void EngineWindow::onMouseClick(UINT uMsg, WPARAM /*wParam*/, LPARAM lParam) {
   auto future = engineThread->sendSync<EM::GetAlbumAtCoords>(
-      GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+  GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
   auto clickedAlbum = future.get();
   if (!clickedAlbum)
     return;
@@ -209,7 +203,6 @@ void EngineWindow::onMouseClick(UINT uMsg, WPARAM /*wParam*/, LPARAM lParam) {
   }
   onClickOnAlbum(clickedAlbum.value(), uMsg);
 }
-
 void EngineWindow::doDragStart(const AlbumInfo& album) {
   static_api_ptr_t<playlist_incoming_item_filter> piif;
   pfc::com_ptr_t<IDataObject> pDataObject = piif->create_dataobject_ex(album.tracks);
@@ -218,40 +211,106 @@ void EngineWindow::doDragStart(const AlbumInfo& album) {
   DWORD effect;
   DoDragDrop(pDataObject.get_ptr(), pDropSource.get_ptr(), DROPEFFECT_COPY, &effect);
 }
-
 void EngineWindow::onClickOnAlbum(const AlbumInfo& album, UINT uMsg) {
   if (uMsg == WM_LBUTTONDOWN) {
-    engineThread->send<EM::MoveToAlbumMessage>(album);
-  } else if (uMsg == WM_MBUTTONDOWN) {
-    executeAction(cfgMiddleClick, album);
-  } else if (uMsg == WM_LBUTTONDBLCLK) {
-    executeAction(cfgDoubleClick, album);
+    engineThread->send<EM::MoveToAlbumMessage>(album, true);
+  }
+  else if (uMsg == WM_MBUTTONDOWN) {
+    if (!configData->IsWholeLibrary()) return;
+    executeAction(configData->MiddleClick, album, this->hWnd,
+    ActionGetBlockFlag(configData->CustomActionFlag, AB_MIDDLECLICK));
+  }
+  else if (uMsg == WM_LBUTTONDBLCLK) {
+    if (!configData->IsWholeLibrary()) {
+      cmdPlaylistSourcePlay(album);
+    } else {
+      executeAction(configData->DoubleClick, album, this->hWnd,
+      ActionGetBlockFlag(configData->CustomActionFlag, AB_DOUBLECLICK));
+    }
   }
 }
-
 bool EngineWindow::onKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam) {
-  if (wParam == VK_RETURN) {
+  if (wParam == VK_RETURN && ((GetKeyState(VK_CONTROL) & 0x8000))) {
+    //...
+  }
+  else if (wParam == VK_RETURN) {
     auto targetAlbum = engineThread->sendSync<EM::GetTargetAlbum>().get();
-    if (targetAlbum)
-      executeAction(cfgEnterKey, targetAlbum.value());
+    if (targetAlbum) {
+      if (!configData->IsWholeLibrary()) {
+        cmdPlaylistSourcePlay(targetAlbum.value());
+      } else {
+        executeAction(configData->EnterKey, targetAlbum.value(), this->hWnd,
+            ActionGetBlockFlag(configData->CustomActionFlag, AB_ENTER));
+      }
+    }
     return true;
-  } else if (wParam == VK_F5) {
+  }
+  else if (wParam == VK_F2) {
+    configData->FindAsYouTypeCaseSens = !configData->FindAsYouTypeCaseSens;
+    return true;
+  }
+  else if (wParam == VK_F4) {
+    if (!configData->IsWholeLibrary()) {
+      if (configData->SourcePlaylistGroup) {
+        configData->SourcePlaylistGroup = !configData->SourcePlaylistGroup;
+        engineThread->send<EM::ReloadCollection>();
+      }
+      else {
+        //todo: flickers when reassigned, revise parameters
+        engineThread->send<EM::SourceChangeMessage>(
+            configData->IsWholeLibrary(),
+            configData->SourcePlaylistGroup,
+            configData->IsWholeLibrary(), 0
+          );
+
+        configData->SourcePlaylistGroup = !configData->SourcePlaylistGroup;
+        engineThread->send<EM::ReloadCollection>();
+      }
+    }
+    return true;
+  }
+  else if (wParam == VK_F5) {
     engineThread->send<EM::ReloadCollection>();
     return true;
-  } else if (wParam == VK_F6) {
+  }
+  else if (wParam == VK_F6) {
     engineThread->send<EM::MoveToNowPlayingMessage>();
     return true;
-  } else if (wParam == VK_RIGHT || wParam == VK_LEFT || wParam == VK_NEXT ||
-             wParam == VK_PRIOR) {
+  }
+  else if (wParam == VK_F8) {
+    if (GetKeyState(VK_CONTROL) & 0x8000) {
+      cmdToggleLibraryFilterSelectorSource(true);
+    } else
+    // assign the current playlist as album source
+    cmdAssignPlaylistSource();
+  }
+  else if (wParam == VK_F9) {
+    // toggle fixed playlist source mode on/off
+    cmdTogglePlaylistSource();
+    return true;
+  }
+  else if (wParam == VK_F10) {
+    if (GetKeyState(VK_CONTROL) & 0x8000) {
+        cmdToggleLibraryFilterSelectorSource(false);
+    } else
+    // toggle active playlist is the source on/off
+    cmdToggleActivePlaylistSource();
+    return true;
+  }
+  else if (wParam == VK_RIGHT || wParam == VK_LEFT || wParam == VK_NEXT ||
+    wParam == VK_PRIOR) {
     int move = 0;
     if (wParam == VK_RIGHT) {
-      move = +1;
-    } else if (wParam == VK_LEFT) {
-      move = -1;
-    } else if (wParam == VK_NEXT) {
-      move = +10;
-    } else if (wParam == VK_PRIOR) {
-      move = -10;
+        move = +1;
+    }
+    else if (wParam == VK_LEFT) {
+        move = -1;
+    }
+    else if (wParam == VK_NEXT) {
+        move = +10;
+    }
+    else if (wParam == VK_PRIOR) {
+        move = -10;
     }
     move *= LOWORD(lParam);
     engineThread->send<EM::MoveTargetMessage>(move, false);
@@ -259,7 +318,8 @@ bool EngineWindow::onKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam) {
   } else if (wParam == VK_HOME) {
     engineThread->send<EM::MoveTargetMessage>(-1, true);
     return true;
-  } else if (wParam == VK_END) {
+  }
+  else if (wParam == VK_END) {
     engineThread->send<EM::MoveTargetMessage>(1, true);
     return true;
   } else if (!(cfgFindAsYouType &&  // disable hotkeys that interfere with
@@ -278,6 +338,292 @@ bool EngineWindow::onKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam) {
     }
   }
   return false;
+}
+
+//sets [toggle] SourcePlaylist & SourcePlaylistName
+//returns true if display should be updated
+//also disables follow active playlist
+bool ConfigPlaylistSource(bool toggle, bool reassign, bool forcerefresh) {
+
+  bool brefresh;
+  configData->SourceActivePlaylist = false;
+
+  pfc::string8 formername = configData->SourcePlaylistName;
+  bool formerstate = configData->SourcePlaylist;
+
+  if (toggle) {
+    configData->SourcePlaylist = !configData->SourcePlaylist;
+  }
+  if (configData->SourcePlaylist) {
+    if (reassign) {
+      static_api_ptr_t<playlist_manager> pm;
+      pm->activeplaylist_get_name(configData->SourcePlaylistName);
+    }
+  }
+
+  brefresh = configData->SourcePlaylist != formerstate ||
+             (stricmp_utf8(formername, configData->SourcePlaylistName) != 0) ||
+             forcerefresh;
+
+  return brefresh;
+}
+//toggle SourceActivePlaylist mode
+//true if display should be updated
+bool ToggleActivePlaylistMode() {
+  bool breload;
+  configData->SourceActivePlaylist = !configData->SourceActivePlaylist;
+
+  if (configData->SourceActivePlaylist) {
+    static_api_ptr_t<playlist_manager> pm;
+    pfc::string8 plname;
+    pm->activeplaylist_get_name(plname);
+    if ((configData->SourcePlaylist) && (
+      stricmp(configData->SourcePlaylistName, plname) == 0)) {
+      breload = false;
+    }
+    else
+      breload = true;
+
+    configData->SourceActivePlaylistName = plname;
+    configData->SourcePlaylist = true;
+  }
+  else {
+    configData->SourcePlaylist = false;
+    breload = true;
+  }
+  return breload;
+}
+
+void EngineWindow::cmdToggleActivePlaylistSource() {
+  configData->SourceLibrarySelector = false;
+  configData->SourceLibrarySelectorLock = false;
+
+  if (!configData->IsWholeLibrary() && !configData->SourcePlaylistGroup) {
+    engineThread->send<EM::SourceChangeMessage>(configData->IsWholeLibrary(),
+                                               configData->SourcePlaylistGroup,
+                                               !configData->IsWholeLibrary(), 0);
+  }
+  bool brefresh;
+  brefresh = ToggleActivePlaylistMode();
+  if (brefresh)
+    engineThread->send<EM::ReloadCollection>();
+}
+void EngineWindow::cmdTogglePlaylistSource() {
+  configData->SourceLibrarySelector = false;
+  configData->SourceLibrarySelectorLock = false;
+
+  if (!configData->IsWholeLibrary() && !configData->SourcePlaylistGroup) {
+    engineThread->send<EM::SourceChangeMessage>(configData->IsWholeLibrary(),
+                                               configData->SourcePlaylistGroup,
+                                               !configData->IsWholeLibrary(), 0);
+  }
+  bool bIsSourceActive = configData->IsSourceActiveOnAndMirrored();
+  bool breload = ConfigPlaylistSource(!configData->SourceActivePlaylist, false, !bIsSourceActive);
+  if (breload)
+    engineThread->send<EM::ReloadCollection>();
+}
+void EngineWindow::cmdAssignPlaylistSource() {
+  bool brefresh = ConfigPlaylistSource(!configData->SourcePlaylist, true, false);
+  if (brefresh)
+    engineThread->send<EM::ReloadCollection>();
+}
+
+t_size FindItemFromPos(metadb_handle_list list, metadb_handle_ptr item, t_size pos) {
+
+  for (int i = pos; i < list.get_count(); i++) {
+    bool bcomp = list.get_item(i) == item.get_ptr();
+    if (bcomp) {
+      return i;
+    }
+  }
+  return pfc_infinite;
+}
+
+t_size GetHighlightMask(t_size playlist, const AlbumInfo& album, bit_array_bittable& iomask) {
+  static_api_ptr_t<playlist_manager> pm;
+  metadb_handle_list plist;
+  pm->playlist_get_all_items(playlist, plist);
+  iomask.resize(plist.get_count());
+
+  t_size retpos = pfc_infinite;
+  if (!configData->IsPlaylistSourceModeUngrouped()) {
+    for (int j = 0; j < plist.get_count(); j++) {
+      int res = FindItemFromPos(album.tracks, plist.get_item(j), 0);
+      if (res != pfc_infinite)
+        retpos = retpos == pfc_infinite ? j : retpos;
+      iomask.set(j, res != pfc_infinite);
+    }
+  } else {
+    std::string strkey = album.pos.key;
+    t_size ndxpos = strkey.rfind("|", strkey.length());
+    ndxpos++;
+    std::string ndxstr = strkey.substr(ndxpos, strkey.length() - (ndxpos));
+    retpos = atoi(ndxstr.c_str());
+    iomask.set(retpos, true);
+  }
+  return retpos;
+}
+void EngineWindow::cmdPlaylistSourcePlay(const AlbumInfo& album) {
+
+  static_api_ptr_t<playlist_manager> pm;
+  t_size playlist = pm->find_playlist(configData->InSourePlaylistGetName());
+  bit_array_bittable hlmask;
+  t_size first = GetHighlightMask(playlist, album, hlmask);
+  pm->playlist_set_selection(playlist, bit_array_true(), hlmask);
+  pm->set_active_playlist(playlist);
+  pm->playlist_execute_default_action(playlist, first);
+
+}
+
+void EngineWindow::cmdHighlightPlaylistContent() {
+  auto targetAlbum = engineThread->sendSync<EM::GetTargetAlbum>().get();
+  if (targetAlbum) {
+    t_size playlist =
+        playlist_manager::get()->find_playlist(configData->InSourePlaylistGetName());
+    bit_array_bittable hlmask;
+    t_size first = GetHighlightMask(playlist, targetAlbum.value(), hlmask);
+    //todo: display flickering on playlist browser
+    //playlist_manager::get()->playlist_set_selection(playlist, bit_array_true(), bit_array_false());
+    playlist_manager::get()->playlist_set_selection(playlist, bit_array_true(), hlmask);
+    playlist_manager::get()->playlist_set_focus_item(playlist, first);
+  }
+}
+
+bool EngineWindow::cmdActivateVisualization(int ndx) {
+  CoverConfigMap coverconfigs = configData->CoverConfigs;
+  int session_pos = configData->sessionCompiledCPInfo.get().first;
+  if (ndx <= coverconfigs.size()) {
+    CoverConfig new_cc;
+    // -1 reset to default
+    if (ndx == -1) {
+      // restore saved cover config from settings
+      ndx = configData->GetCCPosition();
+      if (ndx != session_pos) {
+        auto& cfg_cc = coverconfigs.at(configData->CoverConfigSel.c_str());
+        new_cc = cfg_cc;
+      } else
+        return false;
+    } else {
+      // 0 default, 1..9 get 0 to 8 cover configs
+      if (ndx != session_pos) {
+        auto& [ndxname, cfg_cc] = *std::next(coverconfigs.begin(), ndx);
+        new_cc = cfg_cc;
+      } else
+        return false;
+    }
+
+    try {
+      auto cfg_ptr = make_shared<CompiledCPInfo>(compileCPScript(new_cc.script.c_str()));
+      EngineThread::forEach([ndx, cfg_ptr](EngineThread& t) {
+        t.send<EM::ChangeCoverPositionsMessage>(cfg_ptr);
+      });
+      configData->sessionCompiledCPInfo.set(ndx, cfg_ptr);
+    } catch (std::exception& e) {
+      // deliver exception
+    }
+    return true;
+  }
+  else
+    // index out of bounds
+    return false;
+}
+void EngineWindow::cmdToggleLibraryCoverFollowsSelection() {
+  configData->CoverFollowsLibrarySelection = !configData->CoverFollowsLibrarySelection;
+  if (!configData->CoverFollowsLibrarySelection == true) {
+    //..
+  }
+  else {
+    //..
+  }
+}
+void EngineWindow::cmdToggleLibraryFilterSelectorSource(bool locked) {
+  configData->SourceActivePlaylist = false;
+  configData->SourcePlaylist = false;
+  if (!locked) {
+    configData->SourceLibrarySelector = !configData->SourceLibrarySelector;
+    configData->SourceLibrarySelectorLock &= configData->SourceLibrarySelector;
+    if (!configData->SourceLibrarySelector) {
+      //shared pointer release on DbReloadWorker destructor
+    }
+
+    if (!configData->SourceLibrarySelector && !configData->SourceLibrarySelectorLock)
+      engineThread->send<EM::ReloadCollection>();
+
+    if (configData->SourceLibrarySelector && !configData->CoverFollowsLibrarySelection)
+      //need the follow selection
+      cmdToggleLibraryCoverFollowsSelection();
+
+  }
+  else {
+    configData->SourceLibrarySelectorLock = !configData->SourceLibrarySelectorLock;
+    /*if (!configData->SourceLibrarySelectorLock == true) {
+      engineThread->send<EM::ReloadCollection>();
+    }*/
+  }
+}
+
+bool HasImageExtension(pfc::string8 extension) {
+  const std::vector<pfc::string8> vext {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff"};
+  return std::find(vext.begin(), vext.end(), extension) != vext.end();
+}
+void EngineWindow::cmdShowAlbumOnExternalViewer(AlbumInfo album) {
+  const metadb_handle_list& tracks = album.tracks;
+  const metadb_handle_ptr& track = tracks.get_item(0).get_ptr();
+  static_api_ptr_t<album_art_manager_v2> aam;
+  abort_callback_impl abort;
+  try {
+    auto extractor =
+        aam->open(pfc::list_single_ref_t(track),
+                  pfc::list_single_ref_t(configData->GetGuiArt(configData->CenterArt)),
+                  abort);
+    try {
+      album_art_path_list::ptr qp = extractor->query_paths(
+          configData->GetGuiArt(configData->CustomCoverFrontArt), abort);
+
+      // int cdebug = qp->get_count();
+      pfc::string8 strPicturePath = qp->get_path(0);
+
+      if (!HasImageExtension(pfc::string8(PathFindExtensionA(strPicturePath))))
+        return;
+
+      if (configData->CoverUseLegacyExternalViewer) {
+        //PhotoViewer
+        //from environment
+        char* strProgFiles;
+        strProgFiles = getenv("ProgramFiles");
+        pfc::stringcvt::string_wide_from_utf8_fast bufferWide;
+        //command program files photoviewer
+        bufferWide.convert(strProgFiles);
+        std::wstring wsCmd = (L"\"");
+        wsCmd.append(bufferWide);
+        wsCmd.append("\\Windows Photo Viewer\\PhotoViewer.dll\", "
+            L"ImageView_Fullscreen ");
+        //picture path
+        bufferWide.convert(strPicturePath);
+        wsCmd.append(bufferWide);
+        std::wstring wsSystemRoot = (L"\"");
+        //system root (c:\windows)
+        char* strSysRoot;
+        strSysRoot = getenv("SystemRoot");
+        std::wstring wsCmdSysRoot;
+        pfc::stringcvt::string_wide_from_utf8_fast bufferWideSysRoot;
+        bufferWideSysRoot.convert(strSysRoot);
+        wsCmdSysRoot.append(bufferWideSysRoot);
+        wsCmdSysRoot.append(L"\\system32\\rundll32.exe");
+
+        //command
+        ShellExecuteW(this->hWnd, L"open", wsCmdSysRoot.c_str(),
+                      wsCmd.c_str(), 0, SW_NORMAL);
+      } else {
+        //Photos or default
+        uShellExecute(0, "open", strPicturePath, 0, 0, SW_NORMAL);
+      }
+    } catch (const exception_aborted&) {
+      return;
+    }
+  } catch (const exception_album_art_not_found&) {
+    return;
+  }
 }
 
 void EngineWindow::onDamage() {
@@ -322,33 +668,35 @@ void EngineWindow::onContextMenu(const int x, const int y) {
     target = engineThread->sendSync<EM::GetTargetAlbum>().get();
   }
 
-  enum {
-    ID_ENTER = 1,
-    ID_ENTER2,
-    ID_DOUBLECLICK,
-    ID_MIDDLECLICK,
-    ID_PREFERENCES,
-    ID_CONTEXT_FIRST,
-    ID_CONTEXT_LAST = ID_CONTEXT_FIRST + 1000,
-  };
   service_ptr_t<contextmenu_manager> cmm;
   contextmenu_manager::g_create(cmm);
   HMENU hMenu = CreatePopupMenu();
   if (target) {
-    if ((cfgEnterKey.length() > 0) && (strcmp(cfgEnterKey, cfgDoubleClick) != 0)) {
-      uAppendMenu(
-          hMenu, MF_STRING, ID_ENTER, PFC_string_formatter() << cfgEnterKey << "\tEnter");
+    if (!configData->CtxHideExtViewerMenu) {
+      uAppendMenu(hMenu, MF_STRING, ID_OPENEXTERNALVIEWER,
+                  "Open External Viewer");
     }
-    if (cfgDoubleClick.length() > 0) {
-      uAppendMenu(hMenu, MF_STRING, ID_DOUBLECLICK,
-                  PFC_string_formatter() << cfgDoubleClick << "\tDouble Click");
+    if (configData->IsWholeLibrary()) {
+      if (!configData->CtxHideActionsMenu) {
+        if ((configData->EnterKey.length() > 0) &&
+            (strcmp(configData->EnterKey, configData->DoubleClick) != 0)) {
+          uAppendMenu(hMenu, MF_STRING, ID_ENTER,
+                      PFC_string_formatter() << configData->EnterKey << "\tEnter");
+        }
+        if (configData->DoubleClick.length() > 0) {
+          uAppendMenu(
+              hMenu, MF_STRING, ID_DOUBLECLICK,
+              PFC_string_formatter() << configData->DoubleClick << "\tDouble Click");
+        }
+        if ((configData->MiddleClick.length() > 0) &&
+            (strcmp(configData->MiddleClick, configData->DoubleClick) != 0) &&
+            (strcmp(configData->MiddleClick, configData->EnterKey) != 0)) {
+          uAppendMenu(
+              hMenu, MF_STRING, ID_MIDDLECLICK,
+              PFC_string_formatter() << configData->MiddleClick << "\tMiddle Click");
+        }
+      }
     }
-    if ((cfgMiddleClick.length() > 0) && (strcmp(cfgMiddleClick, cfgDoubleClick) != 0) &&
-        (strcmp(cfgMiddleClick, cfgEnterKey) != 0)) {
-      uAppendMenu(hMenu, MF_STRING, ID_MIDDLECLICK,
-                  PFC_string_formatter() << cfgMiddleClick << "\tMiddle Click");
-    }
-
     cmm->init_context(target->tracks, contextmenu_manager::FLAG_SHOW_SHORTCUTS);
     if (cmm->get_root() != nullptr) {
       if (GetMenuItemCount(hMenu) > 0)
@@ -360,12 +708,26 @@ void EngineWindow::onContextMenu(const int x, const int y) {
   uAppendMenu(hMenu, MF_STRING, ID_PREFERENCES, "Coverflow Preferences...");
 
   menu_helpers::win32_auto_mnemonics(hMenu);
+
   const int cmd = TrackPopupMenu(
       hMenu, TPM_NONOTIFY | TPM_RETURNCMD | TPM_RIGHTBUTTON | TPM_NOANIMATION, pt.x, pt.y,
       0, hWnd, nullptr);
   DestroyMenu(hMenu);
-  if (cmd == ID_PREFERENCES) {
-    static_api_ptr_t<ui_control>()->show_preferences(guid_configWindow);
+  if ((cmd == ID_LIBRARY_COVER_FOLLOWS_SELECTION) ||
+      (cmd == ID_LIBRARY_FILTER_SELECTOR_AS_SOURCE) ||
+      (cmd == ID_LIBRARY_FILTER_SELECTOR_LOCK)) {
+    OnSelectorContextCommand(&hMenu, cmd, this);
+  } else if ((cmd == ID_PLAYLIST_FOLLOWS_PL_SELECTION) ||
+             (cmd == ID_PLAYLIST_CURRENT_AS_SOURCE) ||
+             (cmd == ID_PLAYLIST_SOURCE_SET) ||
+             (cmd == ID_PLAYLIST_ACTIVE_AS_SOURCE)) {
+    OnPlaylistContextCommand(&hMenu, cmd, this);
+  } else if (cmd >= ID_DISPLAY_0 && cmd <= ID_DISPLAY_9) {
+    OnDisplayContextCommand(&hMenu, cmd, this);
+  } else if (cmd == ID_PREFERENCES) {
+    static_api_ptr_t<ui_control>()->show_preferences(guid_config_dialog);
+  } else if (cmd == ID_OPENEXTERNALVIEWER) {
+    cmdShowAlbumOnExternalViewer(target.value());
   } else if (cmd == ID_ENTER) {
     executeAction(cfgEnterKey, target.value());
   } else if (cmd == ID_DOUBLECLICK) {

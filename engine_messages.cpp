@@ -105,7 +105,23 @@ std::optional<AlbumInfo> EM::GetTargetAlbum::run(Engine& e) {
 
 void EM::ReloadCollection::run(Engine& e) {
   // This will abort any already running reload worker
+//#ifdef DEBUG
+  // PFC_ASSERT(e.thread.libraryVersion<2);
+//#endif
+  try {
+    // stress crashed reloadWorker in playlist mode, need to release
+    // test case: active playlist mode, fast mouse scroll through playlist tabs
+    if (e.reloadWorker) {
+      e.reloadWorker.release();
+    }
+  } catch (std::exception) {
+  }
+
   e.reloadWorker = make_unique<DbReloadWorker>(e.thread);
+
+  if (!e.reloadWorker) {
+    PFC_ASSERT(true);
+  }
   // Start spinner animation
   e.windowDirty = true;
 }
@@ -123,20 +139,31 @@ void EM::CollectionReloadedMessage::run(Engine& e) {
 void EM::PlaybackNewTrack::run(Engine& e, metadb_handle_ptr track) {
   e.playbackTracer.onPlaybackNewTrack(track);
 }
-
+// todo: items added and modified are turned off in source playlist mode
+// otherwise items get added to selection
 void EM::LibraryItemsAdded::run(Engine& e, metadb_handle_list tracks, t_uint64 version) {
+
+  if (!configData->IsWholeLibrary() || configData->SourceLibrarySelectorLock == true)
+    return;
+
   e.db.handleLibraryChange(version, DbAlbumCollection::items_added, std::move(tracks));
   e.cacheDirty = true;
   e.thread.invalidateWindow();
 }
+// todo: removing, should we check if source is playlist?
 void EM::LibraryItemsRemoved::run(Engine& e, metadb_handle_list tracks,
                                   t_uint64 version) {
   e.db.handleLibraryChange(version, DbAlbumCollection::items_removed, std::move(tracks));
   e.cacheDirty = true;
   e.thread.invalidateWindow();
 }
+// todo: items added and modified are turned off in source playlist mode
+// otherwise items get added to selection
 void EM::LibraryItemsModified::run(Engine& e, metadb_handle_list tracks,
                                    t_uint64 version) {
+  if (configData->SourcePlaylist || configData->SourceActivePlaylist)
+    return;
+
   e.db.handleLibraryChange(version, DbAlbumCollection::items_modified, std::move(tracks));
   e.cacheDirty = true;
   e.thread.invalidateWindow();
