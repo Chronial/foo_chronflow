@@ -6,9 +6,10 @@ class Image {
   using malloc_ptr = unique_ptr_del<void, &free>;
   int width;
   int height;
+  bool alpha;
   malloc_ptr data;
 
-  Image(malloc_ptr data, int width, int height);
+  Image(malloc_ptr data, int width, int height, bool alpha);
 
   static Image fromFile(const char* filename);
   static Image fromFileBuffer(const void* buffer, size_t len);
@@ -25,27 +26,37 @@ class GLTexture {
   GLTexture(const GLTexture&) = delete;
   GLTexture& operator=(const GLTexture&) = delete;
   GLTexture(GLTexture&&) noexcept;
+  GLTexture(GLTexture&&, bool hasalpha) noexcept;
   GLTexture& operator=(GLTexture&&) noexcept;
   ~GLTexture() noexcept;
 
   void bind() const;
-
+  bool getAlpha() const { return hasAlpha; }
+  void setAlpha(bool hasAlpha) { this->hasAlpha = hasAlpha; }
  private:
   void reset() noexcept;
   GLuint glTexture = 0;
+  bool hasAlpha = false;
 };
 
 class GLImage {
  public:
-  GLImage(GLTexture glTexture, float originalAspect)
-      : glTexture(std::move(glTexture)), originalAspect(originalAspect){};
+  GLImage(GLTexture glTexture, float originalAspect, bool hasAlpha)
+      : glTexture(std::move(glTexture), hasAlpha), originalAspect(originalAspect), hasAlpha(hasAlpha){
+    glTexture.setAlpha(hasAlpha);
+  };
 
   void bind() const { glTexture.bind(); };
   float getAspect() const { return originalAspect; };
+  bool getAlpha() const {
+    //return hasAlpha;
+    return glTexture.getAlpha();
+  }
 
  private:
   GLTexture glTexture;
   float originalAspect;
+  bool hasAlpha;
 };
 
 class UploadReadyImage {
@@ -67,6 +78,8 @@ class UploadReadyImage {
 
 std::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_ptr& track,
                                              abort_callback& abort);
-UploadReadyImage loadSpecialArt(WORD resource, pfc::string8 userImage);
+std::optional<UploadReadyImage> loadAlbumArtv2(const metadb_handle_ptr & track, const unsigned int coverart,
+                                             abort_callback & abort);
+UploadReadyImage loadSpecialArt(WORD resource, pfc::string8 userImage, bool hasAlpha);
 
 GLImage loadSpinner();

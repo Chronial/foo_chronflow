@@ -70,6 +70,23 @@ Image Image::fromFile(const char* filename) {
   gsl::owner<FILE*> f;
   if (0 != _wfopen_s(&f, wideName, L"rb"))
     throw std::runtime_error{"Failed to open image file"};
+
+  bool hasalpha = false;
+
+  int tcomp = 3;
+
+  if (configData->CoverArtEnablePngAlpha) {
+    //increase tcomp to 4 if this is a png8 with alpha channel
+    stbi__context s;
+    int testw, testh;
+    long pos = ftell(f);
+    stbi__start_file(&s, f);
+    if (stbi__png_info(&s, &testw, &testh, &tcomp));
+    else
+      tcomp = 3;
+    fseek(f, pos, SEEK_SET);
+  }
+
   malloc_ptr data{
       static_cast<void*>(stbi_load_from_file(f, &width, &height, &channels_in_file, 3))};
   fclose(f);
@@ -83,6 +100,13 @@ Image Image::fromFileBuffer(const void* buffer, size_t len) {
   int width;
   int height;
   int channels_in_file;
+
+  t_size req_comp = 3;
+  if (configData->CoverArtEnablePngAlpha) {
+    if (findPngAlphaFromBuffer((stbi_uc*)buffer, len))
+      req_comp = 4;
+  }
+
   malloc_ptr data{static_cast<void*>(stbi_load_from_memory(
       static_cast<const stbi_uc*>(buffer), len, &width, &height, &channels_in_file, 3))};
   if (data == nullptr) {
@@ -145,7 +169,9 @@ Image Image::fromGdiBitmap(Gdiplus::Bitmap& bitmap) {
 }
 
 Image Image::resize(int width, int height) const {
-  size_t new_size = width * height * 3;
+  int channels = alpha ? 4 : 3;
+
+  size_t new_size = width * height * channels;
   // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
   malloc_ptr new_buffer{static_cast<stbi_uc*>(malloc(new_size))};
   if (new_buffer == nullptr) {
@@ -188,8 +214,45 @@ std::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_ptr& track,
     return std::nullopt;
   }
 }
+bool HasImageExtension(pfc::string8 extension) {
+  const std::vector<pfc::string8> vext{".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff"};
+  return std::find(vext.begin(), vext.end(), extension) != vext.end();
+}
+std::optional<UploadReadyImage> loadAlbumArtv2(const metadb_handle_ptr& track, const unsigned int coverart,
+                                               abort_callback& abort) {
 
-UploadReadyImage loadSpecialArt(WORD resource, pfc::string8 userImage) {
+  IF_DEBUG(double preLoad = time());
+  static_api_ptr_t<album_art_manager_v2> aam;
+  //info: race condition
+
+  auto extractor = aam->open(pfc::list_single_ref_t(track),
+                             pfc::list_single_ref_t(configData->GetGuiArt(coverart)),
+                             abort);
+
+  try {
+    auto art = extractor->query(configData->GetGuiArt(coverart), abort);
+    Image image = Image::fromFileBuffer(art->get_ptr(), art->get_size());
+    IF_DEBUG(auto x = gsl::finally([&] {
+                console::out() << "ART [done] " << std::setw(6)
+                              << (1000 * (time() - preLoad)) << " ms";
+              }));
+    return UploadReadyImage(std::move(image));
+  } catch (const exception_album_art_not_found&) {
+    IF_DEBUG(
+        console::out() << "ART [miss] " << std::setw(6) << (1000 * (time() - preLoad)) <<
+        " ms");
+    return std::nullopt;
+  } catch (const exception_aborted&) {
+    throw;
+  } catch (...) {
+    IF_DEBUG(
+        console::out() << "ART [fail] " << std::setw(6) << (1000 * (time() - preLoad)) <<
+        " ms");
+    return std::nullopt;
+  }
+}
+
+UploadReadyImage loadSpecialArt(WORD resource, pfc::string8 userImage, bool hasAlpha) {
   userImage.skip_trailing_char(' ');
   if (userImage.get_length() > 0) {
     fixPath(userImage);
@@ -199,8 +262,8 @@ UploadReadyImage loadSpecialArt(WORD resource, pfc::string8 userImage) {
     };
   }
   // either no userImage or loading failed
-  return UploadReadyImage(
-      Image::fromResource(resource, L"JPG", core_api::get_my_instance()));
+  return UploadReadyImage(Image::fromResource(resource, !hasAlpha? L"JPG" : L"PNG", core_api::get_my_instance())
+  );
 }
 
 UploadReadyImage::UploadReadyImage(Image&& src)
@@ -256,13 +319,14 @@ GLImage UploadReadyImage::upload() const {
   if (cfgTextureCompression) {
     glInternalFormat = GL_COMPRESSED_RGB;
   } else {
-    glInternalFormat = GL_RGB;
+    glInternalFormat = image.alpha ? GL_RGBA : GL_RGB;
+    //glInternalFormat = GL_RGB;
   }
 
-  glTexImage2D(GL_TEXTURE_2D, 0, glInternalFormat, image.width, image.height, 0, GL_RGB,
+  glTexImage2D(GL_TEXTURE_2D, 0, glInternalFormat, image.width, image.height, 0, image.alpha ? GL_RGBA : GL_RGB,
                GL_UNSIGNED_BYTE, image.data.get());
   IF_DEBUG(console::out() << "GLUpload " << (time() - preLoad) * 1000 << " ms");
-  return GLImage(std::move(texture), static_cast<float>(originalAspect));
+  return GLImage(std::move(texture), static_cast<float>(originalAspect), true);
 }
 
 GLTexture::GLTexture() {
@@ -270,6 +334,9 @@ GLTexture::GLTexture() {
 }
 
 GLTexture::GLTexture(GLTexture&& other) noexcept : glTexture(other.glTexture) {
+  other.glTexture = 0;
+}
+GLTexture::GLTexture(GLTexture&& other, bool hasalpha) noexcept : glTexture(other.glTexture), hasAlpha(hasalpha) {
   other.glTexture = 0;
 }
 

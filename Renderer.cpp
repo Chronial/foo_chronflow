@@ -329,6 +329,10 @@ void Renderer::drawBg() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
+bool PngAlphaEnabled(engine::Engine& engine) {
+  return engine.coverPos.isCoverPngAlphaEnabled() && configData->CoverArtEnablePngAlpha;
+}
+
 void Renderer::drawFrame() {
   TRACK_CALL_TEXT("Renderer::drawFrame");
   wasMissingTextures = false;
@@ -350,11 +354,16 @@ void Renderer::drawCovers(bool showTarget) {
     bool isTarget;
   };
   std::vector<Cover> covers;
+  std::vector<std::pair<float, Cover>> covers_depth;
+
   if (engine.db.initializing()) {
     auto tex = &engine.texCache.getLoadingTexture();
     for (int i = engine.coverPos.getFirstCover(); i <= engine.coverPos.getLastCover();
          ++i) {
-      covers.push_back(Cover{tex, float(i), i, i == 0});
+      if (!PngAlphaEnabled(engine))
+        covers.push_back(Cover{tex, float(i), i, i == 0});
+      else
+        covers_depth.push_back({ float(i), Cover{tex, float(i), i, i == 0}  });
     }
   } else {
     float centerOffset = engine.worldState.getCenteredOffset();
@@ -377,13 +386,32 @@ void Renderer::drawCovers(bool showTarget) {
         wasMissingTextures = true;
         tex = &engine.texCache.getLoadingTexture();
       }
-      covers.push_back(Cover{tex, co, offset, p == targetCover});
+      if (!PngAlphaEnabled(engine))
+        covers.push_back(Cover{tex, co, offset, p == targetCover});
+      else
+        covers_depth.push_back({ co, Cover{tex, co, offset, p == targetCover} });
     }
+  }
+  if (PngAlphaEnabled(engine)) {
+    //inverse sort and send back to covers
+    std::sort(covers_depth.begin(), covers_depth.end(), [](auto& left, auto& right) {
+      return abs(right.first) < abs(left.first);
+      });
+    std::transform(begin(covers_depth), end(covers_depth),
+      std::back_inserter(covers),
+      [](auto const& pair) { return pair.second; });
   }
 
   for (Cover cover : covers) {
     cover.tex->bind();
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    if (PngAlphaEnabled(engine)) {
+      //if (/*cover.tex->getAlpha() &&*/ cover.offset < 0.5) {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      //}
+    }
 
     // calculate darkening
     float g = 1 - (std::min(1.0f, (abs(cover.offset) - 2) / 5)) * 0.5f;
@@ -429,7 +457,7 @@ void Renderer::drawCovers(bool showTarget) {
       glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
       glDisable(GL_TEXTURE_2D);
 
-      glLineWidth(GLfloat(cfgHighlightWidth));
+      glLineWidth(GLfloat(configData->HighlightWidth));
       glPolygonOffset(-1.0f, -1.0f);
       glEnable(GL_POLYGON_OFFSET_LINE);
 

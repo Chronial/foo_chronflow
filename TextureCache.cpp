@@ -12,13 +12,32 @@ using coverflow::configData;
 
 TextureCache::TextureCache(EngineThread& thread, DbAlbumCollection& db,
                            ScriptedCoverPositions& coverPos)
-    : db(db), thread(thread), coverPos(coverPos),
-      noCoverTexture(loadSpecialArt(IDR_COVER_NO_IMG, cfgImgNoCover.c_str()).upload()),
-      loadingTexture(loadSpecialArt(IDR_COVER_LOADING, cfgImgLoading.c_str()).upload()) {}
+    : dbptarget(nullptr), metatarget(nullptr), db(db), thread(thread), coverPos(coverPos),
+      noCoverTexture(loadSpecialArt(configData->CoverArtEnablePngAlpha
+                                        ? IDB_COVER_NO_IMG_PNG
+                                        : IDR_COVER_NO_IMG,
+                                    configData->ImgNoCover.c_str(),
+                                    configData->CoverArtEnablePngAlpha).upload()),
+      loadingTexture(loadSpecialArt(configData->CoverArtEnablePngAlpha
+                                        ? IDB_COVER_LOADING_PNG
+                                        : IDR_COVER_LOADING,
+                                    configData->ImgLoading.c_str(),
+                                    configData->CoverArtEnablePngAlpha).upload()) {
+}
 
 void TextureCache::reloadSpecialTextures() {
-  loadingTexture = loadSpecialArt(IDR_COVER_LOADING, cfgImgLoading.c_str()).upload();
-  noCoverTexture = loadSpecialArt(IDR_COVER_NO_IMG, cfgImgNoCover.c_str()).upload();
+  loadingTexture =
+      loadSpecialArt(configData->CoverArtEnablePngAlpha
+                         ? IDB_COVER_LOADING_PNG
+                         : IDR_COVER_LOADING,
+                     configData->ImgLoading.c_str(),
+                     configData->CoverArtEnablePngAlpha).upload();
+  noCoverTexture =
+      loadSpecialArt(configData->CoverArtEnablePngAlpha
+                         ? IDB_COVER_NO_IMG_PNG
+                         : IDR_COVER_NO_IMG,
+                     configData->ImgNoCover.c_str(),
+                     configData->CoverArtEnablePngAlpha).upload();
 }
 
 const GLImage* TextureCache::getAlbumTexture(const std::string& albumName) {
