@@ -210,10 +210,17 @@ std::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_ptr& track,
                                              abort_callback& abort) {
   IF_DEBUG(double preLoad = time());
   static_api_ptr_t<album_art_manager_v2> aam;
-  auto extractor = aam->open(pfc::list_single_ref_t(track),
-                             pfc::list_single_ref_t(album_art_ids::cover_front), abort);
+
+  auto extractor = aam->open(
+    pfc::list_single_ref_t(track),
+    pfc::list_single_ref_t(configData->GetGuiArt(configData->CustomCoverFrontArt)),
+    abort);
+
   try {
-    auto art = extractor->query(album_art_ids::cover_front, abort);
+    auto art = extractor->query(
+      configData->GetGuiArt(configData->CustomCoverFrontArt),
+      abort);
+
     Image image = Image::fromFileBuffer(art->get_ptr(), art->get_size());
 
     IF_DEBUG(auto x = gsl::finally([&] {

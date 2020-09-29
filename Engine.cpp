@@ -172,6 +172,10 @@ void Engine::setTarget(DBPos target, bool userInitiated) {
     });
   }
 
+  //todo: revise custom art refresh
+  if (configData->CenterArt != configData->CustomCoverFrontArt) {
+    configData->CenterArt = configData->CustomCoverFrontArt;
+  }
   worldState.setTarget(target);
   cacheDirty = true;
   if (userInitiated)

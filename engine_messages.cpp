@@ -132,7 +132,9 @@ void EM::ReloadCollection::run(Engine& e) {
     PFC_ASSERT(true);
   }
   // Start spinner animation
-  e.windowDirty = true;
+  //todo: spinner animation & windowDirty causes flicker
+  //when changing sources, removed by now
+  //e.windowDirty = true;
 }
 
 void EM::CollectionReloadedMessage::run(Engine& e) {
@@ -176,6 +178,41 @@ void EM::LibraryItemsModified::run(Engine& e, metadb_handle_list tracks,
   e.db.handleLibraryChange(version, DbAlbumCollection::items_modified, std::move(tracks));
   e.cacheDirty = true;
   e.thread.invalidateWindow();
+}
+
+void EM::ArtChangedMessage::run(Engine& e, bool prev, bool ctrl) {
+  if (e.db.empty())
+    return;
+  e.findAsYouType.reset();
+
+  e.cacheDirty = true;
+  e.texCache.modifyCenterCache(prev, ctrl);
+  //todo: this is a hack to invalidate texturecache
+  //need to properly trigger GLUpload...
+  //e.thread.invalidateWindow();
+  e.delayTimer.emplace(0.3f, [&] {
+    e.thread.invalidateWindow();
+  });
+}
+
+//todo: these visual error messages are a hack, remove then
+//as custom actions are now disabled in playlist mode
+void EM::VisualErrorMessage::run(Engine& e) {
+  static int oldHighlightWidth;
+  if (oldHighlightWidth != 0) {
+#ifdef DEBUG
+    console::out() << "EM::VisualErrorMessage is busy";
+#endif
+    return;
+  }
+  oldHighlightWidth = configData->HighlightWidth;
+  configData->HighlightWidth = configData->HighlightWidth + 2;
+  e.thread.invalidateWindow();
+  e.delayTimer.emplace(0.3f, [&] {
+    configData->HighlightWidth = configData->HighlightWidth - 2;
+    e.thread.invalidateWindow();
+    oldHighlightWidth = 0;
+  });
 }
 
 bool GetKeys(metadb_handle_ptr newtarget, pfc::string_base & keyBuffer,
@@ -332,6 +369,13 @@ void EM::SourceChangeMessage::run(Engine& e, src_state srcstate) {
     if (configData->SourceActivePlaylistSkipAni)
       e.worldState.hardSetCenteredPos(pos);
     e.worldState.setTarget(pos);
+
+    //configData->sessionSelectedCover.set_string(pos.key.c_str());
+
+    //ori
+    //e.worldState.setTarget(pos);
+    //e.worldState.hardSetCenteredPos(pos);
+    //e.worldState.update();
   }
 }
 void EM::ReloadCollectionFromList::run(Engine& e, std::shared_ptr<metadb_handle_list> shared_selection) {
@@ -350,7 +394,7 @@ void EM::ReloadCollectionFromList::run(Engine& e, std::shared_ptr<metadb_handle_
     PFC_ASSERT(true);
   }
   // Start spinner animation
-  e.windowDirty = true;
+  // e.windowDirty = true;
 }
 
 }  // namespace engine

@@ -86,6 +86,7 @@ struct Engine::Messages {
   E_MSG(LibraryItemsAdded, metadb_handle_list, t_uint64);
   E_MSG(LibraryItemsRemoved, metadb_handle_list, t_uint64);
   E_MSG(LibraryItemsModified, metadb_handle_list, t_uint64);
+  E_MSG(ArtChangedMessage, bool, bool);
   E_MSG(SourceChangeMessage, src_state);
   E_MSG(ReloadCollectionFromList, std::shared_ptr<metadb_handle_list>);
 };
