@@ -42,21 +42,23 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
-    <IntDir>$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)$(Configuration)\$(ProjectName)\</IntDir>
     <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
     <PostBuildEventUseInBuild>true</PostBuildEventUseInBuild>
     <CustomBuildAfterTargets>
     </CustomBuildAfterTargets>
     <CustomBuildBeforeTargets>PrepareForRun</CustomBuildBeforeTargets>
-    <IncludePath>$(IncludePath)</IncludePath>
+    <IncludePath>$(IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <CodeAnalysisRuleSet>CppCoreCheckRules.ruleset</CodeAnalysisRuleSet>
+    <TargetName>$(ProjectName)_mod</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
-    <IntDir>$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)$(Configuration)\$(ProjectName)\</IntDir>
     <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
     <PostBuildEventUseInBuild>true</PostBuildEventUseInBuild>
-    <IncludePath>$(IncludePath)</IncludePath>
+    <IncludePath>$(IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <TargetName>$(ProjectName)_mod</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <PreBuildEvent>
@@ -77,31 +79,40 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>false</StringPooling>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>..\libs\wil\include;..\libs\GSL\include;..\libs\boost_1_69_0;..\libs\glfw-3.2.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>
+      </DisableSpecificWarnings>
+      <AdditionalIncludeDirectories>..\..\..\WTL10_9163\Include;..\libs\GSL\include;..\libs\boost_1_69_0;..\libs\glfw-3.2.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level4</WarningLevel>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <ForcedIncludeFiles>stdafx.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles>StdAfx.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <TreatSpecificWarningsAsErrors>4715</TreatSpecificWarningsAsErrors>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <BrowseInformation>false</BrowseInformation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>..\libs\glfw-3.2.1\lib\glfw3-debug.lib;..\foobar2000\shared\shared.lib;d2d1.lib;dwrite.lib;Comctl32.lib;Winmm.lib;Shlwapi.lib;gdiplus.lib;opengl32.lib;glu32.lib;odbc32.lib;odbccp32.lib;user32.lib;gdi32.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)$(Configuration)\libPPUI.lib;$(SolutionDir)$(Configuration)\foobar2000_SDK.lib;$(SolutionDir)$(Configuration)\foobar2000_component_client.lib;$(SolutionDir)$(Configuration)\pfc.lib;$(SolutionDir)$(Configuration)\columns_ui_sdk.lib;$(SolutionDir)$(Configuration)\foobar2000_sdk_helpers.lib;Z:\VS2019\vcpkg-master\installed\x86-windows-static\Debug\lib\glfw3.lib;..\shared\shared.lib;d2d1.lib;dwrite.lib;Comctl32.lib;Winmm.lib;Shlwapi.lib;gdiplus.lib;opengl32.lib;glu32.lib;odbc32.lib;odbccp32.lib;user32.lib;gdi32.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AssemblyDebug>true</AssemblyDebug>
       <SubSystem>Windows</SubSystem>
       <LinkTimeCodeGeneration />
-      <AdditionalLibraryDirectories>..\libs\boost_1_69_0\stage\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Message>Copying</Message>
-      <Command>copy $(TargetPath) C:\home\coding\foobar2000\bin\default\components\foo_chronflow.dll</Command>
+      <Command>copy "$(TargetPath)" "$(FOO_USR)$(FOO_USR_FILE)"</Command>
     </PostBuildEvent>
+    <Bscmake>
+      <PreserveSbr>true</PreserveSbr>
+    </Bscmake>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <PreBuildEvent>
@@ -122,33 +133,42 @@
       <StringPooling>true</StringPooling>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <AdditionalIncludeDirectories>..\libs\wil\include;..\libs\GSL\include;..\libs\boost_1_69_0;..\libs\glfw-3.2.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\WTL10_9163\Include;..\libs\GSL\include;..\libs\boost_1_69_0;..\libs\glfw-3.2.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level4</WarningLevel>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <ForcedIncludeFiles>stdafx.h</ForcedIncludeFiles>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>..\libs\glfw-3.2.1\lib\glfw3.lib;..\foobar2000\shared\shared.lib;d2d1.lib;dwrite.lib;Comctl32.lib;Winmm.lib;Shlwapi.lib;gdiplus.lib;opengl32.lib;glu32.lib;odbc32.lib;odbccp32.lib;user32.lib;gdi32.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)$(Configuration)\libPPUI.lib;$(SolutionDir)$(Configuration)\foobar2000_SDK.lib;$(SolutionDir)$(Configuration)\foobar2000_component_client.lib;$(SolutionDir)$(Configuration)\pfc.lib;$(SolutionDir)$(Configuration)\columns_ui_sdk.lib;$(SolutionDir)$(Configuration)\foobar2000_sdk_helpers.lib;Z:\VS2019\vcpkg-master\installed\x86-windows-static\Debug\lib\glfw3.lib;..\shared\shared.lib;d2d1.lib;dwrite.lib;Comctl32.lib;Winmm.lib;Shlwapi.lib;gdiplus.lib;opengl32.lib;glu32.lib;odbc32.lib;odbccp32.lib;user32.lib;gdi32.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       <FixedBaseAddress>false</FixedBaseAddress>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\libs\boost_1_69_0\stage\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Message>Copying</Message>
-      <Command>copy $(TargetPath) C:\home\coding\foobar2000\bin\default\components\foo_chronflow.dll</Command>
+      <Command>copy "$(TargetPath)" "$(FOO_USR)$(FOO_USR_FILE)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ConfigCompiledInfo.cpp" />
+    <ClCompile Include="ConfigCoverConfigs.cpp" />
+    <ClCompile Include="ConfigData.cpp" />
+    <ClCompile Include="ConfigDialog.cpp" />
+    <ClCompile Include="ConfigBindings.cpp" />
+    <ClCompile Include="ConfigDialogDisplay.cpp" />
     <ClCompile Include="Engine.cpp" />
+    <ClCompile Include="PlaylistCallback.cpp" />
     <ClCompile Include="EngineWindow.cpp" />
     <ClCompile Include="engine_messages.cpp" />
     <ClCompile Include="FindAsYouType.cpp" />
@@ -158,10 +178,10 @@
     <ClCompile Include="lib\msscript.cpp" />
     <ClCompile Include="cover_positions.cpp" />
     <ClCompile Include="lib\win32_helpers.cpp" />
+    <ClCompile Include="style_manager.cpp" />
     <ClCompile Include="TextureCache.cpp" />
     <ClCompile Include="ContainerWindow.cpp" />
-    <ClCompile Include="CoverConfig.cpp" />
-    <ClCompile Include="ConfigWindow.cpp" />
+    <ClCompile Include="ConfigWindow.cpp"/>
     <ClCompile Include="cover_positions_compiler.cpp" />
     <ClCompile Include="CuiComponent.cpp" />
     <ClCompile Include="DbAlbumCollection.cpp" />
@@ -182,8 +202,32 @@
     <ClCompile Include="TextDisplay.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ConfigCompiledInfo.h" />
+    <ClInclude Include="ConfigContextDisplay.h" />
+    <ClInclude Include="ConfigContextSelector.h" />
+    <ClInclude Include="ConfigCoverConfigs.h" />
+    <ClInclude Include="ConfigContextPlaylist.h" />
+    <ClInclude Include="ConfigData.h" />
+    <ClInclude Include="ConfigDialog.h" />
+    <ClInclude Include="ConfigBindings.h" />
+    <ClInclude Include="ConfigBindingsItf.h" />
+    <ClInclude Include="ConfigDialogDisplay.h" />
+    <ClInclude Include="ConfigGuids.h" />
+    <ClInclude Include="ConfigWindow.h" />
+    <ClInclude Include="ConfigWindow.fwd.h" />
+    <ClInclude Include="ContainerWindow.fwd.h" />
     <ClInclude Include="cover_positions_compiler.h" />
+    <ClInclude Include="cover_fovAspectBehaviour.h" />
+    <ClInclude Include="DbAlbumCollection.fwd.h" />
+    <ClInclude Include="DbAlbumInfo.h" />
+    <ClInclude Include="DBReloadWorker.fwd.h" />
+    <ClInclude Include="doc\key_config.h" />
+    <ClInclude Include="Engine.fwd.h" />
     <ClInclude Include="Engine.h" />
+    <ClInclude Include="EngineThread.fwd.h" />
+    <ClInclude Include="PlaybackTracer.fwd.h" />
+    <ClInclude Include="PlaylistCallback.h" />
+    <ClInclude Include="EngineWindow.fwd.h" />
     <ClInclude Include="engine_messages.h" />
     <ClInclude Include="Image.h" />
     <ClInclude Include="lib\glad.h" />
@@ -193,13 +237,12 @@
     <ClInclude Include="lib\stb_image.h" />
     <ClInclude Include="lib\stb_image_resize.h" />
     <ClInclude Include="lib\win32_helpers.h" />
+    <ClInclude Include="Renderer.fwd.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="style_manager.h" />
     <ClInclude Include="TextureCache.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="ContainerWindow.h" />
-    <ClInclude Include="CoverConfig.h" />
-    <ClCompile Include="config.cpp" />
-    <ClInclude Include="config.h" />
     <ClInclude Include="DbAlbumCollection.h" />
     <ClInclude Include="DbReloadWorker.h" />
     <ClInclude Include="world_state.h" />
@@ -212,12 +255,16 @@
     <ClInclude Include="PlaybackTracer.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="EngineThread.h" />
-    <ClInclude Include="resource.h" />
     <ClInclude Include="cover_positions.h" />
     <ClInclude Include="TextDisplay.h" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="images\cover-loading-png.png" />
+    <Image Include="images\cover-loading-dark.jpg" />
+    <Image Include="images\cover-loading-png.png" />
     <Image Include="images\cover-loading.jpg" />
+    <Image Include="images\cover-no-img-dark.jpg" />
+    <Image Include="images\cover-no-img-png.png" />
     <Image Include="images\cover-no-img.jpg" />
     <Image Include="images\spinner.png" />
   </ItemGroup>
@@ -225,33 +272,12 @@
     <ResourceCompile Include="resource.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\columns_ui-sdk\columns_ui-sdk.vcxproj">
-      <Project>{93ec0ede-01cd-4fb0-b8e8-4f2a027e026e}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\foobar2000\foobar2000_component_client\foobar2000_component_client.vcxproj">
-      <Project>{71ad2674-065b-48f5-b8b0-e1f9d3892081}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\foobar2000\helpers\foobar2000_sdk_helpers.vcxproj">
-      <Project>{ee47764e-a202-4f85-a767-abdab4aff35f}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\foobar2000\SDK\foobar2000_SDK.vcxproj">
-      <Project>{e8091321-d79d-4575-86ef-064ea1a4a20d}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\pfc\pfc.vcxproj">
-      <Project>{ebfffb4e-261d-44d3-b89c-957b31a0bf9c}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
+    <None Include="..\columns_ui-sdk\columns_ui-sdk.vcxproj" />
+    <None Include="..\SDK\foobar2000_SDK.vcxproj" />
     <None Include=".clang-format" />
     <None Include=".clang-tidy" />
     <None Include="CoverPositionsCompile.py" />
     <None Include="cpp.hint" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="images\cover-loading-dark.jpg" />
-    <Content Include="images\cover-loading-png.png" />
-    <Content Include="images\cover-no-img-dark.jpg" />
-    <Content Include="images\cover-no-img-png.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
