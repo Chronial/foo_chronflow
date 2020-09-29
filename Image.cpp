@@ -59,14 +59,15 @@ void fixPath(pfc::string_base& path) {
 }
 }  // namespace
 
-Image::Image(malloc_ptr data, int width, int height)
-    : width(width), height(height), data(std::move(data)) {}
+Image::Image(malloc_ptr data, int width, int height, bool alpha)
+    : width(width), height(height), alpha(alpha), data(std::move(data)) {}
 
 Image Image::fromFile(const char* filename) {
   auto wideName = pfc::stringcvt::string_wide_from_utf8(filename);
   int width;
   int height;
   int channels_in_file;
+
   gsl::owner<FILE*> f;
   if (0 != _wfopen_s(&f, wideName, L"rb"))
     throw std::runtime_error{"Failed to open image file"};
@@ -88,12 +89,29 @@ Image Image::fromFile(const char* filename) {
   }
 
   malloc_ptr data{
-      static_cast<void*>(stbi_load_from_file(f, &width, &height, &channels_in_file, 3))};
+      static_cast<void*>(stbi_load_from_file(f, &width, &height, &channels_in_file, tcomp))};
   fclose(f);
   if (data == nullptr) {
     throw std::runtime_error{"Failed to load image file"};
   }
-  return Image{std::move(data), width, height};
+  return Image{std::move(data), width, height, tcomp>3};
+}
+
+bool findPngAlphaFromBuffer(stbi_uc* buffer, size_t len) {
+  bool bres;
+
+  bool ispng = false;
+  stbi__context s;
+  stbi__start_mem(&s, (stbi_uc*)buffer, len);
+  stbi__rewind(&s);
+  stbi__result_info ri;
+  stbi__png p;
+  p.s = &s;
+
+  ispng = stbi__parse_png_file(&p, STBI__SCAN_header, 4);
+  stbi__rewind(p.s);
+  int comp = p.s->img_n;
+  return (comp == 4 && ispng);
 }
 
 Image Image::fromFileBuffer(const void* buffer, size_t len) {
@@ -108,11 +126,11 @@ Image Image::fromFileBuffer(const void* buffer, size_t len) {
   }
 
   malloc_ptr data{static_cast<void*>(stbi_load_from_memory(
-      static_cast<const stbi_uc*>(buffer), len, &width, &height, &channels_in_file, 3))};
+      static_cast<const stbi_uc*>(buffer), len, &width, &height, &channels_in_file, req_comp))};
   if (data == nullptr) {
     throw std::runtime_error{"Failed to load image buffer"};
   }
-  return Image{std::move(data), width, height};
+  return Image{std::move(data), width, height, req_comp == 4 }; //hasalpha
 }
 
 Image Image::fromResource(LPCTSTR pName, LPCTSTR pType, HMODULE hInst) {
@@ -165,7 +183,7 @@ Image Image::fromGdiBitmap(Gdiplus::Bitmap& bitmap) {
     p += 3;
   }
 
-  return Image(std::move(outBuffer), bitmapData.Width, bitmapData.Height);
+  return Image(std::move(outBuffer), bitmapData.Width, bitmapData.Height, false);
 }
 
 Image Image::resize(int width, int height) const {
@@ -177,14 +195,15 @@ Image Image::resize(int width, int height) const {
   if (new_buffer == nullptr) {
     throw std::bad_alloc{};
   }
+
   int result =
       stbir_resize_uint8_srgb(static_cast<stbi_uc*>(data.get()), this->width,
                               this->height, 0, static_cast<stbi_uc*>(new_buffer.get()),
-                              width, height, 0, 3, STBIR_ALPHA_CHANNEL_NONE, 0);
+                              width, height, 0, channels, /*alpha ? STBIR_FLAG_ALPHA_PREMULTIPLIED :*/ STBIR_ALPHA_CHANNEL_NONE, 0);
   if (result != 1) {
     throw std::runtime_error{"Failed to resize image"};
   }
-  return Image{std::move(new_buffer), width, height};
+  return Image{std::move(new_buffer), width, height, this->alpha};
 }
 
 std::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_ptr& track,
@@ -268,10 +287,11 @@ UploadReadyImage loadSpecialArt(WORD resource, pfc::string8 userImage, bool hasA
 
 UploadReadyImage::UploadReadyImage(Image&& src)
     : image(std::move(src)), originalAspect(double(src.width) / src.height) {
-  const int maxSize = std::min(cfgMaxTextureSize.get_value(), 1024);
+  const int maxSize = std::min(configData->MaxTextureSize, 1024);
 
   int width = image.width;
   int height = image.height;
+
 
   // scale textures down to maxSize
   if ((width > maxSize) || (height > maxSize)) {
@@ -316,14 +336,16 @@ GLImage UploadReadyImage::upload() const {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
   GLint glInternalFormat;
-  if (cfgTextureCompression) {
-    glInternalFormat = GL_COMPRESSED_RGB;
+  bool debugalpha = true;
+  if (configData->TextureCompression) {
+    glInternalFormat = image.alpha /*&& debugalpha*/? GL_COMPRESSED_RGBA : GL_COMPRESSED_RGB;
+    //glInternalFormat = GL_COMPRESSED_RGB;
   } else {
-    glInternalFormat = image.alpha ? GL_RGBA : GL_RGB;
+    glInternalFormat = image.alpha /*&& debugalpha*/ ? GL_RGBA : GL_RGB;
     //glInternalFormat = GL_RGB;
   }
 
-  glTexImage2D(GL_TEXTURE_2D, 0, glInternalFormat, image.width, image.height, 0, image.alpha ? GL_RGBA : GL_RGB,
+  glTexImage2D(GL_TEXTURE_2D, 0, glInternalFormat, image.width, image.height, 0, image.alpha /*&& debugalpha*/? GL_RGBA : GL_RGB,
                GL_UNSIGNED_BYTE, image.data.get());
   IF_DEBUG(console::out() << "GLUpload " << (time() - preLoad) * 1000 << " ms");
   return GLImage(std::move(texture), static_cast<float>(originalAspect), true);

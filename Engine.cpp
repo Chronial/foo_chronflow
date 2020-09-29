@@ -176,7 +176,7 @@ void Engine::setTarget(DBPos target, bool userInitiated) {
   cacheDirty = true;
   if (userInitiated)
     playbackTracer.delay(1);
-
   thread.invalidateWindow();
+
 }
 } // namespace engine

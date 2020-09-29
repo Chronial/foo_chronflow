@@ -50,15 +50,16 @@ Control + 1..9: Run configuration
 UP, DOWN, CTRL+UP, CTRL+DOWN
 
 Keyboard cover art selection modifies the bitmap cache.
-The selections are reset when the album collection is reloaded or when the album
-cache gets invalidated.
+The selections are reset when the album collection is reloaded or when
+album cache gets invalidated.
 
 Check Performance Tab to tune cache options.
 
 -- Legacy External Viewer --
 
-With this option enabled (Properties->Display) the Open External Viewer command will call
-%ProgramFiles%\Windows Photo Viewer\PhotoViewer.dll instead of the Default Image Viewer.
-
+Enable this option to open album art in PhotoViewer instead of the
+default viewer.
+PhotoViewer path:
+%ProgramFiles%\Windows Photo Viewer\PhotoViewer.dll
 
 )us5lhvaf";

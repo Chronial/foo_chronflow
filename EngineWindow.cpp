@@ -32,45 +32,35 @@ namespace engine {
     if (!glfwInit()) {
         throw std::runtime_error("Failed to initialize glfw");
     }
+    }
+    ++count;
   }
-  ++count;
-}
-
-GLFWContext::~GLFWContext() {
-  --count;
-  if (count == 0) {
-    TRACK_CALL_TEXT("glfwTerminate");
-    TRACK_CODE("ensure_main_thread()", core_api::ensure_main_thread());
-    glfwTerminate();
+  GLFWContext::~GLFWContext() {
+    --count;
+    if (count == 0) {
+      TRACK_CALL_TEXT("glfwTerminate");
+      TRACK_CODE("ensure_main_thread()", core_api::ensure_main_thread());
+      glfwTerminate();
+    }
   }
-}
+  void EngineWindow::createWindow() {
+    glfwDefaultWindowHints();
+    glfwWindowHint(GLFW_DECORATED, FALSE);
+    glfwWindowHint(
+        GLFW_SAMPLES, configData->Multisampling ? configData->MultisamplingPasses : 0);
+    glfwWindowHint(GLFW_FOCUSED, FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, FALSE);
+    glfwWindowHint(GLFW_VISIBLE, FALSE);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 
-EngineWindow::EngineWindow(ContainerWindow& container, StyleManager& styleManager,
-                           ui_element_instance_callback_ptr defaultUiCallback)
-    : defaultUiCallback(std::move(defaultUiCallback)), container(container) {
-  TRACK_CALL_TEXT("EngineWindow::EngineWindow");
-
-  createWindow();
-  engineThread.emplace(*this, styleManager);
-  glfwShowWindow(glfwWindow.get());
-}
-
-void EngineWindow::createWindow() {
-  glfwDefaultWindowHints();
-  glfwWindowHint(GLFW_DECORATED, FALSE);
-  glfwWindowHint(GLFW_SAMPLES, cfgMultisampling ? cfgMultisamplingPasses : 0);
-  glfwWindowHint(GLFW_FOCUSED, FALSE);
-  glfwWindowHint(GLFW_RESIZABLE, FALSE);
-  glfwWindowHint(GLFW_VISIBLE, FALSE);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-
-  glfwWindow.reset(
-      glfwCreateWindow(640, 480, "foo_chronflow render window", nullptr, nullptr));
-  if (!glfwWindow) {
-    throw std::runtime_error("Unknown error while creating opengl window");
-  }
-  hWnd = glfwGetWin32Window(glfwWindow.get());
+    glfwWindow.reset(glfwCreateWindow(
+      640, 480, PFC_string_formatter() << AppNameInternal << " render window", nullptr,
+      nullptr));
+    if (!glfwWindow) {
+      throw std::runtime_error("Unknown error while creating opengl window");
+    }
+    hWnd = glfwGetWin32Window(glfwWindow.get());
 
     WIN32_OP_D(SetParent(hWnd, container.getHWND()));
     const LONG nNewStyle = (GetWindowLong(hWnd, GWL_STYLE) & ~WS_POPUP) | WS_CHILDWINDOW;
@@ -135,8 +125,8 @@ LRESULT EngineWindow::messageHandler(UINT uMsg, WPARAM wParam, LPARAM lParam) {
       SetFocus(hWnd);
       return MA_ACTIVATE;
     case WM_SETFOCUS: {
-      selectionHolder = ui_selection_manager::get()->acquire();
-      setSelection(selection);
+      selectionHolder = ui_selection_manager_v2::get()->acquire();
+      //setSelection(selection, true);
       break;
     }
     case WM_KILLFOCUS: {
@@ -158,8 +148,9 @@ LRESULT EngineWindow::messageHandler(UINT uMsg, WPARAM wParam, LPARAM lParam) {
       return DefWindowProc(hWnd, uMsg, wParam, lParam);
     case WM_CONTEXTMENU:
       if (defaultUiCallback.is_valid() && defaultUiCallback->is_edit_mode_enabled()) {
-        return DefWindowProc(hWnd, uMsg, wParam, lParam);
-      } else {
+            return DefWindowProc(hWnd, uMsg, wParam, lParam);
+      }
+      else {
         onContextMenu(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
         return 0;
       }
@@ -172,17 +163,24 @@ LRESULT EngineWindow::messageHandler(UINT uMsg, WPARAM wParam, LPARAM lParam) {
       if (onChar(wParam))
         return 0;
       break;
-  }
-
-  return DefSubclassProc(hWnd, uMsg, wParam, lParam);
+    case WM_MYACTIONS_SET_DISPLAY:
+      cmdActivateVisualization(lParam);
+      break;
+    //todo: remove all actions in playlist mode
+    case WM_MYACTIONS_CANCELED:
+      // MessageBeep(MB_ICONINFORMATION);
+      engineThread->send<EM::VisualErrorMessage>();
+      break;
+    }
+    return DefSubclassProc(hWnd, uMsg, wParam, lParam);
 }
-
 bool EngineWindow::onChar(WPARAM wParam) {
   //todo: check compatibility with playlist mode
   if (configData->FindAsYouType) {
     engineThread->send<EM::CharEntered>(wParam);
     return true;
-  } else {
+  }
+  else {
     return false;
   }
 }
@@ -192,7 +190,6 @@ void EngineWindow::onMouseClick(UINT uMsg, WPARAM /*wParam*/, LPARAM lParam) {
   auto clickedAlbum = future.get();
   if (!clickedAlbum)
     return;
-
   if (uMsg == WM_LBUTTONDOWN) {
     POINT pt;
     GetCursorPos(&pt);
@@ -250,6 +247,7 @@ bool EngineWindow::onKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam) {
     return true;
   }
   else if (wParam == VK_F4) {
+
     if (!configData->IsWholeLibrary()) {
 
       src_state srcstate;
@@ -263,17 +261,16 @@ bool EngineWindow::onKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam) {
         engineThread->send<EM::SourceChangeMessage>(srcstate);
 
         configData->SourcePlaylistGroup = !configData->SourcePlaylistGroup;
+
         engineThread->send<EM::ReloadCollection>();
       }
       else {
+
         //todo: flickers when reassigned, revise parameters
-        engineThread->send<EM::SourceChangeMessage>(
-            configData->IsWholeLibrary(),
-            configData->SourcePlaylistGroup,
-            configData->IsWholeLibrary(), 0
-          );
+        engineThread->send<EM::SourceChangeMessage>(srcstate);
 
         configData->SourcePlaylistGroup = !configData->SourcePlaylistGroup;
+
         engineThread->send<EM::ReloadCollection>();
       }
     }
@@ -325,27 +322,45 @@ bool EngineWindow::onKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam) {
     move *= LOWORD(lParam);
     engineThread->send<EM::MoveTargetMessage>(move, false);
     return true;
-  } else if (wParam == VK_HOME) {
+  }
+  else if (wParam == VK_UP || wParam == VK_DOWN) {
+    engineThread->send<EM::ArtChangedMessage>(wParam == VK_DOWN,
+      (GetKeyState(VK_CONTROL) & 0x8000));
+    return true;
+  }
+  else if (wParam == VK_HOME) {
     engineThread->send<EM::MoveTargetMessage>(-1, true);
     return true;
   }
   else if (wParam == VK_END) {
     engineThread->send<EM::MoveTargetMessage>(1, true);
     return true;
-  } else if (!(cfgFindAsYouType &&  // disable hotkeys that interfere with
-                                    // find-as-you-type
-               (uMsg == WM_KEYDOWN) &&
-               ((wParam > 'A' && wParam < 'Z') || (wParam > '0' && wParam < '9') ||
-                (wParam == ' ')) &&
-               ((GetKeyState(VK_CONTROL) & 0x8000) == 0))) {
-    auto targetAlbum = engineThread->sendSync<EM::GetTargetAlbum>().get();
-    static_api_ptr_t<keyboard_shortcut_manager> ksm;
-    if (targetAlbum) {
-      return ksm->on_keydown_auto_context(
-          targetAlbum->tracks, wParam, contextmenu_item::caller_media_library_viewer);
-    } else {
-      return ksm->on_keydown_auto(wParam);
-    }
+  }
+  else if ((wParam >= '0' && wParam <= '9') && GetKeyState(VK_CONTROL) & 0x8000) {
+    //0 default, 1 first script...
+    int ndx = wParam - 0x30;
+    if (ndx == 0)
+      ndx = configData->GetCCPosition();
+    else
+      ndx--;
+    cmdActivateVisualization(ndx);
+    return true;
+  }
+  else if (!(configData->FindAsYouType &&  // disable hotkeys that interfere with
+                                              // find-as-you-type
+      (uMsg == WM_KEYDOWN) &&
+      ((wParam > 'A' && wParam < 'Z') || (wParam > '0' && wParam < '9') ||
+      (wParam == ' ')) &&
+          ((GetKeyState(VK_CONTROL) & 0x8000) == 0))) {
+      auto targetAlbum = engineThread->sendSync<EM::GetTargetAlbum>().get();
+      static_api_ptr_t<keyboard_shortcut_manager> ksm;
+      if (targetAlbum) {
+          return ksm->on_keydown_auto_context(
+              targetAlbum->tracks, wParam, contextmenu_item::caller_media_library_viewer);
+      }
+      else {
+          return ksm->on_keydown_auto(wParam);
+      }
   }
   return false;
 }
@@ -398,6 +413,7 @@ bool ToggleActivePlaylistMode() {
 }
 
 void EngineWindow::cmdToggleActivePlaylistSource() {
+
   configData->SourceLibrarySelector = false;
   configData->SourceLibrarySelectorLock = false;
 
@@ -715,6 +731,7 @@ void EngineWindow::onContextMenu(const int x, const int y) {
   service_ptr_t<contextmenu_manager> cmm;
   contextmenu_manager::g_create(cmm);
   HMENU hMenu = CreatePopupMenu();
+
   if (target) {
     if (!configData->CtxHideExtViewerMenu) {
       uAppendMenu(hMenu, MF_STRING, ID_OPENEXTERNALVIEWER,

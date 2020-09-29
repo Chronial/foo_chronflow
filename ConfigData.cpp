@@ -270,7 +270,6 @@ void ConfigData::SetData(ConfigData& cfg, stream_reader* p_stream,
   p_stream->read_string(cfg.SourcePlaylistName, p_abort);
   p_stream->read_string(cfg.SourceActivePlaylistName, p_abort);
   p_stream->read_lendian_t(cfg.SourceActivePlaylistSkipAni, p_abort);
-  p_stream->read_lendian_t(cfg.SourceActivePlaylistSkipAni, p_abort);
   p_stream->read_lendian_t(cfg.SourcePlaylistGroup, p_abort);
   p_stream->read_string(cfg.SourcePlaylistNGTitle, p_abort);
   p_stream->read_lendian_t(cfg.SourceLibrarySelector, p_abort);

@@ -92,7 +92,9 @@ void DBWriter::add_track(const metadb_handle_ptr& track) {
   auto album = db.keyIndex.end();
 
   if (!configData->IsWholeLibrary() && !configData->SourcePlaylistGroup) {
-    char tmp_str[4] = "";
+    char tmp_str[4];
+    memset(tmp_str, ' ', 3);
+    tmp_str[3] = '\0';
     itoa(db.container.size(), tmp_str, 10);
     keyBuffer.replace_string("|[UNKNOWN FUNCTION]", "");
     keyBuffer = keyBuffer << "|" << tmp_str;

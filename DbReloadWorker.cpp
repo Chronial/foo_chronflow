@@ -29,6 +29,7 @@ DbReloadWorker::~DbReloadWorker() {
 void DbReloadWorker::threadProc() {
   TRACK_CALL_TEXT("DbReloadWorker::threadProc");
   pfc::hires_timer timer;
+
   timer.start();
   t_size selection_count = 0;
   try {
@@ -87,7 +88,7 @@ void DbReloadWorker::threadProc() {
       library_manager::get()->get_all_items(library);
     } else {
       // playlist covers
-      const t_size playlist = configData->FindSourcePlaylist();
+      const t_size playlist = configData->FindSourcePlaylist(0);
       playlist_manager::get()->playlist_get_all_items(playlist, library);
     }
     try {

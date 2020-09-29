@@ -3,8 +3,10 @@
 #include "cover_positions_compiler.h"
 
 class ScriptedCoverPositions {
- public:
-  ScriptedCoverPositions(shared_ptr<CompiledCPInfo> cInfo) : cInfo(std::move(cInfo)){};
+public:
+  ScriptedCoverPositions(shared_ptr<CompiledCPInfo> cinfo)
+    : cInfo(std::move(cinfo)) {
+  };
 
   const fovAspectBehaviour& getAspectBehaviour();
   const glVectord& getLookAt();
@@ -18,6 +20,9 @@ class ScriptedCoverPositions {
   double distanceToMirror(glVectord point);
   glQuad getCoverQuad(float coverId, float coverAspect);
 
- private:
+  bool isCoverTitleEnabled();
+  bool isCoverPngAlphaEnabled();
+
+private:
   shared_ptr<CompiledCPInfo> cInfo;
 };

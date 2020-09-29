@@ -88,8 +88,8 @@ void EM::MoveToCurrentTrack::run(Engine& e, metadb_handle_ptr track) {
   }
 }
 
-void EM::MoveToAlbumMessage::run(Engine& e, AlbumInfo album) {
-  e.setTarget(album.pos, true);
+void EM::MoveToAlbumMessage::run(Engine& e, AlbumInfo album, bool userInitiated) {
+  e.setTarget(album.pos, userInitiated);
 }
 
 std::optional<AlbumInfo> EM::GetAlbumAtCoords::run(Engine& e, int x, int y) {
@@ -204,9 +204,9 @@ bool GetKeys(metadb_handle_ptr newtarget, pfc::string_base & keyBuffer,
 
       newtarget->format_title(nullptr, sortBuffer, sortBuilder, nullptr);
       if (sortBuilder.is_valid())
-          sortBufferWide.convert(sortBuffer);
+        sortBufferWide.convert(sortBuffer);
       else
-          sortBufferWide.convert(keyBuffer);
+        sortBufferWide.convert(keyBuffer);
     }
     return true;
   } catch (std::exception) {
@@ -345,8 +345,6 @@ void EM::ReloadCollectionFromList::run(Engine& e, std::shared_ptr<metadb_handle_
   }
   t_size count = shared_selection->get_count();
   metadb_handle_list_ref p_selection = *shared_selection;
-  //debug count = p_selection.get_count();
-
   e.reloadWorker = make_unique<DbReloadWorker>(e.thread, shared_selection);
   if (!e.reloadWorker) {
     PFC_ASSERT(true);

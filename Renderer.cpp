@@ -261,15 +261,17 @@ void Renderer::drawGui() {
     } else if (engine.db.empty()) {
       albumTitle = "No Covers to Display";
     } else {
-      DBIter iter = engine.db.iterFromPos(engine.worldState.getTarget()).value();
-      albumTitle = engine.db.getAlbumInfo(iter).title;
-      highlight = engine.findAsYouType.highlightPositions(albumTitle);
+      if (engine.coverPos.isCoverTitleEnabled()) {
+        DBIter iter = engine.db.iterFromPos(engine.worldState.getTarget()).value();
+        albumTitle = engine.db.getAlbumInfo(iter).title;
+        highlight = engine.findAsYouType.highlightPositions(albumTitle);
+      }
     }
-    textDisplay.displayText(albumTitle, highlight, int(winWidth * cfgTitlePosH),
-                            int(winHeight * (1 - cfgTitlePosV)));
+    textDisplay.displayText(albumTitle, highlight, int(winWidth * configData->TitlePosH),
+                            int(winHeight * (1 - configData->TitlePosV)));
   }
 
-  if (cfgShowFps) {
+  if (configData->ShowFps) {
     double avgDur, maxDur, avgCPU, maxCPU;
     engine.fpsCounter.getFPS(avgDur, maxDur, avgCPU, maxCPU);
     std::ostringstream dispStringA;
@@ -353,6 +355,7 @@ void Renderer::drawCovers(bool showTarget) {
     int index;
     bool isTarget;
   };
+
   std::vector<Cover> covers;
   std::vector<std::pair<float, Cover>> covers_depth;
 
