@@ -124,7 +124,11 @@ class EngineWindow {
  private:
   double scrollAggregator = 0;
   ui_element_instance_callback_ptr defaultUiCallback;
-  metadb_handle_list selection;
+
+  metadb_handle_list library_selection;
+  GUID library_selection_type;
+  metadb_handle_list playlist_selection;
+  GUID playlist_selection_type;
   ui_selection_holder::ptr selectionHolder;
   external_selection_callback externalSelectionCallback;
 

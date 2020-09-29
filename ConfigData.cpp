@@ -111,6 +111,7 @@ void ConfigData::Reset() {
   SourceActivePlaylist = default_SourceActivePlaylist;
   SourcePlaylistName = default_SourcePlaylistName;
   SourcePlaylistName = default_SourceActivePlaylistName;
+  SourceActivePlaylistSkipAni = default_SourceActivePlaylistSkipAni;
   SourcePlaylistGroup = default_SourcePlaylistGroup;
   SourcePlaylistNGTitle = default_SourcePlaylistNGTitle;
   SourceLibrarySelector = default_SourceLibrarySelector;
@@ -182,6 +183,7 @@ void ConfigData::get_data_raw(stream_writer* p_stream, abort_callback& p_abort) 
   p_stream->write_lendian_t(SourceActivePlaylist, p_abort);
   p_stream->write_string(SourcePlaylistName, p_abort);
   p_stream->write_string(SourceActivePlaylistName, p_abort);
+  p_stream->write_lendian_t(SourceActivePlaylistSkipAni, p_abort);
   p_stream->write_lendian_t(SourcePlaylistGroup, p_abort);
   p_stream->write_string(SourcePlaylistNGTitle, p_abort);
   //p_stream->write_lendian_t(SourceLibrarySelector, p_abort);
@@ -267,6 +269,8 @@ void ConfigData::SetData(ConfigData& cfg, stream_reader* p_stream,
   p_stream->read_lendian_t(cfg.SourceActivePlaylist, p_abort);
   p_stream->read_string(cfg.SourcePlaylistName, p_abort);
   p_stream->read_string(cfg.SourceActivePlaylistName, p_abort);
+  p_stream->read_lendian_t(cfg.SourceActivePlaylistSkipAni, p_abort);
+  p_stream->read_lendian_t(cfg.SourceActivePlaylistSkipAni, p_abort);
   p_stream->read_lendian_t(cfg.SourcePlaylistGroup, p_abort);
   p_stream->read_string(cfg.SourcePlaylistNGTitle, p_abort);
   p_stream->read_lendian_t(cfg.SourceLibrarySelector, p_abort);

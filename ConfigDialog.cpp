@@ -47,6 +47,7 @@ void ConfigDialog::BindControls(const int ndx, HWND hWndTab, int cmd) {
       bindings_.Bind(configData->SourcePlaylist, BACT_RELOAD, hWndTab, IDC_SOURCE_FROM_PLAYLIST);
       bindings_.Bind(configData->SourceActivePlaylist, BACT_RELOAD, hWndTab, IDC_SOURCE_FROM_ACTIVE_PLAYLIST);
       bindings_.Bind(configData->SourcePlaylistName, BACT_RELOAD, hWndTab, IDC_COMBO_SOURCE_PLAYLIST_NAME);
+      bindings_.Bind(configData->SourceActivePlaylistSkipAni, 0, hWndTab, IDC_CHECK_BEHA_ACT_PLAYLIST_SKIP_ANI);
       bindings_.Bind(configData->SourcePlaylistGroup, BACT_RELOAD, hWndTab, IDC_SOURCE_PLAYLIST_GROUP);
       bindings_.Bind(configData->SourcePlaylistNGTitle, BACT_RELOAD, hWndTab, IDC_SOURCE_PLAYLIST_NGTITLE);
       bindings_.Bind(configData->CoverFollowsPlaylistSelection, 0, hWndTab, IDC_CHECK_BEHA_COVER_FOLLOWS_PLAYLIST);

@@ -3,7 +3,8 @@
 //#include "DbAlbumCollection.h"
 //#include "engine.fwd.h"
 #include "DbAlbumInfo.h"
-#include "cover_positions_compiler.h"
+#include "ConfigData.h"
+//#include "cover_positions_compiler.h"
 #include "utils.h"
 // clang-format on
 

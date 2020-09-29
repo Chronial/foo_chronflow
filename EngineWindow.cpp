@@ -251,7 +251,17 @@ bool EngineWindow::onKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam) {
   }
   else if (wParam == VK_F4) {
     if (!configData->IsWholeLibrary()) {
+
+      src_state srcstate;
+      configData->GetState(srcstate);
+      srcstate.wholelib.second = srcstate.wholelib.first;
+      srcstate.grouped.second = !srcstate.grouped.first;
+
+      //todo: clean this
       if (configData->SourcePlaylistGroup) {
+
+        engineThread->send<EM::SourceChangeMessage>(srcstate);
+
         configData->SourcePlaylistGroup = !configData->SourcePlaylistGroup;
         engineThread->send<EM::ReloadCollection>();
       }
@@ -340,51 +350,44 @@ bool EngineWindow::onKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam) {
   return false;
 }
 
-//sets [toggle] SourcePlaylist & SourcePlaylistName
+//set or toggle SourcePlaylist and SourcePlaylistName
 //returns true if display should be updated
-//also disables follow active playlist
-bool ConfigPlaylistSource(bool toggle, bool reassign, bool forcerefresh) {
+//disables active playlist
+bool ConfigPlaylistSource(bool toggle, bool reassign) {
 
-  bool brefresh;
-  configData->SourceActivePlaylist = false;
+  bool prevstate = configData->SourcePlaylist;
 
-  pfc::string8 formername = configData->SourcePlaylistName;
-  bool formerstate = configData->SourcePlaylist;
-
-  if (toggle) {
+  if (toggle)
     configData->SourcePlaylist = !configData->SourcePlaylist;
-  }
-  if (configData->SourcePlaylist) {
-    if (reassign) {
+
+  if (configData->SourcePlaylist && reassign) {
       static_api_ptr_t<playlist_manager> pm;
       pm->activeplaylist_get_name(configData->SourcePlaylistName);
-    }
   }
+  bool bmirror = configData->IsSourceOnAndMirrored(true);
 
-  brefresh = configData->SourcePlaylist != formerstate ||
-             (stricmp_utf8(formername, configData->SourcePlaylistName) != 0) ||
-             forcerefresh;
+  //in all cases assume turning ActivePlaylist off
+  configData->SourceActivePlaylist = false;
 
-  return brefresh;
+  return configData->SourcePlaylist != prevstate || (configData->SourcePlaylist == prevstate && !bmirror);
 }
-//toggle SourceActivePlaylist mode
-//true if display should be updated
+
 bool ToggleActivePlaylistMode() {
-  bool breload;
+  bool breload = false;
   configData->SourceActivePlaylist = !configData->SourceActivePlaylist;
 
   if (configData->SourceActivePlaylist) {
     static_api_ptr_t<playlist_manager> pm;
-    pfc::string8 plname;
-    pm->activeplaylist_get_name(plname);
-    if ((configData->SourcePlaylist) && (
-      stricmp(configData->SourcePlaylistName, plname) == 0)) {
-      breload = false;
-    }
-    else
-      breload = true;
+    t_size activepl = pm->get_active_playlist();
 
-    configData->SourceActivePlaylistName = plname;
+    if (activepl == pfc_infinite) {
+      return false;
+    }
+
+    //is SourcePlaylist on and in the same playlist?
+    breload = !configData->IsSourcePlaylistOn(activepl, 1);
+
+    pm->activeplaylist_get_name(configData->SourceActivePlaylistName);
     configData->SourcePlaylist = true;
   }
   else {
@@ -398,34 +401,54 @@ void EngineWindow::cmdToggleActivePlaylistSource() {
   configData->SourceLibrarySelector = false;
   configData->SourceLibrarySelectorLock = false;
 
-  if (!configData->IsWholeLibrary() && !configData->SourcePlaylistGroup) {
-    engineThread->send<EM::SourceChangeMessage>(configData->IsWholeLibrary(),
-                                               configData->SourcePlaylistGroup,
-                                               !configData->IsWholeLibrary(), 0);
-  }
-  bool brefresh;
-  brefresh = ToggleActivePlaylistMode();
-  if (brefresh)
+  src_state srcstate;
+  configData->GetState(srcstate);
+
+  bool brefresh = ToggleActivePlaylistMode();
+
+  configData->GetState(srcstate, false);
+
+  if (brefresh) {
+
+    engineThread->send<EM::SourceChangeMessage>(srcstate);
     engineThread->send<EM::ReloadCollection>();
+  }
 }
-void EngineWindow::cmdTogglePlaylistSource() {
+
+void EngineWindow::cmdAssignPlaylistSource() {
+
   configData->SourceLibrarySelector = false;
   configData->SourceLibrarySelectorLock = false;
 
-  if (!configData->IsWholeLibrary() && !configData->SourcePlaylistGroup) {
-    engineThread->send<EM::SourceChangeMessage>(configData->IsWholeLibrary(),
-                                               configData->SourcePlaylistGroup,
-                                               !configData->IsWholeLibrary(), 0);
+  src_state srcstate;
+  configData->GetState(srcstate);
+
+  bool brefresh = ConfigPlaylistSource(!configData->SourcePlaylist, true);
+
+  configData->GetState(srcstate, false);
+
+  if (brefresh) {
+    engineThread->send<EM::SourceChangeMessage>(srcstate);
+    engineThread->send<EM::ReloadCollection>();
   }
-  bool bIsSourceActive = configData->IsSourceActiveOnAndMirrored();
-  bool breload = ConfigPlaylistSource(!configData->SourceActivePlaylist, false, !bIsSourceActive);
-  if (breload)
-    engineThread->send<EM::ReloadCollection>();
 }
-void EngineWindow::cmdAssignPlaylistSource() {
-  bool brefresh = ConfigPlaylistSource(!configData->SourcePlaylist, true, false);
-  if (brefresh)
+
+void EngineWindow::cmdTogglePlaylistSource() {
+
+  configData->SourceLibrarySelector = false;
+  configData->SourceLibrarySelectorLock = false;
+
+  src_state srcstate;
+  configData->GetState(srcstate);
+  //because in active playlist mode playlist mode is also turned on
+  bool breload = ConfigPlaylistSource(!configData->SourceActivePlaylist, false);
+
+  configData->GetState(srcstate, false);
+
+  if (breload) {
+    engineThread->send<EM::SourceChangeMessage>(srcstate);
     engineThread->send<EM::ReloadCollection>();
+  }
 }
 
 t_size FindItemFromPos(metadb_handle_list list, metadb_handle_ptr item, t_size pos) {
@@ -485,7 +508,8 @@ void EngineWindow::cmdHighlightPlaylistContent() {
     //todo: display flickering on playlist browser
     //playlist_manager::get()->playlist_set_selection(playlist, bit_array_true(), bit_array_false());
     playlist_manager::get()->playlist_set_selection(playlist, bit_array_true(), hlmask);
-    playlist_manager::get()->playlist_set_focus_item(playlist, first);
+    playlist_manager::get()->playlist_ensure_visible(playlist, first);
+    //playlist_manager::get()->playlist_set_focus_item(playlist, first);
   }
 }
 

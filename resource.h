@@ -185,6 +185,7 @@
 #define IDC_CTX_SELECTOR_HIDE           1159
 #define IDC_CTX_EXTERNALVIEWER_HIDE     1160
 #define IDC_CTX_CUSTOMACTIONS_HIDE      1161
+#define IDC_CHECK_BEHA_ACT_PLAYLIST_SKIP_ANI 1163
 
 // Next default values for new objects
 //
@@ -193,7 +194,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        214
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1162
+#define _APS_NEXT_CONTROL_VALUE         1164
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

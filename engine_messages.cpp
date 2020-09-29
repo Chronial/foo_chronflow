@@ -178,69 +178,161 @@ void EM::LibraryItemsModified::run(Engine& e, metadb_handle_list tracks,
   e.thread.invalidateWindow();
 }
 
-void EM::SourceChangeMessage::run(Engine& e, bool waswholelib, bool wasgroup, bool nextwholelib, int track_pos) {
-  // trying to fall back to the same album after next collection reload
-  // the position is undetermined when entering ungrouped playlist mode
-  // todo: should it be done in class DBWriter ?
+bool GetKeys(metadb_handle_ptr newtarget, pfc::string_base & keyBuffer,
+  pfc::stringcvt::string_wide_from_utf8_fast & sortBufferWide,
+  pfc::string8 group, pfc::string8 sort,
+  bool sortgroup, t_size ngpos) {
+  if (newtarget.is_empty())
+    return false;
+  try {
+    titleformat_object::ptr keyBuilder;
+    titleformat_object::ptr sortBuilder;
+    pfc::string8_fast_aggressive sortBuffer;
 
-  titleformat_object::ptr keyBuilder;
-  titleformat_object::ptr sortBuilder;
-  pfc::string8_fast_aggressive keyBuffer;
-  pfc::string8_fast_aggressive sortBuffer;
-  pfc::stringcvt::string_wide_from_utf8_fast sortBufferWide;
+    titleformat_compiler::get()->compile_safe_ex(keyBuilder, group /*configData->Group*/);
+    if (/*configData->SortGroup*/sortgroup) {
+      titleformat_compiler::get()->compile_safe_ex(sortBuilder, sort/*configData->Sort*/);
+      newtarget->format_title(nullptr, keyBuffer, keyBuilder, nullptr);
+      if (sort.equals("NONE")) {
+        char tmp_str[4];
+        memset(tmp_str, ' ', 3);
+        tmp_str[3] = '\0';
+        itoa(ngpos, tmp_str, 10);
+        keyBuffer.replace_string("|[UNKNOWN FUNCTION]", "");
+        keyBuffer = keyBuffer << "|" << tmp_str;
+      }
 
-  DBPos pos = e.worldState.getTarget();
-  std::optional dbiter = e.db.iterFromPos(pos);
-
-  metadb_handle_list tracks;
-  e.db.getTracks(dbiter.value(), tracks);
-
-  if (waswholelib) {
-    titleformat_compiler::get()->compile_safe_ex(keyBuilder, configData->Group);
-    if (configData->SortGroup) {
-      titleformat_compiler::get()->compile_safe_ex(sortBuilder, configData->Sort);
-      tracks[0]->format_title(nullptr, sortBuffer, sortBuilder, nullptr);
+      newtarget->format_title(nullptr, sortBuffer, sortBuilder, nullptr);
       if (sortBuilder.is_valid())
           sortBufferWide.convert(sortBuffer);
       else
           sortBufferWide.convert(keyBuffer);
     }
+    return true;
+  } catch (std::exception) {
+    return false;
+  }
+}
+
+void EM::SourceChangeMessage::run(Engine& e, src_state srcstate) {
+
+  DBPos pos = e.worldState.getTarget();
+  std::optional dbiter = e.db.iterFromPos(pos);
+
+  if (dbiter.has_value()) {
+    metadb_handle_list tracks;
+    e.db.getTracks(dbiter.value(), tracks);
+    if (tracks.get_count() == 0)
+      return;
+  } else return;
+
+  bool bskip = false;
+  bool bgetkeys = false;
+  pfc::string8_fast_aggressive keyBuffer;
+  pfc::stringcvt::string_wide_from_utf8_fast sortBufferWide;
+
+  pfc::string8 group;
+  pfc::string8 sort;
+  bool sortgroup;
+  metadb_handle_ptr newtarget;
+  t_size secondpos;
+
+  if (srcstate.wholelib.first) {
+    // from library...
+
+    if (srcstate.wholelib.second) {
+      // library to library
+      bskip = true;
+    }
+    else {
+      // library to playlist...
+      if (srcstate.grouped.second) {
+        // library to playlist grouped
+        group = configData->Group;
+        sort = configData->Sort;
+        sortgroup = configData->SortGroup;
+        newtarget = srcstate.track_second.second;
+        secondpos = srcstate.track_second.first;
+      } else {
+        // library to ungrouped playlist
+        DBPlaylistModeParams plparams;
+        group = plparams.group;
+        group += "|$hi()";
+        sort = plparams.sort;
+        sortgroup = plparams.sortgroup;
+        newtarget = srcstate.track_second.second;
+        secondpos = srcstate.track_second.first;
+      }
+    }
+  }
+  else {
+    //from playlist...
+    if (srcstate.wholelib.second) {
+      // playlist g/u to library
+      group = configData->Group;
+      sort = configData->Sort;
+      sortgroup = configData->SortGroup;
+      newtarget = srcstate.track_first.second;
+      secondpos = srcstate.track_first.first;
+    } else {
+      // from playlist to playlist...
+      if (srcstate.grouped.first) {
+        // grouped playlist...
+        if (srcstate.grouped.second) {
+          // grouped playlist to grouped playlist
+          group = configData->Group;
+          sort = configData->Sort;
+          sortgroup = configData->SortGroup;
+          newtarget = srcstate.track_second.second;
+          secondpos = srcstate.track_second.first;
+        } else {
+          // grouped to ungrouped playlist
+          DBPlaylistModeParams plparams;
+          group = plparams.group;
+          group += "|$hi()";
+          sort = plparams.sort;
+          sortgroup = plparams.sortgroup;
+          newtarget = srcstate.track_first.second;
+          secondpos = srcstate.track_first.first;
+        }
+      }
+      else {
+        //from ungrouped playlist...
+        if (srcstate.grouped.second) {
+          // from ungrouped playlist to grouped playlist
+          bskip = true;
+          //group = configData->Group;
+          //sort = configData->Sort;
+          //sortgroup = configData->SortGroup;
+          //newtarget = srcstate.track_first.second;
+          //secondpos = srcstate.track_second.first;
+        } else {
+          // ungrouped playlist to ungrouped playlist
+          DBPlaylistModeParams plparams;
+          group = plparams.group;
+          group += "|$hi()";
+          sort = plparams.sort;
+          sortgroup = plparams.sortgroup;
+          newtarget = srcstate.track_second.second;
+          secondpos = srcstate.track_second.first;
+        }
+      }
+    }
+  }
+
+  if (!bskip) {
+    bgetkeys = GetKeys(
+        newtarget, keyBuffer, sortBufferWide, group, sort, sortgroup, secondpos);
 
     pos.key = keyBuffer.c_str();
     pos.sortKey = sortBufferWide.get_ptr();
   }
-  else {
-      if (wasgroup) {
-          //todo: reposition moving to ungroup
 
-      }
-      else {
-          //currently ungrouped, moving into grouped
-          //works but not pretty
-
-          titleformat_compiler::get()->compile_safe_ex(keyBuilder, configData->Group);
-          tracks[0]->format_title(nullptr, keyBuffer, keyBuilder, nullptr);
-          pos.key = keyBuffer.c_str();
-
-          //sort
-          DBPlaylistModeParams ps_params;
-          titleformat_compiler::get()->compile_safe_ex(sortBuilder, ps_params.sort);
-          tracks[0]->format_title(nullptr, sortBuffer, sortBuilder, nullptr);
-
-          if (sortBuilder.is_valid()) {
-              sortBufferWide.convert(sortBuffer);
-              pos.sortKey = sortBufferWide.get_ptr();  //"La Bien Querida|2010|Recompensarte";
-          }
-          else {
-              sortBufferWide.convert(keyBuffer);
-              pos.sortKey = sortBufferWide.get_ptr();
-          }
-          pos.sortKey = sortBufferWide;
-      }
+  if (bgetkeys) {
+    if (configData->SourceActivePlaylistSkipAni)
+      e.worldState.hardSetCenteredPos(pos);
+    e.worldState.setTarget(pos);
   }
-  e.worldState.setTarget(pos);
-  e.worldState.hardSetCenteredPos(pos);
-  e.worldState.update();
 }
 void EM::ReloadCollectionFromList::run(Engine& e, std::shared_ptr<metadb_handle_list> shared_selection) {
   // This will abort any already running reload worker

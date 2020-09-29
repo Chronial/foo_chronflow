@@ -15,6 +15,16 @@ struct DBPlaylistModeParams {
   pfc::string8 sort = "NONE";
 };
 
+struct src_state {
+  std::pair<bool, bool> wholelib;
+  std::pair<bool, bool> active_pl_src;
+  std::pair<bool, bool> pl_src;
+  std::pair<bool, bool> grouped;
+  std::pair<t_size, metadb_handle_ptr>track_first;
+  std::pair<t_size, metadb_handle_ptr>track_second;
+};
+
+
 int const MaxArtIndex = 3;
 int const _PREFS_VERSION = 2;
 
@@ -52,6 +62,7 @@ __declspec(selectany) extern bool const default_SourcePlaylist = false;
 __declspec(selectany) extern bool const default_SourceActivePlaylist = false;
 __declspec(selectany) extern char const* const default_SourcePlaylistName = "CoverFlowSource";
 __declspec(selectany) extern char const* const default_SourceActivePlaylistName = "CoverFlowSource";
+__declspec(selectany) extern bool const default_SourceActivePlaylistSkipAni = false;
 __declspec(selectany) extern bool const default_SourcePlaylistGroup = true;
 __declspec(selectany) extern char const* const default_SourcePlaylistNGTitle = "%Track% ~ %Title%";
 __declspec(selectany) extern bool const default_SourceLibrarySelector = false;
@@ -135,6 +146,7 @@ class ConfigData : public cfg_var {
   bool SourcePlaylist;
   bool SourceActivePlaylist;
   pfc::string8 SourceActivePlaylistName;
+  bool SourceActivePlaylistSkipAni;
   pfc::string8 SourcePlaylistName;
   bool SourcePlaylistGroup;
   pfc::string8 SourcePlaylistNGTitle;
@@ -181,6 +193,63 @@ class ConfigData : public cfg_var {
   int sessionSelectedConfigTab;
 
  public:
+  void GetStateTrackInfo(t_size &trackpos, metadb_handle_ptr & track) {
+    //this may also be run from on_playlist_activate callback
+    //from that callback function gets focus and track
+
+    const t_size plsource = FindSourcePlaylist(0);
+    static_api_ptr_t<playlist_manager> pm;
+    if (playlist_manager::get()->playlist_get_item_count(plsource)) {
+        //selected
+        bit_array_bittable selmask;
+        t_size trackpos = selmask.find_first(true, 0, selmask.size());
+        if (selmask.size() > 0 && trackpos != pfc_infinite) {
+          metadb_handle_list msl;
+          track = pm->playlist_get_item_handle(plsource, trackpos);
+          //trackpos = configData->CoverFollowsPlaylistSelection? trackpos : 0;
+        }
+        else {
+          //playlist_manager::get()->playlist_find_item(plsource, track, trackpos);
+          //focused
+          if (pm->playlist_get_focus_item_handle(track, plsource)) {
+            trackpos = pm->playlist_get_focus_item(plsource);
+            pm->playlist_find_item_selected(plsource, track, trackpos);
+            //trackpos = configData->CoverFollowsPlaylistSelection ? trackpos : 0;
+          } else {
+            track = pm->playlist_get_item_handle(plsource, 0);
+            trackpos = 0;
+          }
+        }
+    } else
+      trackpos = pfc_infinite;
+  }
+  void GetState(src_state& srcstate, bool init = true) {
+    if (init) {
+      srcstate.wholelib.first = !(SourcePlaylist | SourceActivePlaylist);
+      srcstate.active_pl_src.first = SourceActivePlaylist;
+      srcstate.pl_src.first = SourcePlaylist;
+      srcstate.grouped.first = SourcePlaylistGroup;
+      if (!srcstate.wholelib.first) {
+        GetStateTrackInfo(srcstate.track_first.first, srcstate.track_first.second);
+      }
+    } else {
+      srcstate.wholelib.second = !(SourcePlaylist | SourceActivePlaylist);
+      srcstate.active_pl_src.second = SourceActivePlaylist;
+      srcstate.pl_src.second = SourcePlaylist;
+      srcstate.grouped.second = SourcePlaylistGroup;
+      if (!srcstate.wholelib.second) {
+        GetStateTrackInfo(srcstate.track_second.first, srcstate.track_second.second);
+      }
+    }
+  }
+
+  //bool StateIsEmpty(src_state srcstate) {
+  //  if (srcstate.wholelib.first == false &&
+  //      !(srcstate.pl_src.first || srcstate.active_pl_src.first))
+  //    return true;
+  //  else
+  //    return false;
+  //}
 
   int GetCCPosition() {
     CoverConfigMap configs = CoverConfigs;
@@ -192,25 +261,46 @@ class ConfigData : public cfg_var {
   bool IsPlaylistSourceModeUngrouped() const {
     return (!IsWholeLibrary() && !SourcePlaylistGroup);
   }
-  bool IsSourceActiveOnAndMirrored() const {
+  bool IsSourceOnAndMirrored(bool fromActive) const {
+    if (fromActive)
     return (SourceActivePlaylist &&
             (stricmp_utf8(SourceActivePlaylistName, SourcePlaylistName) == 0));
+    else
+      return (SourcePlaylist &&
+              (stricmp_utf8(SourceActivePlaylistName, SourcePlaylistName) == 0));
   }
-  bool IsSourcePlaylistOn(t_size playlist) {
-    if (!IsWholeLibrary()) {
-      const t_size srcplaylist = FindSourcePlaylist();
-      return (srcplaylist != ~0 && srcplaylist == playlist);
-    } else
+
+  bool IsSourcePlaylistOn(t_size playlist, int mode) {
+    const t_size srcplaylist = FindSourcePlaylist(mode);
+    return (srcplaylist != ~0 && srcplaylist == playlist);
+  }
+
+  bool IsSourcePlaylistOn(pfc::string8 playlist, int mode) {
+    if (IsWholeLibrary()) {
       return false;
-  }
-  bool IsSourcePlaylistOn(pfc::string8 playlist) {
-    if (!IsWholeLibrary()) {
+    }
+    switch (mode) {
+    case 0:
+      if (!IsWholeLibrary()) {
+        if (SourceActivePlaylist)
+          return (stricmp_utf8(playlist, SourceActivePlaylistName) == 0);
+        else if (SourcePlaylist)
+          return (stricmp_utf8(playlist, SourcePlaylistName) == 0);
+      }
+      break;
+    case 1:
+      if (SourcePlaylist)
+        return (stricmp_utf8(playlist, SourcePlaylistName) == 0);
+      else
+        return false;
+      break;
+    case 2:
       if (SourceActivePlaylist)
         return (stricmp_utf8(playlist, SourceActivePlaylistName) == 0);
-      else if (SourcePlaylist)
-        return (stricmp_utf8(playlist, SourcePlaylistName) == 0);
-    } else
-      return false;
+      else
+        return false;
+      break;
+    }
   }
   pfc::string8 InSourePlaylistGetName() {
     if (!IsWholeLibrary()) {
@@ -219,12 +309,27 @@ class ConfigData : public cfg_var {
       return {};
     }
   }
-  t_size FindSourcePlaylist() const {
-    if (SourceActivePlaylist) {
-      return playlist_manager::get()->find_playlist(SourceActivePlaylistName);
-    } else {
-      return playlist_manager::get()->find_playlist(SourcePlaylistName);
+  t_size FindSourcePlaylist(t_size mode) const {
+    if (IsWholeLibrary()) {
+      return pfc_infinite;
     }
+    switch (mode) {
+    case 0:
+      if (SourceActivePlaylist) {
+        return playlist_manager::get()->find_playlist(SourceActivePlaylistName);
+      } else
+        return playlist_manager::get()->find_playlist(SourcePlaylistName);
+      break;
+    case 1:
+      if (SourcePlaylist)
+        return playlist_manager::get()->find_playlist(SourcePlaylistName);
+      break;
+    case 2:
+      if (SourceActivePlaylist)
+        return playlist_manager::get()->find_playlist(SourceActivePlaylistName);
+      break;
+    }
+    return pfc_infinite;
   }
   int SequenceCenterArt(int val, bool prev, bool ctrl) {
     int iret = -1;
