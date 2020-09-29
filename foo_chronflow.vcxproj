@@ -247,6 +247,12 @@
     <None Include="CoverPositionsCompile.py" />
     <None Include="cpp.hint" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="images\cover-loading-dark.jpg" />
+    <Content Include="images\cover-loading-png.png" />
+    <Content Include="images\cover-no-img-dark.jpg" />
+    <Content Include="images\cover-no-img-png.png" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

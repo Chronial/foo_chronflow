@@ -21,3 +21,7 @@ function lookAt(){ return new Array(0, 0, 0) }
 function upVector(){ return new Array(0, 1, 0) }
 
 function showMirrorPlane(){ return false }
+
+// panel properties override
+function enableCoverTitle(){ return true }
+function enableCoverPngAlpha(){ return false }

@@ -113,3 +113,14 @@ function mirrorPoint (){
 function mirrorNormal (){
    return new Array(0, 1, 0);
 }
+
+
+/************ PANEL PROPERTIES OVERRIDE SETUP ************/
+// Cover title override
+function enableCoverTitle(){
+   return true; // return false to disable cover title
+}
+// Cover Png alpha channel override
+function enableCoverPngAlpha(){
+   return true; // return false to disable png alpha channel
+}

@@ -3,7 +3,6 @@
 #include <atlsafe.h>
 #include <comdef.h>
 #include <comutil.h>
-
 //#import "msscript.ocx" no_namespace
 #include "lib/msscript.h"
 #include "utils.h"
@@ -140,22 +139,22 @@ private:
 
 CompiledCPInfo compileCPScript(const char* script) {
 #pragma warning(push)
-// 4244: conversion from 'double' to 'float', possible loss of data
+  // 4244: conversion from 'double' to 'float', possible loss of data
 #pragma warning(disable : 4244)
   CScriptObject scriptObj(uT(script));
   CompiledCPInfo out;
 
-  std::tie(out.cameraPos.x, out.cameraPos.y, out.cameraPos.z) =
-      scriptObj.call_double_tuple<3>("eyePos");
+  std::tie(out.cameraPos.x, out.cameraPos.y, out.cameraPos.z) = scriptObj.
+      call_double_tuple<3>("eyePos");
 
-  std::tie(out.lookAt.x, out.lookAt.y, out.lookAt.z) =
-      scriptObj.call_double_tuple<3>("lookAt");
+  std::tie(out.lookAt.x, out.lookAt.y, out.lookAt.z) = scriptObj.call_double_tuple<3
+  >("lookAt");
 
-  std::tie(out.upVector.x, out.upVector.y, out.upVector.z) =
-      scriptObj.call_double_tuple<3>("upVector");
+  std::tie(out.upVector.x, out.upVector.y, out.upVector.z) = scriptObj.call_double_tuple<3
+  >("upVector");
 
-  std::tie(out.aspectBehaviour.x, out.aspectBehaviour.y) =
-      scriptObj.call_double_tuple<2>("aspectBehaviour");
+  std::tie(out.aspectBehaviour.x, out.aspectBehaviour.y) = scriptObj.call_double_tuple<2>(
+      "aspectBehaviour");
   out.aspectBehaviour.x /= out.aspectBehaviour.x + out.aspectBehaviour.y;
   out.aspectBehaviour.y /= out.aspectBehaviour.x + out.aspectBehaviour.y;
 
@@ -192,12 +191,16 @@ CompiledCPInfo compileCPScript(const char* script) {
         scriptObj.call_double_tuple<4>("coverRotation", coverId);
     pi.rotation.a = deg2rad(pi.rotation.a);
 
-    std::tie(pi.alignment.x, pi.alignment.y) =
-        scriptObj.call_double_tuple<2>("coverAlign", coverId);
+    std::tie(pi.alignment.x, pi.alignment.y) = scriptObj.call_double_tuple<2>(
+        "coverAlign", coverId);
 
-    std::tie(pi.sizeLim.w, pi.sizeLim.h) =
-        scriptObj.call_double_tuple<2>("coverSizeLimits", coverId);
+    std::tie(pi.sizeLim.w, pi.sizeLim.h) = scriptObj.call_double_tuple<2>(
+        "coverSizeLimits", coverId);
   }
+
+  out.enableCoverTitle = scriptObj.call<bool>("enableCoverTitle");
+  out.enableCoverPngAlpha = scriptObj.call<bool>("enableCoverPngAlpha");
+
   return out;
 #pragma warning(pop)
 }

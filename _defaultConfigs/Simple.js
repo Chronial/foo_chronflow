@@ -40,3 +40,6 @@ function lookAt(){ return new Array(0, 0, -1.5) }
 function upVector(){ return new Array(0, 1, 0) }
 
 function showMirrorPlane(){ return false }
+
+function enableCoverTitle(){ return true }
+function enableCoverPngAlpha(){ return true }

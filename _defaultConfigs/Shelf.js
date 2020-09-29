@@ -71,3 +71,7 @@ function upVector(){ return new Array(0, 1, 0) }
 function showMirrorPlane(){ return true }
 function mirrorPoint (){ return new Array(0, 0, 0) }
 function mirrorNormal (){ return new Array(0, 1, 0) }
+
+// panel properties override
+function enableCoverTitle(){ return true }
+function enableCoverPngAlpha(){ return true }

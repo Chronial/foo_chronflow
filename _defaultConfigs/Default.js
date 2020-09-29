@@ -20,7 +20,7 @@ Some general notes:
   But because the covers are animated, coverId can also
   take on non-integer values. For example: when the
   selected cover is moving one to the right and is halfway
-  between its starting position and end position, coverId 
+  between its starting position and end position, coverId
   will be 0.5.
 * Due to performance optimizations, it is not possible to
   create non-continuous animation (i.e. have the covers
@@ -75,7 +75,7 @@ function coverAlign(coverId){
 }
 
 // Set the rotation of each cover.
-// 
+//
 // Returns: (angle, x, y, z) - this rotates the cover
 //   `angle` degrees around the axis along (x,y,z). Per
 //   default, the covers are parallel to the x-y-plane.
@@ -112,7 +112,7 @@ function coverSizeLimits(coverId){
 // Returns: Expand into (width, height)
 //   If this returns (0,1), the height is fixed.
 //   If this returns (1,0), the width is fixed.
-//   Can also return mixed values, i.e. (1,2) for mixed 
+//   Can also return mixed values, i.e. (1,2) for mixed
 //   scaling.
 function aspectBehaviour(){
    return new Array(0, 1);
@@ -153,4 +153,18 @@ function mirrorPoint(){
 // Set the normal vector of the mirror plane.
 function mirrorNormal(){
    return new Array(0, 1, 0);
+}
+
+/*********************************************************/
+/************* PANEL PROPERTIES OVERRIDE  ****************/
+/*********************************************************/
+
+// Decide whether the cover title should be enabled.
+// Return true to apply display panel settings
+function enableCoverTitle(){
+   return true;
+}
+// Decide whether the cover PNG8 alpha channel should be enabled.
+function enableCoverPngAlpha(){
+   return true;
 }

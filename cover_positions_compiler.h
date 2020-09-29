@@ -48,6 +48,9 @@ class CompiledCPInfo {
 
   fovAspectBehaviour aspectBehaviour{};
 
+  bool enableCoverTitle{};
+  bool enableCoverPngAlpha{};
+
   // this has to be the last Member!
   pfc::array_t<CoverPosInfo> coverPosInfos;
 
@@ -72,6 +75,7 @@ class CompiledCPInfo {
     p_stream->write_object(
         static_cast<void*>(coverPosInfos.get_ptr()), sizeof(CoverPosInfo) * c, p_abort);
   }
+
   static void unserialize(CompiledCPInfo& out, stream_reader* p_stream,
                           abort_callback& p_abort) {
     int fileVer;

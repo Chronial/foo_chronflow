@@ -1,82 +1,24 @@
 #include "cover_positions.h"
 
-#include "cover_positions_compiler.h"
-
-void cfg_compiledCPInfoPtr::get_data_raw(stream_writer* p_stream,
-                                         abort_callback& p_abort) {
-  auto data = this->get();
-  if (data) {
-    p_stream->write_lendian_t(true, p_abort);
-    data->serialize(p_stream, p_abort);
-  } else {
-    p_stream->write_lendian_t(false, p_abort);
-  }
-}
-
-void cfg_compiledCPInfoPtr::set_data_raw(stream_reader* p_stream, t_size /*p_sizehint*/,
-                                         abort_callback& p_abort) {
-  bool configNotEmpty;
-  p_stream->read_lendian_t(configNotEmpty, p_abort);
-  if (configNotEmpty) {
-    auto data = make_shared<CompiledCPInfo>();
-    CompiledCPInfo::unserialize(*data, p_stream, p_abort);
-    this->set(data);
-  } else {
-    this->reset();
-  }
-}
-
-void cfg_compiledCPInfoPtr::ensureIsSet() {
-  if (this->get())
-    return;
-
-  CompiledCPInfo cInfo;
-  try {
-    // Try to compile the user's script
-    std::string config = cfgCoverConfigs.at(cfgCoverConfigSel.c_str()).script;
-    cInfo = compileCPScript(config.c_str());
-  } catch (std::exception&) {
-    // Fall back to the default script
-    cInfo = compileCPScript(builtInCoverConfigs()[defaultCoverConfig].script.c_str());
-  }
-  this->set(make_shared<CompiledCPInfo>(cInfo));
-}
-
 const fovAspectBehaviour& ScriptedCoverPositions::getAspectBehaviour() {
   return cInfo->aspectBehaviour;
 }
 
-const glVectord& ScriptedCoverPositions::getLookAt() {
-  return cInfo->lookAt;
-}
+const glVectord& ScriptedCoverPositions::getLookAt() { return cInfo->lookAt; }
 
-const glVectord& ScriptedCoverPositions::getUpVector() {
-  return cInfo->upVector;
-}
+const glVectord& ScriptedCoverPositions::getUpVector() { return cInfo->upVector; }
 
-bool ScriptedCoverPositions::isMirrorPlaneEnabled() {
-  return cInfo->showMirrorPlane;
-}
+bool ScriptedCoverPositions::isMirrorPlaneEnabled() { return cInfo->showMirrorPlane; }
 
-const glVectord& ScriptedCoverPositions::getMirrorNormal() {
-  return cInfo->mirrorNormal;
-}
+const glVectord& ScriptedCoverPositions::getMirrorNormal() { return cInfo->mirrorNormal; }
 
-const glVectord& ScriptedCoverPositions::getMirrorCenter() {
-  return cInfo->mirrorCenter;
-}
+const glVectord& ScriptedCoverPositions::getMirrorCenter() { return cInfo->mirrorCenter; }
 
-const glVectord& ScriptedCoverPositions::getCameraPos() {
-  return cInfo->cameraPos;
-}
+const glVectord& ScriptedCoverPositions::getCameraPos() { return cInfo->cameraPos; }
 
-const int ScriptedCoverPositions::getFirstCover() {
-  return cInfo->firstCover;
-}
+const int ScriptedCoverPositions::getFirstCover() { return cInfo->firstCover; }
 
-const int ScriptedCoverPositions::getLastCover() {
-  return cInfo->lastCover;
-}
+const int ScriptedCoverPositions::getLastCover() { return cInfo->lastCover; }
 
 double ScriptedCoverPositions::distanceToMirror(glVectord point) {
   return abs((cInfo->mirrorCenter - point) * cInfo->mirrorNormal);
@@ -123,4 +65,12 @@ glQuad ScriptedCoverPositions::getCoverQuad(float coverId, float coverAspect) {
   out.bottomRight = cPos.position + out.bottomRight;
 
   return out;
+}
+
+bool ScriptedCoverPositions::isCoverTitleEnabled() {
+  return cInfo->enableCoverTitle;
+}
+
+bool ScriptedCoverPositions::isCoverPngAlphaEnabled() {
+  return cInfo->enableCoverPngAlpha;
 }
