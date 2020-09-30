@@ -329,21 +329,7 @@ class ConfigData : public cfg_var {
     }
     return pfc_infinite;
   }
-  int SequenceCenterArt(int val, bool prev, bool ctrl) {
-    int iret = -1;
-    if (prev) {
-      if (ctrl)
-        iret = 0;
-      else
-        iret = (val == 0 ? MaxArtIndex : val - 1);
-    } else {
-      if (ctrl)
-        iret = MaxArtIndex;
-      else
-        iret = (val >= MaxArtIndex ? 0 : val + 1);
-    }
-    return iret;
-  }
+
   GUID GetGuiArt(int iart) const {
     switch (iart) {
       case 0:

@@ -18,7 +18,6 @@ namespace bomi = boost::multi_index;
 
 struct TextureCacheMeta {
   std::string groupString;
-  unsigned int coverart{0};
   unsigned int collectionVersion{0};
   // (generation, -distance to center)
   std::pair<unsigned int, int> priority;
@@ -42,8 +41,6 @@ class TextureLoadingThreads {
   NO_MOVE_NO_COPY(TextureLoadingThreads);
   ~TextureLoadingThreads();
 
-  metadb_handle_ptr tltmetatarget;
-
   struct LoadRequest {
     TextureCacheMeta meta;
     metadb_handle_ptr track;
@@ -62,8 +59,7 @@ class TextureLoadingThreads {
   void setPriority(bool highPriority);
 
  private:
-  void takeJob(LoadRequest& loadrequest);
-  //std::pair<std::string, metadb_handle_ptr> takeJob();
+  std::pair<std::string, metadb_handle_ptr> takeJob();
   void finishJob(const std::string&, std::optional<UploadReadyImage>);
 
   std::pair<std::string, metadb_handle_ptr> getTarget();
@@ -84,9 +80,6 @@ class TextureLoadingThreads {
 };
 
 class TextureCache {
-  const DBPos* dbptarget;
-  metadb_handle_ptr metatarget;
-
   DbAlbumCollection& db;
   EngineThread& thread;
   ScriptedCoverPositions& coverPos;
@@ -99,7 +92,6 @@ class TextureCache {
 
   void trimCache();
   void clearCache();
-  void modifyCenterCache(bool prev, bool ctrl);
   void startLoading(const DBPos& target);
   void onCollectionReload();
   void updateLoadingQueue(const DBIter& queueCenter);

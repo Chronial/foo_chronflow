@@ -169,7 +169,6 @@ LRESULT EngineWindow::messageHandler(UINT uMsg, WPARAM wParam, LPARAM lParam) {
     //todo: remove all actions in playlist mode
     case WM_MYACTIONS_CANCELED:
       // MessageBeep(MB_ICONINFORMATION);
-      engineThread->send<EM::VisualErrorMessage>();
       break;
     }
     return DefSubclassProc(hWnd, uMsg, wParam, lParam);
@@ -323,11 +322,6 @@ bool EngineWindow::onKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam) {
     }
     move *= LOWORD(lParam);
     engineThread->send<EM::MoveTargetMessage>(move, false);
-    return true;
-  }
-  else if (wParam == VK_UP || wParam == VK_DOWN) {
-    engineThread->send<EM::ArtChangedMessage>(wParam == VK_DOWN,
-      (GetKeyState(VK_CONTROL) & 0x8000));
     return true;
   }
   else if (wParam == VK_HOME) {

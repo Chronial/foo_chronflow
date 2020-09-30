@@ -244,7 +244,7 @@ bool HasImageExtension(pfc::string8 extension) {
   const std::vector<pfc::string8> vext{".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff"};
   return std::find(vext.begin(), vext.end(), extension) != vext.end();
 }
-std::optional<UploadReadyImage> loadAlbumArtv2(const metadb_handle_ptr& track, const unsigned int coverart,
+std::optional<UploadReadyImage> loadAlbumArtv2(const metadb_handle_ptr& track,
                                                abort_callback& abort) {
 
   IF_DEBUG(double preLoad = time());
@@ -252,11 +252,12 @@ std::optional<UploadReadyImage> loadAlbumArtv2(const metadb_handle_ptr& track, c
   //info: race condition
 
   auto extractor = aam->open(pfc::list_single_ref_t(track),
-                             pfc::list_single_ref_t(configData->GetGuiArt(coverart)),
+      pfc::list_single_ref_t(configData->GetGuiArt(configData->CustomCoverFrontArt)),
                              abort);
 
   try {
-    auto art = extractor->query(configData->GetGuiArt(coverart), abort);
+    auto art =
+        extractor->query(configData->GetGuiArt(configData->CustomCoverFrontArt), abort);
     Image image = Image::fromFileBuffer(art->get_ptr(), art->get_size());
     IF_DEBUG(auto x = gsl::finally([&] {
                 console::out() << "ART [done] " << std::setw(6)

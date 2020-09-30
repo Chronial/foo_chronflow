@@ -78,7 +78,7 @@ class UploadReadyImage {
 
 std::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_ptr& track,
                                              abort_callback& abort);
-std::optional<UploadReadyImage> loadAlbumArtv2(const metadb_handle_ptr & track, const unsigned int coverart,
+std::optional<UploadReadyImage> loadAlbumArtv2(const metadb_handle_ptr & track,
                                              abort_callback & abort);
 UploadReadyImage loadSpecialArt(WORD resource, pfc::string8 userImage, bool hasAlpha);
 

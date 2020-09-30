@@ -180,41 +180,6 @@ void EM::LibraryItemsModified::run(Engine& e, metadb_handle_list tracks,
   e.thread.invalidateWindow();
 }
 
-void EM::ArtChangedMessage::run(Engine& e, bool prev, bool ctrl) {
-  if (e.db.empty())
-    return;
-  e.findAsYouType.reset();
-
-  e.cacheDirty = true;
-  e.texCache.modifyCenterCache(prev, ctrl);
-  //todo: this is a hack to invalidate texturecache
-  //need to properly trigger GLUpload...
-  //e.thread.invalidateWindow();
-  e.delayTimer.emplace(0.3f, [&] {
-    e.thread.invalidateWindow();
-  });
-}
-
-//todo: these visual error messages are a hack, remove then
-//as custom actions are now disabled in playlist mode
-void EM::VisualErrorMessage::run(Engine& e) {
-  static int oldHighlightWidth;
-  if (oldHighlightWidth != 0) {
-#ifdef DEBUG
-    console::out() << "EM::VisualErrorMessage is busy";
-#endif
-    return;
-  }
-  oldHighlightWidth = configData->HighlightWidth;
-  configData->HighlightWidth = configData->HighlightWidth + 2;
-  e.thread.invalidateWindow();
-  e.delayTimer.emplace(0.3f, [&] {
-    configData->HighlightWidth = configData->HighlightWidth - 2;
-    e.thread.invalidateWindow();
-    oldHighlightWidth = 0;
-  });
-}
-
 bool GetKeys(metadb_handle_ptr newtarget, pfc::string_base & keyBuffer,
   pfc::stringcvt::string_wide_from_utf8_fast & sortBufferWide,
   pfc::string8 group, pfc::string8 sort,

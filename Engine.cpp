@@ -167,15 +167,10 @@ void Engine::setTarget(DBPos target, bool userInitiated) {
     metadb_handle_list tracks;
     db.getTracks(dbIter.value(), tracks);
     thread.runInMainThread([target, tracks = std::move(tracks), userInitiated, &engineWindow = window]{
-      //console::out() << "Engine::setTarget key:" << target.key << " sk:" << target.sortKey.c_str() <<", userInitiated: " << userInitiated ? "true" : "false";
       engineWindow.setSelection(tracks, userInitiated);
     });
   }
 
-  //todo: revise custom art refresh
-  if (configData->CenterArt != configData->CustomCoverFrontArt) {
-    configData->CenterArt = configData->CustomCoverFrontArt;
-  }
   worldState.setTarget(target);
   cacheDirty = true;
   if (userInitiated)
