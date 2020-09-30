@@ -16,11 +16,14 @@
 #include "resource.h"
 #include "winuser.h"
 
+//need default_SourcePlaylistName
+#include "configData.h"
+
 //#include "ConfigDialogDisplay.h"
 // clang-format on
 
 namespace coverflow {
-
+extern char const* const default_SourcePlaylistName;
 using ::engine::EngineThread;
 using EM = ::engine::Engine::Messages;
 
@@ -600,22 +603,35 @@ class SourcesTab : public ConfigTab {
     SendMessage(list, CB_RESETCONTENT, 0, 0);
     uSendMessageText(list, CB_ADDSTRING, 0, "");
     uSendDlgItemMessage(hWnd, id, CB_RESETCONTENT, 0, 0);
+    int DefId =
+    uSendDlgItemMessageText(hWnd, id, CB_ADDSTRING, 0, default_SourcePlaylistName);
+    //uSendDlgItemMessageText(hWnd, id, CB_SELECTSTRING, 1, default_SourcePlaylistName);
+
     t_size cplaylist = playlist_manager::get()->get_playlist_count();
     for (int i=0;i<cplaylist;i++) {
       pfc::string8 aname;
       t_size pl = playlist_manager::get()->playlist_get_name(i, aname);
       int rowId = uSendDlgItemMessageText(hWnd, id, CB_ADDSTRING, 0, aname);
       uSendDlgItemMessage(hWnd, id, CB_SETITEMDATA, rowId, i);
-      if (stricmp_utf8(aname.c_str(), selectedItem) == 0) {
-        rowId = uSendDlgItemMessageText(hWnd, id, CB_FINDSTRINGEXACT, 1, selectedItem);
-        rowId = uSendDlgItemMessageText(hWnd, id, CB_SETCURSEL, rowId, 0);
+      if (uSendDlgItemMessage(hWnd, id, CB_GETCURSEL, 0, 0) == CB_ERR) {
+        if (stricmp_utf8(default_SourcePlaylistName, selectedItem) == 0) {
+          uSendDlgItemMessageText(hWnd, id, CB_SETCURSEL, DefId, 0);
+        } else if (stricmp_utf8(aname.c_str(), selectedItem) == 0) {
+          rowId = uSendDlgItemMessageText(hWnd, id, CB_FINDSTRINGEXACT, 1, selectedItem);
+          rowId = uSendDlgItemMessageText(hWnd, id, CB_SETCURSEL, rowId, 0);
+        }
       }
     }
 
     int checkId = uSendDlgItemMessage(hWnd, id, CB_GETCURSEL, 0, 0);
     if (checkId == CB_ERR) {
-      checkId = uSendDlgItemMessageText(hWnd, id, CB_ADDSTRING, 0, default_SourcePlaylistName);
-      uSendDlgItemMessageText(hWnd, id, CB_SELECTSTRING, 1, default_SourcePlaylistName);
+      if (stricmp_utf8(selectedItem, default_SourcePlaylistName) != 0) {
+        uSendDlgItemMessageText(hWnd, id, CB_SETCURSEL, DefId, 0);
+        pfc::string8 title;
+        title << "Playlist not found";
+        uMessageBox(hWnd, "Default Playlist Source not found\nValue has been reset",
+                    title, MB_APPLMODAL | MB_OK | MB_ICONINFORMATION);
+      }
     }
 
     SetWindowRedraw(list, true);

@@ -4,7 +4,20 @@
 
 namespace coverflow {
 
-  void AppendSelectorContextMenuOptions(HMENU* hMenu) {
+  void AppendSelectorContextMenuOptions(HMENU* hMenu, bool bonlylibseltoggle) {
+    //temp fix while inclusion of this functionality is discussed
+    if (bonlylibseltoggle) {
+      bool b_iswholelib = configData->IsWholeLibrary();
+      bool b_followlibrary = configData->CoverFollowsLibrarySelection;
+      HMENU _childDisplay = CreatePopupMenu();
+      if (b_iswholelib) {
+        uAppendMenu(*hMenu, !b_iswholelib ? MF_DELETE : MF_STRING | b_followlibrary ? MF_CHECKED : MF_UNCHECKED,
+          engine::ID_LIBRARY_COVER_FOLLOWS_SELECTION,
+          PFC_string_formatter() << "Covers follow Library Selection" << "\t");
+      }
+      return;
+    }
+
     bool b_iswholelib = configData->IsWholeLibrary();
     //follow library
     bool b_followlibrary = configData->CoverFollowsLibrarySelection;

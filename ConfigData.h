@@ -34,7 +34,7 @@ __declspec(selectany) extern bool const default_CoverFollowsPlayback = false;
 __declspec(selectany) extern int default_CoverFollowDelay = 15;
 __declspec(selectany) extern bool const default_FindAsYouType = true;
 __declspec(selectany) extern bool const default_FindAsYouTypeCaseSens = false;
-__declspec(selectany) extern char const* const default_TargetPlaylist = "Coverflow";
+__declspec(selectany) extern char const* const default_TargetPlaylist = "CoverflowMod";
 __declspec(selectany) extern char const* const default_DoubleClick =
     "Send to Default Playlist ";
 __declspec(selectany) extern char const* const default_MiddleClick =
@@ -43,10 +43,10 @@ __declspec(selectany) extern char const* const default_EnterKey =
     "Send to Default Playlist ";
 __declspec(selectany) extern unsigned long const default_CustomActionFlag = 658958;
 __declspec(selectany) extern int const default_CustomActionHRate = 3;
-__declspec(selectany) extern bool const default_CoverFollowsLibrarySelection = true;
+__declspec(selectany) extern bool const default_CoverFollowsLibrarySelection = false;
 __declspec(selectany) extern bool const default_CoverFollowsAnonymSelection = false;
 __declspec(selectany) extern bool const default_CoverFollowsPlaylistSelection = true;
-__declspec(selectany) extern bool const default_CoverHighLightPlaylistSelection = true;
+__declspec(selectany) extern bool const default_CoverHighLightPlaylistSelection = false;
 /***************************** Album Source tab ******************************/
 __declspec(selectany) extern char const* const default_Filter = "";
 __declspec(selectany) extern char const* const default_Group = "%album artist%|%album%";
@@ -60,9 +60,8 @@ __declspec(selectany) extern char const* const default_ImgLoading = "";
 /***************************** Album Source tab v.2 **************************/
 __declspec(selectany) extern bool const default_SourcePlaylist = false;
 __declspec(selectany) extern bool const default_SourceActivePlaylist = false;
-__declspec(selectany) extern char const* const default_SourcePlaylistName = "CoverFlowSource";
-__declspec(selectany) extern char const* const default_SourceActivePlaylistName = "CoverFlowSource";
-__declspec(selectany) extern bool const default_SourceActivePlaylistSkipAni = false;
+__declspec(selectany) extern char const* const default_SourcePlaylistName = "CoverFlowMod";
+__declspec(selectany) extern char const* const default_SourceActivePlaylistName = "CoverFlowMod";
 __declspec(selectany) extern bool const default_SourcePlaylistGroup = true;
 __declspec(selectany) extern char const* const default_SourcePlaylistNGTitle = "%Track% ~ %Title%";
 __declspec(selectany) extern bool const default_SourceLibrarySelector = false;
@@ -96,9 +95,9 @@ __declspec(selectany) extern bool const default_VSyncMode = VSYNC_SLEEP_ONLY;
 __declspec(selectany) extern bool const default_ShowFps = false;
 /*********************************** Ctx Menu ********************************/
 __declspec(selectany) extern bool const default_CtxHidePlaylistMenu = false;
-__declspec(selectany) extern bool const default_CtxHideDisplayMenu = false;
-__declspec(selectany) extern bool const default_CtxHideSelectorMenu = false;
-__declspec(selectany) extern bool const default_CtxHideExtViewerMenu = false;
+__declspec(selectany) extern bool const default_CtxHideDisplayMenu = true;
+__declspec(selectany) extern bool const default_CtxHideSelectorMenu = true;
+__declspec(selectany) extern bool const default_CtxHideExtViewerMenu = true;
 __declspec(selectany) extern bool const default_CtxHideActionsMenu = false;
 /*********************************** Session *********************************/
 __declspec(selectany) extern char const* const default_sessionSelectedCover = "";
@@ -146,7 +145,6 @@ class ConfigData : public cfg_var {
   bool SourcePlaylist;
   bool SourceActivePlaylist;
   pfc::string8 SourceActivePlaylistName;
-  bool SourceActivePlaylistSkipAni;
   pfc::string8 SourcePlaylistName;
   bool SourcePlaylistGroup;
   pfc::string8 SourcePlaylistNGTitle;

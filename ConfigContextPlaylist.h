@@ -16,8 +16,7 @@ void AppendPlaylistContextMenuOptions(HMENU* hMenu) {
     bool b_playlistsource_valid = !configData->SourcePlaylistName.equals("");
     bool b_activesource_enabled = configData->SourceActivePlaylist;
     bool b_playlistsource_enabled = !configData->SourceActivePlaylist && configData->SourcePlaylist;
-    bool b_sourcetarget = ((stricmp_utf8(configData->SourcePlaylistName, plname) == 0) ||
-        (stricmp_utf8(configData->TargetPlaylist, plname) == 0));
+    bool b_source = (stricmp_utf8(configData->SourcePlaylistName, plname) == 0);
 
     HMENU _childPlaylist = CreatePopupMenu();
     if (!b_iswholelib)
@@ -32,7 +31,7 @@ void AppendPlaylistContextMenuOptions(HMENU* hMenu) {
         PFC_string_formatter() << "Source Playlist: " << configData->SourcePlaylistName
         << "\tF9");
     //F8 assign Playlist name and activate
-    uAppendMenu(_childPlaylist, MF_STRING | b_sourcetarget ? MF_DISABLED : MF_ENABLED,
+    uAppendMenu(_childPlaylist, MF_STRING | b_source ? MF_DISABLED : MF_ENABLED,
         engine::ID_PLAYLIST_SOURCE_SET,
         PFC_string_formatter() << "Set Current Playlist as Source"
         << "\tF8");

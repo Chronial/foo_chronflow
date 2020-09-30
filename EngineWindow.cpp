@@ -286,7 +286,8 @@ bool EngineWindow::onKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam) {
   }
   else if (wParam == VK_F8) {
     if (GetKeyState(VK_CONTROL) & 0x8000) {
-      cmdToggleLibraryFilterSelectorSource(true);
+      if (!configData->CtxHideSelectorMenu)
+        cmdToggleLibraryFilterSelectorSource(true);
     } else
     // assign the current playlist as album source
     cmdAssignPlaylistSource();
@@ -298,6 +299,7 @@ bool EngineWindow::onKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam) {
   }
   else if (wParam == VK_F10) {
     if (GetKeyState(VK_CONTROL) & 0x8000) {
+      if (!configData->CtxHideSelectorMenu)
         cmdToggleLibraryFilterSelectorSource(false);
     } else
     // toggle active playlist is the source on/off
@@ -773,7 +775,13 @@ void EngineWindow::onContextMenu(const int x, const int y) {
   if (!configData->CtxHideDisplayMenu)
     AppendDisplayContextMenuOptions(&hMenu);
   if (!configData->CtxHideSelectorMenu)
-    AppendSelectorContextMenuOptions(&hMenu);
+    AppendSelectorContextMenuOptions(&hMenu, false);
+  else {
+    //temporal fix while selector functionality is discussed for inclusion or not in future releases
+    //show only the library selection toggle if appropiate
+    bool bonlylibseltoggle = true;
+    AppendSelectorContextMenuOptions(&hMenu, bonlylibseltoggle);
+  }
   if (!configData->CtxHidePlaylistMenu)
     AppendPlaylistContextMenuOptions(&hMenu);
 

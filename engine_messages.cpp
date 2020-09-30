@@ -279,6 +279,8 @@ void EM::SourceChangeMessage::run(Engine& e, src_state srcstate) {
 
     if (srcstate.wholelib.second) {
       // library to library
+      sortgroup = "";
+      secondpos = 0;
       bskip = true;
     }
     else {
@@ -338,6 +340,8 @@ void EM::SourceChangeMessage::run(Engine& e, src_state srcstate) {
         if (srcstate.grouped.second) {
           // from ungrouped playlist to grouped playlist
           bskip = true;
+          sortgroup = "";
+          secondpos = 0;
           //group = configData->Group;
           //sort = configData->Sort;
           //sortgroup = configData->SortGroup;
@@ -366,8 +370,8 @@ void EM::SourceChangeMessage::run(Engine& e, src_state srcstate) {
   }
 
   if (bgetkeys) {
-    if (configData->SourceActivePlaylistSkipAni)
-      e.worldState.hardSetCenteredPos(pos);
+
+    //e.worldState.hardSetCenteredPos(pos);
     e.worldState.setTarget(pos);
 
     //configData->sessionSelectedCover.set_string(pos.key.c_str());
