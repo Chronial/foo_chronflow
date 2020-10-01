@@ -3,7 +3,6 @@
 #include <atlsafe.h>
 #include <comdef.h>
 #include <comutil.h>
-//#import "msscript.ocx" no_namespace
 #include "lib/msscript.h"
 #include "utils.h"
 

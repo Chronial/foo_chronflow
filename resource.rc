@@ -25,11 +25,9 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 // JPG
 //
 
-IDR_COVER_LOADING       JPG                     "images\\cover-loading.jpg"
-
 IDR_COVER_NO_IMG        JPG                     "images\\cover-no-img.jpg"
 
-IDR_COVER_LOADING_DARK  JPG                     "images\\cover-loading-dark.jpg"
+IDR_COVER_LOADING       JPG                     "images\\cover-loading-dark.jpg"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -572,24 +570,6 @@ BEGIN
 END
 
 #endif    // English (United Kingdom) resources
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Arabic (Qatar) resources
-
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ARQ)
-LANGUAGE LANG_ARABIC, SUBLANG_ARABIC_QATAR
-#pragma code_page(1256)
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// JPG
-//
-
-IDR_COVER_NO_IMG_DARK   JPG                     "images\\cover-no-img-dark.jpg"
-
-#endif    // Arabic (Qatar) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

@@ -11,7 +11,7 @@ using coverflow::configData;
 using engine::EngineThread;
 using EM = engine::Engine::Messages;
 
-static const DBPlaylistModeParams plparams;
+static const DBUngroupedParams plparams;
 DbReloadWorker::~DbReloadWorker() {
   abort.set();
   try {

@@ -230,7 +230,7 @@ class BehaviourTab : public ConfigTab {
       {IDC_CHECK_BEHA_ACTFLAG_E_RATED_HIGHT, 2, ACT_RATED_HIGHT}  // flag 6
       // still place for another flag (8 in total)
   };
-  
+
   UINT action_block_combo[nblock] = {IDC_DOUBLE_CLICK, IDC_MIDDLE_CLICK, IDC_ENTER_KEY};
 
   // note: another operation available (4 in total)
@@ -287,7 +287,7 @@ class BehaviourTab : public ConfigTab {
     while (x >>= 1) ++targetlevel;
     return targetlevel;
   }
-  //todo: still unsure about these flags/reqs/UI  
+  //todo: still unsure about these flags/reqs/UI
   void InitFlagCheckBoxes(HWND hwnd, pfc::string8* blocklist, unsigned long initflags) {
     std::vector<std::vector<byte>> vallflags;
     ActionFlagsToArray(vallflags, initflags);
@@ -438,7 +438,7 @@ class BehaviourTab : public ConfigTab {
             textChanged(IDC_HIDDEN_CUSTOM_ACTION_FLAG);
           }
         } else if (HIWORD(wParam) == CBN_SELCHANGE) {
-          
+
           // check if an action selection combobox triggered the event
 
           if (const int block = isActionComboBox(LOWORD(wParam)); block > -1) {
@@ -453,7 +453,7 @@ class BehaviourTab : public ConfigTab {
             }
 
             // update flag checkboxes: enabled/disabled state for custom action
-            
+
             bool bshow = CustomAction::isCustomAction(g_customActions, selected, true);
             for (int itflag = 0; itflag < ncheckboxflag; itflag++) {
               UINT idcontrol =
@@ -526,7 +526,7 @@ class BehaviourTab : public ConfigTab {
       uSendMessageText(list, CB_INSERTSTRING, 0, action->actionName);
     }
     int itemId = uSendDlgItemMessageText(hWnd, id, CB_FINDSTRINGEXACT, 1, selectedItem);
-    itemId = uSendDlgItemMessageText(hWnd, id, CB_SETCURSEL, itemId, 0); 
+    itemId = uSendDlgItemMessageText(hWnd, id, CB_SETCURSEL, itemId, 0);
     SetWindowRedraw(list, true);
   }
 
@@ -594,10 +594,10 @@ class SourcesTab : public ConfigTab {
 
   void loadComboSourcePlayList(UINT id, const char* selectedItem) {
     std::map<t_size, pfc::string8> playlistmap;
-    
+
     bool bdefault_playlist_exists =
         (pfc_infinite != playlist_manager::get()->find_playlist(default_SourcePlaylistName));
-    int DefId;
+    int DefId = 0;
 
     HWND list = GetDlgItem(hWnd, id);
     SetWindowRedraw(list, false);
@@ -697,7 +697,7 @@ class DisplayTab : public ConfigTab {
             hWnd, IDC_FRAME_WIDTH_SPIN, UDM_SETRANGE, 0, MAKELONG(short(30), short(0)));
         uSetDlgItemInt(
           hWnd, IDC_FRAME_WIDTH, configData->HighlightWidth, false);
-        
+
         break;
       }
       case WM_HSCROLL: {
@@ -718,7 +718,7 @@ class DisplayTab : public ConfigTab {
 
         //will trigger EN_CHANGE & therefore textchanged(id)
         uSetDlgItemText(hWnd, idtextdoublecontrol, std::to_string(val * 0.01).c_str());
-        
+
       } break;
       case WM_DRAWITEM: {
         auto* drawStruct = reinterpret_cast<DRAWITEMSTRUCT*>(lParam);
@@ -849,7 +849,7 @@ class DisplayTab : public ConfigTab {
             case IDC_TEXTCOLOR_CUSTOM:
             case IDC_FONT_CUSTOM:
             case IDC_BG_COLOR_CUSTOM:
-            case IDC_COVER_ART_PNG8_ALPHA: 
+            case IDC_COVER_ART_PNG8_ALPHA:
             case IDC_COVER_DISPLAY_LEGACY_EXTVIEWER: {
               buttonClicked(LOWORD(wParam));
 
@@ -1213,7 +1213,7 @@ class CoverTab : public ConfigTab {
             GetCoverConfigPosition(configData->CoverConfigs, next->first.c_str());
         HWND ctrl = GetDlgItem(hWnd, IDC_SAVED_SELECT);
         int oldselection_ndx = uSendMessage(ctrl, CB_GETCURSEL, 0, 0);
-        
+
         m_edited_name = oldselection;
         m_edited_ndx = oldselection_ndx;
         //refresh combobox list
@@ -1291,7 +1291,7 @@ class CoverTab : public ConfigTab {
         selection_ndx = itemId;
         selection_name = name.c_str();
         uSendDlgItemMessageText(hWnd, IDC_SAVED_SELECT, CB_SELECTSTRING, 1, name.c_str());
-      } 
+      }
     }
 
     if (selection == -1 || selection_ndx == -1) {
@@ -1511,7 +1511,7 @@ class ControlsTab : public ConfigTab {
         DeleteObject(editBoxFont);
       case WM_COMMAND:
         if (HIWORD(wParam) == EN_CHANGE) {
-        } 
+        }
         break;
     }
     return FALSE;
@@ -1560,7 +1560,7 @@ class ConfigWindow {
   HWND GetCurrentTabWnd() {
     return GetTabWindow(GetCurrentTab());
   }
-  
+
   ConfigTab* GetCurrentConfigTab() {
     ConfigTab* ct = tabs[GetCurrentTab()].get();
     return ct;

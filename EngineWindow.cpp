@@ -906,16 +906,4 @@ void external_selection_callback::on_selection_changed(metadb_handle_list_cref p
     // this type of selection is processed by class PlaylistCallback
   }
 }
-
-/*
-Debug
-AlbumInfo aaalbuminfo = AlbumInfo{
-    dbiter.value()->title,
-    keyBuffer.c_str(),
-    sortBufferWide
-};
-albuminfo = e.db.getAlbumInfo(dbiter.value());
-*/
-
-
 }  // namespace engine

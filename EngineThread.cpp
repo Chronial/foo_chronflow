@@ -50,18 +50,6 @@ EngineThread::EngineThread(EngineWindow& engineWindow, StyleManager& styleManage
   //reregister playlist manager
   playlist_manager::get()->register_callback(this, flag_on_items_selection_change);
 
-  //playlist_manager::get()->register_callback(this, /*playlist_callback::flag_all ||*/
-  //    flag_on_items_added ||
-  //    flag_on_items_reordered ||
-  //    flag_on_items_removed ||*/
-  //    flag_on_items_selection_change /*||
-  //    flag_on_items_modified ||
-  //    flag_on_playlist_activate ||
-  //    flag_on_playlists_removed ||
-  //    flag_on_playlist_renamed ||
-  //    flag_on_playlist_locked*/
-  //    );
-
   std::packaged_task<void(EngineThread*)> task(&EngineThread::run);
   thread = std::thread(std::move(task), this);
 }

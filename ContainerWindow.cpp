@@ -68,11 +68,8 @@ void ContainerWindow::applyCoverConfig(bool bcompile) {
     EngineThread::forEach(
         [&cInfo](EngineThread& t) { t.send<EM::ChangeCoverPositionsMessage>(cInfo.second); });
 
-    //cfg_rw{Konfig};
-    //configData->sessionCompiledCPInfo.set(settings_ndx, cInfo);
-
   } catch (std::exception& e) {
-    //todo: deliver exception
+
   }
 }
 

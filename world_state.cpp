@@ -26,7 +26,7 @@ void WorldState::setTarget(DBPos target) {
     lastMovement = time() - 0.02;
     rendering = true;
   }
-  //cfg_rw{Konfig};
+
   configData->sessionSelectedCover.set_string(target.key.c_str());
 }
 

@@ -25,6 +25,7 @@ struct Album {
   std::string key;
   std::wstring sortKey;
   std::string title;
+
   mutable metadb_handle_list tracks;
 };
 
@@ -56,7 +57,7 @@ class DB {
 };
 using DBIter = Container::index<sortKey>::type::iterator;
 
-}  // namespace db_structure
+} // namespace db_structure
 
 using db_structure::DBIter;
 using db_structure::DB;
@@ -127,6 +128,6 @@ class DbAlbumCollection {
  private:
   std::vector<std::tuple<t_uint64, LibraryChangeType, metadb_handle_list>>
       libraryChangeQueue;
-  unique_ptr<db_structure::DB> db;
+  unique_ptr<DB> db;
 };
 } // namespace

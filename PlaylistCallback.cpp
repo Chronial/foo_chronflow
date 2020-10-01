@@ -80,7 +80,7 @@ void PlaylistCallback::on_items_selection_change(t_size p_playlist,
     sortBufferWide.convert(sortBuffer);
   } else {
     //ungrouped
-    const DBPlaylistModeParams plparams;
+    const DBUngroupedParams plparams;
     titleformat_compiler::get()->compile_safe_ex(titleBuilder, configData->SourcePlaylistNGTitle/*plparams.albumtitle*/);
     titleformat_compiler::get()->compile_safe_ex(keyBuilder, plparams.group);
     titleformat_compiler::get()->compile_safe_ex(sortBuilder, plparams.sort);
@@ -228,9 +228,5 @@ void PlaylistCallback::on_playlists_removed(const bit_array& p_mask, t_size p_ol
     if (p_new_count == 0)
       static_cast<EngineThread*>(this)->send<EM::ReloadCollection>();
 }
-
-//void PlaylistCallback::on_playlist_created(t_size p_index, const char * p_name, t_size, p_name_len){}
-//void PlaylistCallback::on_playlists_removing(const bit_array & p_mask, t_size, p_old_count, t_size p_new_count){}
-//void PlaylistCallback::on_items_modified(t_size p_playlist, const bit_array & p_mask)
 
 }  // namespace engine

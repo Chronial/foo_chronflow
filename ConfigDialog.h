@@ -49,7 +49,6 @@ class ConfigDialog : public CDialogImpl<ConfigDialog>, public preferences_page_i
 
   bool NeedReload() { return bneedreload; }
   bool NeedRedraw() { return bneedredraw; }
-  //void SetReload(bool bneed) { bneedreload |= bneed; }
   void OnChanged();
 
  private:

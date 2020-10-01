@@ -19,14 +19,6 @@ class PlaylistCallback : public playlist_callback_impl_base {
   void on_playlists_removed(const bit_array& p_mask, t_size p_old_count,
                             t_size p_new_count) final;
 
-  // void on_items_removing(t_size p_playlist, const bit_array & p_mask, t_size
-  // p_old_count, t_size p_new_count) final; void on_items_modified(t_size p_playlist,
-  // const bit_array & p_mask) final; void on_playlist_items_modified_fromplayback(t_size
-  // p_playlist) final; void on_playlist_items_replaced(t_size p_playlist) final; void
-  // on_playlists_removing(const bit_array & p_mask, t_size p_old_count, t_size
-  // p_new_count) final; void on_playlist_created(t_size p_index, const char * p_name,
-  // t_size p_name_len) final; void on_playlist_locked(t_size p_playlist, bool p_locked);
-
  public:
   PlaylistCallback(EngineWindow& enginewindow) : engineWindow(enginewindow) {}
 

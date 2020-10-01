@@ -8,7 +8,7 @@ enum VSyncMode {
   VSYNC_ONLY = 3,
 };
 
-struct DBPlaylistModeParams {
+struct DBUngroupedParams {
   pfc::string8 filter = "";
   pfc::string8 group = "%Title%";
   bool sortgroup = true;
@@ -23,7 +23,6 @@ struct src_state {
   std::pair<t_size, metadb_handle_ptr>track_first;
   std::pair<t_size, metadb_handle_ptr>track_second;
 };
-
 
 int const MaxArtIndex = 3;
 int const _PREFS_VERSION = 2;
@@ -192,8 +191,8 @@ class ConfigData : public cfg_var {
 
  public:
   void GetStateTrackInfo(t_size &trackpos, metadb_handle_ptr & track) {
-    //this may also be run from on_playlist_activate callback
-    //from that callback function gets focus and track
+    //may also be run inside on_playlist_activate callback
+    //seams to be able to get focus and track
 
     const t_size plsource = FindSourcePlaylist(0);
     static_api_ptr_t<playlist_manager> pm;

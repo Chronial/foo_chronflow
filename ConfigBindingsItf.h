@@ -7,7 +7,7 @@ class IBinding {
  public:
   virtual ~IBinding() = default;
   virtual bool HasChanged() const = 0;
-  virtual int GetActionFlag(bool changefilter = false) const = 0; // if actionflag(reload) & haschanged -> reload required
+  virtual int GetActionFlag(bool changefilter = false) const = 0;
   virtual void FlowToControl(HWND wndCtrlParent = nullptr) {};
   virtual void FlowToVar(HWND wndCtrlParent = nullptr) {};
 };

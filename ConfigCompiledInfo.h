@@ -14,7 +14,7 @@ class cfg_compiledCPInfoPtr : public cfg_var {
   friend class configData;
 
  public:
-  //to centralize all get/sets from class configData
+
   void pub_get_data_raw(stream_writer* p_stream, abort_callback& p_abort) {
     get_data_raw(p_stream, p_abort);
   }
@@ -44,7 +44,6 @@ class cfg_compiledCPInfoPtr : public cfg_var {
     } else {
       return {list_position, nullptr};
     }
-
   }
   void set(int listposition, shared_ptr<CompiledCPInfo> value) {
     list_position = listposition;
@@ -55,7 +54,6 @@ class cfg_compiledCPInfoPtr : public cfg_var {
   void reset() {
     pfc::string8 defstr(defaultCoverConfig);
     list_position = GetCoverConfigPosition(builtInCoverConfigs(), defstr);
-
     std::atomic_store(&this->data_, {});
   }
   inline explicit cfg_compiledCPInfoPtr(const GUID& p_guid)

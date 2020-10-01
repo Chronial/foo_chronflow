@@ -7,9 +7,6 @@
 
 namespace coverflow {
 
-//using engine::EngineThread;
-//using EM = engine::Engine::Messages;
-
 namespace {
 
 class StringBinding : public IBinding, IFlow {
@@ -450,13 +447,6 @@ void BindingCollection::FlowToVar(HWND wndCtrlParent) {
 
     binding.FlowToVar(wndCtrlParent);
 
-    //debugging example for controls
-    //int debug_ctrl = (binding.flowval_)->GetCtrlID();
-    //if (debug_ctrl == IDC_DISPLAY_CONFIG) {
-    //  auto debugflow = binding.flowval_;
-    //  CoverConfigMap scriptMap;
-    //  bool bcheck = debugflow->GetFVal(&scriptMap);
-    //}
   }
 }
 } // namespace coverflow

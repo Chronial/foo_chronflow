@@ -118,8 +118,6 @@ void EM::ReloadCollection::run(Engine& e) {
   // PFC_ASSERT(e.thread.libraryVersion<2);
 //#endif
   try {
-    // stress crashed reloadWorker in playlist mode, need to release
-    // test case: active playlist mode, fast mouse scroll through playlist tabs
     if (e.reloadWorker) {
       e.reloadWorker.release();
     }
@@ -150,8 +148,7 @@ void EM::CollectionReloadedMessage::run(Engine& e) {
 void EM::PlaybackNewTrack::run(Engine& e, metadb_handle_ptr track) {
   e.playbackTracer.onPlaybackNewTrack(track);
 }
-// todo: items added and modified are turned off in source playlist mode
-// otherwise items get added to selection
+
 void EM::LibraryItemsAdded::run(Engine& e, metadb_handle_list tracks, t_uint64 version) {
 
   if (!configData->IsWholeLibrary() || configData->SourceLibrarySelectorLock == true)
@@ -161,15 +158,14 @@ void EM::LibraryItemsAdded::run(Engine& e, metadb_handle_list tracks, t_uint64 v
   e.cacheDirty = true;
   e.thread.invalidateWindow();
 }
-// todo: removing, should we check if source is playlist?
+
 void EM::LibraryItemsRemoved::run(Engine& e, metadb_handle_list tracks,
                                   t_uint64 version) {
   e.db.handleLibraryChange(version, DbAlbumCollection::items_removed, std::move(tracks));
   e.cacheDirty = true;
   e.thread.invalidateWindow();
 }
-// todo: items added and modified are turned off in source playlist mode
-// otherwise items get added to selection
+
 void EM::LibraryItemsModified::run(Engine& e, metadb_handle_list tracks,
                                    t_uint64 version) {
   if (configData->SourcePlaylist || configData->SourceActivePlaylist)
@@ -259,7 +255,7 @@ void EM::SourceChangeMessage::run(Engine& e, src_state srcstate) {
         secondpos = srcstate.track_second.first;
       } else {
         // library to ungrouped playlist
-        DBPlaylistModeParams plparams;
+        DBUngroupedParams plparams;
         group = plparams.group;
         group += "|$hi()";
         sort = plparams.sort;
@@ -291,7 +287,7 @@ void EM::SourceChangeMessage::run(Engine& e, src_state srcstate) {
           secondpos = srcstate.track_second.first;
         } else {
           // grouped to ungrouped playlist
-          DBPlaylistModeParams plparams;
+          DBUngroupedParams plparams;
           group = plparams.group;
           group += "|$hi()";
           sort = plparams.sort;
@@ -314,7 +310,7 @@ void EM::SourceChangeMessage::run(Engine& e, src_state srcstate) {
           //secondpos = srcstate.track_second.first;
         } else {
           // ungrouped playlist to ungrouped playlist
-          DBPlaylistModeParams plparams;
+          DBUngroupedParams plparams;
           group = plparams.group;
           group += "|$hi()";
           sort = plparams.sort;
@@ -338,7 +334,6 @@ void EM::SourceChangeMessage::run(Engine& e, src_state srcstate) {
 
     //e.worldState.hardSetCenteredPos(pos);
     e.worldState.setTarget(pos);
-
     //configData->sessionSelectedCover.set_string(pos.key.c_str());
 
     //ori
@@ -350,7 +345,6 @@ void EM::SourceChangeMessage::run(Engine& e, src_state srcstate) {
 void EM::ReloadCollectionFromList::run(Engine& e, std::shared_ptr<metadb_handle_list> shared_selection) {
   // This will abort any already running reload worker
   try {
-    //release or crash dbworker
     if (e.reloadWorker) {
       e.reloadWorker.release();
     }

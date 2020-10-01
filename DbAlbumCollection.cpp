@@ -2,7 +2,6 @@
 
 #include "ConfigData.h"
 #include "FindAsYouType.h"
-//#include "pfc/range_based_for.h"
 
 namespace db {
 using namespace coverflow;
@@ -114,6 +113,7 @@ void DBWriter::add_track(const metadb_handle_ptr& track) {
   }
   album->tracks.add_item(track);
   db.trackMap.emplace(track, std::ref(*album));
+
 }
 
 void DBWriter::remove_track(const metadb_handle_ptr& track) {

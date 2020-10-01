@@ -53,21 +53,17 @@ namespace coverflow {
   void OnSelectorContextCommand(HMENU* hMenu, const int cmd, engine::EngineWindow* ew) {
 
     if (cmd == engine::ID_LIBRARY_COVER_FOLLOWS_SELECTION) {
-      //
       // toggle covers follow library selection
       ew->cmdToggleLibraryCoverFollowsSelection();
     }
     else if (cmd == engine::ID_LIBRARY_FILTER_SELECTOR_AS_SOURCE) {
-      //
       // toggle Library Filter Selector on/off
       ew->cmdToggleLibraryFilterSelectorSource(false);
     }
     else if (cmd == engine::ID_LIBRARY_FILTER_SELECTOR_LOCK) {
-      //
       // toggle Library Filter Selector on/off
       ew->cmdToggleLibraryFilterSelectorSource(true);
     }
-
   }
 
 } // namespace coverflow

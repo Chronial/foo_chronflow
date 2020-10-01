@@ -15,7 +15,6 @@
 #define IDB_COVER_LOADING_PNG           110
 #define IDB_COVER_NO_IMG_PNG            112
 #define IDR_COVER_LOADING               200
-#define IDR_COVER_NO_IMG_DARK           202
 #define IDR_COVER_NO_IMG                203
 #define IDR_COVER_LOADING_DARK          204
 #define IDC_ALBUM_FORMAT                1001
@@ -185,7 +184,6 @@
 #define IDC_CTX_SELECTOR_HIDE           1159
 #define IDC_CTX_EXTERNALVIEWER_HIDE     1160
 #define IDC_CTX_CUSTOMACTIONS_HIDE      1161
-#define IDC_CHECK_BEHA_ACT_PLAYLIST_SKIP_ANI 1163
 
 // Next default values for new objects
 //
