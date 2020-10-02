@@ -593,45 +593,37 @@ class SourcesTab : public ConfigTab {
   }
 
   void loadComboSourcePlayList(UINT id, const char* selectedItem) {
-    std::map<t_size, pfc::string8> playlistmap;
-
-    bool bdefault_playlist_exists =
-        (pfc_infinite != playlist_manager::get()->find_playlist(default_SourcePlaylistName));
-    int DefId = 0;
-
     HWND list = GetDlgItem(hWnd, id);
     SetWindowRedraw(list, false);
     SendMessage(list, CB_RESETCONTENT, 0, 0);
     uSendMessageText(list, CB_ADDSTRING, 0, "");
     uSendDlgItemMessage(hWnd, id, CB_RESETCONTENT, 0, 0);
 
-    if (!bdefault_playlist_exists)
-      DefId = uSendDlgItemMessageText(hWnd, id, CB_ADDSTRING, 0, default_SourcePlaylistName);
+    if (pfc_infinite == playlist_manager::get()->find_playlist(default_SourcePlaylistName))
+      uSendDlgItemMessageText(hWnd, id, CB_ADDSTRING, 0, default_SourcePlaylistName);
 
     t_size cplaylist = playlist_manager::get()->get_playlist_count();
     for (int i=0;i<cplaylist;i++) {
       pfc::string8 aname;
       t_size pl = playlist_manager::get()->playlist_get_name(i, aname);
       int rowId = uSendDlgItemMessageText(hWnd, id, CB_ADDSTRING, 0, aname);
-      if (stricmp_utf8(default_SourcePlaylistName, aname) == 0) {
-        DefId = rowId;
-      }
       uSendDlgItemMessage(hWnd, id, CB_SETITEMDATA, rowId, i);
       if (uSendDlgItemMessage(hWnd, id, CB_GETCURSEL, 0, 0) == CB_ERR) {
-        if (stricmp_utf8(default_SourcePlaylistName, selectedItem) == 0) {
-          uSendDlgItemMessageText(hWnd, id, CB_SETCURSEL, DefId, 0);
-        } else
         if (stricmp_utf8(aname.c_str(), selectedItem) == 0) {
           rowId = uSendDlgItemMessageText(hWnd, id, CB_FINDSTRINGEXACT, 1, selectedItem);
           rowId = uSendDlgItemMessageText(hWnd, id, CB_SETCURSEL, rowId, 0);
         }
       }
     }
-    //fix the combo if still undefined
+    //check if still undefined
     int checkId = uSendDlgItemMessage(hWnd, id, CB_GETCURSEL, 0, 0);
     if (checkId == CB_ERR) {
-      int rowId = uSendDlgItemMessageText(hWnd, id, CB_ADDSTRING, 0, selectedItem);
-      uSendDlgItemMessageText(hWnd, id, CB_SETCURSEL, rowId, 0);
+      if (stricmp_utf8(default_SourcePlaylistName, selectedItem) == 0) {
+        checkId = uSendDlgItemMessageText(hWnd, id, CB_FINDSTRINGEXACT, 1, default_SourcePlaylistName);
+      } else {
+        checkId = uSendDlgItemMessageText(hWnd, id, CB_ADDSTRING, 0, selectedItem);
+      }
+      uSendDlgItemMessageText(hWnd, id, CB_SETCURSEL, checkId, 0);
     }
 
     SetWindowRedraw(list, true);
