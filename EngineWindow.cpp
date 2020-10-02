@@ -396,7 +396,8 @@ bool ToggleActivePlaylistMode() {
     }
 
     //is SourcePlaylist on and in the same playlist?
-    breload = !configData->IsSourcePlaylistOn(activepl, 1);
+    breload = !configData->IsSourcePlaylistOn(
+        activepl, PlSrcFilter::PLAYLIST);
 
     pm->activeplaylist_get_name(configData->SourceActivePlaylistName);
     configData->SourcePlaylist = true;

@@ -23,7 +23,7 @@ void PlaylistCallback::on_items_selection_change(t_size p_playlist,
                                                  const bit_array& p_affected,
                                                  const bit_array& p_state) {
 
-  if (!configData->IsSourcePlaylistOn(p_playlist, 0))
+  if (!configData->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST))
     return; // not in our playlist
 
   if (!configData->CoverFollowsPlaylistSelection)
@@ -128,7 +128,7 @@ void PlaylistCallback::on_items_added(t_size p_playlist, t_size p_start,
                                       const pfc::list_base_const_t<metadb_handle_ptr>& p_data,
                                       const bit_array& p_selection) {
 
-  if (configData->IsSourcePlaylistOn(p_playlist, 0))
+  if (configData->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST))
     static_cast<EngineThread*>(this)->send<EM::ReloadCollection>();
   DebugPLS("PlaylistCallback->on_items_added");
 }
@@ -139,7 +139,7 @@ void PlaylistCallback::on_items_reordered(t_size p_playlist,
                                           const t_size* p_order,
                                           t_size p_count) {
 
-  if (configData->IsSourcePlaylistOn(p_playlist, 0)) {
+  if (configData->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST)) {
     //test crash: lvs and active playlist both active
     //            m_item = order_helper::g_find_reverse(p_order, m_item);
     static_cast<EngineThread*>(this)->send<EM::ReloadCollection>();
@@ -150,7 +150,7 @@ void PlaylistCallback::on_items_reordered(t_size p_playlist,
 void PlaylistCallback::on_items_removed(t_size p_playlist, const bit_array& p_mask,
                                         t_size p_old_count, t_size p_new_count) {
 
-  if (configData->IsSourcePlaylistOn(p_playlist, 0))
+  if (configData->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST))
     if (p_old_count != p_new_count) {
       static_cast<EngineThread*>(this)->send<EM::ReloadCollection>();
     }

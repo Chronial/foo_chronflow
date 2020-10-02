@@ -8,6 +8,12 @@ enum VSyncMode {
   VSYNC_ONLY = 3,
 };
 
+enum class PlSrcFilter:uint8_t {
+  ANY_PLAYLIST = 0,
+  PLAYLIST,
+  ACTIVE_PLAYLIST
+};
+
 struct DBUngroupedParams {
   pfc::string8 filter = "";
   pfc::string8 group = "%Title%";
@@ -194,7 +200,7 @@ class ConfigData : public cfg_var {
     //may also be run inside on_playlist_activate callback
     //seams to be able to get focus and track
 
-    const t_size plsource = FindSourcePlaylist(0);
+    const t_size plsource = FindSourcePlaylist(PlSrcFilter::ANY_PLAYLIST);
     static_api_ptr_t<playlist_manager> pm;
     if (playlist_manager::get()->playlist_get_item_count(plsource)) {
         //selected
@@ -267,17 +273,17 @@ class ConfigData : public cfg_var {
               (stricmp_utf8(SourceActivePlaylistName, SourcePlaylistName) == 0));
   }
 
-  bool IsSourcePlaylistOn(t_size playlist, int mode) {
+  bool IsSourcePlaylistOn(t_size playlist, PlSrcFilter mode) {
     const t_size srcplaylist = FindSourcePlaylist(mode);
     return (srcplaylist != ~0 && srcplaylist == playlist);
   }
 
-  bool IsSourcePlaylistOn(pfc::string8 playlist, int mode) {
+  bool IsSourcePlaylistOn(pfc::string8 playlist, PlSrcFilter mode) {
     if (IsWholeLibrary()) {
       return false;
     }
     switch (mode) {
-    case 0:
+    case PlSrcFilter::ANY_PLAYLIST:
       if (!IsWholeLibrary()) {
         if (SourceActivePlaylist)
           return (stricmp_utf8(playlist, SourceActivePlaylistName) == 0);
@@ -285,13 +291,13 @@ class ConfigData : public cfg_var {
           return (stricmp_utf8(playlist, SourcePlaylistName) == 0);
       }
       break;
-    case 1:
+    case PlSrcFilter::PLAYLIST:
       if (SourcePlaylist)
         return (stricmp_utf8(playlist, SourcePlaylistName) == 0);
       else
         return false;
       break;
-    case 2:
+    case PlSrcFilter::ACTIVE_PLAYLIST:
       if (SourceActivePlaylist)
         return (stricmp_utf8(playlist, SourceActivePlaylistName) == 0);
       else
@@ -306,22 +312,22 @@ class ConfigData : public cfg_var {
       return {};
     }
   }
-  t_size FindSourcePlaylist(t_size mode) const {
+  t_size FindSourcePlaylist(PlSrcFilter mode) const {
     if (IsWholeLibrary()) {
       return pfc_infinite;
     }
     switch (mode) {
-    case 0:
+    case PlSrcFilter::ANY_PLAYLIST:
       if (SourceActivePlaylist) {
         return playlist_manager::get()->find_playlist(SourceActivePlaylistName);
       } else
         return playlist_manager::get()->find_playlist(SourcePlaylistName);
       break;
-    case 1:
+    case PlSrcFilter::PLAYLIST:
       if (SourcePlaylist)
         return playlist_manager::get()->find_playlist(SourcePlaylistName);
       break;
-    case 2:
+    case PlSrcFilter::ACTIVE_PLAYLIST:
       if (SourceActivePlaylist)
         return playlist_manager::get()->find_playlist(SourceActivePlaylistName);
       break;
