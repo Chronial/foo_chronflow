@@ -12,22 +12,35 @@ namespace engine {
 using coverflow::configData;
 using EM = engine::Engine::Messages;
 
-//#define DEBUGPLS
-void DebugPLS(const char* msg) {
-  #ifdef DEBUGPLS
-    console::out() << "Coverflow_mod - Playlistback debug: " << msg;
-  #endif
-}
+void PlaylistCallback::on_item_focus_change(t_size p_playlist, t_size p_from,
+                                            t_size p_to) {
+  if (!configData->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST))
+    return;
 
+  if (!configData->CoverFollowsPlaylistSelection)
+    return;
+
+  if (p_to != pfc_infinite) {
+    src_state srcstate;
+    configData->GetState(srcstate);
+    configData->GetState(srcstate, false);
+    //track is set but focus is not
+    //srcstate.track_second.second = playlist_manager::get()->playlist_get_item_handle(p_playlist, p_to);
+    srcstate.track_second.first = p_to;
+    static_cast<EngineThread*>(this)->send<EM::SourceChangeMessage>(srcstate);
+    static_cast<EngineThread*>(this)->send<EM::ReloadCollection>();
+  }
+
+}
 void PlaylistCallback::on_items_selection_change(t_size p_playlist,
                                                  const bit_array& p_affected,
                                                  const bit_array& p_state) {
 
   if (!configData->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST))
-    return; // not in our playlist
+    return;
 
   if (!configData->CoverFollowsPlaylistSelection)
-    return; // not following selections
+    return;
 
   metadb_handle_list p_all;
   metadb_handle_list p_selection;
@@ -95,18 +108,6 @@ void PlaylistCallback::on_items_selection_change(t_size p_playlist,
     itoa(int(ft_myselection), tmp_str, 10);
     keyBuffer.add_string("|");
     keyBuffer.add_string(tmp_str);
-
-    /*
-    AlbumInfo sel_albuminfo;
-    sel_albuminfo.pos = sel_pos;
-    sel_albuminfo.title = titleBuffer;
-    sel_albuminfo.tracks = p_selection;
-    */
-
-    //t_size p_selection_ndx = metadb_handle_list_helper::bsearch_by_pointer(
-    //activeplaylist_sel_list, p_selection.get_item(0).get_ptr());
-    //auto target_albuminfo =
-    //engineWindow.engineThread->sendSync<EM::GetTargetAlbum>().get(); (crash)
   }
 
   auto target_albuminfo =
@@ -118,8 +119,6 @@ void PlaylistCallback::on_items_selection_change(t_size p_playlist,
     sel_pos.sortKey = sortBufferWide;
     AlbumInfo sel_albuminfo{titleBuffer, sel_pos, p_selection};
     static_cast<EngineThread*>(this)->send<EM::MoveToAlbumMessage>(sel_albuminfo, false);
-
-    //engineWindow.engineThread->send<EM::MoveToCurrentTrack>(p_selection.get_item(0));
   }
 
 };
@@ -130,32 +129,28 @@ void PlaylistCallback::on_items_added(t_size p_playlist, t_size p_start,
 
   if (configData->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST))
     static_cast<EngineThread*>(this)->send<EM::ReloadCollection>();
-  DebugPLS("PlaylistCallback->on_items_added");
+
 }
 
 //called quite often if Library Viewer Selection is shown
-
 void PlaylistCallback::on_items_reordered(t_size p_playlist,
                                           const t_size* p_order,
                                           t_size p_count) {
 
   if (configData->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST)) {
-    //test crash: lvs and active playlist both active
-    //            m_item = order_helper::g_find_reverse(p_order, m_item);
     static_cast<EngineThread*>(this)->send<EM::ReloadCollection>();
   }
-
-  DebugPLS("PlaylistCallback->on_items_reordered");
 }
 void PlaylistCallback::on_items_removed(t_size p_playlist, const bit_array& p_mask,
                                         t_size p_old_count, t_size p_new_count) {
 
   if (configData->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST))
     if (p_old_count != p_new_count) {
-      static_cast<EngineThread*>(this)->send<EM::ReloadCollection>();
+      //cover position will be available on_focus_changed()
+      //unless this was the last item
+      if (p_new_count == 0)
+        static_cast<EngineThread*>(this)->send<EM::ReloadCollection>();
     }
-
-  DebugPLS("PlaylistCallback->on_items_removed");
 }
 // playlist activate and playlist removals
 void PlaylistCallback::on_playlist_activate(t_size p_old, t_size p_new) {
@@ -164,7 +159,7 @@ void PlaylistCallback::on_playlist_activate(t_size p_old, t_size p_new) {
   // on playlist deletion callback is invoked twice...
   if (p_new == pfc_infinite) {
     // first callback after playlist removal (p_old is removed, p_new is undefined)
-    // if p_old is zero we are deleting the last playlist and there wont be a second
+    // if p_old is zero we are deleting the last playlist and wont be a second
     // callback
     if (configData->SourcePlaylist) {
       static_api_ptr_t<playlist_manager> pm;
@@ -195,11 +190,10 @@ void PlaylistCallback::on_playlist_activate(t_size p_old, t_size p_new) {
     }
   }
   if (brefresh) {
-    static_cast<EngineThread*>(this)->send<EM::SourceChangeMessage>(srcstate);
+    if (configData->CoverFollowsPlaylistSelection)
+      static_cast<EngineThread*>(this)->send<EM::SourceChangeMessage>(srcstate);
     static_cast<EngineThread*>(this)->send<EM::ReloadCollection>();
   }
-
-  DebugPLS("PlaylistCallback->on_playlist_activate");
 }
 void PlaylistCallback::on_playlist_renamed(t_size p_index, const char* p_new_name,
                                            t_size p_new_name_len) {

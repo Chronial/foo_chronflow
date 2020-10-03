@@ -203,21 +203,18 @@ class ConfigData : public cfg_var {
     const t_size plsource = FindSourcePlaylist(PlSrcFilter::ANY_PLAYLIST);
     static_api_ptr_t<playlist_manager> pm;
     if (playlist_manager::get()->playlist_get_item_count(plsource)) {
-        //selected
+        //selected?
         bit_array_bittable selmask;
-        t_size trackpos = selmask.find_first(true, 0, selmask.size());
+        trackpos = selmask.find_first(true, 0, selmask.size());
         if (selmask.size() > 0 && trackpos != pfc_infinite) {
           metadb_handle_list msl;
           track = pm->playlist_get_item_handle(plsource, trackpos);
           //trackpos = configData->CoverFollowsPlaylistSelection? trackpos : 0;
         }
         else {
-          //playlist_manager::get()->playlist_find_item(plsource, track, trackpos);
-          //focused
+          //focused?
           if (pm->playlist_get_focus_item_handle(track, plsource)) {
             trackpos = pm->playlist_get_focus_item(plsource);
-            pm->playlist_find_item_selected(plsource, track, trackpos);
-            //trackpos = configData->CoverFollowsPlaylistSelection ? trackpos : 0;
           } else {
             track = pm->playlist_get_item_handle(plsource, 0);
             trackpos = 0;

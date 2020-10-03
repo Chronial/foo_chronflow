@@ -4,6 +4,7 @@ namespace engine {
 
 // EngineThread Playlist Callback
 class PlaylistCallback : public playlist_callback_impl_base {
+  void on_item_focus_change(t_size p_playlist, t_size p_from, t_size p_to);
   void on_items_selection_change(t_size p_playlist, const bit_array& p_affected,
                                  const bit_array& p_state);
 
