@@ -1606,7 +1606,8 @@ class LibraryViewer : public library_viewer {
     return {0xa68951b7, 0x1497, 0x4ed2, {0xa2, 0xba, 0xcf, 0xaf, 0xd, 0xaa, 0xb8, 0x84}};
   };
   const char* get_name() final { return component_NAME; };
-  GUID get_preferences_page() final { return guid_config_window; };
+  //GUID get_preferences_page() final { return guid_config_window; };
+  GUID get_preferences_page() final { return guid_config_dialog; };
   bool have_activate() final { return false; };
 
   void activate() final{};
