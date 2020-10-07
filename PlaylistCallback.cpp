@@ -127,9 +127,13 @@ void PlaylistCallback::on_items_added(t_size p_playlist, t_size p_start,
                                       const pfc::list_base_const_t<metadb_handle_ptr>& p_data,
                                       const bit_array& p_selection) {
 
-  if (configData->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST))
-    static_cast<EngineThread*>(this)->send<EM::ReloadCollection>();
-
+  if (configData->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST)) {
+    if (!configData->CoverFollowsPlaylistSelection) {
+      static_cast<EngineThread*>(this)->send<EM::ReloadCollection>();
+    } else {
+      // update on next on_focus_changed()
+    }
+  }
 }
 
 //called quite often if Library Viewer Selection is shown
@@ -146,10 +150,13 @@ void PlaylistCallback::on_items_removed(t_size p_playlist, const bit_array& p_ma
 
   if (configData->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST))
     if (p_old_count != p_new_count) {
-      //cover position will be available on_focus_changed()
-      //unless this was the last item
-      if (p_new_count == 0)
+      if (p_new_count == 0 || !configData->CoverFollowsPlaylistSelection) {
+        //not following selection or
+        //empty playlist will not call on_focus_changed()
         static_cast<EngineThread*>(this)->send<EM::ReloadCollection>();
+      } else {
+        //update on next on_focus_changed()
+      }
     }
 }
 // playlist activate and playlist removals
