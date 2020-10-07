@@ -258,9 +258,11 @@ class FontBinding : public IBinding, IFlow {
     uGetDlgItemText(hwnd_, controlId_, tmpstrBase64);
 
     LOGFONT lfctrl;
-    std::string restbuf(sizeof(lfctrl), '\0');
-    pfc::string8 restorebuf;
-    restorebuf.set_string(restbuf.c_str(), restbuf.length());
+
+    //debug
+    //std::string restbuf(sizeof(lfctrl), '\0');
+    //pfc::string8 restorebuf;
+    //restorebuf.set_string(restbuf.c_str(), restbuf.length());
 
     pfc::base64_decode(tmpstrBase64.c_str(), &lfctrl);
     int res = memcmp(&var_, &lfctrl, sizeof(lfctrl));
@@ -277,9 +279,10 @@ class FontBinding : public IBinding, IFlow {
       return;
 
     std::ostringstream o_txt_stream;
-    std::string buf(sizeof(var_), '\0');
 
-    pfc::string8 pfcbuf = pfc::string8(buf.c_str());
+    //debug
+    //std::string buf(sizeof(var_), '\0');
+    //pfc::string8 pfcbuf = pfc::string8(buf.c_str());
 
     o_txt_stream.write((char*)&var_, sizeof(var_));
     pfc::string8 strBase64;
@@ -297,9 +300,12 @@ class FontBinding : public IBinding, IFlow {
 
     LOGFONT restoreFont;
     restoreFont = def_cfgTitleFont();
-    std::string restbuf(sizeof(restoreFont), '\0');
-    pfc::string8 restorebuf;
-    restorebuf.set_string(restbuf.c_str(), restbuf.length());
+
+    //Debug
+    //std::string restbuf(sizeof(restoreFont), '\0');
+    //pfc::string8 restorebuf;
+    //restorebuf.set_string(restbuf.c_str(), restbuf.length());
+
     pfc::base64_decode(tmpstrBase64.c_str(), &restoreFont);
 
     var_ = restoreFont;
@@ -409,7 +415,9 @@ void Binding::FlowToControl(HWND wndCtrlParent) {
   binding_->FlowToControl(wndCtrlParent);
 }
 
-void Binding::FlowToVar(HWND wndCtrlParent) { binding_->FlowToVar(wndCtrlParent); }
+void Binding::FlowToVar(HWND wndCtrlParent) {
+  binding_->FlowToVar(wndCtrlParent);
+}
 
 bool BindingCollection::HasChanged() const {
   return std::any_of(std::begin(bindings_), std::end(bindings_),
@@ -442,11 +450,8 @@ void BindingCollection::FlowToControl(HWND wndCtrlParent) {
 }
 
 void BindingCollection::FlowToVar(HWND wndCtrlParent) {
-
   for (auto&& binding : bindings_) {
-
     binding.FlowToVar(wndCtrlParent);
-
   }
 }
 } // namespace coverflow

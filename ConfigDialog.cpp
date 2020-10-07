@@ -18,8 +18,6 @@ enum ChangedFlags {
 };
 
 void ConfigDialog::BindControls(const int ndx, HWND hWndTab, int cmd) {
-  int reload_flg = 1 << 1;
-  int redraw_flg = 1 << 2;
   bindings_.Clear(); //safeguard
   switch (ndx) {
     case IDD_BEHAVIOUR_TAB:
@@ -95,7 +93,6 @@ void ConfigDialog::BindControls(const int ndx, HWND hWndTab, int cmd) {
       bindings_.Bind(configData->CtxHideExtViewerMenu, 0, hWndTab, IDC_CTX_EXTERNALVIEWER_HIDE);
       bindings_.Bind(configData->CtxHideActionsMenu, 0, hWndTab, IDC_CTX_CUSTOMACTIONS_HIDE);
       //bindings_.Bind(configData->SourceHideExpMenu, 0, hWndTab, IDC_CTX_PREFS_HIDE);
-
       break;
   }
 }

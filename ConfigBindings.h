@@ -25,7 +25,7 @@ class Binding {
   ~Binding();
 
   bool HasChanged() const;
-  int GetActionFlag(bool changefilter = false) const; // if actionflag(reload) & haschanged -> doreload
+  int GetActionFlag(bool changefilter = false) const;
   void FlowToControl(HWND wndCtrlParent = nullptr);
   void FlowToVar(HWND wndCtrlParent = nullptr);
 
