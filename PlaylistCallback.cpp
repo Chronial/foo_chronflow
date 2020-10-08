@@ -128,7 +128,8 @@ void PlaylistCallback::on_items_added(t_size p_playlist, t_size p_start,
                                       const bit_array& p_selection) {
 
   if (configData->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST)) {
-    if (!configData->CoverFollowsPlaylistSelection) {
+    t_size plcount = playlist_manager::get()->playlist_get_item_count(p_playlist);
+    if ((plcount == 1 && p_start == 0) || !configData->CoverFollowsPlaylistSelection) {
       static_cast<EngineThread*>(this)->send<EM::ReloadCollection>();
     } else {
       // update on next on_focus_changed()
