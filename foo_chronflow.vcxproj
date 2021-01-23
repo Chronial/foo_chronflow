@@ -145,7 +145,7 @@
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(SolutionDir)$(Configuration)\libPPUI.lib;$(SolutionDir)$(Configuration)\foobar2000_SDK.lib;$(SolutionDir)$(Configuration)\foobar2000_component_client.lib;$(SolutionDir)$(Configuration)\pfc.lib;$(SolutionDir)$(Configuration)\columns_ui_sdk.lib;$(SolutionDir)$(Configuration)\foobar2000_sdk_helpers.lib;Z:\VS2019\vcpkg-master\installed\x86-windows-static\Debug\lib\glfw3.lib;..\shared\shared.lib;d2d1.lib;dwrite.lib;Comctl32.lib;Winmm.lib;Shlwapi.lib;gdiplus.lib;opengl32.lib;glu32.lib;odbc32.lib;odbccp32.lib;user32.lib;gdi32.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)$(Configuration)\libPPUI.lib;$(SolutionDir)$(Configuration)\foobar2000_SDK.lib;$(SolutionDir)$(Configuration)\foobar2000_component_client.lib;$(SolutionDir)$(Configuration)\pfc.lib;$(SolutionDir)$(Configuration)\columns_ui_sdk.lib;$(SolutionDir)$(Configuration)\foobar2000_sdk_helpers.lib;Z:\VS2019\vcpkg-master\installed\x86-windows-static\Debug\lib\glfw3.lib;..\shared\shared.lib;d2d1.lib;dwrite.lib;Comctl32.lib;Winmm.lib;Shlwapi.lib;gdiplus.lib;opengl32.lib;glu32.lib;odbc32.lib;odbccp32.lib;user32.lib;gdi32.lib;shell32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>

@@ -205,6 +205,8 @@ using ListMap = std::unordered_map<int, std::string>;
 extern ListMap customActionAddReplaceMap;
 
 class BehaviourTab : public ConfigTab {
+ private:
+  bool m_inactive_playlist_playable;
  public:
   CONFIG_TAB(BehaviourTab, "Behaviour", IDD_BEHAVIOUR_TAB);
   const struct {
@@ -299,14 +301,19 @@ class BehaviourTab : public ConfigTab {
 
     // int excluded = 0;
     for (int itblock = 0; itblock < nblock; itblock++) {
-      bool bshow = CustomAction::isCustomAction(g_customActions, blocklist[itblock], true);
+      bool bcustomaction = CustomAction::isCustomAction(g_customActions, blocklist[itblock], true);
       int excluded = 0;
       for (int itflag = 0; itflag < nflag; itflag++) {
         if (itflag == add_ndx || itflag == insert_ndx || itflag == todo_ndx) {
           excluded++;
         } else {
+          bool bshow = bcustomaction;
           UINT idcontrol =
               action_flags_checkbox[(itblock * ncheckboxflag) + itflag - excluded].chkID;
+          if ((idcontrol == IDC_CHECK_BEHA_ACTFLAG_D_SET ||
+               idcontrol == IDC_CHECK_BEHA_ACTFLAG_M_SET ||
+               idcontrol == IDC_CHECK_BEHA_ACTFLAG_E_SET) && !m_inactive_playlist_playable)
+            bshow = false;
           // action_flags_checkbox[(itblock * nflag-1) + itflag - excluded].chkID;
           HWND hwndCheckbox = uGetDlgItem(hWnd, idcontrol);
           SetWindowLongPtr(
@@ -358,7 +365,7 @@ class BehaviourTab : public ConfigTab {
     switch (uMsg) {
       case WM_INITDIALOG: {
         // on tab initialization & reset button
-
+        m_inactive_playlist_playable = isInactivePlaylistPlayFixed(1,6,4);
         notifyParent(id, CF_USER_CONFIG_NEWTAB);
 
         SendDlgItemMessage(hWnd, IDC_FOLLOW_DELAY_SPINNER, UDM_SETRANGE32, 1, 999);
@@ -454,10 +461,18 @@ class BehaviourTab : public ConfigTab {
 
             // update flag checkboxes: enabled/disabled state for custom action
 
-            bool bshow = CustomAction::isCustomAction(g_customActions, selected, true);
+            bool bcustomaction = CustomAction::isCustomAction(g_customActions, selected, true);
             for (int itflag = 0; itflag < ncheckboxflag; itflag++) {
+              bool bshow = bcustomaction;
               UINT idcontrol =
                   action_flags_checkbox[block * ncheckboxflag + itflag].chkID;
+              //disable activate playlist checkbox is not fb2k >= v1.6.4
+              if ((idcontrol == IDC_CHECK_BEHA_ACTFLAG_D_SET ||
+                   idcontrol == IDC_CHECK_BEHA_ACTFLAG_M_SET ||
+                   idcontrol == IDC_CHECK_BEHA_ACTFLAG_E_SET) &&
+                  !m_inactive_playlist_playable)
+                bshow = false;
+
               HWND hwndCheckBox = uGetDlgItem(hWnd, idcontrol);
               FlagHide(hwndCheckBox, bshow);
             }
@@ -465,7 +480,7 @@ class BehaviourTab : public ConfigTab {
 
             UINT idcontrol = action_add_replace_combo[block];
             HWND hwndControl = uGetDlgItem(hWnd, idcontrol);
-            FlagHide(hwndControl, bshow);
+            FlagHide(hwndControl, bcustomaction);
 
           } else {
 

@@ -5,6 +5,8 @@
 #define WM_MYACTIONS_CANCELED (WM_USER + 1000)
 #define WM_MYACTIONS_SET_DISPLAY (WM_USER + 1001)
 
+bool isInactivePlaylistPlayFixed(int amajor, int aminor, int arevision /*, int abuild*/);
+
 class CustomAction {
  protected:
   explicit CustomAction(const char* actionName, bool isPlaylistAction) {
@@ -75,7 +77,7 @@ enum ActionBlocks {
 
 enum ActionFlags {
   ACT_PLAY = 1 << 0,           // 1 Play
-  ACT_ACTIVATE = 1 << 1,       // 2 Activate (always on)
+  ACT_ACTIVATE = 1 << 1,       // 2 Activate (requires fb2k > v1.6.3)
   ACT_ADD = 1 << 2,            // 4 Add or replace
   ACT_HIGHLIGHT = 1 << 3,      // 8 Hightlight changes
   ACT_INSERT = 1 << 4,         // 16 Insert after selected, playing...

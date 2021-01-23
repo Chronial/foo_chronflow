@@ -5,6 +5,55 @@
 using coverflow::configData;
 using coverflow::CoverConfigMap;
 
+// ref.
+// https://stackoverflow.com/questions/940707/how-do-i-programmatically-get-the-version-of-a-dll-or-exe-file
+// link reqs.: version.lib
+bool isInactivePlaylistPlayFixed(int amajor, int aminor, int arevision /*, int abuild*/) {
+  int major = 0, minor = 0, revision = 0 /*, build = 0*/;
+  TCHAR szVersionFile[MAX_PATH];
+  GetModuleFileName(NULL, szVersionFile, MAX_PATH);
+  DWORD verHandle = 0;
+  UINT size = 0;
+  LPBYTE lpBuffer = NULL;
+  DWORD verSize = GetFileVersionInfoSize(szVersionFile, &verHandle);
+  if (verSize != NULL) {
+    LPSTR verData = new char[verSize];
+
+    if (GetFileVersionInfo(szVersionFile, verHandle, verSize, verData)) {
+      if (VerQueryValue(verData, L"\\", (VOID FAR * FAR*)&lpBuffer, &size)) {
+        if (size) {
+          VS_FIXEDFILEINFO* verInfo = (VS_FIXEDFILEINFO*)lpBuffer;
+          if (verInfo->dwSignature == 0xfeef04bd) {
+            // 32 bit build
+            major = HIWORD(verInfo->dwProductVersionMS);
+            minor = LOWORD(verInfo->dwProductVersionMS);
+            revision = HIWORD(verInfo->dwProductVersionLS);
+            // build = LOWORD(verInfo->dwProductVersionLS);
+          }
+        }
+      }
+    }
+    delete[] verData;
+  }
+
+  if (major > amajor)
+    return true;
+  else if (major < amajor)
+    return false;
+
+  if (minor > aminor)
+    return true;
+  else if (minor < aminor)
+    return false;
+
+  if (revision > arevision)
+    return true;
+  else if (revision < arevision)
+    return false;
+
+  return true;
+}
+
 void CustomAction::NotifyRejected(HWND hwnd) {
   // MessageBeep(0xFFFFFFFF);
   // SendMessage(hwnd, WM_MYACTIONS_CANCELED, 0, 0);
@@ -35,7 +84,7 @@ void CustomAction::DoPlayItem(t_size p_item, t_size playlist,
   b_target_not_active = (uiplaylist != playlist);
 
   if (!BlockFlagEnabled(flag, ACT_ACTIVATE))
-    b_need_queue = b_target_not_active;
+    b_need_queue = b_target_not_active && !isInactivePlaylistPlayFixed(1, 6, 4);
 
   metadb_handle_list tracks;
 
@@ -50,17 +99,9 @@ void CustomAction::DoPlayItem(t_size p_item, t_size playlist,
   }
 
   if (!b_need_queue) {
-    pfc::bit_array_bittable playmask(p_mask.size());
-    if (tracks.get_count() == 1) {
-      // one track in mask for play menu command
-      GUID commandGuid;
-      if (menu_helpers::find_command_by_name("Play", commandGuid)) {
-        menu_helpers::run_command_context(commandGuid, pfc::guid_null, tracks);
-      }
-    } else
-      pm->playlist_execute_default_action(playlist, p_inspos);
+    pm->playlist_execute_default_action(playlist, p_inspos);
   } else {
-    // We queue
+    // We should queue (activate playlist option is off and fb2k < v1.6.4
   }
 }
 
