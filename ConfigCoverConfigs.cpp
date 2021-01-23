@@ -2,7 +2,6 @@
 
 namespace coverflow {
 
-
 CoverConfigMap builtInCoverConfigs() {
   CoverConfigMap map;
   const char** p = builtInCoverConfigArray;
@@ -39,7 +38,8 @@ pfc::string8 GetCoverConfigScript(CoverConfigMap configs, pfc::string8 name) {
 
   return "";
 }
-  //int GetCoverConfigPosition_old(CoverConfigMap configs, pfc::string8 name) {
+
+//int GetCoverConfigPosition_old(CoverConfigMap configs, pfc::string8 name) {
 //  int counter = 0;
 //  for (CoverConfigMap::const_iterator it = configs.begin(); it != configs.end(); ++it) {
 //    if (name.equals(it->first.c_str()))

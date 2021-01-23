@@ -68,7 +68,6 @@ void OnPlaylistContextCommand(HMENU* hMenu, const int cmd, engine::EngineWindow*
     // toggle active playlist is the source on/off
     ew->cmdToggleActivePlaylistSource();
   }
-
 }
 
 } // namespace coverflow

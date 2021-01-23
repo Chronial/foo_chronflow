@@ -88,7 +88,8 @@ void DbReloadWorker::threadProc() {
       library_manager::get()->get_all_items(library);
     } else {
       // playlist covers
-      const t_size playlist = configData->FindSourcePlaylist(PlSrcFilter::ANY_PLAYLIST);
+      const t_size playlist =
+          configData->FindSourcePlaylist(PlSrcFilter::ANY_PLAYLIST);
       playlist_manager::get()->playlist_get_all_items(playlist, library);
     }
     try {
