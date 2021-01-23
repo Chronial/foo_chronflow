@@ -1,6 +1,6 @@
 #include "ConfigGuids.h"
 
-#define VERSION "0.5.2-mod-preview4"
+#define VERSION "0.5.2-mod-preview5"
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
 DECLARE_COMPONENT_VERSION(component_NAME, VERSION,

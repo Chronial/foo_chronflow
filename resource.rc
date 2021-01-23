@@ -56,8 +56,8 @@ LANGUAGE LANG_ENGLISH, SUBLANG_NEUTRAL
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,0,0,0
- PRODUCTVERSION 0,0,0,0
+ FILEVERSION 0,5,2,5
+ PRODUCTVERSION 0,5,2,5
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -74,12 +74,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "CoverFlow Mod By Da Yuyu"
             VALUE "FileDescription", "fb2k Album Art in a 3d"
-            VALUE "FileVersion", "0.5.2-mod-preview"
+            VALUE "FileVersion", "0.5.2-mod-preview5"
             VALUE "InternalName", "foo_coverflow_mod"
             VALUE "LegalCopyright", "GNU Lesser General Public License (LGPL) 2020"
             VALUE "OriginalFilename", "foo_coverflow_mod"
             VALUE "ProductName", "foo_coverflow_mod"
-            VALUE "ProductVersion", "0.5.2-mod-preview"
+            VALUE "ProductVersion", "0.5.2-mod-preview5"
         END
     END
     BLOCK "VarFileInfo"
