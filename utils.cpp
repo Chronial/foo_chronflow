@@ -11,7 +11,7 @@ void errorPopup(const char* message) {
                  << AppNameInternal << ": " << message
                  << "\r\n\r\nIf this happens more than once, please report this error "
                     "in the " << AppNameInternal <<
-                    " thread on Hydrogenaudo or via mail to " << AppEMail),
+                    " thread on Hydrogenaudio or via mail to " << AppEMail),
               uT(PFC_string_formatter() << "Error in " << AppNameInternal), MB_OK | MB_ICONERROR);
 }
 
