@@ -24,7 +24,6 @@ class StringBinding : public IBinding, IFlow {
 
   bool HasChanged() const final {
     pfc::string8_fast text;
-    const HWND hwtest = uGetDlgItem(hwnd_, controlId_);
     uGetDlgItemText(hwnd_, controlId_, text);
 
     bool bres = false;
@@ -209,7 +208,6 @@ class CoverConfigBinding : public IBinding, IFlow {
   void FlowToControl(HWND wndCtrlParent = nullptr) final {
     if (wndCtrlParent != nullptr && hwnd_ != wndCtrlParent)
       return;
-    HWND hw = uGetDlgItem(hwnd_, controlId_);
 
     const CoverConfig& config = var_.at(selected_.c_str());
     uSetDlgItemText(hwnd_, controlId_, windows_lineendings(config.script).c_str());
@@ -327,7 +325,6 @@ class TsizeBinding : public IBinding, IFlow {
   }
 
   void GetFVal(t_size* dstVal) final {
-    const t_size res = t_size(var_);
     memcpy(dstVal, (const void*)var_, sizeof(var_));
   }
 

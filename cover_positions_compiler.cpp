@@ -38,14 +38,50 @@ script_error script_error::from_com_error(const _com_error& e) {
 }
 
 namespace {
+typedef HRESULT(WINAPI* LPFNDllGetClassObject)(__in REFCLSID rclsid, __in REFIID riid,
+                                                __deref_out LPVOID FAR* ppv);
 class CScriptObject {
 public:
   CScriptObject(const wchar_t* code) {
     try {
-      _com_util::CheckError(script_control.CreateInstance(__uuidof(ScriptControl)));
-      script_control->PutAllowUI(VARIANT_FALSE);
-      script_control->PutLanguage(L"JScript");
-      _com_util::CheckError(script_control->AddCode(code));
+#ifdef _WIN64
+      //todo: use env or static lib
+      if (!m_hDll) {
+        m_hDll = LoadLibrary(L"C:\\Windows\\System32\\tsc64.dll");
+      }
+      if (m_hDll) {
+        LPFNDllGetClassObject lpfnDllGetClassObject =
+            (LPFNDllGetClassObject)GetProcAddress(m_hDll, "DllGetClassObject");
+        if (lpfnDllGetClassObject) {
+          IClassFactory* pCF;
+          CLSID clsid = {0x0E59F1D5,
+                         0x1FBE,
+                         0x11D0,
+                         {0x8F, 0xF2, 0x00, 0xA0, 0xD1, 0x00, 0x38, 0xBC}};
+          HRESULT hr = lpfnDllGetClassObject(clsid, IID_PPV_ARGS(&pCF));
+          bool tsc_ok = true;
+          if (hr == S_OK) {
+            hr = pCF->CreateInstance(NULL, IID_PPV_ARGS(&m_script_control /*&pSC*/));
+            if FAILED (hr) {
+              //..
+              tsc_ok = false;
+            }
+            pCF->Release();
+
+          } else {
+            tsc_ok = false;
+          }
+          if (!tsc_ok) {
+            throw std::exception("foo_chronflow_mod x64 Script Control init error ");
+          }
+        }
+      }
+#else
+      _com_util::CheckError(m_script_control.CreateInstance(__uuidof(ScriptControl)));
+#endif
+      m_script_control->PutAllowUI(VARIANT_FALSE);
+      m_script_control->PutLanguage(L"JScript");
+      _com_util::CheckError(m_script_control->AddCode(code));
     } catch (_com_error& e) {
       rethrow_error(e);
     }
@@ -53,10 +89,12 @@ public:
 
 public:
   [[noreturn]] void rethrow_error(const _com_error& e) {
+#ifndef _WIN64
+    //todo: implement error control x64
     try {
       IScriptErrorPtr pError;
-      if (script_control != nullptr)
-        pError = script_control->GetError();
+      if (m_script_control != nullptr)
+        pError = m_script_control->GetError();
       if (pError == nullptr || pError->GetText().GetBSTR() == nullptr) {
         throw script_error::from_com_error(e);
       }
@@ -66,6 +104,7 @@ public:
     } catch (_com_error& e) {
       throw script_error::from_com_error(e);
     }
+#endif
   };
 
   template <typename Ret, typename... _Types>
@@ -84,7 +123,7 @@ public:
     });
 
     try {
-      return Ret(script_control->Run(uT(func), params.GetSafeArrayPtr()));
+      return Ret(m_script_control->Run(uT(func), params.GetSafeArrayPtr()));
     } catch (_com_error& e) {
       if (e.Error() == DISP_E_UNKNOWNNAME) {
         throw script_error(
@@ -131,7 +170,8 @@ public:
   }
 
 private:
-  IScriptControlPtr script_control;
+  IScriptControlPtr m_script_control;
+  HMODULE m_hDll = nullptr;
 };
 
 } // namespace

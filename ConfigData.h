@@ -34,6 +34,7 @@ int const MaxArtIndex = 3;
 int const _PREFS_VERSION = 2;
 
 namespace coverflow {
+//__declspec(selectany) extern char kmenu_label_PlayListCovers[15] = "Playlist Covers";
 /******************************* Behaviour tab *******************************/
 __declspec(selectany) extern bool const default_CoverFollowsPlayback = false;
 __declspec(selectany) extern int default_CoverFollowDelay = 15;
@@ -132,7 +133,7 @@ class ConfigData : public cfg_var {
   pfc::string8 DoubleClick;
   pfc::string8 MiddleClick;
   pfc::string8 EnterKey;
-  t_uint32 CustomActionFlag;
+  int CustomActionFlag;
   int CustomActionHRate;
   bool CoverFollowsLibrarySelection;
   bool CoverFollowsAnonymSelection;
@@ -161,11 +162,11 @@ class ConfigData : public cfg_var {
   double TitlePosH;
   double TitlePosV;
   bool TitleColorCustom;
-  t_uint32 TitleColor;
+  int TitleColor;
   bool TitleFontCustom;
   LOGFONT TitleFont;
   bool PanelBgCustom;
-  t_uint32 PanelBg;
+  int PanelBg;
   int HighlightWidth;
   /******************************** Display tab v.2 ****************************/
   int CenterArt;

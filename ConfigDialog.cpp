@@ -17,7 +17,7 @@ enum ChangedFlags {
   //BACT_UNDEFINED = 1 << 7 // 128 Other
 };
 
-void ConfigDialog::BindControls(const int ndx, HWND hWndTab, int cmd) {
+void ConfigDialog::BindControls(UINT_PTR ndx, HWND hWndTab, int cmd) {
   bindings_.Clear(); //safeguard
   switch (ndx) {
     case IDD_BEHAVIOUR_TAB:
@@ -112,7 +112,7 @@ t_uint32 ConfigDialog::get_state() {
   t_uint32 state = preferences_state::resettable;
   if (HasChanged())
     state |= preferences_state::changed;
-  return state;
+  return state | preferences_state::dark_mode_supported;
 }
 
 void ConfigDialog::apply() {
@@ -211,13 +211,16 @@ BOOL ConfigDialog::OnInitDialog(CWindow wndFocus, LPARAM lInitParam) {
   if (m_configwindow != nullptr) {
     m_configwindow->OnInit(get_wnd(), lInitParam);
   }
+  //Dark mode
+  AddDialog(m_hWnd);
+  AddControls(m_hWnd);
   return FALSE;
 }
 
 LRESULT ConfigDialog::OnNotify(int idCtrl, LPNMHDR pnmh) {
   NMHDR& msg = *reinterpret_cast<LPNMHDR>(pnmh);
   HWND wndFrom = pnmh->hwndFrom;
-  int idFrom = pnmh->idFrom;
+  UINT_PTR idFrom = pnmh->idFrom;
 
   switch (idCtrl) {
     case IDC_TABS:
@@ -259,7 +262,8 @@ LRESULT ConfigDialog::OnNotify(int idCtrl, LPNMHDR pnmh) {
         case CF_USER_CONFIG_NEWTAB:
           wndFrom = pnmh->hwndFrom;
           idFrom = pnmh->idFrom; //the tab UINT
-
+          //Dark mode
+          AddDialogWithControls(wndFrom);
           LoadingBindings(true);
           BindControls(pnmh->idFrom, pnmh->hwndFrom, 1);
           bindings_.FlowToControl(pnmh->hwndFrom);

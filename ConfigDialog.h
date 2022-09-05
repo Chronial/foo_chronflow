@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include <helpers/atl-misc.h>
+#include <helpers/DarkMode.h>
 #include <libPPUI/win32_utility.h>
 #include <libPPUI/wtl-pp.h>
 
@@ -11,7 +12,8 @@
 
 namespace coverflow {
 
-class ConfigDialog : public CDialogImpl<ConfigDialog>, public preferences_page_instance {
+class ConfigDialog : public CDialogImpl<ConfigDialog>, public preferences_page_instance,
+  fb2k::CDarkModeHooks {
 
  public:
   enum { IDD = IDD_CONFIG_TABS };
@@ -73,7 +75,7 @@ class ConfigDialog : public CDialogImpl<ConfigDialog>, public preferences_page_i
     return m_hWnd;
   }
 
-  void BindControls(const int ndx, HWND hWndTab, int cmd);
+  void BindControls(UINT_PTR ndx, HWND hWndTab, int cmd);
   void ClearBindings();
 };
 

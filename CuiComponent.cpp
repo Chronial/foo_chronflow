@@ -14,7 +14,7 @@ class StyleCallback : public columns_ui::colours::common_callback,
                       public columns_ui::fonts::common_callback {
   static_api_ptr_t<cui::colours::manager> colorManager;
   static_api_ptr_t<cui::fonts::manager> fontManager;
-  std::function<void()> callback;
+  std::function<void()> callback = nullptr;
 
  public:
   StyleCallback(std::function<void()> callback) : callback(callback) {
@@ -27,9 +27,10 @@ class StyleCallback : public columns_ui::colours::common_callback,
     fontManager->deregister_common_callback(this);
   }
 
-  void on_colour_changed(t_size mask) const final { callback(); }
-  void on_bool_changed(t_size mask) const final { callback(); }
-  void on_font_changed(t_size mask) const final { callback(); }
+  virtual void on_colour_changed(uint32_t changed_items_mask) const { callback(); }
+  virtual void on_bool_changed(uint32_t changed_items_mask) const final { callback(); }
+  virtual void on_font_changed(uint32_t changed_items_mask) const final { callback(); }
+
 };
 
 class CuiStyleManager : public StyleManager {

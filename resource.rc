@@ -44,7 +44,7 @@ IDB_COVER_NO_IMG_PNG    PNG                     "images\\cover-no-img-png.png"
 
 
 /////////////////////////////////////////////////////////////////////////////
-// English resources
+// English (Neutral) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
 LANGUAGE LANG_ENGLISH, SUBLANG_NEUTRAL
@@ -88,7 +88,7 @@ BEGIN
     END
 END
 
-#endif    // English resources
+#endif    // English (Neutral) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
@@ -188,7 +188,7 @@ BEGIN
     EDITTEXT        IDC_INNER_SORT,11,107,215,14,ES_AUTOHSCROLL
     CONTROL         "Enable Playlist Covers",IDC_SOURCE_FROM_PLAYLIST,"Button",BS_AUTOCHECKBOX | BS_FLAT | WS_TABSTOP,11,140,86,10
     PUSHBUTTON      "Reload Sources",IDC_BTN_REFRESH,238,0,68,14,NOT WS_VISIBLE
-    GROUPBOX        "Playlist Covers Options:",IDC_STATIC_EXP_SRC,7,128,302,100,BS_FLAT
+    GROUPBOX        "Playlist Covers Options:",IDC_STATIC_EXP_SRC,7,128,302,131,BS_FLAT
     LTEXT           "Source Playlist:",IDC_STATIC_SRC_PL_NAME,11,159,49,8
     CONTROL         "Follow Active Playlist",IDC_SOURCE_FROM_ACTIVE_PLAYLIST,
                     "Button",BS_AUTOCHECKBOX | BS_FLAT | WS_TABSTOP,177,158,86,10
@@ -196,17 +196,17 @@ BEGIN
     CONTROL         "Filter on Library Selection",IDC_SOURCE_FROM_LIBRARY_SELECTOR,
                     "Button",BS_AUTOCHECKBOX | BS_FLAT | NOT WS_VISIBLE | WS_TABSTOP,205,43,93,10
     CONTROL         "Follow Playlist Selections",IDC_CHECK_BEHA_COVER_FOLLOWS_PLAYLIST,
-                    "Button",BS_AUTOCHECKBOX | BS_FLAT | WS_TABSTOP,11,232,123,10
+                    "Button",BS_AUTOCHECKBOX | BS_FLAT | WS_TABSTOP,11,229,123,10
     CONTROL         "Filter Lock",IDC_SOURCE_FROM_LIBRARY_SELECTOR_LOCK,
                     "Button",BS_AUTOCHECKBOX | BS_FLAT | NOT WS_VISIBLE | WS_TABSTOP,160,43,44,10
     EDITTEXT        IDC_SOURCE_PLAYLIST_NGTITLE,11,210,295,14,ES_AUTOHSCROLL
     LTEXT           "Title Format for ungrupped tracks:",IDC_STATIC_SRC_PL_NGTITLE,11,200,110,8
     COMBOBOX        IDC_COMBO_SOURCE_PLAYLIST_NAME,63,158,106,30,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     CONTROL         "Set Holder Playlist Selection",IDC_CHECK_HOLDER_PLS_SET_SEL,
-                    "Button",BS_AUTOCHECKBOX | BS_FLAT | NOT WS_VISIBLE | WS_TABSTOP,137,233,103,10
+                    "Button",BS_AUTOCHECKBOX | BS_FLAT | NOT WS_VISIBLE | WS_TABSTOP,137,230,103,10
     LTEXT           "Library Viewer Options:",IDC_STATIC_LIB_BRW_SRC,11,6,76,8
     CONTROL         "Highlight Cover Content",IDC_CHECK_BEHA_COVER_HIGHLIGHT_PLAYLIST,
-                    "Button",BS_AUTOCHECKBOX | BS_FLAT | WS_TABSTOP,11,245,92,10
+                    "Button",BS_AUTOCHECKBOX | BS_FLAT | WS_TABSTOP,11,242,92,10
 END
 
 IDD_DISPLAY_TAB DIALOGEX 0, 0, 315, 271
@@ -360,7 +360,7 @@ BEGIN
     CONTROL         "Multisampling Passes:",IDC_MULTI_SAMPLING,"Button",BS_AUTOCHECKBOX | BS_FLAT | WS_TABSTOP,11,18,80,10
     COMBOBOX        IDC_MULTI_SAMPLING_PASSES,100,18,26,57,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Note: This setting requires a restart of foobar to take effect.",IDC_STATIC_NRR,11,36,196,8
-    GROUPBOX        "Texture Cache",IDC_STATIC_TEXTUREC,7,56,301,65,BS_FLAT
+    GROUPBOX        "Texture Cache",IDC_STATIC_TEXTUREC,7,56,301,77,BS_FLAT
     LTEXT           "Cache Size:",IDC_STATIC_TEXTURESZ,11,68,36,8
     EDITTEXT        IDC_CACHE_SIZE,84,66,33,12,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
     CONTROL         "",IDC_CACHE_SIZE_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,116,65,10,14
@@ -378,12 +378,12 @@ BEGIN
                     "Button",BS_AUTORADIOBUTTON | BS_FLAT,11,161,249,10
     CONTROL         "VSync only [GPU dependant CPU usage, good fps]",IDC_VSYNC_ONLY,
                     "Button",BS_AUTORADIOBUTTON | BS_FLAT,11,172,177,10
-    GROUPBOX        "Warning",IDC_STATIC_WARNING,228,7,80,45,BS_FLAT
+    GROUPBOX        "Warning",IDC_STATIC_WARNING,222,7,86,45,BS_FLAT
     LTEXT           "Do not change any settings on this page without having read the help pages.",IDC_STATIC_NRHP,227,15,68,38
     EDITTEXT        IDC_HIDDEN_VSYNC_MODE,260,160,11,14,ES_AUTOHSCROLL | NOT WS_VISIBLE
-    GROUPBOX        "Benchmarking",IDC_STATIC_BENCH,7,232,301,28
+    GROUPBOX        "Benchmarking",IDC_STATIC_BENCH,7,191,301,28
     CONTROL         "Display speed information (fps, ms per frame)",IDC_SHOW_FPS,
-                    "Button",BS_AUTOCHECKBOX | BS_FLAT | WS_TABSTOP,11,232,162,10
+                    "Button",BS_AUTOCHECKBOX | BS_FLAT | WS_TABSTOP,11,202,162,10
 END
 
 IDD_CONTROLS_TAB DIALOGEX 0, 0, 319, 268

@@ -11,7 +11,7 @@ namespace coverflow {
     int session_pos = configData->sessionCompiledCPInfo.get().first;
     auto& [session_name, session_config] = *std::next(coverconfigs.begin(), session_pos);
     int default_pos = configData->GetCCPosition();
-    int tot_displays = coverconfigs.size();
+    size_t tot_displays = coverconfigs.size();
 
     HMENU _childDisplay = CreatePopupMenu();
 
@@ -23,7 +23,7 @@ namespace coverflow {
     for (auto& [name, config] : configData->CoverConfigs) {
       uAppendMenu(_childDisplay, MF_STRING | ndx == session_pos ? MF_CHECKED | MF_DISABLED : MF_UNCHECKED,
                   engine::ID_DISPLAY_0 + ndx + 1, PFC_string_formatter() << name.c_str()
-                  << "\t Ctrl + " << pfc::toString(ndx+1).c_str());
+                  << "\t Ctrl + " << (ndx+1));
       ndx++;
       if (ndx >= maxactionshortcuts) break;
     }

@@ -399,22 +399,23 @@ class NewPlaylist : public CustomAction {
 //      >-1  action will toggle visualization pre and post
 //post:  -1  sets default visualization
 
-class SetDisplayConfig : public CustomAction {
+class ActionDisplayConfig : public CustomAction {
  public:
   // Action name "Set Display" or "Toggle Display" + config indexes
-  SetDisplayConfig(int pre, int post) : CustomAction("", false), m_pre(pre), m_post(post) {
+  ActionDisplayConfig(int pre, int post) : CustomAction("", false), m_pre(pre), m_post(post) {
 
     const pfc::string8 str_set_display_action = "Set Display";
     const pfc::string8 str_toggle_display_action = "Toggle Display";
 
     if (pre == -1) {
       actionName = str_set_display_action.c_str(); //"Set Display Ndx"
-      actionName = actionName << pfc::string8(" ") << (post == -1 ? "to Default" : pfc::string8(pfc::toString(post).c_str()));
+      actionName = actionName << pfc::string8(" ")
+                              << (post == -1 ? "to Default" : std::to_string(post).c_str());
     }
     else {
       actionName = str_toggle_display_action.c_str(); //"Toggle Display 1..Ndx or 1..default"
-      actionName = actionName << pfc::string8(" ") << pfc::string8(pfc::toString(pre).c_str());
-      actionName = actionName << ".." << (post == -1? "default" : pfc::string8(pfc::toString(post).c_str()));
+      actionName = actionName << pfc::string8(" ") << pre;
+      actionName = actionName << ".." << (post == -1? "default" : std::to_string(post).c_str());
     }
     bPlaylistAction = false;
     m_pre = pre;
@@ -452,7 +453,7 @@ class SetDisplayConfig : public CustomAction {
 
 std::vector<CustomAction*> g_customActions{
     new TargetActivePlaylist, new TargetDefaultPlaylist, new NewPlaylist,
-    new SetDisplayConfig(-1,1), new SetDisplayConfig(0, -1)};
+    new ActionDisplayConfig(-1,1), new ActionDisplayConfig(0, -1)};
 
 void executeAction(const char* action, const ::db::AlbumInfo& album, HWND hwnd,
                    int flag) {

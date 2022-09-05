@@ -1,9 +1,9 @@
 #pragma once
 // clang-format off
-#include <windowsx.h>
+#include <windows.h>
 
 #include <boost/range/iterator_range.hpp>
-
+#include "helpers/DarkMode.h"
 #include "./lib/win32_helpers.h"
 #include "ConfigBindings.h"
 #include "ConfigData.h"
@@ -36,6 +36,8 @@ const UINT CF_USER_CONFIG_CHANGE(WM_USER + 0x7778);
 
 /**************************************************************************************/
 /**************************************************************************************/
+#define SetWindowRedraw(hwnd, fRedraw) \
+  ((void)SNDMSG(hwnd, WM_SETREDRAW, (WPARAM)(BOOL)(fRedraw), 0L))
 
 class ConfigTab {
  protected:
@@ -101,7 +103,8 @@ class ConfigTab {
   virtual BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam,
                                    LPARAM lParam) = 0;
 
-  static BOOL CALLBACK dialogProxy(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+  static INT_PTR WINAPI CALLBACK dialogProxy(HWND hWnd, UINT uMsg,
+                                                        WPARAM wParam, LPARAM lParam){
 
     //FB2K_console_formatter() << "CALLBACK ConfigWindow::dialogProc()";
 
@@ -160,7 +163,7 @@ class ConfigTab {
   }
 
   void listSelChanged(UINT id) {
-    int s = uSendDlgItemMessage(hWnd, id, CB_GETCURSEL, 0, 0);
+    LRESULT s = uSendDlgItemMessage(hWnd, id, CB_GETCURSEL, 0, 0);
     if (s != CB_ERR) {
       notifyParent(id, CF_USER_CONFIG_CHANGE);
     }
@@ -251,7 +254,7 @@ class BehaviourTab : public ConfigTab {
     std::vector<UINT>::iterator it = std::find(vec.begin(), vec.end(), uint);
 
     if (it != vec.end()) {
-      return std::distance(vec.begin(), it);
+      return (int)std::distance(vec.begin(), it);
     } else
       return -1;
   }
@@ -263,12 +266,12 @@ class BehaviourTab : public ConfigTab {
     std::vector<UINT>::iterator it = std::find(vec.begin(), vec.end(), uint);
 
     if (it != vec.end()) {
-      return std::distance(vec.begin(), it);
+      return (int)std::distance(vec.begin(), it);
     } else
       return -1;
   }
 
-  int getCheckboxFlagType(UINT uint) {
+  LONG_PTR getCheckboxFlagType(UINT uint) {
     HWND hwndCheckbox = uGetDlgItem(hWnd, uint);
     return GetWindowLongPtr(hwndCheckbox, GWLP_USERDATA);
   }
@@ -277,7 +280,7 @@ class BehaviourTab : public ConfigTab {
     int res = -1;
     for (int i = 0; i < sizeof(action_flags_checkbox) / sizeof(action_flags_checkbox[0]);
          i++)
-      if (action_flags_checkbox[i].chkID == uint) {
+      if (action_flags_checkbox[i].chkID == (int)uint) {
         res = (int)i / ncheckboxflag;
         break;
       }
@@ -382,7 +385,7 @@ class BehaviourTab : public ConfigTab {
           loadActionList(action_block_combo[it], blocklist[it]);
           // fix combo dropped width
           HWND combo = GetDlgItem(hWnd, action_block_combo[it]);
-          int width = SendMessage(combo, CB_GETDROPPEDWIDTH, 999, 999);
+          LRESULT width = SendMessage(combo, CB_GETDROPPEDWIDTH, 999, 999);
           SendMessage(combo, CB_SETDROPPEDWIDTH, width * 1.5, 0);
         }
         // ... combobox: fill list add/insert/replace
@@ -426,7 +429,7 @@ class BehaviourTab : public ConfigTab {
 
           buttonClicked(LOWORD(wParam));
 
-          const int flagType = getCheckboxFlagType(LOWORD(wParam));
+          const int flagType = (int)getCheckboxFlagType(LOWORD(wParam));
           if (flagType >= action_flags_checkbox[0].flag) {  // ACT_PLAY is the lowest value flag
 
             const int action_block = getCheckboxFlagBlock(LOWORD(wParam));
@@ -452,7 +455,7 @@ class BehaviourTab : public ConfigTab {
             // selection change on custom action combobox
             listSelChanged(LOWORD(wParam));
             pfc::string8 selected;
-            int ires = uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETCURSEL, 0, 0);
+            LRESULT ires = uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETCURSEL, 0, 0);
             if (ires != CB_ERR) {
               uGetDlgItemText(hWnd, LOWORD(wParam), selected);
             } else {
@@ -487,11 +490,11 @@ class BehaviourTab : public ConfigTab {
             // check if an add/replace selection combobox triggered the event
 
             if (int block = isAddReplaceComboBox(LOWORD(wParam)); block != -1) {
-              int itemId = uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETCURSEL, 0, 0);
+              LRESULT itemId = uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETCURSEL, 0, 0);
               if (itemId == CB_ERR) {
                 return FALSE;
               }
-              int val =
+              LRESULT val =
                   uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETITEMDATA, itemId, 0);
 
               unsigned long updatedflags = std::stoull(
@@ -540,7 +543,7 @@ class BehaviourTab : public ConfigTab {
     for (auto action : boost::adaptors::reverse(g_customActions)) {
       uSendMessageText(list, CB_INSERTSTRING, 0, action->actionName);
     }
-    int itemId = uSendDlgItemMessageText(hWnd, id, CB_FINDSTRINGEXACT, 1, selectedItem);
+    LRESULT itemId = uSendDlgItemMessageText(hWnd, id, CB_FINDSTRINGEXACT, 1, selectedItem);
     itemId = uSendDlgItemMessageText(hWnd, id, CB_SETCURSEL, itemId, 0);
     SetWindowRedraw(list, true);
   }
@@ -552,7 +555,7 @@ class BehaviourTab : public ConfigTab {
     uSendMessageText(list, CB_ADDSTRING, 0, "");
     uSendDlgItemMessage(hWnd, id, CB_RESETCONTENT, 0, 0);
     for (auto& [val, text] : customActionAddReplaceMap) {
-      int itemId = uSendDlgItemMessageText(hWnd, id, CB_ADDSTRING, 0, text.c_str());
+      LRESULT itemId = uSendDlgItemMessageText(hWnd, id, CB_ADDSTRING, 0, text.c_str());
       uSendDlgItemMessage(hWnd, id, CB_SETITEMDATA, itemId, val);
       if (stricmp_utf8(text.c_str(), selectedItem) == 0) {
         uSendDlgItemMessageText(hWnd, id, CB_SELECTSTRING, 1, selectedItem);
@@ -575,7 +578,7 @@ class SourcesTab : public ConfigTab {
         loadComboSourcePlayList(IDC_COMBO_SOURCE_PLAYLIST_NAME,
                                 configData->SourcePlaylistName);
         HWND combo = GetDlgItem(hWnd, IDC_COMBO_SOURCE_PLAYLIST_NAME);
-        int width = SendMessage(combo, CB_GETDROPPEDWIDTH, 999, 999);
+        LRESULT width = SendMessage(combo, CB_GETDROPPEDWIDTH, 999, 999);
         SendMessage(combo, CB_SETDROPPEDWIDTH, width * 1.5, 0);
       } break;
 
@@ -586,17 +589,17 @@ class SourcesTab : public ConfigTab {
         if (HIWORD(wParam) == CBN_SELCHANGE) {
           listSelChanged(LOWORD(wParam));
           pfc::string8 selected;
-          int ires = uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETCURSEL, 0, 0);
+          LRESULT ires = uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETCURSEL, 0, 0);
           if (ires != CB_ERR) {
             uGetDlgItemText(hWnd, LOWORD(wParam), selected);
           } else {
             return FALSE;
           }
-          int itemId = uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETCURSEL, 0, 0);
+          LRESULT itemId = uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETCURSEL, 0, 0);
           if (itemId == CB_ERR) {
             return FALSE;
           }
-          int val = uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETITEMDATA, itemId, 0);
+          LRESULT val = uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETITEMDATA, itemId, 0);
           val = val;
         } else
         if (HIWORD(wParam) == BN_CLICKED) {
@@ -621,7 +624,7 @@ class SourcesTab : public ConfigTab {
     for (int i=0;i<cplaylist;i++) {
       pfc::string8 aname;
       t_size pl = playlist_manager::get()->playlist_get_name(i, aname);
-      int rowId = uSendDlgItemMessageText(hWnd, id, CB_ADDSTRING, 0, aname);
+      LRESULT rowId = uSendDlgItemMessageText(hWnd, id, CB_ADDSTRING, 0, aname);
       uSendDlgItemMessage(hWnd, id, CB_SETITEMDATA, rowId, i);
       if (uSendDlgItemMessage(hWnd, id, CB_GETCURSEL, 0, 0) == CB_ERR) {
         if (stricmp_utf8(aname.c_str(), selectedItem) == 0) {
@@ -631,7 +634,7 @@ class SourcesTab : public ConfigTab {
       }
     }
     //check if still undefined
-    int checkId = uSendDlgItemMessage(hWnd, id, CB_GETCURSEL, 0, 0);
+    LRESULT checkId = uSendDlgItemMessage(hWnd, id, CB_GETCURSEL, 0, 0);
     if (checkId == CB_ERR) {
       if (stricmp_utf8(default_SourcePlaylistName, selectedItem) == 0) {
         checkId = uSendDlgItemMessageText(hWnd, id, CB_FINDSTRINGEXACT, 1, default_SourcePlaylistName);
@@ -720,7 +723,7 @@ class DisplayTab : public ConfigTab {
           idtextcontrol = IDC_TPOS_V_P;
           idtextdoublecontrol = IDC_HIDDEN_TPOS_V;
         }
-        const int val = uSendDlgItemMessage(hWnd, idscrollcontrol, TBM_GETPOS, 0, 0);
+        UINT val = uSendDlgItemMessage(hWnd, idscrollcontrol, TBM_GETPOS, 0, 0);
         uSetDlgItemInt(hWnd, idtextcontrol, val, true);
 
         //will trigger EN_CHANGE & therefore textchanged(id)
@@ -867,11 +870,11 @@ class DisplayTab : public ConfigTab {
 
         } else if (HIWORD(wParam) == CBN_SELCHANGE) {
           if (LOWORD(wParam) == IDC_PANEL_DISPLAY_COMBO_CUSTOM_COVER_ART) {
-            int itemId = uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETCURSEL, 0, 0);
+            LRESULT itemId = uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETCURSEL, 0, 0);
             if (itemId == CB_ERR) {
               return FALSE;
             }
-            int val = uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETITEMDATA, itemId, 0);
+            LRESULT val = uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETITEMDATA, itemId, 0);
             // will trigger textchanged...
             uSetDlgItemText(
                 hWnd, IDC_HIDDEN_DISPLAY_CUSTOM_COVER_ART, std::to_string(val).data());
@@ -926,7 +929,7 @@ class DisplayTab : public ConfigTab {
 
     // cover_front, cover_back, disc, artist
     for (auto& [val, text] : customCoverFrontArtMap) {
-      int itemId = uSendDlgItemMessageText(hWnd, id, CB_ADDSTRING, 0, text.c_str());
+      LRESULT itemId = uSendDlgItemMessageText(hWnd, id, CB_ADDSTRING, 0, text.c_str());
       uSendDlgItemMessage(hWnd, id, CB_SETITEMDATA, itemId, val);
       if (stricmp_utf8(text.c_str(), selectedItem) == 0) {
         uSendDlgItemMessageText(hWnd, id, CB_SELECTSTRING, 1, selectedItem);
@@ -947,14 +950,17 @@ class DisplayTab : public ConfigTab {
 
 };
 
-class ConfigNameDialog : private dialog_helper::dialog_modal {
+class ConfigNameDialog : private dialog_helper::dialog_modal, public fb2k::CDarkModeHooks {
   BOOL on_message(UINT uMsg, WPARAM wParam, LPARAM /*lParam*/) final {
     switch (uMsg) {
       case WM_INITDIALOG:
-        if (value != nullptr) {
+        if (value.get_length()) {
           uSetDlgItemText(get_wnd(), IDC_CONFIG_NAME, value);
         }
         SetFocus(uGetDlgItem(get_wnd(), IDC_CONFIG_NAME));
+        //Dark mode
+        AddDialog(get_wnd());
+        AddControls(get_wnd());
         return 0;
       case WM_COMMAND:
         if (HIWORD(wParam) == BN_CLICKED) {
@@ -1074,17 +1080,18 @@ class CoverTab : public ConfigTab {
     SendDlgItemMessage(hWnd, IDC_DISPLAY_CONFIG, WM_SETFONT,
                        reinterpret_cast<WPARAM>(editBoxFont), TRUE);
     origEditboxProc = reinterpret_cast<WNDPROC>(
-        SetWindowLong(GetDlgItem(hWnd, IDC_DISPLAY_CONFIG), GWL_WNDPROC,
-                      reinterpret_cast<LONG>(editboxProxy)));
+        SetWindowLongPtr(GetDlgItem(hWnd, IDC_DISPLAY_CONFIG), GWLP_WNDPROC,
+                         reinterpret_cast<LRESULT>(editboxProxy)));
     SetProp(GetDlgItem(hWnd, IDC_DISPLAY_CONFIG), L"tab", static_cast<HANDLE>(this));
   }
 
-  static BOOL CALLBACK editboxProxy(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+  static LRESULT CALLBACK editboxProxy(HWND hWnd, UINT uMsg, WPARAM wParam,
+                                       LPARAM lParam) {
     auto* coverTab = reinterpret_cast<CoverTab*>(GetProp(hWnd, L"tab"));
     return coverTab->editboxProc(hWnd, uMsg, wParam, lParam);
   }
 
-  BOOL editboxProc(HWND eWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+  LRESULT editboxProc(HWND eWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     if (uMsg == WM_KEYDOWN && wParam == 'A' && (GetKeyState(VK_CONTROL) & 0x8000)) {
       SendMessage(eWnd, EM_SETSEL, 0, -1);
       return 0;
@@ -1181,9 +1188,9 @@ class CoverTab : public ConfigTab {
         line[0] = 3;
         DWORD selFirst;
         SendMessage(eWnd, EM_GETSEL, reinterpret_cast<WPARAM>(&selFirst), 0);
-        int lineNumber = SendMessage(eWnd, EM_LINEFROMCHAR, selFirst, 0);
-        int lineLength = SendMessage(eWnd, EM_LINELENGTH, selFirst, 0);
-        int lineIdx = SendMessage(eWnd, EM_LINEINDEX, lineNumber, 0);
+        LRESULT lineNumber = SendMessage(eWnd, EM_LINEFROMCHAR, selFirst, 0);
+        LRESULT lineLength = SendMessage(eWnd, EM_LINELENGTH, selFirst, 0);
+        LRESULT lineIdx = SendMessage(eWnd, EM_LINEINDEX, lineNumber, 0);
         SendMessage(eWnd, EM_GETLINE, lineNumber, reinterpret_cast<LPARAM>(&line));
         uSendMessageText(eWnd, EM_REPLACESEL, TRUE, "}");
         int deleteChars = 0;
@@ -1219,10 +1226,10 @@ class CoverTab : public ConfigTab {
         int newselection_ndx =
             GetCoverConfigPosition(configData->CoverConfigs, next->first.c_str());
         HWND ctrl = GetDlgItem(hWnd, IDC_SAVED_SELECT);
-        int oldselection_ndx = uSendMessage(ctrl, CB_GETCURSEL, 0, 0);
+        LRESULT oldselection_ndx = uSendMessage(ctrl, CB_GETCURSEL, 0, 0);
 
         m_edited_name = oldselection;
-        m_edited_ndx = oldselection_ndx;
+        m_edited_ndx = (int)oldselection_ndx;
         //refresh combobox list
         loadComboConfigList(newselection_ndx);
         //refresh script edit box
@@ -1256,7 +1263,8 @@ class CoverTab : public ConfigTab {
     ConfigNameDialog dialog;
     pfc::string8 oldselection;
     uGetDlgItemText(hWnd, IDC_SAVED_SELECT, oldselection);
-    int oldselected_ndx = uSendDlgItemMessage(hWnd, IDC_SAVED_SELECT, CB_GETCURSEL, 0, 0);
+    LRESULT oldselected_ndx =
+        uSendDlgItemMessage(hWnd, IDC_SAVED_SELECT, CB_GETCURSEL, 0, 0);
     if (dialog.query(hWnd, oldselection)) {
       dialog.value.skip_trailing_char(' ');
       if (dialog.value.get_length()) {
@@ -1273,7 +1281,7 @@ class CoverTab : public ConfigTab {
               GetCoverConfigPosition(configData->CoverConfigs, dialog.value.c_str());
 
           m_edited_name = oldselection;
-          m_edited_ndx = oldselected_ndx;
+          m_edited_ndx = (int)oldselected_ndx;
           // refresh combobox list
           loadComboConfigList(newselection_ndx);
         }
@@ -1291,11 +1299,11 @@ class CoverTab : public ConfigTab {
     SetWindowRedraw(ctrl, false);
     SendMessage(ctrl, CB_RESETCONTENT, 0, 0);
     for (auto& [name, config] : configData->CoverConfigs) {
-      int itemId =uSendMessageText(ctrl, CB_ADDSTRING, 0, name.c_str());
+      LRESULT itemId =uSendMessageText(ctrl, CB_ADDSTRING, 0, name.c_str());
       uSendMessage(ctrl, CB_SETITEMDATA, itemId, itemId);
 
       if (selection!= -1 && itemId == selection) {
-        selection_ndx = itemId;
+        selection_ndx = (int)itemId;
         selection_name = name.c_str();
         uSendDlgItemMessageText(hWnd, IDC_SAVED_SELECT, CB_SELECTSTRING, 1, name.c_str());
       }
@@ -1340,8 +1348,8 @@ class CoverTab : public ConfigTab {
       //uSendMessageText(ctrl, CB_GETLBTEXT, select_ndx, selected.get_ptr());
 
       const CoverConfig& config = configData->CoverConfigs.at(selected.c_str());
-      pfc::string8 default = configData->CoverConfigSel;
-      bool bdefault = (stricmp_utf8(selected, default) == 0);
+      pfc::string8 strDefault = configData->CoverConfigSel;
+      bool bdefault = (stricmp_utf8(selected, strDefault) == 0);
 
       //int default_ndx = configData->GetCCPosition();
       //bdefault = select_ndx == default_ndx;
@@ -1461,7 +1469,7 @@ class PerformanceTab : public ConfigTab {
 
   void comboBoxChanged(int comboBox) {
     pfc::string8 selected;
-    int s = uSendDlgItemMessage(hWnd, comboBox, CB_GETCURSEL, 0, 0);
+    LRESULT s = uSendDlgItemMessage(hWnd, comboBox, CB_GETCURSEL, 0, 0);
     if (s != CB_ERR) {
       //(uGetDlgItem(hWnd, comboBox), s, selected);
     } else {
@@ -1490,10 +1498,6 @@ class ContextMenuTab : public ConfigTab {
       case WM_COMMAND:
         if (HIWORD(wParam) == BN_CLICKED) {
           buttonClicked(LOWORD(wParam));
-
-          switch (LOWORD(wParam)) {
-          }
-
         }
         break;
     }
@@ -1551,7 +1555,7 @@ class ConfigWindow {
 
   void OnDestroy() {
     // won't be automatically called by fb2k, invoked from ConfigDialog destroy event
-    configData->sessionSelectedConfigTab = currentTab;
+    configData->sessionSelectedConfigTab = (int)currentTab;
     // dont tabs.clear(), etc... fb2k should take care of that
   }
 
@@ -1605,6 +1609,8 @@ class ConfigWindow {
         currentTab = SendDlgItemMessage(m_wndParent, IDC_TABS, TCM_GETCURSEL, 0, 0);
         if (currentTab < tabs.size()) {
           tabs.at(currentTab)->show();
+          /*fb2k::CDarkModeHooks* dbg = (fb2k::CDarkModeHooks*)m_wndParent;
+          dbg->AddDarkTab->AddControls(tabs.at(currentTab)->getTabWnd());*/
         }
       }
     }
@@ -1627,6 +1633,6 @@ class LibraryViewer : public library_viewer {
 
   void activate() final{};
 };
-
+//todo: revise this declaration
 static library_viewer_factory_t<LibraryViewer> g_libraryViewer;
 }  // namespace coverflow

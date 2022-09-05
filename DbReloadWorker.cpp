@@ -55,7 +55,7 @@ void DbReloadWorker::threadProc() {
     filter = configData->Filter;
     group = configData->Group;
     sortgroup = configData->SortGroup;
-    sort = configData->SortGroup? "" : configData->Sort;
+    sort = configData->SortGroup? pfc::string8("") : configData->Sort;
     albumtitle = configData->AlbumTitle;
   } else {
     filter = plparams.filter;

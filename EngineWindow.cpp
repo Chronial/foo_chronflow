@@ -64,7 +64,7 @@ namespace engine {
 
     WIN32_OP_D(SetParent(hWnd, container.getHWND()));
     const LONG nNewStyle = (GetWindowLong(hWnd, GWL_STYLE) & ~WS_POPUP) | WS_CHILDWINDOW;
-    SetWindowLong(hWnd, GWL_STYLE, nNewStyle);
+    SetWindowLongPtr(hWnd, GWL_STYLE, nNewStyle);
     const ULONG_PTR cNewStyle = GetClassLongPtr(hWnd, GCL_STYLE) | CS_DBLCLKS;
     WIN32_OP_D(SetClassLongPtr(hWnd, GCL_STYLE, cNewStyle));
     WIN32_OP_D(SetWindowSubclass(hWnd,
@@ -589,7 +589,6 @@ void EngineWindow::cmdToggleLibraryFilterSelectorSource(bool locked) {
     if (configData->SourceLibrarySelector && !configData->CoverFollowsLibrarySelection)
       //need the follow selection
       cmdToggleLibraryCoverFollowsSelection();
-
   }
   else {
     configData->SourceLibrarySelectorLock = !configData->SourceLibrarySelectorLock;

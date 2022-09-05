@@ -197,7 +197,7 @@ TextDisplay::DisplayTexture TextDisplay::createTexture(
         renderTarget->CreateSolidColorBrush(textBrush->GetColor(), &highlightBrush));
     textBrush->SetOpacity(0.4f);
     for (t_size pos : highlight) {
-      textLayout->SetDrawingEffect(highlightBrush.get(), DWRITE_TEXT_RANGE{pos, 1});
+      textLayout->SetDrawingEffect(highlightBrush.get(), DWRITE_TEXT_RANGE{(uint32_t)pos, 1});
     }
   }
 

@@ -86,7 +86,7 @@ class DbAlbumCollection {
  public:
   bool initializing() { return !db; }
   bool empty() { return db ? db->container.empty() : true; }
-  int size() { return db ? db->container.size() : 0; }
+  size_t size() { return db ? db->container.size() : 0; }
 
   AlbumInfo getAlbumInfo(DBIter pos);
   void getTracks(DBIter pos, metadb_handle_list& out);

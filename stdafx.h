@@ -5,6 +5,9 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Weverything"
 
+#include <helpers/foobar2000+atl.h>
+#include "libPPUI/win32_op.h"
+
 #include <array>
 #include <atomic>
 #include <condition_variable>
@@ -74,6 +77,7 @@ using std::unique_ptr;  // NOLINT
 #define NODEFERWINDOWPOS
 #define NOMCX
 #include <windows.h>
+#include <realtimeapiset.h>
 
 #include <ActivScp.h>
 #include <Shlwapi.h>
@@ -98,10 +102,6 @@ using std::unique_ptr;  // NOLINT
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
 #define APIENTRY WINAPI
-
-#include "../foobar2000/SDK/foobar2000.h"
-#include "../foobar2000/helpers/win32_misc.h"
-#include "../pfc/range_based_for.h"
 
 // clang doesn't support stdcall lambdas
 // since we only use it for linting, we just hide those lambdas from it

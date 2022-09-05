@@ -91,8 +91,6 @@ class EngineWindow {
   const metadb_handle_list_ref getSelection(bool fromLibrary) {
     return fromLibrary? library_selection : playlist_selection;
   }
-  LRESULT on_message(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) { int kk = 0; }
-
   void cmdToggleActivePlaylistSource();
   void cmdTogglePlaylistSource();
   void cmdAssignPlaylistSource();

@@ -9,8 +9,8 @@
 // 4. Resource.rc - VS_VERSION_INFO (FileVersion, InternalName, etc) used by windows file explorer (dll info)
 
 constexpr const char * const AppName = "CoverFlowMod";
-constexpr char * AppNameInternal = "foo_chronflow_mod";
-constexpr char * AppEMail = "foodayuyu@gmail.com"; //foocomp@chronial.de"
+constexpr const char * const AppNameInternal = "foo_chronflow_mod";
+constexpr const char * const AppEMail = "foodayuyu@gmail.com"; //foocomp@chronial.de"
 
 #ifdef _DEBUG
 #define IF_DEBUG(X) X
@@ -62,8 +62,8 @@ struct DisarmableDelete : private Deleter {
 };
 
 extern const char** builtInCoverConfigArray;
-constexpr char* defaultCoverConfig = "Default (build-in)";
-constexpr char* coverConfigTemplate = "Template (build-in)";
+constexpr const char * defaultCoverConfig = "Default (build-in)";
+constexpr const char * coverConfigTemplate = "Template (build-in)";
 
 //__declspec(selectany) extern metadb_handle_list_cref p_selection;
 

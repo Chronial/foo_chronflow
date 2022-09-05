@@ -1,7 +1,5 @@
 #include "utils.h"
 
-#include <cstdio>
-
 void errorPopup(const char* message) {
   // This should be:
   // popup_message::g_show(... , popup_message::icon_error);
