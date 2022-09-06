@@ -89,8 +89,6 @@ public:
 
 public:
   [[noreturn]] void rethrow_error(const _com_error& e) {
-#ifndef _WIN64
-    //todo: implement error control x64
     try {
       IScriptErrorPtr pError;
       if (m_script_control != nullptr)
@@ -104,7 +102,6 @@ public:
     } catch (_com_error& e) {
       throw script_error::from_com_error(e);
     }
-#endif
   };
 
   template <typename Ret, typename... _Types>
