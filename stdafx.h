@@ -33,8 +33,6 @@ using std::make_unique;  // NOLINT
 using std::shared_ptr;  // NOLINT
 using std::unique_ptr;  // NOLINT
 
-#include <gsl/gsl>
-
 #ifdef _DEBUG
 #define BOOST_MULTI_INDEX_ENABLE_SAFE_MODE
 #endif
@@ -92,6 +90,7 @@ using std::unique_ptr;  // NOLINT
 #undef min
 #undef max
 
+#include <gsl/gsl>
 #include <wil/com.h>
 #include <wil/resource.h>
 #include <wil/win32_helpers.h>
@@ -102,6 +101,8 @@ using std::unique_ptr;  // NOLINT
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
 #define APIENTRY WINAPI
+
+#include "version.h"
 
 // clang doesn't support stdcall lambdas
 // since we only use it for linting, we just hide those lambdas from it

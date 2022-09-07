@@ -82,8 +82,7 @@ class ConfigDialog : public CDialogImpl<ConfigDialog>, public preferences_page_i
 class preferences_page_myimpl : public preferences_page_impl<ConfigDialog> {
 
  public:
-  const char* get_name() {
-    return component_NAME;
+  const char* get_name() { return COMPONENT_NAME_LABEL;
   }
 
   GUID get_guid() {

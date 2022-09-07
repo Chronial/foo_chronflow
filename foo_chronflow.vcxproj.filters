@@ -305,6 +305,9 @@
     <ClInclude Include="cover_positions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="images\cover-loading.jpg">
@@ -319,6 +322,9 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+    <ResourceCompile Include="foo_chronflow_ver.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>

@@ -6,6 +6,7 @@
 
 #include "configData.h"
 #include "ConfigCoverConfigs.h"
+#include "utils.h"
 // clang-format off
 
 namespace engine {
@@ -24,6 +25,10 @@ ContainerWindow::ContainerWindow(HWND parent, StyleManager& styleManager,
   createWindow(parent);
 
   try {
+#ifdef _WIN64
+    ensureScriptControlVersion();
+#endif
+
     auto cInfo = configData->sessionCompiledCPInfo.get();
     ensureIsSet(cInfo.first, cInfo.second);
     engineWindow = make_unique<EngineWindow>(*this, styleManager, duiCallback);
@@ -31,6 +36,28 @@ ContainerWindow::ContainerWindow(HWND parent, StyleManager& styleManager,
     engineError = e.what();
     FB2K_console_formatter() << AppNameInternal << " failed to initialize:\n" << e.what();
   }
+  catch (...) {
+     FB2K_console_formatter() << AppNameInternal << " failed to initialize:\n";
+  }
+}
+
+bool ContainerWindow::ensureScriptControlVersion() {
+    bool ver_ok = false;
+    WCHAR pszBuff[4096];
+    lstrcpy(pszBuff, L"%SystemRoot%\\System32\\tsc64.dll");
+    ExpandEnvironmentStrings(pszBuff, pszBuff, 4096);
+    ver_ok = isCheckBaseVersion(pszBuff, 1, 2, 5, 4);
+    if (!ver_ok) {
+      pfc::string8 message("TablacusScriptControl version error.\r\n(minimum required: v.1.2.5.4)");
+      FB2K_console_formatter() << AppNameInternal << " encountered an error:\n"
+                           << message.c_str();
+      MessageBoxW(nullptr,
+              uT(PFC_string_formatter() << message
+                 << "\r\n\r\nDownload site: Tablacus ScriptControl Github repository."),
+              uT(PFC_string_formatter() << "Error in " << AppNameInternal), MB_OK | MB_ICONWARNING);
+    }
+    ver_ok &= checkScriptControl();
+  return ver_ok;
 }
 
 void ContainerWindow::ensureIsSet(int listposition, shared_ptr<CompiledCPInfo>& sessionCompiledCPInfo) {

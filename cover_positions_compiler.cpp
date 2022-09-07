@@ -42,48 +42,28 @@ typedef HRESULT(WINAPI* LPFNDllGetClassObject)(__in REFCLSID rclsid, __in REFIID
                                                 __deref_out LPVOID FAR* ppv);
 class CScriptObject {
 public:
+
+  void DetachControl() {
+    if (m_script_control) {
+      m_script_control->Release();
+      m_script_control.Detach();
+    }
+  }
+
+  ~CScriptObject() {
+    DetachControl();
+  }
+
   CScriptObject(const wchar_t* code) {
     try {
-#ifdef _WIN64
-      //todo: use env or static lib
-      if (!m_hDll) {
-        m_hDll = LoadLibrary(L"C:\\Windows\\System32\\tsc64.dll");
-      }
-      if (m_hDll) {
-        LPFNDllGetClassObject lpfnDllGetClassObject =
-            (LPFNDllGetClassObject)GetProcAddress(m_hDll, "DllGetClassObject");
-        if (lpfnDllGetClassObject) {
-          IClassFactory* pCF;
-          CLSID clsid = {0x0E59F1D5,
-                         0x1FBE,
-                         0x11D0,
-                         {0x8F, 0xF2, 0x00, 0xA0, 0xD1, 0x00, 0x38, 0xBC}};
-          HRESULT hr = lpfnDllGetClassObject(clsid, IID_PPV_ARGS(&pCF));
-          bool tsc_ok = true;
-          if (hr == S_OK) {
-            hr = pCF->CreateInstance(NULL, IID_PPV_ARGS(&m_script_control /*&pSC*/));
-            if FAILED (hr) {
-              //..
-              tsc_ok = false;
-            }
-            pCF->Release();
-
-          } else {
-            tsc_ok = false;
-          }
-          if (!tsc_ok) {
-            throw std::exception("foo_chronflow_mod x64 Script Control init error ");
-          }
-        }
-      }
-#else
       _com_util::CheckError(m_script_control.CreateInstance(__uuidof(ScriptControl)));
-#endif
-      m_script_control->PutAllowUI(VARIANT_FALSE);
-      m_script_control->PutLanguage(L"JScript");
+      m_script_control->PutLanguage(L"JavaScript");
       _com_util::CheckError(m_script_control->AddCode(code));
     } catch (_com_error& e) {
       rethrow_error(e);
+    } catch (...) {
+      std::exception e("Other JScript exception");
+      throw(e);
     }
   };
 
@@ -173,6 +153,13 @@ private:
 
 } // namespace
 
+bool checkScriptControl() {
+    BSTR bsScript = ::SysAllocString(L"var somevar = 1");
+    CScriptObject sobj(bsScript);
+    ::SysFreeString(bsScript);
+  return true;
+}
+
 CompiledCPInfo compileCPScript(const char* script) {
 #pragma warning(push)
   // 4244: conversion from 'double' to 'float', possible loss of data
@@ -236,6 +223,8 @@ CompiledCPInfo compileCPScript(const char* script) {
 
   out.enableCoverTitle = scriptObj.call<bool>("enableCoverTitle");
   out.enableCoverPngAlpha = scriptObj.call<bool>("enableCoverPngAlpha");
+  //todo: profile
+  scriptObj.DetachControl();
 
   return out;
 #pragma warning(pop)

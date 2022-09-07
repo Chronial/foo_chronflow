@@ -98,4 +98,5 @@ struct script_error : public std::runtime_error {
   static script_error from_com_error(const class _com_error&);
 };
 
+bool checkScriptControl();
 CompiledCPInfo compileCPScript(const char*);

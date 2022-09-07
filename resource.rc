@@ -44,55 +44,6 @@ IDB_COVER_NO_IMG_PNG    PNG                     "images\\cover-no-img-png.png"
 
 
 /////////////////////////////////////////////////////////////////////////////
-// English (Neutral) resources
-
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
-LANGUAGE LANG_ENGLISH, SUBLANG_NEUTRAL
-#pragma code_page(1252)
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Version
-//
-
-VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,5,2,5
- PRODUCTVERSION 0,5,2,5
- FILEFLAGSMASK 0x3fL
-#ifdef _DEBUG
- FILEFLAGS 0x1L
-#else
- FILEFLAGS 0x0L
-#endif
- FILEOS 0x40004L
- FILETYPE 0x0L
- FILESUBTYPE 0x0L
-BEGIN
-    BLOCK "StringFileInfo"
-    BEGIN
-        BLOCK "000904b0"
-        BEGIN
-            VALUE "CompanyName", "CoverFlow Mod By Da Yuyu"
-            VALUE "FileDescription", "fb2k Album Art in a 3d"
-            VALUE "FileVersion", "0.5.2-mod-preview5"
-            VALUE "InternalName", "foo_coverflow_mod"
-            VALUE "LegalCopyright", "GNU Lesser General Public License (LGPL) 2020"
-            VALUE "OriginalFilename", "foo_coverflow_mod"
-            VALUE "ProductName", "foo_coverflow_mod"
-            VALUE "ProductVersion", "0.5.2-mod-preview5"
-        END
-    END
-    BLOCK "VarFileInfo"
-    BEGIN
-        VALUE "Translation", 0x9, 1200
-    END
-END
-
-#endif    // English (Neutral) resources
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
 // German (Germany) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_DEU)

@@ -129,6 +129,55 @@ class FpsCounter {
   }
 };
 
+//todo: rename/use fb2k sdk
+inline bool isCheckBaseVersion(const wchar_t* szVersionFile, int amajor, int aminor,
+                        int arevision, int abuild = 0) {
+  int major = 0, minor = 0, revision = 0, build = 0;
+
+  DWORD verHandle = 0;
+  UINT size = 0;
+  LPBYTE lpBuffer = NULL;
+  DWORD verSize = GetFileVersionInfoSize(szVersionFile, &verHandle);
+  if (verSize != NULL) {
+    LPSTR verData = new char[verSize];
+
+    if (GetFileVersionInfo(szVersionFile, verHandle, verSize, verData)) {
+      if (VerQueryValue(verData, L"\\", (VOID FAR * FAR*)&lpBuffer, &size)) {
+        if (size) {
+          VS_FIXEDFILEINFO* verInfo = (VS_FIXEDFILEINFO*)lpBuffer;
+          if (verInfo->dwSignature == 0xfeef04bd) {
+            // 32 bit build
+            major = HIWORD(verInfo->dwProductVersionMS);
+            minor = LOWORD(verInfo->dwProductVersionMS);
+            revision = HIWORD(verInfo->dwProductVersionLS);
+            build = LOWORD(verInfo->dwProductVersionLS);
+          }
+        }
+      }
+    }
+    delete[] verData;
+  }
+
+  if (major > amajor)
+    return true;
+  else if (major < amajor)
+    return false;
+
+  if (minor > aminor)
+    return true;
+  else if (minor < aminor)
+    return false;
+
+  if (revision > arevision)
+    return true;
+  else if (revision > arevision)
+    return true;
+  if (build < abuild)
+    return false;
+
+  return true;
+}
+
 template <typename T>
 inline pfc::list_t<T> pfc_list(std::initializer_list<T> elems) {
   pfc::list_t<T> out;

@@ -401,6 +401,7 @@
     <ClInclude Include="ContainerWindow.h" />
     <ClInclude Include="DbAlbumCollection.h" />
     <ClInclude Include="DbReloadWorker.h" />
+    <ClInclude Include="version.h" />
     <ClInclude Include="world_state.h" />
     <ClInclude Include="BlockingQueue.h" />
     <ClInclude Include="FindAsYouType.h" />
@@ -425,6 +426,7 @@
     <Image Include="images\spinner.png" />
   </ItemGroup>
   <ItemGroup>
+    <ResourceCompile Include="foo_chronflow_ver.rc" />
     <ResourceCompile Include="resource.rc" />
   </ItemGroup>
   <ItemGroup>

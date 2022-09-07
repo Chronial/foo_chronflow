@@ -5,53 +5,15 @@
 using coverflow::configData;
 using coverflow::CoverConfigMap;
 
-// ref.
-// https://stackoverflow.com/questions/940707/how-do-i-programmatically-get-the-version-of-a-dll-or-exe-file
 // link reqs.: version.lib
 bool isInactivePlaylistPlayFixed(int amajor, int aminor, int arevision /*, int abuild*/) {
-  int major = 0, minor = 0, revision = 0 /*, build = 0*/;
+#ifdef _WIN64
+  return true;
+#else
   TCHAR szVersionFile[MAX_PATH];
   GetModuleFileName(NULL, szVersionFile, MAX_PATH);
-  DWORD verHandle = 0;
-  UINT size = 0;
-  LPBYTE lpBuffer = NULL;
-  DWORD verSize = GetFileVersionInfoSize(szVersionFile, &verHandle);
-  if (verSize != NULL) {
-    LPSTR verData = new char[verSize];
-
-    if (GetFileVersionInfo(szVersionFile, verHandle, verSize, verData)) {
-      if (VerQueryValue(verData, L"\\", (VOID FAR * FAR*)&lpBuffer, &size)) {
-        if (size) {
-          VS_FIXEDFILEINFO* verInfo = (VS_FIXEDFILEINFO*)lpBuffer;
-          if (verInfo->dwSignature == 0xfeef04bd) {
-            // 32 bit build
-            major = HIWORD(verInfo->dwProductVersionMS);
-            minor = LOWORD(verInfo->dwProductVersionMS);
-            revision = HIWORD(verInfo->dwProductVersionLS);
-            // build = LOWORD(verInfo->dwProductVersionLS);
-          }
-        }
-      }
-    }
-    delete[] verData;
-  }
-
-  if (major > amajor)
-    return true;
-  else if (major < amajor)
-    return false;
-
-  if (minor > aminor)
-    return true;
-  else if (minor < aminor)
-    return false;
-
-  if (revision > arevision)
-    return true;
-  else if (revision < arevision)
-    return false;
-
-  return true;
+  return isCheckBaseVersion(szVersionFile, amajor, aminor, arevision);
+#endif
 }
 
 void CustomAction::NotifyRejected(HWND hwnd) {

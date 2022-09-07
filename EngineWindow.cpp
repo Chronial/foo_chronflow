@@ -764,7 +764,7 @@ void EngineWindow::onContextMenu(const int x, const int y) {
   }
 
   uAppendMenu(hMenu, MF_STRING, ID_PREFERENCES,
-              PFC_string_formatter() << component_NAME << " Preferences...");
+              PFC_string_formatter() << COMPONENT_NAME_LABEL << " Preferences...");
 
   if (!configData->CtxHideDisplayMenu)
     AppendDisplayContextMenuOptions(&hMenu);
