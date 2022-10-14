@@ -1633,6 +1633,6 @@ class LibraryViewer : public library_viewer {
 
   void activate() final{};
 };
-//todo: revise this declaration
-static library_viewer_factory_t<LibraryViewer> g_libraryViewer;
+
+//static library_viewer_factory_t<LibraryViewer> g_libraryViewer;
 }  // namespace coverflow

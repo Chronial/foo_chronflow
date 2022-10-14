@@ -9,6 +9,8 @@
 
 namespace coverflow {
 
+static library_viewer_factory_t<LibraryViewer> g_libraryViewer;
+
 using ::engine::EngineThread;
 
 enum ChangedFlags {
