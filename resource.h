@@ -183,6 +183,7 @@
 #define IDC_CTX_SELECTOR_HIDE           1159
 #define IDC_CTX_EXTERNALVIEWER_HIDE     1160
 #define IDC_CTX_CUSTOMACTIONS_HIDE      1161
+#define IDC_STATIC_PREF_CTX_HEADER      1164
 
 // Next default values for new objects
 //
@@ -191,7 +192,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        215
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1164
+#define _APS_NEXT_CONTROL_VALUE         1165
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

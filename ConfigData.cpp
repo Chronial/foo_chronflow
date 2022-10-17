@@ -1,4 +1,4 @@
-﻿#include "stdafx.h"
+#include "stdafx.h"
 #include "ConfigGuids.h"
 #include "ConfigData.h"
 
@@ -73,11 +73,11 @@ ConfigData::ConfigData()
     sessionSelectedCover(default_sessionSelectedCover),
     sessionSelectedConfigTab(default_sessionSelectedConfigTab),
     /****************************** Ctx Menu tab ********************************/
-    CtxHidePlaylistMenu(default_CtxHidePlaylistMenu),
-    CtxHideDisplayMenu(default_CtxHideDisplayMenu),
-    CtxHideSelectorMenu(default_CtxHideSelectorMenu),
-    CtxHideExtViewerMenu(default_CtxHideExtViewerMenu),
-    CtxHideActionsMenu(default_CtxHideActionsMenu)
+    CtxShowPlaylistMenu(default_CtxShowPlaylistMenu),
+    CtxShowDisplayMenu(default_CtxShowDisplayMenu),
+    CtxShowSelectorMenu(default_CtxShowSelectorMenu),
+    CtxShowExtViewerMenu(default_CtxShowExtViewerMenu),
+    CtxShowActionsMenu(default_CtxShowActionsMenu)
 {
 }
 
@@ -142,11 +142,11 @@ void ConfigData::Reset() {
   VSyncMode = default_VSyncMode;
   ShowFps = default_ShowFps;
   /******************************* Ctx menu tab ********************************/
-  CtxHidePlaylistMenu = default_CtxHidePlaylistMenu;
-  CtxHideDisplayMenu = default_CtxHideDisplayMenu;
-  CtxHideSelectorMenu = default_CtxHideSelectorMenu;
-  CtxHideExtViewerMenu = default_CtxHideExtViewerMenu;
-  CtxHideActionsMenu = default_CtxHideActionsMenu;
+  CtxShowPlaylistMenu = default_CtxShowPlaylistMenu;
+  CtxShowDisplayMenu = default_CtxShowDisplayMenu;
+  CtxShowSelectorMenu = default_CtxShowSelectorMenu;
+  CtxShowExtViewerMenu = default_CtxShowExtViewerMenu;
+  CtxShowActionsMenu = default_CtxShowActionsMenu;
   /******************************* Session tab *********************************/
   sessionSelectedCover = default_sessionSelectedCover;
   sessionSelectedConfigTab = default_sessionSelectedConfigTab;
@@ -217,11 +217,11 @@ void ConfigData::get_data_raw(stream_writer* p_stream, abort_callback& p_abort) 
   p_stream->write_lendian_t(VSyncMode, p_abort);
   p_stream->write_lendian_t(ShowFps, p_abort);
   /********************************* Ctx Menu **********************************/
-  p_stream->write_lendian_t(CtxHidePlaylistMenu, p_abort);
-  p_stream->write_lendian_t(CtxHideDisplayMenu, p_abort);
-  p_stream->write_lendian_t(CtxHideSelectorMenu, p_abort);
-  p_stream->write_lendian_t(CtxHideExtViewerMenu, p_abort);
-  p_stream->write_lendian_t(CtxHideActionsMenu, p_abort);
+  p_stream->write_lendian_t(CtxShowPlaylistMenu, p_abort);
+  p_stream->write_lendian_t(CtxShowDisplayMenu, p_abort);
+  p_stream->write_lendian_t(CtxShowSelectorMenu, p_abort);
+  p_stream->write_lendian_t(CtxShowExtViewerMenu, p_abort);
+  p_stream->write_lendian_t(CtxShowActionsMenu, p_abort);
   /********************************* Session ***********************************/
   p_stream->write_string(sessionSelectedCover, p_abort);
   sessionCompiledCPInfo.pub_get_data_raw(p_stream, p_abort);
@@ -236,8 +236,6 @@ void ConfigData::set_data_raw(stream_reader* p_stream, t_size p_sizehint,
 void ConfigData::SetData(ConfigData& cfg, stream_reader* p_stream,
                          abort_callback& p_abort, const char* version) {
   p_stream->read_string(cfg.PrefsVersion, p_abort);
-
-  //todo: if(cfg.PrefsVersion != version ....
 
   /******************************* Behaviour tab *******************************/
   p_stream->read_lendian_t(cfg.CoverFollowsPlayback, p_abort);
@@ -301,15 +299,26 @@ void ConfigData::SetData(ConfigData& cfg, stream_reader* p_stream,
   p_stream->read_lendian_t(cfg.VSyncMode, p_abort);
   p_stream->read_lendian_t(cfg.ShowFps, p_abort);
   /********************************* Ctx menu **********************************/
-  p_stream->read_lendian_t(cfg.CtxHidePlaylistMenu, p_abort);
-  p_stream->read_lendian_t(cfg.CtxHideDisplayMenu, p_abort);
-  p_stream->read_lendian_t(cfg.CtxHideSelectorMenu, p_abort);
-  p_stream->read_lendian_t(cfg.CtxHideExtViewerMenu, p_abort);
-  p_stream->read_lendian_t(cfg.CtxHideActionsMenu, p_abort);
+  p_stream->read_lendian_t(cfg.CtxShowPlaylistMenu, p_abort);
+  p_stream->read_lendian_t(cfg.CtxShowDisplayMenu, p_abort);
+  p_stream->read_lendian_t(cfg.CtxShowSelectorMenu, p_abort);
+  p_stream->read_lendian_t(cfg.CtxShowExtViewerMenu, p_abort);
+  p_stream->read_lendian_t(cfg.CtxShowActionsMenu, p_abort);
+
+  if (cfg.PrefsVersion.equals("2")) {
+    cfg.CtxShowPlaylistMenu ^= 1;
+    cfg.CtxShowDisplayMenu ^= 1;
+    cfg.CtxShowSelectorMenu ^= 1;
+    cfg.CtxShowExtViewerMenu ^= 1;
+    cfg.CtxShowActionsMenu ^= 1;
+  }
+
   /********************************* Session ***********************************/
   p_stream->read_string(cfg.sessionSelectedCover, p_abort);
   sessionCompiledCPInfo.pub_set_data_raw(p_stream, 0, p_abort);
   p_stream->read_lendian_t(cfg.sessionSelectedConfigTab, p_abort);
+
+  cfg.PrefsVersion = component_PREF_VER;
 }
 
 } // namespace coverflow

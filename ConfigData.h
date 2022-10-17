@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "ConfigCompiledInfo.h"
 #include "ConfigCoverConfigs.h"
 
@@ -74,9 +74,9 @@ __declspec(selectany) extern bool const default_SourceLibrarySelector = false;
 __declspec(selectany) extern bool const default_SourceLibrarySelectorLock = false;
 /******************************** Display tab ********************************/
 __declspec(selectany) extern bool const default_ShowAlbumTitle = true;
-__declspec(selectany) extern char const* const default_AlbumTitle = "%album artist%$crlf()%album%";
+__declspec(selectany) extern char const* const default_AlbumTitle = "%album artist% - %album%";
 __declspec(selectany) extern double const default_TitlePosH = 0.5;
-__declspec(selectany) extern double const default_TitlePosV = 0.92;
+__declspec(selectany) extern double const default_TitlePosV = 0.95;
 __declspec(selectany) extern bool const default_TitleColorCustom = false;
 __declspec(selectany) extern unsigned long const default_TitleColor = RGB(0, 0, 0);
 __declspec(selectany) extern bool const default_TitleFontCustom = true;
@@ -100,11 +100,11 @@ __declspec(selectany) extern bool const default_EmptyCacheOnMinimize = true;
 __declspec(selectany) extern bool const default_VSyncMode = VSYNC_SLEEP_ONLY;
 __declspec(selectany) extern bool const default_ShowFps = false;
 /*********************************** Ctx Menu ********************************/
-__declspec(selectany) extern bool const default_CtxHidePlaylistMenu = false;
-__declspec(selectany) extern bool const default_CtxHideDisplayMenu = true;
-__declspec(selectany) extern bool const default_CtxHideSelectorMenu = true;
-__declspec(selectany) extern bool const default_CtxHideExtViewerMenu = true;
-__declspec(selectany) extern bool const default_CtxHideActionsMenu = false;
+__declspec(selectany) extern bool const default_CtxShowPlaylistMenu = true;
+__declspec(selectany) extern bool const default_CtxShowDisplayMenu = false;
+__declspec(selectany) extern bool const default_CtxShowSelectorMenu = false;
+__declspec(selectany) extern bool const default_CtxShowExtViewerMenu = false;
+__declspec(selectany) extern bool const default_CtxShowActionsMenu = true;
 /*********************************** Session *********************************/
 __declspec(selectany) extern char const* const default_sessionSelectedCover = "";
 __declspec(selectany) extern int const default_sessionSelectedConfigTab = 0;
@@ -186,11 +186,11 @@ class ConfigData : public cfg_var {
   int VSyncMode;
   bool ShowFps;
   /****************************** Context Menu tab *****************************/
-  bool CtxHidePlaylistMenu;
-  bool CtxHideDisplayMenu;
-  bool CtxHideSelectorMenu;
-  bool CtxHideExtViewerMenu;
-  bool CtxHideActionsMenu;
+  bool CtxShowPlaylistMenu;
+  bool CtxShowDisplayMenu;
+  bool CtxShowSelectorMenu;
+  bool CtxShowExtViewerMenu;
+  bool CtxShowActionsMenu;
   /*********************************** Session *********************************/
   pfc::string8 sessionSelectedCover;
   cfg_compiledCPInfoPtr sessionCompiledCPInfo;  // no default;

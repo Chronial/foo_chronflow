@@ -285,7 +285,7 @@ bool EngineWindow::onKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam) {
   }
   else if (wParam == VK_F8) {
     if (GetKeyState(VK_CONTROL) & 0x8000) {
-      if (!configData->CtxHideSelectorMenu)
+      if (configData->CtxShowSelectorMenu)
         cmdToggleLibraryFilterSelectorSource(true);
     } else
     // assign the current playlist as album source
@@ -298,7 +298,7 @@ bool EngineWindow::onKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam) {
   }
   else if (wParam == VK_F10) {
     if (GetKeyState(VK_CONTROL) & 0x8000) {
-      if (!configData->CtxHideSelectorMenu)
+      if (configData->CtxShowSelectorMenu)
         cmdToggleLibraryFilterSelectorSource(false);
     } else
     // toggle active playlist is the source on/off
@@ -729,12 +729,12 @@ void EngineWindow::onContextMenu(const int x, const int y) {
   HMENU hMenu = CreatePopupMenu();
 
   if (target) {
-    if (!configData->CtxHideExtViewerMenu) {
+    if (configData->CtxShowExtViewerMenu) {
       uAppendMenu(hMenu, MF_STRING, ID_OPENEXTERNALVIEWER,
                   "Open External Viewer");
     }
     if (configData->IsWholeLibrary()) {
-      if (!configData->CtxHideActionsMenu) {
+      if (configData->CtxShowActionsMenu) {
         if ((configData->EnterKey.length() > 0) &&
             (strcmp(configData->EnterKey, configData->DoubleClick) != 0)) {
           uAppendMenu(hMenu, MF_STRING, ID_ENTER,
@@ -766,9 +766,9 @@ void EngineWindow::onContextMenu(const int x, const int y) {
   uAppendMenu(hMenu, MF_STRING, ID_PREFERENCES,
               PFC_string_formatter() << COMPONENT_NAME_LABEL << " Preferences...");
 
-  if (!configData->CtxHideDisplayMenu)
+  if (configData->CtxShowDisplayMenu)
     AppendDisplayContextMenuOptions(&hMenu);
-  if (!configData->CtxHideSelectorMenu)
+  if (configData->CtxShowSelectorMenu)
     AppendSelectorContextMenuOptions(&hMenu, false);
   else {
     //temporal fix while selector functionality is discussed for inclusion or not in future releases
@@ -776,7 +776,7 @@ void EngineWindow::onContextMenu(const int x, const int y) {
     bool bonlylibseltoggle = true;
     AppendSelectorContextMenuOptions(&hMenu, bonlylibseltoggle);
   }
-  if (!configData->CtxHidePlaylistMenu)
+  if (configData->CtxShowPlaylistMenu)
     AppendPlaylistContextMenuOptions(&hMenu);
 
   menu_helpers::win32_auto_mnemonics(hMenu);

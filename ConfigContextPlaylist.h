@@ -1,11 +1,11 @@
-﻿#pragma once
+#pragma once
 #include "ConfigData.h"
 #include "EngineWindow.h"
 
 namespace coverflow {
 
 void AppendPlaylistContextMenuOptions(HMENU* hMenu) {
-  if (!configData->CtxHidePlaylistMenu) {
+  if (configData->CtxShowPlaylistMenu) {
 
     pfc::string8 plname;
     static_api_ptr_t<playlist_manager> pm;
@@ -20,23 +20,24 @@ void AppendPlaylistContextMenuOptions(HMENU* hMenu) {
 
     HMENU _childPlaylist = CreatePopupMenu();
     if (!b_iswholelib)
-    uAppendMenu(*hMenu, MF_STRING | b_followplaylist ? MF_CHECKED : MF_UNCHECKED,
+    uAppendMenu(*hMenu, MF_STRING | (b_followplaylist ? MF_CHECKED : MF_UNCHECKED),
                 engine::ID_PLAYLIST_FOLLOWS_PL_SELECTION,
                 PFC_string_formatter() << "Covers follow Playlist Selection"
                                        << "\t");
     //F9 toggle Playlist as Source
-    uAppendMenu(_childPlaylist, MF_STRING | !b_playlistsource_valid ? MF_DISABLED
-        : b_playlistsource_enabled ? MF_CHECKED : MF_UNCHECKED,
+    uAppendMenu(_childPlaylist,
+                MF_STRING | (!b_playlistsource_valid ? MF_DISABLED
+        : b_playlistsource_enabled ? MF_CHECKED : MF_UNCHECKED),
         engine::ID_PLAYLIST_CURRENT_AS_SOURCE,
         PFC_string_formatter() << "Source Playlist: " << configData->SourcePlaylistName
         << "\tF9");
     //F8 assign Playlist name and activate
-    uAppendMenu(_childPlaylist, MF_STRING | b_source ? MF_DISABLED : MF_ENABLED,
+    uAppendMenu(_childPlaylist, MF_STRING | (b_source ? MF_DISABLED : MF_ENABLED),
         engine::ID_PLAYLIST_SOURCE_SET,
         PFC_string_formatter() << "Set Current Playlist as Source"
         << "\tF8");
     //F10 active playlist as Source
-    uAppendMenu(_childPlaylist, MF_STRING | b_activesource_enabled ? MF_CHECKED : MF_UNCHECKED,
+    uAppendMenu(_childPlaylist, MF_STRING | (b_activesource_enabled ? MF_CHECKED : MF_UNCHECKED),
         engine::ID_PLAYLIST_ACTIVE_AS_SOURCE,
         PFC_string_formatter() << "Active Playlist as Source"
         << "\tF10");

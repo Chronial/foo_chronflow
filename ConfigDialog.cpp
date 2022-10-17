@@ -90,11 +90,11 @@ void ConfigDialog::BindControls(UINT_PTR ndx, HWND hWndTab, int cmd) {
       bindings_.Bind(configData->ShowFps, 0, hWndTab, IDC_SHOW_FPS);
       break;
     case IDD_CONTEXT_MENU_TAB:
-      bindings_.Bind(configData->CtxHidePlaylistMenu, 0, hWndTab, IDC_CTX_SOURCE_HIDE);
-      bindings_.Bind(configData->CtxHideDisplayMenu, 0, hWndTab, IDC_CTX_DISPLAY_HIDE);
-      bindings_.Bind(configData->CtxHideSelectorMenu, 0, hWndTab, IDC_CTX_SELECTOR_HIDE);
-      bindings_.Bind(configData->CtxHideExtViewerMenu, 0, hWndTab, IDC_CTX_EXTERNALVIEWER_HIDE);
-      bindings_.Bind(configData->CtxHideActionsMenu, 0, hWndTab, IDC_CTX_CUSTOMACTIONS_HIDE);
+      bindings_.Bind(configData->CtxShowPlaylistMenu, 0, hWndTab, IDC_CTX_SOURCE_HIDE);
+      bindings_.Bind(configData->CtxShowDisplayMenu, 0, hWndTab, IDC_CTX_DISPLAY_HIDE);
+      bindings_.Bind(configData->CtxShowSelectorMenu, 0, hWndTab, IDC_CTX_SELECTOR_HIDE);
+      bindings_.Bind(configData->CtxShowExtViewerMenu, 0, hWndTab, IDC_CTX_EXTERNALVIEWER_HIDE);
+      bindings_.Bind(configData->CtxShowActionsMenu, 0, hWndTab, IDC_CTX_CUSTOMACTIONS_HIDE);
       //bindings_.Bind(configData->SourceHideExpMenu, 0, hWndTab, IDC_CTX_PREFS_HIDE);
       break;
   }
@@ -227,9 +227,9 @@ LRESULT ConfigDialog::OnNotify(int idCtrl, LPNMHDR pnmh) {
     case IDC_TABS:
       switch (pnmh->code) {
         case TCN_SELCHANGING: {        
-          pfc::string8 title_yn(m_configwindow->GetCurrentConfigTab()->getTabTitle());
-          title_yn << " configuration";
           if (get_state() & preferences_state::changed) {
+            pfc::string8 title_yn(m_configwindow->GetCurrentConfigTab()->getTabTitle());
+            title_yn << " configuration";
             CYesNoApiDialog yndlg;
             auto res = yndlg.query(get_wnd(), {title_yn, "Apply Changes ?"}, true, false);
             switch (res) {
