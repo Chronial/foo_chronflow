@@ -1,0 +1,39 @@
+#include "windows.h" //needed to replace dll info
+#include "version.h"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION DLL_VERSION_NUMERIC
+PRODUCTVERSION DLL_VERSION_NUMERIC
+FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+FILEFLAGS 0x1L
+#else
+FILEFLAGS 0x0L
+#endif
+FILEOS 0x40004L
+FILETYPE 0x0L
+FILESUBTYPE 0x0L
+BEGIN
+BLOCK "StringFileInfo"
+BEGIN
+BLOCK "000904b0"
+BEGIN
+VALUE "CompanyName", "dayuyu"
+VALUE "FileDescription", "fb2k plugin that renders album art in a 3d environment\n"
+VALUE "FileVersion", DLL_VERSION_STRING "\0"
+VALUE "InternalName", COMPONENT_NAME
+VALUE "LegalCopyright", "GNU Lesser General Public License (LGPL) " COMPONENT_YEAR "\0"
+VALUE "OriginalFilename", "foo_chronflow_mod.dll\0" VALUE "ProductName",
+    COMPONENT_NAME_LABEL "\0" VALUE "ProductVersion", DLL_VERSION_STRING "\0"
+END
+END
+BLOCK "VarFileInfo"
+BEGIN
+VALUE "Translation", 0x9, 1200
+END
+END
