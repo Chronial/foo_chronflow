@@ -1,4 +1,4 @@
-﻿#include "ConfigDialog.h"
+#include "ConfigDialog.h"
 // clang-format off
 #include "EngineThread.h" //(1)
 #include "ConfigWindow.h" //(2)
@@ -6,6 +6,7 @@
 // clang-format on
 #include "ConfigData.h"
 #include "dbAlbumInfo.h"
+#include "yesno_dialog.h"
 
 namespace coverflow {
 
@@ -101,13 +102,6 @@ void ConfigDialog::BindControls(UINT_PTR ndx, HWND hWndTab, int cmd) {
 
 void ConfigDialog::ClearBindings() {
   bindings_.Clear();
-}
-
-t_uint8 AskApplyConfirmation(HWND wndParent) {
-  pfc::string8 title;
-  title << "Configuration Changes";
-  return uMessageBox(wndParent, "Apply Changes?", title,
-                     MB_APPLMODAL | MB_YESNOCANCEL | MB_ICONASTERISK);
 }
 
 t_uint32 ConfigDialog::get_state() {
@@ -216,6 +210,11 @@ BOOL ConfigDialog::OnInitDialog(CWindow wndFocus, LPARAM lInitParam) {
   //Dark mode
   AddDialog(m_hWnd);
   AddControls(m_hWnd);
+
+  if (m_configwindow != nullptr) {
+    m_configwindow->OnInit(get_wnd(), lInitParam);
+  }
+
   return FALSE;
 }
 
@@ -227,17 +226,21 @@ LRESULT ConfigDialog::OnNotify(int idCtrl, LPNMHDR pnmh) {
   switch (idCtrl) {
     case IDC_TABS:
       switch (pnmh->code) {
-        case TCN_SELCHANGING:
+        case TCN_SELCHANGING: {        
+          pfc::string8 title_yn(m_configwindow->GetCurrentConfigTab()->getTabTitle());
+          title_yn << " configuration";
           if (get_state() & preferences_state::changed) {
-            switch (AskApplyConfirmation(get_wnd())) {
-              case IDYES:
+            CYesNoApiDialog yndlg;
+            auto res = yndlg.query(get_wnd(), {title_yn, "Apply Changes ?"}, true, false);
+            switch (res) {
+              case 1 /*yes*/:
                 apply();
                 break;
-              case IDNO:
-                //do nothing
+              case 2 /*no*/:
+                // do nothing
                 bdiscarding = true;
                 break;
-              case IDCANCEL:
+              default /*cancel*/:
                 return TRUE;
             }
           }
@@ -247,6 +250,7 @@ LRESULT ConfigDialog::OnNotify(int idCtrl, LPNMHDR pnmh) {
           ClearBindings();
           LoadingBindings(false);
           break;
+        }
         case TCN_SELCHANGE:
           //call will trigger wm_dialog_init->notifyinit->CF_USER_CONFIG_NEWTAB
           m_configwindow->ShowTab(idCtrl, pnmh);

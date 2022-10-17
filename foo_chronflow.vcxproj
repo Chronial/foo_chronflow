@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -320,7 +320,6 @@
     <ClCompile Include="ConfigData.cpp" />
     <ClCompile Include="ConfigDialog.cpp" />
     <ClCompile Include="ConfigBindings.cpp" />
-    <ClCompile Include="ConfigDialogDisplay.cpp" />
     <ClCompile Include="Engine.cpp" />
     <ClCompile Include="PlaylistCallback.cpp" />
     <ClCompile Include="EngineWindow.cpp" />
@@ -367,7 +366,6 @@
     <ClInclude Include="ConfigDialog.h" />
     <ClInclude Include="ConfigBindings.h" />
     <ClInclude Include="ConfigBindingsItf.h" />
-    <ClInclude Include="ConfigDialogDisplay.h" />
     <ClInclude Include="ConfigGuids.h" />
     <ClInclude Include="ConfigWindow.h" />
     <ClInclude Include="ConfigWindow.fwd.h" />
@@ -414,6 +412,7 @@
     <ClInclude Include="EngineThread.h" />
     <ClInclude Include="cover_positions.h" />
     <ClInclude Include="TextDisplay.h" />
+    <ClInclude Include="yesno_dialog.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="images\cover-loading-png.png" />

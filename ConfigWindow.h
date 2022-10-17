@@ -4,6 +4,7 @@
 
 #include <boost/range/iterator_range.hpp>
 #include "helpers/DarkMode.h"
+#include "yesno_dialog.h"
 #include "./lib/win32_helpers.h"
 #include "ConfigBindings.h"
 #include "ConfigData.h"
@@ -19,10 +20,10 @@
 //need default_SourcePlaylistName
 #include "configData.h"
 
-//#include "ConfigDialogDisplay.h"
 // clang-format on
 
 namespace coverflow {
+
 extern char const* const default_SourcePlaylistName;
 using ::engine::EngineThread;
 using EM = ::engine::Engine::Messages;
@@ -74,6 +75,11 @@ class ConfigTab {
   HWND getTabWnd() {
     return hWnd;
   }
+
+  const char* getTabTitle() {
+    return title;
+  }
+
   void SetTabWnd(HWND hwnd) {
     if (hWnd) DestroyWindow(hWnd);
     hWnd = hwnd;
@@ -708,6 +714,17 @@ class DisplayTab : public ConfigTab {
         uSetDlgItemInt(
           hWnd, IDC_FRAME_WIDTH, configData->HighlightWidth, false);
 
+        LOGFONT titleFont = configData->TitleFont;
+        std::ostringstream o_txt_stream;
+        o_txt_stream.write((char*)&titleFont, sizeof(titleFont));
+        pfc::string8 strBase64;
+        pfc::base64_encode(
+        	strBase64, (void*)o_txt_stream.str().c_str(), sizeof(titleFont));
+
+        uSetDlgItemText(hWnd, IDC_HIDDEN_LOGFONT, strBase64.c_str());
+        uSendDlgItemMessage(hWnd, IDC_FONT_PREV, WM_SETTEXT, 0,
+        		reinterpret_cast<LPARAM>(titleFont.lfFaceName));
+
         break;
       }
       case WM_HSCROLL: {
@@ -1216,9 +1233,10 @@ class CoverTab : public ConfigTab {
       pfc::string8 oldselection;
       pfc::string8 title;
       uGetDlgItemText(hWnd, IDC_SAVED_SELECT, oldselection);
-      title << "Delete Config \"" << oldselection << "\"";
-      if (IDYES == uMessageBox(hWnd, "Are you sure?", title,
-                               MB_APPLMODAL | MB_YESNO | MB_ICONQUESTION)) {
+      title << "Deleting \"" << oldselection << "\"";
+      CYesNoApiDialog yndlg;
+      auto res = yndlg.query(hWnd, {title, "Are you sure ?"}, false);
+      if (res == 1) {
         auto i = configData->CoverConfigs.find(oldselection.c_str());
         auto next = configData->CoverConfigs.erase(i);
         if (next == configData->CoverConfigs.end())
