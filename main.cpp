@@ -1,8 +1,6 @@
 #include "stdafx.h"
 #include "ConfigGuids.h"
 
-#define VERSION "0.5.2.mod.6"
-
 // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
 DECLARE_COMPONENT_VERSION(COMPONENT_NAME_LABEL, FOO_CHRONFLOW_VERSION,
                           "Renders Album Art in a 3d environment\n"

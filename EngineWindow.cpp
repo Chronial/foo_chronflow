@@ -838,25 +838,17 @@ void external_selection_callback::on_selection_changed(metadb_handle_list_cref p
   //Library viewers (Library Viewer, Coverflow in Library mode or ESPlaylist in Library mode, ...)
   bool srcFromLibraryViewer = gui_sel_type == contextmenu_item::caller_media_library_viewer;
   //Active Playlist selection (Coverflow playlist mode, ESPlaylist active playlist mode, ...)
-  bool srcFromActivePlaylistSelection = gui_sel_type == contextmenu_item::caller_active_playlist_selection;
+  bool srcFromActivePlaylistSelection =
+      gui_sel_type == contextmenu_item::caller_active_playlist_selection ||
+      gui_sel_type == contextmenu_item::caller_active_playlist;
   //Undefined, ej. Spider monkey ListTree or ESPlaylist in Selected playlist mode
   bool srcFromUndefined = gui_sel_type == contextmenu_item::caller_undefined;
-
-
-  //debug
-  //bool srcFromNowPlaying = gui_sel_type == contextmenu_item::caller_now_playing;
-  //if (srcFromNowPlaying)
-  //  srcFromNowPlaying = srcFromNowPlaying;
-  //if (srcFromUndefined) {
-  //  // console log...
-  //}
-  //
 
   //not at function top to ease type debugging
   if (p_selection.get_count() == 0)
     return;  // do nothing
 
-  if (gui_sel_type == contextmenu_item::caller_media_library_viewer ||
+  if (srcFromLibraryViewer ||
       (gui_sel_type == gui_sel_anon && configData->CoverFollowsAnonymSelection)) {
     if (configData->CoverFollowsLibrarySelection && configData->IsWholeLibrary()) {
       if (!engineWindow.engineThread.has_value())
@@ -902,7 +894,7 @@ void external_selection_callback::on_selection_changed(metadb_handle_list_cref p
         }
       }
     }
-  } else if (gui_sel_type == contextmenu_item::caller_active_playlist_selection) {
+  } else if (srcFromActivePlaylistSelection) {
     // this type of selection is processed by class PlaylistCallback
   }
 }

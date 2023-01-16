@@ -48,7 +48,15 @@ EngineThread::EngineThread(EngineWindow& engineWindow, StyleManager& styleManage
   styleManager.setChangeHandler([&] { this->on_style_change(); });
   play_callback_reregister(flag_on_playback_new_track, true);
   //reregister playlist manager
-  playlist_manager::get()->register_callback(this, flag_on_items_selection_change);
+  playlist_manager::get()->register_callback(this,
+    flag_on_item_focus_change |
+    flag_on_items_added |
+    flag_on_items_removed |
+    flag_on_items_reordered |
+    flag_on_items_selection_change |
+    flag_on_playlist_activate |
+    flag_on_playlist_renamed |
+    flag_on_playlists_removed);
 
   std::packaged_task<void(EngineThread*)> task(&EngineThread::run);
   thread = std::thread(std::move(task), this);

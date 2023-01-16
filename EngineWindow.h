@@ -52,7 +52,8 @@ class GLFWContext {
 };
 class external_selection_callback
     : public ui_selection_callback_impl_base_ex<
-          playlist_callback::flag_on_items_selection_change> {
+          playlist_callback::flag_on_items_selection_change |
+          playlist_callback::flag_on_playlist_activate> {
 
  public:
   external_selection_callback(EngineWindow& ew) : engineWindow(ew){};

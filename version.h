@@ -1,13 +1,13 @@
 #pragma once
 #define COMPONENT_NAME_LABEL "Chronflow Mod"
 #define COMPONENT_NAME "foo_chronflow_mod"
-#define COMPONENT_YEAR "2022"
+#define COMPONENT_YEAR "2023"
 
 #define COMPONENT_VERSION_MAJOR 0
 
 #define COMPONENT_VERSION_MINOR 5
 #define COMPONENT_VERSION_PATCH 2
-#define COMPONENT_VERSION_SUB_PATCH 9
+#define COMPONENT_VERSION_SUB_PATCH 10
 
 #define MAKE_STRING(text) #text
 #define MAKE_COMPONENT_VERSION(major, minor, patch, subpatch) \
