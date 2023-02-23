@@ -113,7 +113,7 @@ void PlaylistCallback::on_items_selection_change(t_size p_playlist,
   auto target_albuminfo =
     static_cast<EngineThread*>(this)->sendSync<EM::GetTargetAlbum>().get();
 
-  if (stricmp_utf8(target_albuminfo.value().pos.key.c_str(), keyBuffer) != 0) {
+  if (target_albuminfo && stricmp_utf8(target_albuminfo.value().pos.key.c_str(), keyBuffer) != 0) {
     DBPos sel_pos;
     sel_pos.key = keyBuffer;
     sel_pos.sortKey = sortBufferWide;

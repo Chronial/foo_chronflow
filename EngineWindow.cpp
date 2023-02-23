@@ -889,7 +889,7 @@ void external_selection_callback::on_selection_changed(metadb_handle_list_cref p
           engineWindow.engineThread->send<EM::ReloadCollectionFromList>(shared_selection);
         } else {
           //(B)
-          if (stricmp_utf8(target_albuminfo.value().pos.key.c_str(), keyBuffer) != 0)
+          if (target_albuminfo && stricmp_utf8(target_albuminfo.value().pos.key.c_str(), keyBuffer) != 0)
             engineWindow.engineThread->send<EM::MoveToCurrentTrack>( p_selection.get_item(0));
         }
       }
