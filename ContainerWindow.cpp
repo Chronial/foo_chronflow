@@ -120,6 +120,13 @@ HWND ContainerWindow::createWindow(HWND parent) {
     return true;
   }();
 
+  DWORD regID = 0;
+  CoCreateGuid(&g_ClsIdCarObject);
+  CoRegisterClassObject(CLSID_Chron_Control,
+    (IClassFactory*)&m_chronClassFactory,
+    CLSCTX_LOCAL_SERVER,
+    REGCLS_MULTIPLEUSE, &regID);
+
   return check(CreateWindowEx(0,  // Extended Style For The Window
                               mainwindowClassname,  // Class Name
                               uT(PFC_string_formatter() << AppNameInternal << " container"), //  Title

@@ -1,0 +1,29 @@
+import "oaidl.idl";
+import "ocidl.idl";
+[
+  //CLSID_Chron_Control
+  uuid(2543AA7C-5E5A-4F20-AC6D-04D6683ACDFA), 
+  helpstring("chronflow_mod COM interface"),
+  dual
+]
+
+interface IChronControl : IDispatch {
+
+  [ id(0x000007d1), vararg]
+  HRESULT SetPanelColor(
+                  [in] BSTR Expression,
+                  [in] SAFEARRAY(VARIANT) * Parameters,
+                  [out, retval] VARIANT * pvarResult);
+  [id(0x000007d3), vararg]
+  HRESULT SetTextColor(
+                  [in] BSTR Expression,
+                  [in] SAFEARRAY(VARIANT) * Parameters,
+                  [ out, retval ] VARIANT * pvarResult);
+};
+
+//CLSID_Chron_Library
+[version(1.0), uuid(2543AA7E-5E5A-4F20-AC6D-04D6683ACDFA), ]
+library chron
+{
+  interface IChronControl;
+};

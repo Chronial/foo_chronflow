@@ -1,0 +1,12 @@
+Copy to plugin installation folder and run.
+
+example:
+
+const chron = new ActiveX("chron.IChronControl);
+
+const white = 0xffffff; 
+const black = 0x000000;
+
+chron.SetPanelColor(white);
+chron.SetTextColor(black);
+

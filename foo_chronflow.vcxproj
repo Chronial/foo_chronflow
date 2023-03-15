@@ -138,7 +138,7 @@
       </DisableSpecificWarnings>
       <AdditionalIncludeDirectories>..\..\..\WTL10_9163\Include;.\libv2\vcpkg\installed\$(PlatformShortName)-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level4</WarningLevel>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <ForcedIncludeFiles>StdAfx.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -157,6 +157,7 @@
       <LinkTimeCodeGeneration />
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
+      <ModuleDefinitionFile>foo_chronflow_mod.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
       <Command>mkdir "$(FOO_USR)\$(FOO_COMPONENT_NAME)" &amp;  copy "$(TargetPath)" "$(FOO_USR)$(FOO_USR_FILE)"</Command>
@@ -189,7 +190,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <AdditionalIncludeDirectories>..;..\..;..\..\..\WTL10_9163\Include;.\libv2\vcpkg\installed\$(PlatformShortName)-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level4</WarningLevel>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <ForcedIncludeFiles>stdafx.h</ForcedIncludeFiles>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -206,6 +207,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
+      <ModuleDefinitionFile>foo_chronflow_mod.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
       <Command>mkdir "$(FOO_USR)\$(FOO_COMPONENT_NAME)" &amp; copy "$(TargetPath)" "$(FOO_USR)$(FOO_USR_FILE)"</Command>
@@ -239,7 +241,7 @@
       </DisableSpecificWarnings>
       <AdditionalIncludeDirectories>..\..\..\WTL10_9163\Include;.\libv2\vcpkg\installed\$(PlatformShortName)-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level4</WarningLevel>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <ForcedIncludeFiles>StdAfx.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -258,6 +260,7 @@
       <LinkTimeCodeGeneration />
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
+      <ModuleDefinitionFile>foo_chronflow_mod.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
       <Command>mkdir "$(FOO_USR)\$(FOO_COMPONENT_NAME)" &amp;  copy "$(TargetPath)" "$(FOO_USR)$(FOO_USR_FILE)"</Command>
@@ -290,7 +293,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <AdditionalIncludeDirectories>..\..\..\WTL10_9163\Include;.\libv2\vcpkg\installed\$(PlatformShortName)-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level4</WarningLevel>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <ForcedIncludeFiles>stdafx.h</ForcedIncludeFiles>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -308,6 +311,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
+      <ModuleDefinitionFile>foo_chronflow_mod.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
       <Command>mkdir "$(FOO_USR)\$(FOO_COMPONENT_NAME)" &amp; copy "$(TargetPath)" "$(FOO_USR)$(FOO_USR_FILE)"</Command>
@@ -315,6 +319,8 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="COM_ClassFactory.cpp" />
+    <ClCompile Include="COM_IChronControl.cpp" />
     <ClCompile Include="ConfigCompiledInfo.cpp" />
     <ClCompile Include="ConfigCoverConfigs.cpp" />
     <ClCompile Include="ConfigData.cpp" />
@@ -357,6 +363,11 @@
     <ClCompile Include="TextDisplay.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="COM_ClassFactory.h" />
+    <ClInclude Include="COM_IChronControl.h" />
+    <ClInclude Include="COM_GetClassObject.h" />
+    <ClInclude Include="COM_Guid.h" />
+    <ClInclude Include="COM_Module.h" />
     <ClInclude Include="ConfigCompiledInfo.h" />
     <ClInclude Include="ConfigContextDisplay.h" />
     <ClInclude Include="ConfigContextSelector.h" />
@@ -433,8 +444,18 @@
     <None Include="..\SDK\foobar2000_SDK.vcxproj" />
     <None Include=".clang-format" />
     <None Include=".clang-tidy" />
+    <None Include="foo_chronflow_mod.def" />
     <None Include="CoverPositionsCompile.py" />
     <None Include="cpp.hint" />
+  </ItemGroup>
+  <ItemGroup>
+    <Midl Include="COM_IChronControl.idl">
+    </Midl>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="com\chron32.reg" />
+    <Content Include="com\foo_chronflow.tlb" />
+    <Content Include="com\info.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

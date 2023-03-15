@@ -1,0 +1,10 @@
+LIBRARY
+;
+;functions exported from this DLL
+;
+
+EXPORTS
+                DllGetClassObject   	PRIVATE
+                DllCanUnloadNow     	PRIVATE
+                DllRegisterServer   	PRIVATE
+                DllUnregisterServer 	PRIVATE

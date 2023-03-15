@@ -6,6 +6,11 @@
 #include "cover_positions_compiler.h"
 #include "utils.h"
 #include "ConfigData.h"
+
+#include "COM_Guid.h"
+#include "COM_Module.h"
+#include "COM_ClassFactory.h"
+
 // clang-format off
 
 namespace engine {
@@ -51,5 +56,6 @@ class ContainerWindow {
   // before this class is destroyed.
   HWND hwnd = nullptr;
   std::unique_ptr<EngineWindow> engineWindow;
+  ChronClassFactory m_chronClassFactory;
 };
 } // namespace
