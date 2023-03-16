@@ -239,7 +239,10 @@ STDMETHODIMP IChronControl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 
     case 2001: {
       teVariantChangeType(&v, &pDispParams->rgvarg[ndxArg], VT_BSTR);
-
+      if (!v.bstrVal) {
+        return DISP_E_BADPARAMCOUNT;
+      }
+      
       auto col = _wtol(v.bstrVal);
       VariantClear(&v);
 
@@ -249,6 +252,7 @@ STDMETHODIMP IChronControl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
       engine::EngineThread::forEach([](engine::EngineThread& t) {
 
         t.send<EM::TextFormatChangedMessage>();
+        t.send<EM::RedrawMessage>();
 
       });
       break;
@@ -257,6 +261,9 @@ STDMETHODIMP IChronControl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
     // SET TITLE COLOR
     case 2002: {
       teVariantChangeType(&v, &pDispParams->rgvarg[ndxArg], VT_BSTR);
+      if (!v.bstrVal) {
+        return DISP_E_BADPARAMCOUNT;
+      }
 
       auto col = _wtol(v.bstrVal);
       VariantClear(&v);
@@ -269,6 +276,7 @@ STDMETHODIMP IChronControl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
       engine::EngineThread::forEach([](engine::EngineThread& t) {
       
         t.send<EM::TextFormatChangedMessage>();
+        t.send<EM::RedrawMessage>();
 
       });
       break;

@@ -1,5 +1,3 @@
-#include "COM_CarClassFactory.h"
-
 #include "COM_ClassFactory.h"
 #include "COM_IChronControl.h"
 

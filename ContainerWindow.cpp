@@ -241,6 +241,8 @@ void ContainerWindow::drawErrorMessage() {
 void ContainerWindow::destroyEngineWindow(std::string errorMessage) {
   if (!engineWindow)
     return;
+  CoRevokeClassObject(0/*regID*/);
+
   engineWindow.reset();
   engineError = errorMessage;
   FB2K_console_formatter() << AppNameInternal << " encountered an error:\n"
