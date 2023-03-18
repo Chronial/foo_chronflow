@@ -160,7 +160,7 @@
       <ModuleDefinitionFile>foo_chronflow_mod.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>mkdir "$(FOO_USR)\$(FOO_COMPONENT_NAME)" &amp;  copy "$(TargetPath)" "$(FOO_USR)$(FOO_USR_FILE)"</Command>
+      <Command>mkdir "$(FOO_USR)\$(FOO_COMPONENT_NAME)" &amp; copy "$(TargetPath)" "$(FOO_USR)$(FOO_USR_FILE)" &amp; copy  "$(SolutionDir)\chron32.reg" "$(FOO_USR)\$(FOO_COMPONENT_NAME)\"  &amp; echo copy .tlb from "$(SolutionDir)$(Platform)\$(Configuration)\$(FOO_TLB_SUBFOLDER)\$(FOO_TLB_NAME)" to "$(FOO_USR)$(FOO_USR_TLB_FILE)" &amp;  copy "$(SolutionDir)$(Platform)\$(Configuration)\$(FOO_TLB_SUBFOLDER)\$(FOO_TLB_NAME)" "$(FOO_USR)$(FOO_USR_TLB_FILE)"</Command>
       <Message>copying</Message>
     </PostBuildEvent>
     <Bscmake>
@@ -210,7 +210,7 @@
       <ModuleDefinitionFile>foo_chronflow_mod.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>mkdir "$(FOO_USR)\$(FOO_COMPONENT_NAME)" &amp; copy "$(TargetPath)" "$(FOO_USR)$(FOO_USR_FILE)"</Command>
+      <Command>mkdir "$(FOO_USR)\$(FOO_COMPONENT_NAME)" &amp; copy "$(TargetPath)" "$(FOO_USR)$(FOO_USR_FILE)" &amp; copy  "$(SolutionDir)\chron32.reg" "$(FOO_USR)\$(FOO_COMPONENT_NAME)\"  &amp; echo copy .tlb from "$(SolutionDir)$(Platform)\$(Configuration)\$(FOO_TLB_SUBFOLDER)\$(FOO_TLB_NAME)" to "$(FOO_USR)$(FOO_USR_TLB_FILE)" &amp;  copy "$(SolutionDir)$(Platform)\$(Configuration)\$(FOO_TLB_SUBFOLDER)\$(FOO_TLB_NAME)" "$(FOO_USR)$(FOO_USR_TLB_FILE)"</Command>
       <Message>copying</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -263,7 +263,7 @@
       <ModuleDefinitionFile>foo_chronflow_mod.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>mkdir "$(FOO_USR)\$(FOO_COMPONENT_NAME)" &amp;  copy "$(TargetPath)" "$(FOO_USR)$(FOO_USR_FILE)"</Command>
+      <Command>mkdir "$(FOO_USR)\$(FOO_COMPONENT_NAME)" &amp; copy "$(TargetPath)" "$(FOO_USR)$(FOO_USR_FILE)" &amp; copy  "$(SolutionDir)\chron64.reg" "$(FOO_USR)\$(FOO_COMPONENT_NAME)\"  &amp; echo copy .tlb from "$(SolutionDir)$(Platform)\$(Configuration)\$(FOO_TLB_SUBFOLDER)\$(FOO_TLB_NAME)" to "$(FOO_USR)$(FOO_USR_TLB_FILE)" &amp;  copy "$(SolutionDir)$(Platform)\$(Configuration)\$(FOO_TLB_SUBFOLDER)\$(FOO_TLB_NAME)" "$(FOO_USR)$(FOO_USR_TLB_FILE)"</Command>
       <Message>copying</Message>
     </PostBuildEvent>
     <Bscmake>
@@ -314,7 +314,7 @@
       <ModuleDefinitionFile>foo_chronflow_mod.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>mkdir "$(FOO_USR)\$(FOO_COMPONENT_NAME)" &amp; copy "$(TargetPath)" "$(FOO_USR)$(FOO_USR_FILE)"</Command>
+      <Command>mkdir "$(FOO_USR)\$(FOO_COMPONENT_NAME)" &amp; copy "$(TargetPath)" "$(FOO_USR)$(FOO_USR_FILE)" &amp; copy  "$(SolutionDir)\chron64.reg" "$(FOO_USR)\$(FOO_COMPONENT_NAME)\"  &amp; echo copy .tlb from "$(SolutionDir)$(Platform)\$(Configuration)\$(FOO_TLB_SUBFOLDER)\$(FOO_TLB_NAME)" to "$(FOO_USR)$(FOO_USR_TLB_FILE)" &amp;  copy "$(SolutionDir)$(Platform)\$(Configuration)\$(FOO_TLB_SUBFOLDER)\$(FOO_TLB_NAME)" "$(FOO_USR)$(FOO_USR_TLB_FILE)"</Command>
       <Message>copying</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>

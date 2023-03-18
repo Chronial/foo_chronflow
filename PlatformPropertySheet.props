@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
@@ -9,6 +9,9 @@
     <FOO_WD>$(FOO_WORKING_DIR_BETA)</FOO_WD>
     <FOO_CMD>$(FOO_WD)\foobar2000.exe</FOO_CMD>
     <FOO_USR>$(FOO_WD)$(FOO_USR_DIR_BETA)</FOO_USR>
+    <FOO_TLB_SUBFOLDER>foo_chronflow</FOO_TLB_SUBFOLDER>
+    <FOO_TLB_NAME>foo_chronflow.tlb</FOO_TLB_NAME>
+    <FOO_USR_TLB_FILE>\$(FOO_COMPONENT_NAME)\$(FOO_TLB_NAME)</FOO_USR_TLB_FILE>
   </PropertyGroup>
   <PropertyGroup>
     <_PropertySheetDisplayName>PlatformPropertySheet</_PropertySheetDisplayName>
@@ -35,6 +38,15 @@
     </BuildMacro>
     <BuildMacro Include="FOO_USR">
       <Value>$(FOO_USR)</Value>
+    </BuildMacro>
+    <BuildMacro Include="FOO_TLB_SUBFOLDER">
+      <Value>$(FOO_TLB_SUBFOLDER)</Value>
+    </BuildMacro>
+    <BuildMacro Include="FOO_TLB_NAME">
+      <Value>$(FOO_TLB_NAME)</Value>
+    </BuildMacro>
+    <BuildMacro Include="FOO_USR_TLB_FILE">
+      <Value>$(FOO_USR_TLB_FILE)</Value>
     </BuildMacro>
   </ItemGroup>
 </Project>
