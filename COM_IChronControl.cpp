@@ -47,9 +47,14 @@ IChronControl::IChronControl() {
 
   HRESULT hrlib = LoadTypeLibEx(os_src.c_str(), REGKIND_REGISTER, &pTypeLib);
 
-  if (!m_pTypeInfo) {
+  if SUCCEEDED (hrlib) {
+
+    pTypeLib->GetTypeInfoOfGuid(CLSID_Chron_Control, &m_pTypeInfo);
+
+    if (!m_pTypeInfo) {
       pTypeLib->GetTypeInfo(0, &m_pTypeInfo);
-  }
+    }
+
     pTypeLib->Release();
   }
   LockModule(TRUE);
@@ -169,7 +174,7 @@ int* g_map;
 TEmethod methodTSC[] = {
 
     {2001, L"SetPanelColor"},
-    {2002, L"SetTextColor"},
+    {2003, L"SetTextColor"},
     {0, nullptr}
 };
 
@@ -179,6 +184,7 @@ STDMETHODIMP IChronControl::GetIDsOfNames(REFIID riid, LPOLESTR* rgszNames, UINT
 }
 
 size_t GetIntFromVariant(VARIANT* pv) {
+
   if (pv) {
     if (pv->vt == (VT_VARIANT | VT_BYREF)) {
       return GetIntFromVariant(pv->pvarVal);
@@ -190,11 +196,12 @@ size_t GetIntFromVariant(VARIANT* pv) {
       return pv->ulVal;
     }
     if (pv->vt == VT_R8) {
-      return static_cast<size_t>(pv->dblVal);
+      return gsl::narrow_cast<size_t>(/*static_cast<LONGLONG>*/ /*(*/ pv->dblVal) /*)*/;
     }
-    
+
     VARIANT vo;
     VariantInit(&vo);
+
     if SUCCEEDED (VariantChangeType(&vo, pv, 0, VT_I4)) {
       return vo.lVal;
     }
@@ -202,7 +209,7 @@ size_t GetIntFromVariant(VARIANT* pv) {
       return vo.ulVal;
     }
     if SUCCEEDED (VariantChangeType(&vo, pv, 0, VT_I8)) {
-      return (size_t)vo.llVal;
+      return gsl::narrow_cast<size_t>(vo.llVal);
     }
   }
   return 0;
@@ -211,9 +218,35 @@ size_t GetIntFromVariant(VARIANT* pv) {
 VOID teVariantChangeType(__out VARIANTARG* pvargDest, __in const VARIANTARG* pvarSrc,
                          __in VARTYPE vt) {
   VariantInit(pvargDest);
-  if FAILED (VariantChangeType(pvargDest, pvarSrc, 0, vt)) {
+  if FAILED(VariantChangeType(pvargDest, pvarSrc, 0, vt)) {
     pvargDest->llVal = 0;
   }
+}
+
+size_t BSTR_RefColor(BSTR bstr) {
+
+  std::wstring ws(bstr, SysStringLen(bstr));
+  const bool bhex = !ws.compare(0, 2, L"0x");
+
+  int radix = 10;
+  if (bhex) {
+    auto cxitems = std::count_if(ws.begin() + 2, ws.end(), [](auto c) {
+      return std::isxdigit((unsigned char)c);
+      });
+
+    if (cxitems == 6/*ws.length() - 2*/) {
+      radix = 16;
+    }
+  }
+
+  errno = 0;
+  wchar_t* end;
+  size_t ival = wcstol(ws.c_str(), &end, radix);
+
+  if (errno) {
+    ival = _wtol(bstr);
+  }
+  return ival;
 }
 
 STDMETHODIMP IChronControl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
@@ -237,48 +270,71 @@ STDMETHODIMP IChronControl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 
     // SET PANEL COLOR
 
-    case 2001: {
-      teVariantChangeType(&v, &pDispParams->rgvarg[ndxArg], VT_BSTR);
-      if (!v.bstrVal) {
+    case 2001:
+    case 2003 : {
+
+      BOOL bArg = true;
+
+      if (pDispParams->cArgs == 2) {
+
+        if (pDispParams->rgvarg[0].vt == (VT_VARIANT | VT_ARRAY)) {
+          LPSAFEARRAY pSafeArray = pDispParams->rgvarg[0].parray;
+          VARTYPE itemType;
+          if (SUCCEEDED(SafeArrayGetVartype(pSafeArray, &itemType))) {
+            if (itemType == VT_VARIANT) {
+              if (SafeArrayGetDim(pSafeArray) == 1) {
+                LONG lBound;
+                LONG uBound;
+                if (SUCCEEDED(SafeArrayGetLBound(pSafeArray, 1, &lBound)) &&
+                    SUCCEEDED(SafeArrayGetUBound(pSafeArray, 1, &uBound))) {
+
+                  VARIANT vrefresh;
+                  VariantInit(&vrefresh);
+                  long ai = 0;
+ 
+                  if (SUCCEEDED(::SafeArrayGetElement(pSafeArray, &ai, &vrefresh))) {
+
+                    size_t irefresh = GetIntFromVariant(&vrefresh);
+                    bArg = irefresh;
+                    
+                    VariantClear(&vrefresh);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      VARIANT vcolor;
+      VariantInit(&vcolor);
+      teVariantChangeType(&vcolor, &pDispParams->rgvarg[ndxArg], VT_BSTR);
+
+      if (!vcolor.bstrVal) {
         return DISP_E_BADPARAMCOUNT;
       }
       
-      auto col = _wtol(v.bstrVal);
-      VariantClear(&v);
+      COLORREF colref = BSTR_RefColor(vcolor.bstrVal);
+      VariantClear(&vcolor);
 
-      coverflow::configData->PanelBgCustom = true;
-      coverflow::configData->PanelBg = abs(col);
-
-      engine::EngineThread::forEach([](engine::EngineThread& t) {
-
-        t.send<EM::TextFormatChangedMessage>();
-        t.send<EM::RedrawMessage>();
-
-      });
-      break;
-    }
-
-    // SET TITLE COLOR
-    case 2002: {
-      teVariantChangeType(&v, &pDispParams->rgvarg[ndxArg], VT_BSTR);
-      if (!v.bstrVal) {
-        return DISP_E_BADPARAMCOUNT;
+      // SET TITLE COLOR
+      if (dispIdMember == 2001) {
+        coverflow::configData->PanelBgCustom = true;
+        coverflow::configData->PanelBg = colref;
+      // SET TITLE COLOR
+      } else if (dispIdMember == 2003) {
+        coverflow::configData->TitleColorCustom = true;
+        coverflow::configData->TitleColor = colref;
       }
 
-      auto col = _wtol(v.bstrVal);
-      VariantClear(&v);
+      engine::EngineThread::forEach([bArg](engine::EngineThread& t) {
+          t.send<EM::TextFormatChangedMessage>();
 
-      chrone_colorref = RGB(r, g, b);
-
-      coverflow::configData->TitleColorCustom = true;
-      coverflow::configData->TitleColor = abs(col);
-
-      engine::EngineThread::forEach([](engine::EngineThread& t) {
-      
-        t.send<EM::TextFormatChangedMessage>();
-        t.send<EM::RedrawMessage>();
-
+          if (bArg) {
+            t.send<EM::RedrawMessage>();
+          }
       });
+            
       break;
     }
     default:
