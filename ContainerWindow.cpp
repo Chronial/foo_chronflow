@@ -120,12 +120,10 @@ HWND ContainerWindow::createWindow(HWND parent) {
     return true;
   }();
 
-  DWORD regID = 0;
-  CoCreateGuid(&g_ClsIdCarObject);
   CoRegisterClassObject(CLSID_Chron_Control,
     (IClassFactory*)&m_chronClassFactory,
     CLSCTX_LOCAL_SERVER,
-    REGCLS_MULTIPLEUSE, &regID);
+    REGCLS_MULTIPLEUSE, &m_chronClassFactoryRegID);
 
   return check(CreateWindowEx(0,  // Extended Style For The Window
                               mainwindowClassname,  // Class Name
@@ -138,6 +136,9 @@ HWND ContainerWindow::createWindow(HWND parent) {
 };
 
 ContainerWindow::~ContainerWindow() {
+
+  HRESULT hresdbg = CoRevokeClassObject(m_chronClassFactoryRegID);
+
   if (hwnd)
     DestroyWindow(hwnd);
 }
@@ -241,7 +242,6 @@ void ContainerWindow::drawErrorMessage() {
 void ContainerWindow::destroyEngineWindow(std::string errorMessage) {
   if (!engineWindow)
     return;
-  CoRevokeClassObject(0/*regID*/);
 
   engineWindow.reset();
   engineError = errorMessage;

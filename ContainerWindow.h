@@ -57,5 +57,6 @@ class ContainerWindow {
   HWND hwnd = nullptr;
   std::unique_ptr<EngineWindow> engineWindow;
   ChronClassFactory m_chronClassFactory;
+  DWORD m_chronClassFactoryRegID = 0;
 };
 } // namespace
