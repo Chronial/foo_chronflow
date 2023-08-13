@@ -7,7 +7,7 @@
 
 #define COMPONENT_VERSION_MINOR 5
 #define COMPONENT_VERSION_PATCH 2
-#define COMPONENT_VERSION_SUB_PATCH 16
+#define COMPONENT_VERSION_SUB_PATCH 17
 
 #define MAKE_STRING(text) #text
 #define MAKE_COMPONENT_VERSION(major, minor, patch, subpatch) \
