@@ -50,7 +50,8 @@ class CompiledCPInfo {
 
   bool enableCoverTitle{};
   bool enableCoverPngAlpha{};
-
+  bool enableCarousel{};
+  
   // this has to be the last Member!
   pfc::array_t<CoverPosInfo> coverPosInfos;
 

@@ -1,4 +1,5 @@
-﻿#pragma once
+#pragma once
+#include "SDK/cfg_var_legacy.h"
 #include "utils.h"
 
 namespace coverflow {
@@ -15,7 +16,7 @@ int GetCoverConfigPosition(CoverConfigMap configs, pfc::string8 name);
 
 pfc::string8 GetCoverConfigScript(CoverConfigMap configs, pfc::string8 name);
 
-class cfg_coverConfigs : public cfg_var, public CoverConfigMap {
+class cfg_coverConfigs : public cfg_var_legacy::cfg_var, public CoverConfigMap {
  public:
   explicit cfg_coverConfigs(const GUID& p_guid)
     : cfg_var(p_guid), CoverConfigMap(builtInCoverConfigs()) {

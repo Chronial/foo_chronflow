@@ -27,7 +27,7 @@ double ScriptedCoverPositions::distanceToMirror(glVectord point) {
 glQuad ScriptedCoverPositions::getCoverQuad(float coverId, float coverAspect) {
   CoverPosInfo cPos = cInfo->getCoverPosInfo(coverId);
 
-  double sizeLimAspect = cPos.sizeLim.w / cPos.sizeLim.h;
+  const double sizeLimAspect = cPos.sizeLim.w / cPos.sizeLim.h;
 
   float w;
   float h;
@@ -73,4 +73,8 @@ bool ScriptedCoverPositions::isCoverTitleEnabled() {
 
 bool ScriptedCoverPositions::isCoverPngAlphaEnabled() {
   return cInfo->enableCoverPngAlpha;
+}
+
+bool ScriptedCoverPositions::isCarouselEnabled() {
+  return cInfo->enableCarousel;
 }

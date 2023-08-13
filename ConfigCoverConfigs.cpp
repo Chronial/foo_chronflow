@@ -24,10 +24,13 @@ int GetCoverConfigPosition(CoverConfigMap configs, pfc::string8 name) {
                      });
 
     if (it != configs.end()) {
-      //std::distance(configs.begin(), it);
-      std::vector<std::pair<std::string, CoverConfig>> v1(
-            (CoverConfigMap::const_iterator)configs.begin(), it);
-      pos = v1.size();
+      for (auto wit : configs) {
+        pos++;
+        if (wit.first._Equal(it->first)) {
+          break;
+        }
+      }
+
     }
     return pos;
 }
@@ -51,8 +54,8 @@ pfc::string8 GetCoverConfigScript(CoverConfigMap configs, pfc::string8 name) {
 
 void cfg_coverConfigs::get_data_raw(stream_writer* p_stream, abort_callback& p_abort) {
   p_stream->write_lendian_t(version, p_abort);
-  int customCount = std::count_if(
-      begin(), end(), [](CoverConfigMap::value_type& x) { return !x.second.buildIn; });
+  int customCount = static_cast<int>(std::count_if(
+      begin(), end(), [](CoverConfigMap::value_type& x) { return !x.second.buildIn; }));
   p_stream->write_lendian_t(customCount, p_abort);
   for (auto& [name, config] : *this) {
     if (config.buildIn)

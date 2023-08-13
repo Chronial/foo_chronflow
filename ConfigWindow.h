@@ -1027,6 +1027,11 @@ class CoverTab : public ConfigTab {
 
         loadComboConfigList(-1);
 
+
+        if (!configData->CoverConfigSel.get_length()) {
+          configData->CoverConfigSel = defaultCoverConfig;
+        }
+
         const CoverConfig& config =
             configData->CoverConfigs.at(configData->CoverConfigSel.c_str());
         uSendDlgItemMessage(hWnd, IDC_DISPLAY_CONFIG, EM_SETREADONLY,
@@ -1312,6 +1317,10 @@ class CoverTab : public ConfigTab {
     pfc::string8 selection_name = "";
     int default_ndx = GetCoverConfigPosition(configData->CoverConfigs,
                                              configData->CoverConfigSel);
+    if (default_ndx == -1) {
+      configData->CoverConfigSel = defaultCoverConfig;
+      default_ndx = configData->GetCCPosition(default_CoverConfigSel);
+    }
 
     HWND ctrl = GetDlgItem(hWnd, IDC_SAVED_SELECT);
     SetWindowRedraw(ctrl, false);
@@ -1338,19 +1347,39 @@ class CoverTab : public ConfigTab {
 
     if (comboedited) {
       int session_ndx = configData->sessionCompiledCPInfo.get().first;
-      if (m_edited_ndx == session_ndx) {
-        configData->sessionCompiledCPInfo.set(
-            selection_ndx, configData->sessionCompiledCPInfo.get().second);
+      //fix depri built-in configs
+      if (session_ndx >= configData->CoverConfigs.size()) {
+        session_ndx = default_ndx;
+
+        configData->sessionCompiledCPInfo.reset();
+        auto default_script = GetCoverConfigScript(configData->CoverConfigs, configData->CoverConfigSel);
+
+        std::pair<int, std::shared_ptr<CompiledCPInfo>> cInfo;
+
+        cInfo.first = configData->GetCCPosition(configData->CoverConfigSel);
+        cInfo.second = make_shared<CompiledCPInfo>(compileCPScript(default_script));
+        configData->sessionCompiledCPInfo.set(cInfo.first, cInfo.second);
+
+      } else {
+        if (m_edited_ndx == session_ndx) {
+          configData->sessionCompiledCPInfo.set(
+              selection_ndx, configData->sessionCompiledCPInfo.get().second);
+        }
       }
 
       m_edited_name = "";
       m_edited_ndx = -1;
     }
-    const CoverConfig& config = configData->CoverConfigs.at(selection_name.c_str());
-    uEnableWindow(uGetDlgItem(hWnd, IDC_SAVED_REMOVE),
-                  static_cast<BOOL>(!config.buildIn && selection_ndx!=default_ndx));
-    uEnableWindow(uGetDlgItem(hWnd, IDC_SAVED_RENAME),
-                  static_cast<BOOL>(!config.buildIn && selection_ndx!=default_ndx ));
+    if (selection_name.get_length()) {
+      const CoverConfig& config = configData->CoverConfigs.at(selection_name.c_str());
+      uEnableWindow(uGetDlgItem(hWnd, IDC_SAVED_REMOVE),
+                    static_cast<BOOL>(!config.buildIn && selection_ndx!=default_ndx));
+      uEnableWindow(uGetDlgItem(hWnd, IDC_SAVED_RENAME),
+                    static_cast<BOOL>(!config.buildIn && selection_ndx!=default_ndx ));
+    } else {
+      uEnableWindow(uGetDlgItem(hWnd, IDC_SAVED_REMOVE), false);
+      uEnableWindow(uGetDlgItem(hWnd, IDC_SAVED_RENAME), false);
+    }
     SetWindowRedraw(ctrl, true);
   }
 

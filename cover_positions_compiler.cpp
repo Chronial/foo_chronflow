@@ -223,7 +223,8 @@ CompiledCPInfo compileCPScript(const char* script) {
 
   out.enableCoverTitle = scriptObj.call<bool>("enableCoverTitle");
   out.enableCoverPngAlpha = scriptObj.call<bool>("enableCoverPngAlpha");
-  //todo: profile
+  out.enableCarousel = scriptObj.call<bool>("enableCarousel");
+
   scriptObj.DetachControl();
 
   return out;

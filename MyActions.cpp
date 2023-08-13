@@ -73,7 +73,6 @@ t_size CustomAction::DoAddReplace(const pfc::list_base_const_t<metadb_handle_ptr
                                   pfc::list_t<metadb_handle_ptr>& updateTracks,
                                   bit_array_bittable& updateMask) {
 
-  bool bres = false;
   updateTracks = tracks;
 
   static_api_ptr_t<playlist_manager> pm;
@@ -369,41 +368,25 @@ class ActionDisplayConfig : public CustomAction {
     const pfc::string8 str_set_display_action = "Set Display";
     const pfc::string8 str_toggle_display_action = "Toggle Display";
 
-    if (pre == -1) {
+    if (m_pre == -1) {
       actionName = str_set_display_action.c_str(); //"Set Display Ndx"
-      actionName = actionName << pfc::string8(" ")
-                              << (post == -1 ? "to Default" : std::to_string(post).c_str());
+      actionName << pfc::string8(" ")
+          << (m_post == -1 ? "to Default" : std::to_string(m_post).c_str());
     }
     else {
       actionName = str_toggle_display_action.c_str(); //"Toggle Display 1..Ndx or 1..default"
-      actionName = actionName << pfc::string8(" ") << pre;
-      actionName = actionName << ".." << (post == -1? "default" : std::to_string(post).c_str());
+      actionName = actionName << pfc::string8(" ") << m_pre;
+      actionName << ".." << (m_post == -1 ? "default" : std::to_string(m_post).c_str());
     }
     bPlaylistAction = false;
-    m_pre = pre;
-    m_post = post;
   }
 
   void run(const pfc::list_base_const_t<metadb_handle_ptr>& tracks,
     const char* /*albumTitle*/, HWND hwnd, int flag) {};
+
   void sendconfig(HWND hwnd) override {
-    int currentpos = configData->sessionCompiledCPInfo.get().first;
-    int defaultpos = configData->GetCCPosition();
-    int ndx_pre = m_pre; // -1 for set only action, other for swap  action pre and post
-    int ndx_post = m_post == -1 ? defaultpos : m_post;
-    // set to post or toggle to post
-    if ((m_pre == -1 && currentpos != ndx_post) ||
-        (m_pre !=-1 && currentpos == ndx_pre) ||
-        (m_pre !=-1 && currentpos != ndx_pre && currentpos != ndx_post)) {
-      ndx_pre = currentpos != ndx_pre ? currentpos : ndx_pre;
-      if (currentpos != ndx_post)
-        SendMessage(hwnd, WM_MYACTIONS_SET_DISPLAY, ndx_pre, ndx_post);
-    }
-    else {
-      //toggle to pre
-      if (currentpos != ndx_pre)
-        SendMessage(hwnd, WM_MYACTIONS_SET_DISPLAY, currentpos, ndx_pre);
-    }
+
+    SendMessage(hwnd, WM_MYACTIONS_SET_DISPLAY, m_pre, m_post);
   }
 
  private:

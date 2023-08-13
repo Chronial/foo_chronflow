@@ -22,6 +22,7 @@ public:
 
   bool isCoverTitleEnabled();
   bool isCoverPngAlphaEnabled();
+  bool isCarouselEnabled();
 
 private:
   shared_ptr<CompiledCPInfo> cInfo;

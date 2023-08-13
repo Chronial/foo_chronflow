@@ -6,7 +6,7 @@
 
 namespace coverflow {
 
-class cfg_compiledCPInfoPtr : public cfg_var {
+class cfg_compiledCPInfoPtr : public cfg_var_legacy::cfg_var {
 
  private:
   int list_position;
