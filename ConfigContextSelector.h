@@ -4,65 +4,34 @@
 
 namespace coverflow {
 
-  void AppendSelectorContextMenuOptions(HMENU* hMenu, bool bonlylibseltoggle) {
-    //temp fix while inclusion of this functionality is discussed
-    if (bonlylibseltoggle) {
-      bool b_iswholelib = configData->IsWholeLibrary();
-      bool b_followlibrary = configData->CoverFollowsLibrarySelection;
-      HMENU _childDisplay = CreatePopupMenu();
-      if (b_iswholelib) {
-        uAppendMenu(*hMenu, !b_iswholelib ? MF_DELETE : MF_STRING | b_followlibrary ? MF_CHECKED : MF_UNCHECKED,
-          engine::ID_LIBRARY_COVER_FOLLOWS_SELECTION,
-          PFC_string_formatter() << "Covers follow Library Selection" << "\t");
-      }
-      return;
-    }
+  void AppendSelectorContextMenuOptions(HMENU* hMenu, bool bonlylibseltoggle, engine::EngineWindow* ew) {
 
-    bool b_iswholelib = configData->IsWholeLibrary();
-    //follow library
-    bool b_followlibrary = configData->CoverFollowsLibrarySelection;
-    //filter
+    bool b_iswholelib = ew->container.coverIsWholeLibrary();
     bool b_lfs_enabled = configData->SourceLibrarySelector;
     bool b_lfs_lock_enabled = configData->SourceLibrarySelectorLock;
+    bool b_xui_follow_lib_sel = ew->container.GetCoverDispFlagU(DispFlags::FOLLOW_LIB_SEL);
+    bool b_xui_sets_selection = ew->container.GetCoverDispFlagU(DispFlags::SET_LIB_SEL);
 
-    HMENU _childDisplay = CreatePopupMenu();
-    if (b_iswholelib)
-    uAppendMenu(*hMenu, !b_iswholelib? MF_DELETE : MF_STRING | b_followlibrary ? MF_CHECKED : MF_UNCHECKED,
-      engine::ID_LIBRARY_COVER_FOLLOWS_SELECTION,
-      PFC_string_formatter() << "Covers follow Library Selection" << "\t");
+    if (b_iswholelib) {
 
-    uAppendMenu(_childDisplay, MF_STRING | !b_followlibrary && !b_lfs_enabled? MF_DISABLED : b_lfs_enabled ? MF_CHECKED : MF_UNCHECKED,
-      engine::ID_LIBRARY_FILTER_SELECTOR_AS_SOURCE,
-      PFC_string_formatter() << "Library Filter Selector"
-      << "\tCtrl+F10");
+      HMENU _childLibrarySelections = CreatePopupMenu();
 
-    uAppendMenu(_childDisplay, MF_STRING | !b_lfs_enabled && !b_lfs_lock_enabled? MF_DISABLED | MF_UNCHECKED : b_lfs_lock_enabled ? MF_CHECKED : MF_UNCHECKED,
-      engine::ID_LIBRARY_FILTER_SELECTOR_LOCK,
-      PFC_string_formatter() << "Lock Library Filter Selector"
-      << "\tCtrl+F8");
+      uAppendMenu(_childLibrarySelections, MF_STRING | b_xui_sets_selection ? MF_CHECKED : MF_UNCHECKED,
+        engine::ID_COVER_SETS_SELECTION,
+        PFC_string_formatter() << "Set Library Selection";
+      uAppendMenu(_childLibrarySelections, MF_STRING | b_xui_follow_lib_sel ? MF_CHECKED : MF_UNCHECKED,
+        engine::ID_LIBRARY_COVER_FOLLOWS_SELECTION,
+        PFC_string_formatter() << "Follow Library Selection");
 
-    MENUITEMINFO mi1 = { 0 };
-    mi1.cbSize = sizeof(MENUITEMINFO);
-    mi1.fMask = MIIM_SUBMENU | MIIM_STRING | MIIM_ID;
-    mi1.wID = engine::ID_SUBMENU_SELECTOR;
-    mi1.hSubMenu = _childDisplay;
-    mi1.dwTypeData = _T("Select Covers");
-    // insert menu item with submenu to hPopupMenu
-    InsertMenuItem(*hMenu, engine::ID_CONTEXT_LAST - 15, true, &mi1);
-  }
-  void OnSelectorContextCommand(HMENU* hMenu, const int cmd, engine::EngineWindow* ew) {
 
-    if (cmd == engine::ID_LIBRARY_COVER_FOLLOWS_SELECTION) {
-      // toggle covers follow library selection
-      ew->cmdToggleLibraryCoverFollowsSelection();
-    }
-    else if (cmd == engine::ID_LIBRARY_FILTER_SELECTOR_AS_SOURCE) {
-      // toggle Library Filter Selector on/off
-      ew->cmdToggleLibraryFilterSelectorSource(false);
-    }
-    else if (cmd == engine::ID_LIBRARY_FILTER_SELECTOR_LOCK) {
-      // toggle Library Filter Selector on/off
-      ew->cmdToggleLibraryFilterSelectorSource(true);
+      MENUITEMINFO mi = {0};
+      mi.cbSize = sizeof(MENUITEMINFO);
+      mi.fMask = MIIM_SUBMENU | MIIM_STRING | MIIM_ID;
+      mi.wID = engine::ID_SUBMENU_SELECTOR;
+      mi.hSubMenu = _childLibrarySelections;
+      mi.dwTypeData = (LPWSTR)kmenu_label_LibrarySelectionCovers;
+      
+      InsertMenuItem(*hMenu, engine::ID_CONTEXT_LAST_DISPLAY - 20, true, &mi);
     }
   }
 
