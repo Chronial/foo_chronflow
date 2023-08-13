@@ -669,7 +669,15 @@ void EngineWindow::cmdShowAlbumOnExternalViewer(AlbumInfo album) {
 
       } else {
         //Photos or default
-        uShellExecute(0, "open", strPicturePath, 0, 0, SW_NORMAL);
+        if (!bimgEmbedded) {
+          ShellExecute(hWnd, L"open", folder.c_str(), 0, 0, SW_SHOWNORMAL);
+        } else {
+          //fb2k photo viewer
+          service_ptr_t<fb2k::imageViewer> img_viewer = fb2k::imageViewer::get();
+          const GUID aaType = configData->GetGuidArt(configData->CustomCoverFrontArt);
+          img_viewer->load_and_show(hWnd, tracks, aaType, 0);
+
+        }
       }
     } catch (const exception_aborted&) {
       return;
@@ -695,19 +703,22 @@ void EngineWindow::setInnerSelection(metadb_handle_list selection, GUID selectio
 };
 void EngineWindow::setSelection(metadb_handle_list selection, bool owner) {
   GUID selguid;
+  bool isWholeLib = container.coverIsWholeLibrary();
   if (owner) {
-    selguid = configData->IsWholeLibrary()
+    selguid = isWholeLib
                   ? contextmenu_item::caller_media_library_viewer
                   : contextmenu_item::caller_active_playlist_selection;
   } else {
     selguid = ui_selection_manager::get()->get_selection_type();
   }
 
-  //this->selection = selection;
-  setInnerSelection(selection, selguid, configData->IsWholeLibrary());
+  setInnerSelection(selection, selguid, isWholeLib);
   //holder selection
-  if (owner && (selection.get_count() && selectionHolder.is_valid()))
+  bool bset_sel = (isWholeLib && container.GetCoverDispFlagU(DispFlags::SET_LIB_SEL)) ||
+                  (!isWholeLib && container.GetCoverDispFlagU(DispFlags::SET_PL_SEL));
+  if (bset_sel && owner && (selection.get_count() && selectionHolder.is_valid())) {
     selectionHolder->set_selection_ex(selection, selguid);
+  }
 }
 
 void EngineWindow::onWindowSize(int width, int height) {
@@ -867,19 +878,15 @@ void EngineWindow::onContextMenu(const int x, const int y) {
 
 void external_selection_callback::on_selection_changed(metadb_handle_list_cref p_selection) {
 
-  if (engineWindow.getSelection(configData->IsWholeLibrary()) == p_selection) {
+  bool isWholeLib = engineWindow.container.coverIsWholeLibrary();
+  bool bHLSel = engineWindow.container.GetCoverDispFlagU(DispFlags::SRC_PL_HL);
+  bool bFollowPlaylistSel = engineWindow.container.GetCoverDispFlagU(DispFlags::FOLLOW_PL_SEL);
 
-    if (!configData->IsWholeLibrary() && configData->CoverHighLightPlaylistSelection) {
+  if (engineWindow.getSelection(isWholeLib) == p_selection) {
+    if (!isWholeLib && bHLSel) {
       //highlight
       engineWindow.cmdHighlightPlaylistContent();
-      //console log...
     }
-
-    //
-    // Engine::setTarget(...) from EngineWindow::OnFocus or EM messages:
-    // MoveTargetMessage, MoveToCurrentTrack, MoveToAlbumMessage
-    // finish here
-
     return;
   }
 
@@ -892,16 +899,15 @@ void external_selection_callback::on_selection_changed(metadb_handle_list_cref p
   bool srcFromActivePlaylistSelection =
       gui_sel_type == contextmenu_item::caller_active_playlist_selection ||
       gui_sel_type == contextmenu_item::caller_active_playlist;
-  //Undefined, ej. Spider monkey ListTree or ESPlaylist in Selected playlist mode
-  bool srcFromUndefined = gui_sel_type == contextmenu_item::caller_undefined;
 
   //not at function top to ease type debugging
   if (p_selection.get_count() == 0)
     return;  // do nothing
 
-  if (srcFromLibraryViewer ||
+  if (srcFromLibraryViewer ||  srcFromPlaylistManager ||
       (gui_sel_type == gui_sel_anon && configData->CoverFollowsAnonymSelection)) {
-    if (configData->CoverFollowsLibrarySelection && configData->IsWholeLibrary()) {
+
+    if (bFollowPlaylistSel && isWholeLib) {
       if (!engineWindow.engineThread.has_value())
         return;
 
@@ -913,7 +919,6 @@ void external_selection_callback::on_selection_changed(metadb_handle_list_cref p
       auto selection_albuminfo =
           engineWindow.engineThread->sendSync<EM::GetTrackAlbum>(p_selection.get_item(0))
               .get();
-      bool bselection_exist = selection_albuminfo.has_value();
 
       auto target_albuminfo =
           engineWindow.engineThread->sendSync<EM::GetTargetAlbum>().get();
@@ -933,15 +938,15 @@ void external_selection_callback::on_selection_changed(metadb_handle_list_cref p
       //
       //(B)    Selection on external Library Viewer without Selector or Selector Locked
 
-      if (configData->CoverFollowsLibrarySelection) {
+      if (bFollowPlaylistSel) {
         if (configData->SourceLibrarySelector && (!configData->SourceLibrarySelectorLock)) {
           //(A)
           engineWindow.setSelection(p_selection, false);
-          engineWindow.engineThread->send<EM::ReloadCollectionFromList>(shared_selection);
+          engineWindow.engineThread->send<EM::ReloadCollectionFromList>(shared_selection, (LPARAM)engineWindow.hWnd);
         } else {
           //(B)
           if (target_albuminfo && stricmp_utf8(target_albuminfo.value().pos.key.c_str(), keyBuffer) != 0)
-            engineWindow.engineThread->send<EM::MoveToCurrentTrack>( p_selection.get_item(0));
+            engineWindow.engineThread->send<EM::MoveToCurrentTrack>( p_selection.get_item(0), true, /*false,*/ (LPARAM)engineWindow.hWnd);
         }
       }
     }
