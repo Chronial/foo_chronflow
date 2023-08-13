@@ -58,6 +58,10 @@ ConfigData::ConfigData()
     CustomCoverFrontArt(default_CustomCoverFrontArt),
     CoverArtEnablePngAlpha(default_CoverArtEnablePngAlpha),
     CoverUseLegacyExternalViewer(default_CoverUseLegacyExternalViewer),
+    /******************************** Display tab v.4 ****************************/
+    DisplayFlag(default_DisplayFlag),
+    DisplayArtFilterFlag(default_DisplayArtFilterFlag),
+    DisplayExtViewerPath(default_DisplayExtViewerPath),
     /***************************** Cover Display tab *****************************/
     CoverConfigs(guid_ConfigDataCustomConfigs),
     CoverConfigSel(default_CoverConfigSel),
@@ -110,7 +114,9 @@ void ConfigData::Reset() {
   SourcePlaylist = default_SourcePlaylist;
   SourceActivePlaylist = default_SourceActivePlaylist;
   SourcePlaylistName = default_SourcePlaylistName;
-  SourcePlaylistName = default_SourceActivePlaylistName;
+  SourceActivePlaylistName = default_SourceActivePlaylistName;
+  SourcePlaylistGUID = default_SourcePlaylistGUID;
+  SourceActivePlaylistGUID = default_SourceActivePlaylistGUID;
   SourcePlaylistGroup = default_SourcePlaylistGroup;
   SourcePlaylistNGTitle = default_SourcePlaylistNGTitle;
   SourceLibrarySelector = default_SourceLibrarySelector;
@@ -127,9 +133,15 @@ void ConfigData::Reset() {
   PanelBgCustom = default_PanelBgCustom;
   PanelBg = default_PanelBg;
   HighlightWidth = default_HighlightWidth;
+  /******************************** Display tab v.2 ****************************/
+  CenterArt = default_CenterArt;
   CustomCoverFrontArt = default_CustomCoverFrontArt;
   CoverArtEnablePngAlpha = default_CoverArtEnablePngAlpha;
   CoverUseLegacyExternalViewer = default_CoverUseLegacyExternalViewer;
+  /******************************** Display tab v.4 ****************************/
+  DisplayFlag = default_DisplayFlag;
+  DisplayArtFilterFlag = default_DisplayArtFilterFlag;
+  DisplayExtViewerPath = default_DisplayExtViewerPath;
   /***************************** Cover Display tab *****************************/
   CoverConfigSel = default_CoverConfigSel;
   /****************************** Performance tab ******************************/
@@ -153,6 +165,9 @@ void ConfigData::Reset() {
 }
 
 void ConfigData::get_data_raw(stream_writer* p_stream, abort_callback& p_abort) {
+
+  auto v = atoi(PrefsVersion);
+
   p_stream->write_string(PrefsVersion, p_abort);
   /******************************* Behaviour tab *******************************/
   p_stream->write_lendian_t(CoverFollowsPlayback, p_abort);
@@ -182,6 +197,12 @@ void ConfigData::get_data_raw(stream_writer* p_stream, abort_callback& p_abort) 
   p_stream->write_lendian_t(SourceActivePlaylist, p_abort);
   p_stream->write_string(SourcePlaylistName, p_abort);
   p_stream->write_string(SourceActivePlaylistName, p_abort);
+
+  if (v > 3) {
+    p_stream->write_string(SourcePlaylistGUID, p_abort);
+    p_stream->write_string(SourceActivePlaylistGUID, p_abort);
+  }
+  
   p_stream->write_lendian_t(SourcePlaylistGroup, p_abort);
   p_stream->write_string(SourcePlaylistNGTitle, p_abort);
   //p_stream->write_lendian_t(SourceLibrarySelector, p_abort);
@@ -205,6 +226,19 @@ void ConfigData::get_data_raw(stream_writer* p_stream, abort_callback& p_abort) 
   p_stream->write_lendian_t(CustomCoverFrontArt, p_abort);
   p_stream->write_lendian_t(CoverArtEnablePngAlpha, p_abort);
   p_stream->write_lendian_t(CoverUseLegacyExternalViewer, p_abort);
+  /******************************** Display tab v.4*****************************/
+  if (v > 3) {
+    p_stream->write_lendian_t(DisplayFlag, p_abort);
+  }
+
+  if (v > 4) {
+    p_stream->write_lendian_t(DisplayArtFilterFlag, p_abort);
+  }
+  if (v > 5) {
+    p_stream->write_string(DisplayExtViewerPath, p_abort);
+  }
+   
+
   /***************************** Cover Display tab *****************************/
   p_stream->write_string(CoverConfigSel, p_abort);
   /****************************** Performance tab ******************************/
@@ -228,6 +262,16 @@ void ConfigData::get_data_raw(stream_writer* p_stream, abort_callback& p_abort) 
   p_stream->write_lendian_t(sessionSelectedConfigTab, p_abort);
 }
 
+void init_playlist_guid(pfc::string8& playlistguid, pfc::string8 default_name) {
+  auto ndxPlaylist = playlist_manager_v6::get()->find_playlist(default_name);
+  if (ndxPlaylist != pfc_infinite) {
+    GUID guidPlaylist = playlist_manager_v6::get()->playlist_get_guid(ndxPlaylist);
+    playlistguid = pfc::print_guid(guidPlaylist);
+  } else {
+    playlistguid = pfc::print_guid(pfc::guid_null);
+  }
+}
+
 void ConfigData::set_data_raw(stream_reader* p_stream, t_size p_sizehint,
                               abort_callback& p_abort) {
   SetData(*this, p_stream, p_abort, component_PREF_VER);
@@ -236,7 +280,7 @@ void ConfigData::set_data_raw(stream_reader* p_stream, t_size p_sizehint,
 void ConfigData::SetData(ConfigData& cfg, stream_reader* p_stream,
                          abort_callback& p_abort, const char* version) {
   p_stream->read_string(cfg.PrefsVersion, p_abort);
-
+  auto v = atoi(cfg.PrefsVersion);
   /******************************* Behaviour tab *******************************/
   p_stream->read_lendian_t(cfg.CoverFollowsPlayback, p_abort);
   p_stream->read_lendian_t(cfg.CoverFollowDelay, p_abort);
@@ -265,6 +309,21 @@ void ConfigData::SetData(ConfigData& cfg, stream_reader* p_stream,
   p_stream->read_lendian_t(cfg.SourceActivePlaylist, p_abort);
   p_stream->read_string(cfg.SourcePlaylistName, p_abort);
   p_stream->read_string(cfg.SourceActivePlaylistName, p_abort);
+  if (v < 4) {
+    if (!SourcePlaylistGUID.get_length() ||
+        pfc::guid_equal(pfc::GUID_from_text(SourcePlaylistGUID), pfc::guid_null)) {
+      init_playlist_guid(SourcePlaylistGUID, default_SourcePlaylistName);
+    }
+
+    if (!SourceActivePlaylistGUID.get_length() ||
+        pfc::guid_equal(pfc::GUID_from_text(SourceActivePlaylistGUID), pfc::guid_null)) {
+      init_playlist_guid(SourceActivePlaylistGUID, default_SourceActivePlaylistName);
+    }
+  } else {
+    p_stream->read_string(SourcePlaylistGUID, p_abort);
+    p_stream->read_string(SourceActivePlaylistGUID, p_abort);
+  }
+  
   p_stream->read_lendian_t(cfg.SourcePlaylistGroup, p_abort);
   p_stream->read_string(cfg.SourcePlaylistNGTitle, p_abort);
   p_stream->read_lendian_t(cfg.SourceLibrarySelector, p_abort);
@@ -287,6 +346,16 @@ void ConfigData::SetData(ConfigData& cfg, stream_reader* p_stream,
   p_stream->read_lendian_t(cfg.CustomCoverFrontArt, p_abort);
   p_stream->read_lendian_t(cfg.CoverArtEnablePngAlpha, p_abort);
   p_stream->read_lendian_t(cfg.CoverUseLegacyExternalViewer, p_abort);
+  /******************************** Display tab v.4*****************************/
+  if (v > 3) {
+    p_stream->read_lendian_t(cfg.DisplayFlag, p_abort);
+  }
+  if (v > 4) {
+    p_stream->read_lendian_t(cfg.DisplayArtFilterFlag, p_abort);    
+  }
+  if (v > 5) {
+    p_stream->read_string(cfg.DisplayExtViewerPath, p_abort);
+  }  
   /***************************** Cover Display tab *****************************/
   p_stream->read_string(CoverConfigSel, p_abort);
   /****************************** Performance tab ******************************/
@@ -305,7 +374,7 @@ void ConfigData::SetData(ConfigData& cfg, stream_reader* p_stream,
   p_stream->read_lendian_t(cfg.CtxShowExtViewerMenu, p_abort);
   p_stream->read_lendian_t(cfg.CtxShowActionsMenu, p_abort);
 
-  if (cfg.PrefsVersion.equals("2")) {
+  if (v < 3) {
     cfg.CtxShowPlaylistMenu ^= 1;
     cfg.CtxShowDisplayMenu ^= 1;
     cfg.CtxShowSelectorMenu ^= 1;

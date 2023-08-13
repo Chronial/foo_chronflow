@@ -71,7 +71,10 @@ void ConfigDialog::BindControls(UINT_PTR ndx, HWND hWndTab, int cmd) {
       bindings_.Bind(configData->ImgLoading, BACT_RELOAD, hWndTab, IDC_IMG_LOADING);
       bindings_.Bind(configData->CustomCoverFrontArt, BACT_RELOAD, hWndTab, IDC_HIDDEN_DISPLAY_CUSTOM_COVER_ART);
       bindings_.Bind(configData->CoverArtEnablePngAlpha, BACT_RELOAD, hWndTab, IDC_COVER_ART_PNG8_ALPHA);
+      bindings_.Bind(configData->DisplayExtViewerPath, BACT_REDRAW, hWndTab, IDC_HIDDEN_EXT_VIEWER_PATH);
       bindings_.Bind(configData->CoverUseLegacyExternalViewer, BACT_REDRAW, hWndTab, IDC_COVER_DISPLAY_LEGACY_EXTVIEWER);
+      bindings_.Bind(configData->DisplayFlag, BACT_REDRAW, hWndTab, IDC_HIDDEN_DISPLAY_FLAG);
+      bindings_.Bind(configData->DisplayArtFilterFlag, BACT_REDRAW, hWndTab, IDC_HIDDEN_DISPLAY_EXT_ARTFILTER_FLAG);
       break;
     case IDD_COVER_DISPLAY_TAB:
       //bindings_.Bind(configData->CoverConfigSel, 0, hWndTab, IDC_HIDDEN_SAVED_SELECT);
@@ -137,18 +140,18 @@ void ConfigDialog::apply() {
     try {
       std::pair<int, std::shared_ptr<CompiledCPInfo>> cInfo;
       if (bscriptmod) {
-        cInfo.first = configData->GetCCPosition();
+        cInfo.first = configData->GetCCPosition(configData->CoverConfigSel);
         cInfo.second = make_shared<CompiledCPInfo>(compileCPScript(currentCPScript));
       } else
         cInfo = configData->sessionCompiledCPInfo.get();
 
       if (!lastCoverSelection.equals(configData->CoverConfigSel) || bscriptmod) {
         EngineThread::forEach([&cInfo](EngineThread& t) {
-          t.send<EM::ChangeCoverPositionsMessage>(cInfo.second);
+          t.send<EM::ChangeCoverPositionsMessage>(cInfo.second, (LPARAM)NULL);
         });
         configData->sessionCompiledCPInfo.set(cInfo.first, cInfo.second);
       }
-    } catch (std::exception& e) {
+    } catch (std::exception&) {
       //..
     }
   }
@@ -156,7 +159,7 @@ void ConfigDialog::apply() {
   if (bneedreload) {
     EngineThread::forEach([](EngineThread& t)
     {
-        t.send<EM::ReloadCollection>();
+        t.send<EM::ReloadCollection>(NULL);
     });
   } else {
   if (bneedredraw) {

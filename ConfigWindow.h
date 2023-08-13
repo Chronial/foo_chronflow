@@ -44,7 +44,7 @@ class ConfigTab {
  protected:
   UINT id;
   HWND parent;
-  char* title;
+  const char* title;
   HWND hWnd = nullptr;
   RECT m_rcTab;
   //testing candidate to new dlg schema
@@ -53,11 +53,12 @@ class ConfigTab {
 
  public:
 
-  ConfigTab(char* title, UINT id, HWND parent) : id(id), parent(parent), title(title) {
+  ConfigTab(const char* title, UINT id, HWND parent) : id(id), parent(parent), title(title) {
     HWND hWndTab = uGetDlgItem(parent, IDC_TABS);
     uTCITEM tabItem = {0};
     tabItem.mask = TCIF_TEXT;
-    tabItem.pszText = title;
+    tabItem.pszText = (char*)title;
+    ;
     int idx = TabCtrl_GetItemCount(hWndTab);
     uTabCtrl_InsertItem(hWndTab, idx, &tabItem);
     GetWindowRect(hWndTab, &m_rcTab);
@@ -65,9 +66,13 @@ class ConfigTab {
     uSendMessage(hWndTab, TCM_ADJUSTRECT, FALSE, reinterpret_cast<LPARAM>(&m_rcTab));
 
     MapWindowPoints(HWND_DESKTOP, parent, (POINT*)&m_rcTab, 2);
+    auto bisDark = DarkMode::IsDialogDark(parent);
+
     // Resize the tree control so that it fills the tab control.
-    InflateRect(&m_rcTab, 2, 1);
-    OffsetRect(&m_rcTab, -1, 1);
+    if (!bisDark) {
+      InflateRect(&m_rcTab, 2, 1);
+      OffsetRect(&m_rcTab, -1, 1);
+    }
   }
 
   NO_MOVE_NO_COPY(ConfigTab);
@@ -574,85 +579,107 @@ class BehaviourTab : public ConfigTab {
 /**************************************************************************************/
 /**************************************************************************************/
 class SourcesTab : public ConfigTab {
- public:
+
+public:
+
   CONFIG_TAB(SourcesTab, "Album Source", IDD_SOURCE_TAB);
 
   BOOL CALLBACK dialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM /*lParam*/) final {
     switch (uMsg) {
       case WM_INITDIALOG: {
         notifyParent(id, CF_USER_CONFIG_NEWTAB);
+        size_t selected_row = ~0;
         loadComboSourcePlayList(IDC_COMBO_SOURCE_PLAYLIST_NAME,
-                                configData->SourcePlaylistName);
+          configData->SourcePlaylistName, pfc::GUID_from_text(configData->SourcePlaylistGUID), selected_row);
         HWND combo = GetDlgItem(hWnd, IDC_COMBO_SOURCE_PLAYLIST_NAME);
         LRESULT width = SendMessage(combo, CB_GETDROPPEDWIDTH, 999, 999);
-        SendMessage(combo, CB_SETDROPPEDWIDTH, width * 1.5, 0);
-      } break;
+        SendMessage(combo, CB_SETDROPPEDWIDTH, static_cast<WPARAM>(width * 1.5), 0);
+      }
+      break;
 
-      case WM_COMMAND:
-        if (HIWORD(wParam) == EN_CHANGE) {
-          textChanged(LOWORD(wParam));
-        } else
-        if (HIWORD(wParam) == CBN_SELCHANGE) {
-          listSelChanged(LOWORD(wParam));
-          pfc::string8 selected;
-          LRESULT ires = uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETCURSEL, 0, 0);
-          if (ires != CB_ERR) {
-            uGetDlgItemText(hWnd, LOWORD(wParam), selected);
-          } else {
-            return FALSE;
+      case WM_COMMAND: {
+
+        switch (HIWORD(wParam)) {
+          case EN_CHANGE:
+            textChanged(LOWORD(wParam));
+            break;
+          case CBN_SELCHANGE: {
+            listSelChanged(LOWORD(wParam));
+            LRESULT ires = uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETCURSEL, 0, 0);
+            if (ires != CB_ERR) {
+              //..
+            } else {
+              return FALSE;
+            }
+
+            LRESULT itemId = uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETCURSEL, 0, 0);
+            if (itemId == CB_ERR) {
+              return FALSE;
+            }
+            uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETITEMDATA, itemId, 0);
+            break;
           }
-          LRESULT itemId = uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETCURSEL, 0, 0);
-          if (itemId == CB_ERR) {
-            return FALSE;
-          }
-          LRESULT val = uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETITEMDATA, itemId, 0);
-          val = val;
-        } else
-        if (HIWORD(wParam) == BN_CLICKED) {
-          buttonClicked(LOWORD(wParam));
-        }
+          case BN_CLICKED:
+            buttonClicked(LOWORD(wParam));
+            break;
+          default:
+            break;
+        } // sw command param
         break;
-    }
+      } // sw command
+      default:
+        break;
+    } //msg
     return FALSE;
   }
 
-  void loadComboSourcePlayList(UINT id, const char* selectedItem) {
+  void loadComboSourcePlayList(UINT id,const char* selected_name, const GUID selected_guid, size_t &selected_row) {
+
     HWND list = GetDlgItem(hWnd, id);
+
     SetWindowRedraw(list, false);
     SendMessage(list, CB_RESETCONTENT, 0, 0);
     uSendMessageText(list, CB_ADDSTRING, 0, "");
+
     uSendDlgItemMessage(hWnd, id, CB_RESETCONTENT, 0, 0);
 
-    if (pfc_infinite == playlist_manager::get()->find_playlist(default_SourcePlaylistName))
+    if (pfc_infinite == playlist_manager::get()->find_playlist(default_SourcePlaylistName)) {
       uSendDlgItemMessageText(hWnd, id, CB_ADDSTRING, 0, default_SourcePlaylistName);
+      uSendDlgItemMessage(hWnd, id, CB_SETITEMDATA, 0, NULL);
+    }
 
-    t_size cplaylist = playlist_manager::get()->get_playlist_count();
-    for (int i=0;i<cplaylist;i++) {
+    size_t cplaylist = playlist_manager::get()->get_playlist_count();
+
+    for (size_t i = 0; i < cplaylist; i++) {
       pfc::string8 aname;
-      t_size pl = playlist_manager::get()->playlist_get_name(i, aname);
+      t_size pl = playlist_manager_v6::get()->playlist_get_name(i, aname);
+      GUID aguid = playlist_manager_v6::get()->playlist_get_guid(pl);
       LRESULT rowId = uSendDlgItemMessageText(hWnd, id, CB_ADDSTRING, 0, aname);
-      uSendDlgItemMessage(hWnd, id, CB_SETITEMDATA, rowId, i);
-      if (uSendDlgItemMessage(hWnd, id, CB_GETCURSEL, 0, 0) == CB_ERR) {
-        if (stricmp_utf8(aname.c_str(), selectedItem) == 0) {
-          rowId = uSendDlgItemMessageText(hWnd, id, CB_FINDSTRINGEXACT, 1, selectedItem);
-          rowId = uSendDlgItemMessageText(hWnd, id, CB_SETCURSEL, rowId, 0);
+      uSendDlgItemMessage(hWnd, id, CB_SETITEMDATA, rowId, pl);
+      if (selected_row = uSendDlgItemMessage(hWnd, id, CB_GETCURSEL, 0, 0) == CB_ERR) {
+        LPARAM lpdata = uSendDlgItemMessage(hWnd, id, CB_GETITEMDATA, rowId, 0);
+        GUID row_guid = playlist_manager_v6::get()->playlist_get_guid(lpdata);
+        if (pfc::guid_equal(selected_guid, row_guid)) {
+          selected_row = uSendDlgItemMessageText(hWnd, id, CB_SETCURSEL, rowId, 0);
         }
       }
     }
     //check if still undefined
     LRESULT checkId = uSendDlgItemMessage(hWnd, id, CB_GETCURSEL, 0, 0);
     if (checkId == CB_ERR) {
-      if (stricmp_utf8(default_SourcePlaylistName, selectedItem) == 0) {
+      if (!stricmp_utf8(default_SourcePlaylistName, selected_name)) {
         checkId = uSendDlgItemMessageText(hWnd, id, CB_FINDSTRINGEXACT, 1, default_SourcePlaylistName);
       } else {
-        checkId = uSendDlgItemMessageText(hWnd, id, CB_ADDSTRING, 0, selectedItem);
+        checkId = uSendDlgItemMessageText(hWnd, id, CB_ADDSTRING, 0, selected_name);
+        uSendDlgItemMessage(hWnd, id, CB_SETITEMDATA, checkId, NULL);
       }
-      uSendDlgItemMessageText(hWnd, id, CB_SETCURSEL, checkId, 0);
+      selected_row = uSendDlgItemMessageText(hWnd, id, CB_SETCURSEL, checkId, 0);
     }
 
     SetWindowRedraw(list, true);
   }
 };
+
 extern ListMap customCoverFrontArtMap;
 /**************************************************************************************/
 /**************************************************************************************/
@@ -660,7 +687,7 @@ class DisplayTab : public ConfigTab {
  public:
   CONFIG_TAB(DisplayTab, "Display", IDD_DISPLAY_TAB);
 
-  bool browseForImage(const char* oldImg, pfc::string_base& out) {
+  bool browseForImageOrExe(const char* oldImg, pfc::string_base& out, bool bimage = true) {
     OPENFILENAME ofn;
     wchar_t fileName[1024];
     pfc::stringcvt::convert_utf8_to_wide(
@@ -670,7 +697,12 @@ class DisplayTab : public ConfigTab {
     ofn.hwndOwner = hWnd;
     ofn.lpstrFile = static_cast<wchar_t*>(fileName);
     ofn.nMaxFile = 1024;
-    ofn.lpstrFilter = L"Image File\0*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.tiff\0";
+
+    if (bimage) 
+      ofn.lpstrFilter = L"Image File\0*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.tiff\0";
+    else
+      ofn.lpstrFilter = L"Executable File\0*.exe\0";
+
     ofn.nFilterIndex = 1;
     ofn.Flags =
         OFN_FILEMUSTEXIST | OFN_HIDEREADONLY | OFN_NONETWORKBUTTON | OFN_PATHMUSTEXIST;
@@ -691,8 +723,12 @@ class DisplayTab : public ConfigTab {
         break;
       case WM_INITDIALOG: {
         notifyParent(id, CF_USER_CONFIG_NEWTAB);
+
         int selectedndx = InitCustomCoverArtComboBox(configData->CustomCoverFrontArt);
         loadCustomCoverFrontArtList(customCoverFrontArtMap.at(selectedndx).c_str());
+
+        selectedndx = InitExtArtFilterComboBox(configData->DisplayArtFilterFlag);
+        loadCExtArtFilterList(customCoverExtArtFilterMap.at(selectedndx).c_str());
 
         int titlePosH = static_cast<int>(floor(configData->TitlePosH * 100 + 0.5));
         int titlePosV = static_cast<int>(floor(configData->TitlePosV * 100 + 0.5));
@@ -718,12 +754,11 @@ class DisplayTab : public ConfigTab {
         std::ostringstream o_txt_stream;
         o_txt_stream.write((char*)&titleFont, sizeof(titleFont));
         pfc::string8 strBase64;
-        pfc::base64_encode(
-        	strBase64, (void*)o_txt_stream.str().c_str(), sizeof(titleFont));
+        pfc::base64_encode(strBase64, (void*)o_txt_stream.str().c_str(), sizeof(titleFont));
 
         uSetDlgItemText(hWnd, IDC_HIDDEN_LOGFONT, strBase64.c_str());
-        uSendDlgItemMessage(hWnd, IDC_FONT_PREV, WM_SETTEXT, 0,
-        		reinterpret_cast<LPARAM>(titleFont.lfFaceName));
+        uSetDlgItemText(hWnd, IDC_HIDDEN_EXT_VIEWER_PATH, configData->DisplayExtViewerPath.c_str());
+        uSendDlgItemMessage(hWnd, IDC_FONT_PREV, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(titleFont.lfFaceName));
 
         break;
       }
@@ -740,7 +775,7 @@ class DisplayTab : public ConfigTab {
           idtextcontrol = IDC_TPOS_V_P;
           idtextdoublecontrol = IDC_HIDDEN_TPOS_V;
         }
-        UINT val = uSendDlgItemMessage(hWnd, idscrollcontrol, TBM_GETPOS, 0, 0);
+        UINT val = (UINT) uSendDlgItemMessage(hWnd, idscrollcontrol, TBM_GETPOS, 0, 0);
         uSetDlgItemInt(hWnd, idtextcontrol, val, true);
 
         //will trigger EN_CHANGE & therefore textchanged(id)
@@ -751,16 +786,15 @@ class DisplayTab : public ConfigTab {
         auto* drawStruct = reinterpret_cast<DRAWITEMSTRUCT*>(lParam);
         HBRUSH brush{};
         switch (wParam) {
-          unsigned long along;
           case IDC_TEXTCOLOR_PREV: {
-            COLORREF textColor = std::stoull(
-                uGetDlgItemText(hWnd, IDC_HIDDEN_TITLE_COLOR_CUSTOM).c_str(), nullptr, 0);
+            COLORREF textColor = static_cast<COLORREF>(std::stoull(
+                uGetDlgItemText(hWnd, IDC_HIDDEN_TITLE_COLOR_CUSTOM).c_str(), nullptr, 0));
             brush = CreateSolidBrush(textColor);
             break;
           }
           case IDC_BG_COLOR_PREV: {
-            COLORREF panelBg = std::stoull(
-                uGetDlgItemText(hWnd, IDC_HIDDEN_PANELBG_CUSTOM).c_str(), nullptr, 0);
+            COLORREF panelBg = static_cast<COLORREF>(std::stoul(
+                uGetDlgItemText(hWnd, IDC_HIDDEN_PANELBG_CUSTOM).c_str(), nullptr, 0));
             brush = CreateSolidBrush(panelBg);
             break;
           }
@@ -778,9 +812,12 @@ class DisplayTab : public ConfigTab {
             case IDC_HIDDEN_TPOS_V:
             case IDC_HIDDEN_TPOS_H:
             case IDC_HIDDEN_DISPLAY_CUSTOM_COVER_ART:
+            case IDC_HIDDEN_EXT_VIEWER_PATH:
               textChanged(LOWORD(wParam));
               break;
-
+            case IDC_HIDDEN_DISPLAY_FLAG:
+              textChanged(LOWORD(wParam));
+              break;
             case IDC_ALBUM_FORMAT: {
               metadb_handle_ptr aTrack;
               if (metadb::get()->g_get_random_handle(aTrack)) {
@@ -808,12 +845,11 @@ class DisplayTab : public ConfigTab {
           switch (LOWORD(wParam)) {
             case IDC_APPLY_TITLE: {
               EngineThread::forEach(
-                  [](EngineThread& t) { t.send<EM::ReloadCollection>(); });
+                  [](EngineThread& t) { t.send<EM::ReloadCollection>(NULL); });
             } break;
             case IDC_BG_COLOR: {
-              COLORREF panelBg = std::stoull(
-                  uGetDlgItemText(hWnd, IDC_HIDDEN_PANELBG_CUSTOM).c_str(), nullptr, 0);
-              ;
+              COLORREF panelBg = static_cast<COLORREF>(std::stoul(
+                  uGetDlgItemText(hWnd, IDC_HIDDEN_PANELBG_CUSTOM).c_str(), nullptr, 0));
               if (selectColor(panelBg)) {
                 uSetDlgItemText(
                     hWnd, IDC_HIDDEN_PANELBG_CUSTOM, std::to_string(panelBg).data());
@@ -822,9 +858,8 @@ class DisplayTab : public ConfigTab {
               }
             } break;
             case IDC_TEXTCOLOR: {
-              COLORREF titleColor = std::stoull(
-                  uGetDlgItemText(hWnd, IDC_HIDDEN_TITLE_COLOR_CUSTOM).c_str(), nullptr,
-                  0);
+              COLORREF titleColor = static_cast<COLORREF>(std::stoul(
+                  uGetDlgItemText(hWnd, IDC_HIDDEN_TITLE_COLOR_CUSTOM).c_str(), nullptr, 0));
 
               if (selectColor(titleColor)) {
                 uSetDlgItemText(hWnd, IDC_HIDDEN_TITLE_COLOR_CUSTOM,
@@ -862,16 +897,37 @@ class DisplayTab : public ConfigTab {
             } break;
             case IDC_IMG_NO_COVER_BROWSE: {
               pfc::string8 strDlgOutString;
-              if (browseForImage(configData->ImgNoCover, strDlgOutString)) {
+              if (browseForImageOrExe(configData->ImgNoCover, strDlgOutString)) {
                 uSetDlgItemText(hWnd, IDC_IMG_NO_COVER, strDlgOutString);
               }
             } break;
             case IDC_IMG_LOADING_BROWSE: {
               pfc::string8 strDlgOutString;
-              if (browseForImage(configData->ImgLoading, strDlgOutString)) {
+              if (browseForImageOrExe(configData->ImgLoading, strDlgOutString)) {
                 uSetDlgItemText(hWnd, IDC_IMG_LOADING, strDlgOutString);
               }
             } break;
+            case IDC_EXT_VIEWER_BROWSE: {
+              pfc::string8 strDlgOutString;
+              if (browseForImageOrExe(configData->DisplayExtViewerPath, strDlgOutString, false)) {
+                uSetDlgItemText(hWnd, IDC_HIDDEN_EXT_VIEWER_PATH, strDlgOutString);
+              }
+            } break;
+            case IDC_COVER_DISPLAY_DISPLAY_FLAG: {
+              bool bcheck = uButton_GetCheck(hWnd, LOWORD(wParam));
+
+              pfc::string8 curhidden;
+              uGetDlgItemText(hWnd, IDC_HIDDEN_DISPLAY_FLAG, curhidden);
+              int icur = atoi(curhidden);
+              if (bcheck) {
+                icur |= DispFlags::DISABLE_CAROUSEL;
+              } else {
+                icur &= ~DispFlags::DISABLE_CAROUSEL;
+              }
+              // will trigger textchanged...
+              uSetDlgItemText(hWnd, IDC_HIDDEN_DISPLAY_FLAG, std::to_string(icur).data());
+              break;
+            }
             case IDC_ALBUM_TITLE:
             case IDC_TEXTCOLOR_CUSTOM:
             case IDC_FONT_CUSTOM:
@@ -883,6 +939,8 @@ class DisplayTab : public ConfigTab {
               EngineThread::forEach(
                   [](EngineThread& t) { t.send<EM::TextFormatChangedMessage>(); });
             } break;
+            default:
+              break;
           }
 
         } else if (HIWORD(wParam) == CBN_SELCHANGE) {
@@ -895,11 +953,20 @@ class DisplayTab : public ConfigTab {
             // will trigger textchanged...
             uSetDlgItemText(
                 hWnd, IDC_HIDDEN_DISPLAY_CUSTOM_COVER_ART, std::to_string(val).data());
-
+          } else if (LOWORD(wParam) == IDC_PANEL_DISPLAY_COMBO_EXT_ART_FILTER) {
+            LRESULT itemId =
+                uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETCURSEL, 0, 0);
+            if (itemId == CB_ERR) {
+              return FALSE;
+            }
+            LRESULT val =
+                uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETITEMDATA, itemId, 0);
+            // will trigger textchanged...
+            uSetDlgItemText(
+                hWnd, IDC_HIDDEN_DISPLAY_EXT_ARTFILTER_FLAG, std::to_string(val).data());
           }
         } else {
-          //int a = LOWORD(wParam);
-          //int b = HIWORD(wParam);
+          //..
         }
         break;
     }
@@ -957,17 +1024,18 @@ class DisplayTab : public ConfigTab {
 
   int InitCustomCoverArtComboBox(int cfgval) {
       UINT idcontrol = IDC_PANEL_DISPLAY_COMBO_CUSTOM_COVER_ART;
-      int selectedndx = cfgval >= customCoverFrontArtMap.size() ? 0 : cfgval;
+      int selectedndx = cfgval >= static_cast<int>(customCoverFrontArtMap.size()) ? 0 : cfgval;
       pfc::string8 textSelection = customCoverFrontArtMap.at(selectedndx).c_str();
 
       uSendDlgItemMessageText(hWnd, idcontrol, CB_SELECTSTRING, 1, textSelection.c_str());
-      HWND hwndCombo = uGetDlgItem(hWnd, idcontrol);
       return selectedndx;
   }
-
 };
 
-class ConfigNameDialog : private dialog_helper::dialog_modal, public fb2k::CDarkModeHooks {
+#pragma warning(push)
+#pragma warning(disable : 4996)
+
+class ConfigNameDialog : private dialog_helper::dialog_modal {
   BOOL on_message(UINT uMsg, WPARAM wParam, LPARAM /*lParam*/) final {
     switch (uMsg) {
       case WM_INITDIALOG:
@@ -975,9 +1043,8 @@ class ConfigNameDialog : private dialog_helper::dialog_modal, public fb2k::CDark
           uSetDlgItemText(get_wnd(), IDC_CONFIG_NAME, value);
         }
         SetFocus(uGetDlgItem(get_wnd(), IDC_CONFIG_NAME));
-        //Dark mode
-        AddDialog(get_wnd());
-        AddControls(get_wnd());
+        m_dark.AddDialog(get_wnd());
+        m_dark.AddControls(get_wnd());
         return 0;
       case WM_COMMAND:
         if (HIWORD(wParam) == BN_CLICKED) {
@@ -1001,7 +1068,12 @@ class ConfigNameDialog : private dialog_helper::dialog_modal, public fb2k::CDark
   }
 
   pfc::string8 value;
+
+ private:
+  fb2k::CDarkModeHooks m_dark;
 };
+
+#pragma warning(pop)
 
 /**************************************************************************************/
 /**************************************************************************************/
@@ -1139,7 +1211,7 @@ class CoverTab : public ConfigTab {
           const char* selEnd = pStart + selLast;
           const char* p = pStart + selFirst;
           while ((p > pStart) && (p[-1] != '\n')) p--;
-          unsigned int repFirst = p - pStart;
+          unsigned int repFirst = static_cast<unsigned int>(p - pStart);
           if (intend) {
             selFirst++;
           } else {
@@ -1384,7 +1456,7 @@ class CoverTab : public ConfigTab {
   }
 
   void loadEditBoxScript() {
-    HWND ctrl = GetDlgItem(hWnd, IDC_SAVED_SELECT);
+
     try {
 
       pfc::string8 selected;

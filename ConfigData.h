@@ -14,6 +14,33 @@ enum class PlSrcFilter:uint8_t {
   ACTIVE_PLAYLIST
 };
 
+//x ui
+enum DispFlags {
+  DISABLE_CAROUSEL    = 1 << 0,  //todo: depri
+  CUST_1              = 1 << 1,
+  CUST_2              = 1 << 2,
+  CUST_3              = 1 << 3,
+  CUST_4              = 1 << 4,
+  SET_LIB_SEL         = 1 << 5,
+  FOLLOW_LIB_SEL      = 1 << 6,
+  FOLLOW_PLAY_NOW     = 1 << 7,
+  CUST_8              = 1 << 8,
+  SRC_PLAYLIST        = 1 << 9,
+  SRC_ACTPLAYLIST     = 1 << 10,
+  SET_PL_SEL          = 1 << 11,
+  FOLLOW_PL_SEL       = 1 << 12,
+  CUST_13             = 1 << 13,
+  SRC_PL_UNGROUPED    = 1 << 14,
+  SRC_PL_HL           = 1 << 15
+};
+
+//todo:
+enum ArtFilterFlag {  
+  EXC_EMBEDDED = 1 << 0,
+  EXC_FALLBACK = 1 << 1,
+  ONLY_EMBEDDED = 1 << 2
+};
+
 struct DBUngroupedParams {
   pfc::string8 filter = "";
   pfc::string8 group = "%Title%";
@@ -30,13 +57,12 @@ struct src_state {
   std::pair<t_size, metadb_handle_ptr>track_second;
 };
 
-int const MaxArtIndex = 3;
-int const _PREFS_VERSION = 2;
+constexpr int MaxArtIndex = 3;
 
 namespace coverflow {
 //__declspec(selectany) extern char kmenu_label_PlayListCovers[15] = "Playlist Covers";
 /******************************* Behaviour tab *******************************/
-__declspec(selectany) extern bool const default_CoverFollowsPlayback = false;
+__declspec(selectany) extern bool const default_CoverFollowsPlayback = true;
 __declspec(selectany) extern int default_CoverFollowDelay = 15;
 __declspec(selectany) extern bool const default_FindAsYouType = true;
 __declspec(selectany) extern bool const default_FindAsYouTypeCaseSens = false;
@@ -68,6 +94,8 @@ __declspec(selectany) extern bool const default_SourcePlaylist = false;
 __declspec(selectany) extern bool const default_SourceActivePlaylist = false;
 __declspec(selectany) extern char const* const default_SourcePlaylistName = "CoverFlowMod";
 __declspec(selectany) extern char const* const default_SourceActivePlaylistName = "CoverFlowMod";
+__declspec(selectany) extern char const* const default_SourcePlaylistGUID = pfc::print_guid(pfc::guid_null);
+__declspec(selectany) extern char const* const default_SourceActivePlaylistGUID = pfc::print_guid(pfc::guid_null);
 __declspec(selectany) extern bool const default_SourcePlaylistGroup = true;
 __declspec(selectany) extern char const* const default_SourcePlaylistNGTitle = "%Track% ~ %Title%";
 __declspec(selectany) extern bool const default_SourceLibrarySelector = false;
@@ -88,6 +116,10 @@ __declspec(selectany) extern int const default_CenterArt = 0;
 __declspec(selectany) extern int const default_CustomCoverFrontArt = 0;
 __declspec(selectany) extern bool const default_CoverArtEnablePngAlpha = false;
 __declspec(selectany) extern bool const default_CoverUseLegacyExternalViewer = false;
+/******************************** Display tab v.2 ****************************/
+__declspec(selectany) extern int const default_DisplayFlag = 0;
+__declspec(selectany) extern int const default_DisplayArtFilterFlag = 0;
+__declspec(selectany) extern char const* const default_DisplayExtViewerPath = "ImageGlass.exe";
 /***************************** Cover Display tab *****************************/
 __declspec(selectany) extern char const* const default_CoverConfigSel = defaultCoverConfig;
 /****************************** Performance tab ******************************/
@@ -101,9 +133,9 @@ __declspec(selectany) extern bool const default_VSyncMode = VSYNC_SLEEP_ONLY;
 __declspec(selectany) extern bool const default_ShowFps = false;
 /*********************************** Ctx Menu ********************************/
 __declspec(selectany) extern bool const default_CtxShowPlaylistMenu = true;
-__declspec(selectany) extern bool const default_CtxShowDisplayMenu = false;
+__declspec(selectany) extern bool const default_CtxShowDisplayMenu = true;
 __declspec(selectany) extern bool const default_CtxShowSelectorMenu = false;
-__declspec(selectany) extern bool const default_CtxShowExtViewerMenu = false;
+__declspec(selectany) extern bool const default_CtxShowExtViewerMenu = true;
 __declspec(selectany) extern bool const default_CtxShowActionsMenu = true;
 /*********************************** Session *********************************/
 __declspec(selectany) extern char const* const default_sessionSelectedCover = "";
@@ -112,12 +144,12 @@ __declspec(selectany) extern int const default_sessionSelectedConfigTab = 0;
 static inline LOGFONT def_cfgTitleFont() {
   LOGFONT out{};
   wcscpy_s(out.lfFaceName, L"Verdana");
-  out.lfHeight = -18;
+  out.lfHeight = -12;
   out.lfWeight = 400;
   return out;
 }
 
-class ConfigData : public cfg_var {
+class ConfigData : public cfg_var_legacy::cfg_var {
  public:
   ConfigData();
   virtual ~ConfigData() = default;
@@ -152,6 +184,8 @@ class ConfigData : public cfg_var {
   bool SourceActivePlaylist;
   pfc::string8 SourceActivePlaylistName;
   pfc::string8 SourcePlaylistName;
+  pfc::string8 SourceActivePlaylistGUID;
+  pfc::string8 SourcePlaylistGUID;
   bool SourcePlaylistGroup;
   pfc::string8 SourcePlaylistNGTitle;
   bool SourceLibrarySelector;
@@ -173,6 +207,10 @@ class ConfigData : public cfg_var {
   int CustomCoverFrontArt;
   bool CoverArtEnablePngAlpha;
   bool CoverUseLegacyExternalViewer;
+  /******************************** Display tab v.4 ****************************/
+  int DisplayFlag;
+  int DisplayArtFilterFlag;
+  pfc::string8 DisplayExtViewerPath;
   /***************************** Cover Display tab *****************************/
   cfg_coverConfigs CoverConfigs;  // no default;
   pfc::string8 CoverConfigSel;
@@ -197,143 +235,34 @@ class ConfigData : public cfg_var {
   int sessionSelectedConfigTab;
 
  public:
-  void GetStateTrackInfo(t_size &trackpos, metadb_handle_ptr & track) {
-    //may also be run inside on_playlist_activate callback
-    //seams to be able to get focus and track
 
-    const t_size plsource = FindSourcePlaylist(PlSrcFilter::ANY_PLAYLIST);
-    static_api_ptr_t<playlist_manager> pm;
-    if (playlist_manager::get()->playlist_get_item_count(plsource)) {
-        //selected?
-        bit_array_bittable selmask;
-        trackpos = selmask.find_first(true, 0, selmask.size());
-        if (selmask.size() > 0 && trackpos != pfc_infinite) {
-          metadb_handle_list msl;
-          track = pm->playlist_get_item_handle(plsource, trackpos);
-          //trackpos = configData->CoverFollowsPlaylistSelection? trackpos : 0;
-        }
-        else {
-          //focused?
-          if (pm->playlist_get_focus_item_handle(track, plsource)) {
-            trackpos = pm->playlist_get_focus_item(plsource);
-          } else {
-            track = pm->playlist_get_item_handle(plsource, 0);
-            trackpos = 0;
-          }
-        }
-    } else
-      trackpos = pfc_infinite;
-  }
-  void GetState(src_state& srcstate, bool init = true) {
-    if (init) {
-      srcstate.wholelib.first = !(SourcePlaylist | SourceActivePlaylist);
-      srcstate.active_pl_src.first = SourceActivePlaylist;
-      srcstate.pl_src.first = SourcePlaylist;
-      srcstate.grouped.first = SourcePlaylistGroup;
-      if (!srcstate.wholelib.first) {
-        GetStateTrackInfo(srcstate.track_first.first, srcstate.track_first.second);
-      }
-    } else {
-      srcstate.wholelib.second = !(SourcePlaylist | SourceActivePlaylist);
-      srcstate.active_pl_src.second = SourceActivePlaylist;
-      srcstate.pl_src.second = SourcePlaylist;
-      srcstate.grouped.second = SourcePlaylistGroup;
-      if (!srcstate.wholelib.second) {
-        GetStateTrackInfo(srcstate.track_second.first, srcstate.track_second.second);
-      }
-    }
+
+   size_t GetDisplayFlag() const {
+    size_t retval = 0;
+
+    retval |= /*coverSetsLibrarySel*/true ? DispFlags::SET_LIB_SEL : 0;
+    retval |= CoverFollowsLibrarySelection ? DispFlags::FOLLOW_LIB_SEL : 0;
+    retval |= /*coverSetsPlaylistSel*/true ? DispFlags::SET_PL_SEL : 0;
+    retval |= CoverFollowsPlaylistSelection ? DispFlags::FOLLOW_PL_SEL : 0;
+
+    retval |= CoverFollowsPlayback ? DispFlags::FOLLOW_PLAY_NOW : 0;
+
+    retval |= SourcePlaylist ? DispFlags::SRC_PLAYLIST : 0;
+    retval |= SourceActivePlaylist ? DispFlags::SRC_ACTPLAYLIST : 0;
+
+    retval |= !true/*coverEnablePlaylistCoversGrouped*/ ? DispFlags::SRC_PL_UNGROUPED : 0;
+
+    retval |= CoverHighLightPlaylistSelection ? DispFlags::SRC_PL_HL : 0;
+
+    return retval;
   }
 
-  //bool StateIsEmpty(src_state srcstate) {
-  //  if (srcstate.wholelib.first == false &&
-  //      !(srcstate.pl_src.first || srcstate.active_pl_src.first))
-  //    return true;
-  //  else
-  //    return false;
-  //}
-
-  int GetCCPosition() {
+  int GetCCPosition(pfc::string8 coverconfigsel) {
     CoverConfigMap configs = CoverConfigs;
-    pfc::string8 name = CoverConfigSel;
-    return GetCoverConfigPosition(configs, name);
+    return GetCoverConfigPosition(configs, coverconfigsel);
   }
 
-  bool IsWholeLibrary() const { return (!SourcePlaylist && !SourceActivePlaylist); }
-  bool IsPlaylistSourceModeUngrouped() const {
-    return (!IsWholeLibrary() && !SourcePlaylistGroup);
-  }
-  bool IsSourceOnAndMirrored(bool fromActive) const {
-    if (fromActive)
-    return (SourceActivePlaylist &&
-            (stricmp_utf8(SourceActivePlaylistName, SourcePlaylistName) == 0));
-    else
-      return (SourcePlaylist &&
-              (stricmp_utf8(SourceActivePlaylistName, SourcePlaylistName) == 0));
-  }
-
-  bool IsSourcePlaylistOn(t_size playlist, PlSrcFilter mode) {
-    const t_size srcplaylist = FindSourcePlaylist(mode);
-    return (srcplaylist != ~0 && srcplaylist == playlist);
-  }
-
-  bool IsSourcePlaylistOn(pfc::string8 playlist, PlSrcFilter mode) {
-    if (IsWholeLibrary()) {
-      return false;
-    }
-    switch (mode) {
-    case PlSrcFilter::ANY_PLAYLIST:
-      if (!IsWholeLibrary()) {
-        if (SourceActivePlaylist)
-          return (stricmp_utf8(playlist, SourceActivePlaylistName) == 0);
-        else if (SourcePlaylist)
-          return (stricmp_utf8(playlist, SourcePlaylistName) == 0);
-      }
-      break;
-    case PlSrcFilter::PLAYLIST:
-      if (SourcePlaylist)
-        return (stricmp_utf8(playlist, SourcePlaylistName) == 0);
-      else
-        return false;
-      break;
-    case PlSrcFilter::ACTIVE_PLAYLIST:
-      if (SourceActivePlaylist)
-        return (stricmp_utf8(playlist, SourceActivePlaylistName) == 0);
-      else
-        return false;
-      break;
-    }
-  }
-  pfc::string8 InSourePlaylistGetName() {
-    if (!IsWholeLibrary()) {
-      return SourceActivePlaylist ? SourceActivePlaylistName : SourcePlaylistName;
-    } else {
-      return {};
-    }
-  }
-  t_size FindSourcePlaylist(PlSrcFilter mode) const {
-    if (IsWholeLibrary()) {
-      return pfc_infinite;
-    }
-    switch (mode) {
-    case PlSrcFilter::ANY_PLAYLIST:
-      if (SourceActivePlaylist) {
-        return playlist_manager::get()->find_playlist(SourceActivePlaylistName);
-      } else
-        return playlist_manager::get()->find_playlist(SourcePlaylistName);
-      break;
-    case PlSrcFilter::PLAYLIST:
-      if (SourcePlaylist)
-        return playlist_manager::get()->find_playlist(SourcePlaylistName);
-      break;
-    case PlSrcFilter::ACTIVE_PLAYLIST:
-      if (SourceActivePlaylist)
-        return playlist_manager::get()->find_playlist(SourceActivePlaylistName);
-      break;
-    }
-    return pfc_infinite;
-  }
-
-  GUID GetGuiArt(int iart) const {
+  GUID GetGuidArt(int iart) const {
     switch (iart) {
       case 0:
         return album_art_ids::cover_front;

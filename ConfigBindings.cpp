@@ -209,6 +209,12 @@ class CoverConfigBinding : public IBinding, IFlow {
     if (wndCtrlParent != nullptr && hwnd_ != wndCtrlParent)
       return;
 
+    //fix depricated configs
+    auto find_it = configData->CoverConfigs.find(selected_.c_str());
+    if (!selected_.get_length() || find_it == configData->CoverConfigs.end()) {
+      selected_ = defaultCoverConfig;
+    }
+
     const CoverConfig& config = var_.at(selected_.c_str());
     uSetDlgItemText(hwnd_, controlId_, windows_lineendings(config.script).c_str());
   }
@@ -223,12 +229,14 @@ class CoverConfigBinding : public IBinding, IFlow {
     pfc::string8_fast text;
     uGetDlgItemText(hwnd_, controlId_, text);
 
-    const CoverConfig& config = var_.at(txtSelected.c_str());
+    if (txtSelected.get_length()) {
+      const CoverConfig& config = var_.at(txtSelected.c_str());
 
-    std::string txt = config.script;
-    txt.assign(text.get_ptr());
-    var_.at(txtSelected.c_str()).script = linux_lineendings(text.c_str());
-    selected_ = txtSelected;
+      std::string txt = config.script;
+      txt.assign(text.get_ptr());
+      var_.at(txtSelected.c_str()).script = linux_lineendings(text.c_str());
+      selected_ = txtSelected;
+    }
   }
 
   const int& GetCtrlID() { return controlId_; }

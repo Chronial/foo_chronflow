@@ -47,7 +47,6 @@ class BindingCollection {
 
   template <typename... T>
   void Bind(T&&... args) {
-    int c = bindings_.size();
     bindings_.emplace_back(std::forward<T>(args)...);
   }
 
@@ -55,7 +54,7 @@ class BindingCollection {
   bool GetFVal(T&& arg, HWND hwndTab, UINT id) {
     auto&& binding =
         std::find_if(bindings_.begin(), bindings_.end(), [&](Binding& b) {
-          return b.flowval_->GetCtrlID() == id;
+          return b.flowval_->GetCtrlID() == static_cast<int>(id);
         });
     if (binding != bindings_.end()) {
       binding->flowval_->GetFVal(arg);
