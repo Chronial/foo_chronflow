@@ -60,6 +60,7 @@ class Engine {
   void mainLoop();
   void updateRefreshRate();
   void setTarget(DBPos target, bool userInitiated);
+  bool check_broadmsg_wnd(LPARAM lphWnd);
 
  private:
   bool windowDirty = false;

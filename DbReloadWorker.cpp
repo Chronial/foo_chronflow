@@ -4,6 +4,10 @@
 #include "ConfigData.h"
 #include "DbAlbumCollection.h"
 #include "Engine.h"
+
+// x ui
+#include "EngineWindow.h"
+
 // clang-format on
 namespace db {
 
@@ -39,9 +43,6 @@ void DbReloadWorker::threadProc() {
   catch (std::exception& e) {
   }
 
-  const bool bwholelibrary = configData->IsWholeLibrary();
-
-  //std::string filter, group, sort, albumtitle;
   pfc::string8 filter, group, sort, albumtitle;
   bool sortgroup;
 
@@ -51,7 +52,11 @@ void DbReloadWorker::threadProc() {
     selection_count = 0;
   }
 
-  if (configData->IsWholeLibrary() || selection_count > 0) {
+  bool bcover_IsWholeLib = engineThread.IsWholeLibrary();
+  bool bcover_Grouped = !engineThread.GetCoverDispFlagU(DispFlags::SRC_PL_UNGROUPED);
+  const size_t cover_pl_source_ndx = engineThread.FindSourcePlaylist(PlSrcFilter::ANY_PLAYLIST);
+
+  if (bcover_IsWholeLib || selection_count > 0) {
     filter = configData->Filter;
     group = configData->Group;
     sortgroup = configData->SortGroup;
@@ -59,7 +64,7 @@ void DbReloadWorker::threadProc() {
     albumtitle = configData->AlbumTitle;
   } else {
     filter = plparams.filter;
-    if (configData->SourcePlaylistGroup) {
+    if (bcover_Grouped) {
       group = configData->Group;
       albumtitle = configData->AlbumTitle;
     } else {
@@ -75,21 +80,20 @@ void DbReloadWorker::threadProc() {
     //abort.check();
     ++engineThread.libraryVersion;
 
-    db = make_unique<db_structure::DB>(
-        engineThread.libraryVersion, filter.c_str(), group.c_str(), sort.c_str() , albumtitle.c_str());
+    db = make_unique<db_structure::DB>(engineThread.libraryVersion, filter.c_str(),
+                                       group.c_str(), sort.c_str(), albumtitle.c_str(),
+                                       bcover_IsWholeLib, bcover_Grouped);
 
     if (selection_count > 0) {
       library = *shared_selection;
       //debug t_size shr_count = shared_selection.use_count();
     }
-    else
-    if (configData->IsWholeLibrary()) {
+    else if (bcover_IsWholeLib) {
       // copy whole library
       library_manager::get()->get_all_items(library);
     } else {
       // playlist covers
-      const t_size playlist =
-          configData->FindSourcePlaylist(PlSrcFilter::ANY_PLAYLIST);
+      const t_size playlist = cover_pl_source_ndx;
       playlist_manager::get()->playlist_get_all_items(playlist, library);
     }
     try {
@@ -101,7 +105,7 @@ void DbReloadWorker::threadProc() {
   copyDone.get_future().wait();
   abort.check();
 
-  DBWriter(*db).add_tracks(std::move(library), abort);
+  DBWriter(*db, bcover_IsWholeLib, bcover_Grouped).add_tracks(std::move(library), abort);
   abort.check();
 
   FB2K_console_formatter() << AppNameInternal << " collection generated in: "

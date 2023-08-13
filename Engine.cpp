@@ -89,7 +89,7 @@ Engine::Engine(EngineThread& thread, EngineWindow& window, StyleManager& styleMa
 
 void Engine::mainLoop() {
   updateRefreshRate();
-  EM::ReloadCollection().execute(*this);
+  EM::ReloadCollection(NULL).execute(*this);
 
   double lastSwapEnd = 0;
   double swapEstimate = 1;
@@ -178,4 +178,10 @@ void Engine::setTarget(DBPos target, bool userInitiated) {
   thread.invalidateWindow();
 
 }
+
+bool Engine::check_broadmsg_wnd(LPARAM lphWnd) {
+  HWND wnd = (HWND)lphWnd;
+  return (wnd == NULL || wnd == window.hWnd);
+}
+
 } // namespace engine
