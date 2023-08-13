@@ -17,11 +17,17 @@ enum {
   ID_MIDDLECLICK,
   ID_OPENEXTERNALVIEWER,
   ID_PREFERENCES,
+  ID_COVER_UI_SETTINGS_LABEL,
+  ID_COVER_FOLLOWS_PLAY_NOW,
+  ID_COVER_SETS_SELECTION,
+  ID_LIBRARY_COVER_FOLLOWS_SELECTION,
+  ID_PLAYLIST_SET_PL_SELECTION,
   ID_PLAYLIST_FOLLOWS_PL_SELECTION,
   ID_PLAYLIST_CURRENT_AS_SOURCE,
   ID_PLAYLIST_SOURCE_SET,
   ID_PLAYLIST_ACTIVE_AS_SOURCE,
-  ID_LIBRARY_COVER_FOLLOWS_SELECTION,
+  ID_PLAYLIST_GROUPED,
+  ID_PLAYLIST_HILIGHT,
   ID_LIBRARY_FILTER_SELECTOR_AS_SOURCE,
   ID_LIBRARY_FILTER_SELECTOR_LOCK,
   ID_SUBMENU_SELECTOR,
@@ -37,8 +43,9 @@ enum {
   ID_DISPLAY_8,
   ID_DISPLAY_9,
   ID_SUBMENU_DISPLAY,
-  ID_CONTEXT_FIRST,
-  ID_CONTEXT_LAST = ID_CONTEXT_FIRST + 1000,
+  ID_SUBMENU_LIBRARY_SELECTIONS,
+  ID_CONTEXT_FIRST_DISPLAY,
+  ID_CONTEXT_LAST_DISPLAY = ID_CONTEXT_FIRST_DISPLAY + 1000,
 };
 
 class GLFWContext {
@@ -74,7 +81,7 @@ class EngineWindow {
  public:
   EngineWindow(ContainerWindow& container, render::StyleManager& styleManager,
                ui_element_instance_callback_ptr defaultUiCallback)
-      : defaultUiCallback(std::move(defaultUiCallback)), container(container),
+      : defaultUiCallback(defaultUiCallback), container(container),
         externalSelectionCallback(*this) {
     TRACK_CALL_TEXT("EngineWindow::EngineWindow");
     createWindow();
@@ -92,12 +99,15 @@ class EngineWindow {
   const metadb_handle_list_ref getSelection(bool fromLibrary) {
     return fromLibrary? library_selection : playlist_selection;
   }
+  LRESULT on_message(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) { /*int kk = 0*/; }
+  void cmdTogglePlaylistGrouped();
+  void cmdTogglePlaylistHiLight();
   void cmdToggleActivePlaylistSource();
   void cmdTogglePlaylistSource();
   void cmdAssignPlaylistSource();
   void cmdPlaylistSourcePlay(const AlbumInfo& album);
   void cmdHighlightPlaylistContent();
-  bool cmdActivateVisualization(int ndx);
+  bool cmdActivateVisualization(LPARAM lpActVis, LPARAM hwnd);
   void cmdToggleLibraryFilterSelectorSource(bool lock);
   void cmdToggleLibraryCoverFollowsSelection();
   void cmdShowAlbumOnExternalViewer(AlbumInfo album);
@@ -122,7 +132,7 @@ class EngineWindow {
 
  private:
   double scrollAggregator = 0;
-  ui_element_instance_callback_ptr defaultUiCallback;
+  const ui_element_instance_callback_ptr defaultUiCallback;
 
   metadb_handle_list library_selection;
   GUID library_selection_type;

@@ -1,3 +1,5 @@
+#include <filesystem>
+
 // clang-format off
 #include "EngineThread.h"  //(1)
 #include "EngineWindow.h"  //(2)
@@ -164,7 +166,7 @@ LRESULT EngineWindow::messageHandler(UINT uMsg, WPARAM wParam, LPARAM lParam) {
         return 0;
       break;
     case WM_MYACTIONS_SET_DISPLAY:
-      cmdActivateVisualization(lParam);
+      cmdActivateVisualization(MAKELPARAM((int)wParam,lParam), (LPARAM)hWnd);
       break;
     //todo: remove all actions in playlist mode
     case WM_MYACTIONS_CANCELED:
@@ -209,15 +211,18 @@ void EngineWindow::doDragStart(const AlbumInfo& album) {
 }
 void EngineWindow::onClickOnAlbum(const AlbumInfo& album, UINT uMsg) {
   if (uMsg == WM_LBUTTONDOWN) {
-    engineThread->send<EM::MoveToAlbumMessage>(album, true);
+    if ((container.coverIsWholeLibrary() && container.GetCoverDispFlagU(DispFlags::SET_LIB_SEL)) ||
+        (!container.coverIsWholeLibrary() && container.GetCoverDispFlagU(DispFlags::SET_PL_SEL))) {
+      engineThread->send<EM::MoveToAlbumMessage>(album, true);
+    }
   }
   else if (uMsg == WM_MBUTTONDOWN) {
-    if (!configData->IsWholeLibrary()) return;
+    if (!container.coverIsWholeLibrary()) return;
     executeAction(configData->MiddleClick, album, this->hWnd,
     ActionGetBlockFlag(configData->CustomActionFlag, AB_MIDDLECLICK));
   }
   else if (uMsg == WM_LBUTTONDBLCLK) {
-    if (!configData->IsWholeLibrary()) {
+    if (!container.coverIsWholeLibrary()) {
       cmdPlaylistSourcePlay(album);
     } else {
       executeAction(configData->DoubleClick, album, this->hWnd,
@@ -226,13 +231,15 @@ void EngineWindow::onClickOnAlbum(const AlbumInfo& album, UINT uMsg) {
   }
 }
 bool EngineWindow::onKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam) {
+  bool bset_lib_sel = container.GetCoverDispFlagU(DispFlags::SET_LIB_SEL);
+  HWND hwndBroad = bset_lib_sel ? NULL : hWnd;
   if (wParam == VK_RETURN && ((GetKeyState(VK_CONTROL) & 0x8000))) {
     //...
   }
   else if (wParam == VK_RETURN) {
     auto targetAlbum = engineThread->sendSync<EM::GetTargetAlbum>().get();
     if (targetAlbum) {
-      if (!configData->IsWholeLibrary()) {
+      if (!container.coverIsWholeLibrary()) {
         cmdPlaylistSourcePlay(targetAlbum.value());
       } else {
         executeAction(configData->EnterKey, targetAlbum.value(), this->hWnd,
@@ -246,41 +253,15 @@ bool EngineWindow::onKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam) {
     return true;
   }
   else if (wParam == VK_F4) {
-
-    if (!configData->IsWholeLibrary()) {
-
-      src_state srcstate;
-      configData->GetState(srcstate);
-      srcstate.wholelib.second = srcstate.wholelib.first;
-      srcstate.grouped.second = !srcstate.grouped.first;
-
-      //todo: clean this
-      if (configData->SourcePlaylistGroup) {
-
-        engineThread->send<EM::SourceChangeMessage>(srcstate);
-
-        configData->SourcePlaylistGroup = !configData->SourcePlaylistGroup;
-
-        engineThread->send<EM::ReloadCollection>();
-      }
-      else {
-
-        //todo: flickers when reassigned, revise parameters
-        engineThread->send<EM::SourceChangeMessage>(srcstate);
-
-        configData->SourcePlaylistGroup = !configData->SourcePlaylistGroup;
-
-        engineThread->send<EM::ReloadCollection>();
-      }
-    }
+    cmdTogglePlaylistGrouped();
     return true;
   }
   else if (wParam == VK_F5) {
-    engineThread->send<EM::ReloadCollection>();
+    engineThread->send<EM::ReloadCollection>((LPARAM)hWnd);
     return true;
   }
   else if (wParam == VK_F6) {
-    engineThread->send<EM::MoveToNowPlayingMessage>();
+    engineThread->send<EM::MoveToNowPlayingMessage>((LPARAM)hWnd);
     return true;
   }
   else if (wParam == VK_F8) {
@@ -321,25 +302,25 @@ bool EngineWindow::onKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam) {
         move = -10;
     }
     move *= LOWORD(lParam);
-    engineThread->send<EM::MoveTargetMessage>(move, false);
+    engineThread->send<EM::MoveTargetMessage>(move, false, (LPARAM)hwndBroad);
     return true;
   }
   else if (wParam == VK_HOME) {
-    engineThread->send<EM::MoveTargetMessage>(-1, true);
-    return true;
+    engineThread->send<EM::MoveTargetMessage>(-1, true, (LPARAM)hwndBroad);
   }
   else if (wParam == VK_END) {
-    engineThread->send<EM::MoveTargetMessage>(1, true);
+    engineThread->send<EM::MoveTargetMessage>(1, true, (LPARAM)hwndBroad);
     return true;
   }
   else if ((wParam >= '0' && wParam <= '9') && GetKeyState(VK_CONTROL) & 0x8000) {
     //0 default, 1 first script...
-    int ndx = wParam - 0x30;
+    int ndx = static_cast<int>(wParam - 0x30);
     if (ndx == 0)
-      ndx = configData->GetCCPosition();
+      ndx = configData->GetCCPosition(container.GetCoverConfigDefault());
     else
       ndx--;
-    cmdActivateVisualization(ndx);
+
+    cmdActivateVisualization(MAKELPARAM(pfc::infinite16, ndx), (LPARAM)hWnd);
     return true;
   }
   else if (!(configData->FindAsYouType &&  // disable hotkeys that interfere with
@@ -364,46 +345,55 @@ bool EngineWindow::onKeyDown(UINT uMsg, WPARAM wParam, LPARAM lParam) {
 //set or toggle SourcePlaylist and SourcePlaylistName
 //returns true if display should be updated
 //disables active playlist
-bool ConfigPlaylistSource(bool toggle, bool reassign) {
-
-  bool prevstate = configData->SourcePlaylist;
-
-  if (toggle)
-    configData->SourcePlaylist = !configData->SourcePlaylist;
-
-  if (configData->SourcePlaylist && reassign) {
-      static_api_ptr_t<playlist_manager> pm;
-      pm->activeplaylist_get_name(configData->SourcePlaylistName);
+bool ConfigPlaylistSource(bool toggle, bool reassign, EngineWindow* ew) {
+  bool prevstate = ew->container.GetCoverDispFlagU(DispFlags::SRC_PLAYLIST);
+  bool modSourcePlaylist = prevstate;
+  if (toggle) {
+    modSourcePlaylist = ew->container.ToggleCoverDispFlagU(DispFlags::SRC_PLAYLIST);
   }
-  bool bmirror = configData->IsSourceOnAndMirrored(true);
+
+  if (modSourcePlaylist && reassign) {
+    static_api_ptr_t<playlist_manager_v5> pm;
+    pfc::string8 buffer;
+    pm->activeplaylist_get_name(buffer);
+    ew->container.SetSourcePlaylistName(buffer);
+    t_size active_ndx = pm->get_active_playlist();
+    GUID guid = pm->playlist_get_guid(active_ndx);
+    ew->container.SetSourcePlaylistGUID(pfc::print_guid(guid));
+  }
+
+  bool bmirror = ew->container.IsSourceOnAndMirrored(true);
 
   //in all cases assume turning ActivePlaylist off
-  configData->SourceActivePlaylist = false;
+  ew->container.SetCoverDispFlagU(DispFlags::SRC_ACTPLAYLIST, false);
 
-  return configData->SourcePlaylist != prevstate || (configData->SourcePlaylist == prevstate && !bmirror);
+  return modSourcePlaylist != prevstate || (modSourcePlaylist == prevstate && !bmirror);
 }
 
-bool ToggleActivePlaylistMode() {
+bool ToggleActivePlaylistMode(EngineWindow* ew) {
   bool breload = false;
-  configData->SourceActivePlaylist = !configData->SourceActivePlaylist;
+  bool modSourceActivePlaylist = ew->container.ToggleCoverDispFlagU(DispFlags::SRC_ACTPLAYLIST);
 
-  if (configData->SourceActivePlaylist) {
-    static_api_ptr_t<playlist_manager> pm;
-    t_size activepl = pm->get_active_playlist();
+  if (modSourceActivePlaylist) {
+    static_api_ptr_t<playlist_manager_v5> pm;
+    t_size active_ndx = pm->get_active_playlist();
 
-    if (activepl == pfc_infinite) {
+    if (active_ndx == pfc_infinite) {
       return false;
     }
 
     //is SourcePlaylist on and in the same playlist?
-    breload = !configData->IsSourcePlaylistOn(
-        activepl, PlSrcFilter::PLAYLIST);
+    breload = !ew->container.IsSourcePlaylistOn(active_ndx, PlSrcFilter::PLAYLIST);
 
-    pm->activeplaylist_get_name(configData->SourceActivePlaylistName);
-    configData->SourcePlaylist = true;
+    pfc::string8 buffer;
+    pm->activeplaylist_get_name(buffer);
+    ew->container.SetSourceActivePlaylistName(buffer);
+    GUID guid = pm->playlist_get_guid(active_ndx);
+    ew->container.SetSourceActivePlaylistGUID(pfc::print_guid(guid));
+    ew->container.SetCoverDispFlagU(DispFlags::SRC_PLAYLIST, true);
   }
   else {
-    configData->SourcePlaylist = false;
+    ew->container.SetCoverDispFlagU(DispFlags::SRC_PLAYLIST, false);
     breload = true;
   }
   return breload;
@@ -415,17 +405,34 @@ void EngineWindow::cmdToggleActivePlaylistSource() {
   configData->SourceLibrarySelectorLock = false;
 
   src_state srcstate;
-  configData->GetState(srcstate);
+  container.GetState(srcstate);
 
-  bool brefresh = ToggleActivePlaylistMode();
+  bool brefresh = ToggleActivePlaylistMode(this);
 
-  configData->GetState(srcstate, false);
+  container.GetState(srcstate, false);
 
   if (brefresh) {
 
-    engineThread->send<EM::SourceChangeMessage>(srcstate);
-    engineThread->send<EM::ReloadCollection>();
+    engineThread->send<EM::SourceChangeMessage>(srcstate, (LPARAM)hWnd);
+    engineThread->send<EM::ReloadCollection>((LPARAM)hWnd);
   }
+}
+
+void EngineWindow::cmdTogglePlaylistGrouped() {
+  if (!container.coverIsWholeLibrary()) {
+    src_state srcstate;
+    container.GetState(srcstate);
+    srcstate.wholelib.second = srcstate.wholelib.first;
+    srcstate.grouped.second = !srcstate.grouped.first;
+
+    engineThread->send<EM::SourceChangeMessage>(srcstate, (LPARAM)hWnd);
+    container.ToggleCoverDispFlagU(DispFlags::SRC_PL_UNGROUPED);
+    engineThread->send<EM::ReloadCollection>((LPARAM)hWnd);
+  }
+}
+
+void EngineWindow::cmdTogglePlaylistHiLight() {
+  container.ToggleCoverDispFlagU(DispFlags::SRC_PL_HL);
 }
 
 void EngineWindow::cmdAssignPlaylistSource() {
@@ -434,15 +441,15 @@ void EngineWindow::cmdAssignPlaylistSource() {
   configData->SourceLibrarySelectorLock = false;
 
   src_state srcstate;
-  configData->GetState(srcstate);
+  container.GetState(srcstate);
 
-  bool brefresh = ConfigPlaylistSource(!configData->SourcePlaylist, true);
+  bool brefresh = ConfigPlaylistSource(!container.GetCoverDispFlagU(DispFlags::SRC_PLAYLIST), true, this);
 
-  configData->GetState(srcstate, false);
+  container.GetState(srcstate, false);
 
   if (brefresh) {
-    engineThread->send<EM::SourceChangeMessage>(srcstate);
-    engineThread->send<EM::ReloadCollection>();
+    engineThread->send<EM::SourceChangeMessage>(srcstate, (LPARAM)hWnd);
+    engineThread->send<EM::ReloadCollection>((LPARAM)hWnd);
   }
 }
 
@@ -452,42 +459,43 @@ void EngineWindow::cmdTogglePlaylistSource() {
   configData->SourceLibrarySelectorLock = false;
 
   src_state srcstate;
-  configData->GetState(srcstate);
+  container.GetState(srcstate);
   //because in active playlist mode playlist mode is also turned on
-  bool breload = ConfigPlaylistSource(!configData->SourceActivePlaylist, false);
+  bool breload = ConfigPlaylistSource(
+      !container.GetCoverDispFlagU(DispFlags::SRC_ACTPLAYLIST) /*configData->SourceActivePlaylist*/, false, this);
 
-  configData->GetState(srcstate, false);
+  container.GetState(srcstate, false);
 
   if (breload) {
-    engineThread->send<EM::SourceChangeMessage>(srcstate);
-    engineThread->send<EM::ReloadCollection>();
+    engineThread->send<EM::SourceChangeMessage>(srcstate, (LPARAM)hWnd);
+    engineThread->send<EM::ReloadCollection>((LPARAM)hWnd);
   }
 }
 
 t_size FindItemFromPos(metadb_handle_list list, metadb_handle_ptr item, t_size pos) {
 
-  for (int i = pos; i < list.get_count(); i++) {
+  for (size_t i = pos; i < list.get_count(); i++) {
     bool bcomp = list.get_item(i) == item.get_ptr();
     if (bcomp) {
       return i;
     }
   }
-  return pfc_infinite;
+  return pfc::infinite_size;
 }
 
-t_size GetHighlightMask(t_size playlist, const AlbumInfo& album, bit_array_bittable& iomask) {
+t_size GetHighlightMask(t_size playlist, const AlbumInfo& album, bit_array_bittable& iomask, EngineWindow* ew) {
   static_api_ptr_t<playlist_manager> pm;
   metadb_handle_list plist;
   pm->playlist_get_all_items(playlist, plist);
   iomask.resize(plist.get_count());
 
-  t_size retpos = pfc_infinite;
-  if (!configData->IsPlaylistSourceModeUngrouped()) {
-    for (int j = 0; j < plist.get_count(); j++) {
-      int res = FindItemFromPos(album.tracks, plist.get_item(j), 0);
-      if (res != pfc_infinite)
-        retpos = retpos == pfc_infinite ? j : retpos;
-      iomask.set(j, res != pfc_infinite);
+  t_size retpos = pfc::infinite_size;
+  if (!ew->container.coverIsWholeLibrary() && !ew->container.GetCoverDispFlagU(DispFlags::SRC_PL_UNGROUPED)) {
+    for (size_t j = 0; j < plist.get_count(); j++) {
+      const size_t res = FindItemFromPos(album.tracks, plist.get_item(j), 0);
+      if (res != pfc::infinite_size)
+        retpos = retpos == pfc::infinite_size ? j : retpos;
+      iomask.set(j, res != pfc::infinite_size);
     }
   } else {
     std::string strkey = album.pos.key;
@@ -502,9 +510,9 @@ t_size GetHighlightMask(t_size playlist, const AlbumInfo& album, bit_array_bitta
 void EngineWindow::cmdPlaylistSourcePlay(const AlbumInfo& album) {
 
   static_api_ptr_t<playlist_manager> pm;
-  t_size playlist = pm->find_playlist(configData->InSourePlaylistGetName());
+  t_size playlist = pm->find_playlist(container.InSourePlaylistGetName());
   bit_array_bittable hlmask;
-  t_size first = GetHighlightMask(playlist, album, hlmask);
+  t_size first = GetHighlightMask(playlist, album, hlmask, this);
   pm->playlist_set_selection(playlist, bit_array_true(), hlmask);
   pm->set_active_playlist(playlist);
   pm->playlist_execute_default_action(playlist, first);
@@ -515,48 +523,66 @@ void EngineWindow::cmdHighlightPlaylistContent() {
   auto targetAlbum = engineThread->sendSync<EM::GetTargetAlbum>().get();
   if (targetAlbum) {
     t_size playlist =
-        playlist_manager::get()->find_playlist(configData->InSourePlaylistGetName());
+    playlist_manager::get()->find_playlist(container.InSourePlaylistGetName());
     bit_array_bittable hlmask;
-    t_size first = GetHighlightMask(playlist, targetAlbum.value(), hlmask);
+    t_size first = GetHighlightMask(playlist, targetAlbum.value(), hlmask, this);
     //todo: display flickering on playlist browser
-    //playlist_manager::get()->playlist_set_selection(playlist, bit_array_true(), bit_array_false());
     playlist_manager::get()->playlist_set_selection(playlist, bit_array_true(), hlmask);
     playlist_manager::get()->playlist_ensure_visible(playlist, first);
-    //playlist_manager::get()->playlist_set_focus_item(playlist, first);
   }
 }
 
-bool EngineWindow::cmdActivateVisualization(int ndx) {
-  CoverConfigMap coverconfigs = configData->CoverConfigs;
-  int session_pos = configData->sessionCompiledCPInfo.get().first;
-  if (ndx <= coverconfigs.size()) {
-    CoverConfig new_cc;
-    // -1 reset to default
-    if (ndx == -1) {
-      // restore saved cover config from settings
-      ndx = configData->GetCCPosition();
-      if (ndx != session_pos) {
-        auto& cfg_cc = coverconfigs.at(configData->CoverConfigSel.c_str());
-        new_cc = cfg_cc;
-      } else
-        return false;
+bool EngineWindow::cmdActivateVisualization(LPARAM lpActVis, LPARAM hwnd) {
+
+  const auto pre = LOWORD(lpActVis);
+  const auto post = HIWORD(lpActVis);
+  
+  //todo: x ui default
+  int default_pos = configData->GetCCPosition(container.GetCoverConfigDefault());
+  size_t vis_ndx;
+
+  if (pre == pfc::infinite16) {
+    // set
+    if (post == pfc::infinite16) {
+      //def
+      vis_ndx = default_pos;
+   
     } else {
-      // 0 default, 1..9 get 0 to 8 cover configs
-      if (ndx != session_pos) {
-        auto& [ndxname, cfg_cc] = *std::next(coverconfigs.begin(), ndx);
-        new_cc = cfg_cc;
-      } else
-        return false;
+      vis_ndx = post;
     }
+  } else {
+    //toggle, post -1   
+    int curr_pos = container.GetCoverConfigNdx();
+    if (curr_pos == default_pos) {
+      vis_ndx = pre;
+    } else {
+      vis_ndx = default_pos;
+    }
+  }
+  if (vis_ndx >= static_cast<int>(configData->CoverConfigs.size())) {
+    // out of bounds
+    // EXIT
+    return false;
+  }
+ 
+  container.SetCoverConfigNdx(vis_ndx);
+
+  //TODO: CLEAN UP
+  CoverConfigMap coverconfigs = configData->CoverConfigs;
+  configData->sessionCompiledCPInfo.get().first;
+  size_t mod_ndx = vis_ndx == -1 ? ~0 : std::min(static_cast<size_t>(vis_ndx), coverconfigs.size() - 1);
+  if (mod_ndx <= static_cast<int>(coverconfigs.size())) {
+    auto& [ndxname, cfg_cc] = *std::next(coverconfigs.begin(), container.GetCoverConfigNdx());
+    CoverConfig new_cc = cfg_cc;
 
     try {
       auto cfg_ptr = make_shared<CompiledCPInfo>(compileCPScript(new_cc.script.c_str()));
-      EngineThread::forEach([ndx, cfg_ptr](EngineThread& t) {
-        t.send<EM::ChangeCoverPositionsMessage>(cfg_ptr);
+      EngineThread::forEach([mod_ndx, cfg_ptr, hwnd](EngineThread& t) {
+        t.send<EM::ChangeCoverPositionsMessage>(cfg_ptr, (LPARAM)hwnd);
       });
-      configData->sessionCompiledCPInfo.set(ndx, cfg_ptr);
-    } catch (std::exception& e) {
-      // deliver exception
+      configData->sessionCompiledCPInfo.set(mod_ndx, cfg_ptr);
+    } catch (std::exception&) {
+      //..
     }
     return true;
   }
@@ -564,15 +590,11 @@ bool EngineWindow::cmdActivateVisualization(int ndx) {
     // index out of bounds
     return false;
 }
-void EngineWindow::cmdToggleLibraryCoverFollowsSelection() {
-  configData->CoverFollowsLibrarySelection = !configData->CoverFollowsLibrarySelection;
-  if (!configData->CoverFollowsLibrarySelection == true) {
-    //..
-  }
-  else {
-    //..
-  }
+
+void EngineWindow::cmdToggleLibraryCoverFollowsSelection() { 
+  container.ToggleCoverDispFlagU(DispFlags::FOLLOW_LIB_SEL);
 }
+
 void EngineWindow::cmdToggleLibraryFilterSelectorSource(bool locked) {
   configData->SourceActivePlaylist = false;
   configData->SourcePlaylist = false;
@@ -584,7 +606,7 @@ void EngineWindow::cmdToggleLibraryFilterSelectorSource(bool locked) {
     }
 
     if (!configData->SourceLibrarySelector && !configData->SourceLibrarySelectorLock)
-      engineThread->send<EM::ReloadCollection>();
+      engineThread->send<EM::ReloadCollection>((LPARAM)hWnd);
 
     if (configData->SourceLibrarySelector && !configData->CoverFollowsLibrarySelection)
       //need the follow selection
@@ -602,54 +624,49 @@ bool HasImageExtension(pfc::string8 extension) {
   const std::vector<pfc::string8> vext {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff"};
   return std::find(vext.begin(), vext.end(), extension) != vext.end();
 }
+
 void EngineWindow::cmdShowAlbumOnExternalViewer(AlbumInfo album) {
   const metadb_handle_list& tracks = album.tracks;
   const metadb_handle_ptr& track = tracks.get_item(0).get_ptr();
   static_api_ptr_t<album_art_manager_v2> aam;
   abort_callback_impl abort;
   try {
+    bool bimgEmbedded = false;
+    std::wstring imgEmbeddedFolder; 
     auto extractor =
         aam->open(pfc::list_single_ref_t(track),
-                  pfc::list_single_ref_t(configData->GetGuiArt(configData->CenterArt)),
+                  pfc::list_single_ref_t(configData->GetGuidArt(configData->CenterArt)),
                   abort);
     try {
       album_art_path_list::ptr qp = extractor->query_paths(
-          configData->GetGuiArt(configData->CustomCoverFrontArt), abort);
+          configData->GetGuidArt(configData->CustomCoverFrontArt), abort);
 
-      // int cdebug = qp->get_count();
       pfc::string8 strPicturePath = qp->get_path(0);
+      
+      if (!HasImageExtension(pfc::string8(PathFindExtensionA(strPicturePath)))) {
+        bimgEmbedded = true;
+      }
 
-      if (!HasImageExtension(pfc::string8(PathFindExtensionA(strPicturePath))))
-        return;
+      std::filesystem::path folder(strPicturePath.c_str());
 
       if (configData->CoverUseLegacyExternalViewer) {
-        //PhotoViewer
-        //from environment
-        char* strProgFiles;
-        strProgFiles = getenv("ProgramFiles");
-        pfc::stringcvt::string_wide_from_utf8_fast bufferWide;
-        //command program files photoviewer
-        bufferWide.convert(strProgFiles);
-        std::wstring wsCmd = (L"\"");
-        wsCmd.append(bufferWide);
-        wsCmd.append("\\Windows Photo Viewer\\PhotoViewer.dll\", "
-            L"ImageView_Fullscreen ");
-        //picture path
-        bufferWide.convert(strPicturePath);
-        wsCmd.append(bufferWide);
-        std::wstring wsSystemRoot = (L"\"");
-        //system root (c:\windows)
-        char* strSysRoot;
-        strSysRoot = getenv("SystemRoot");
-        std::wstring wsCmdSysRoot;
-        pfc::stringcvt::string_wide_from_utf8_fast bufferWideSysRoot;
-        bufferWideSysRoot.convert(strSysRoot);
-        wsCmdSysRoot.append(bufferWideSysRoot);
-        wsCmdSysRoot.append(L"\\system32\\rundll32.exe");
+        std::wstring no_uri_folder;
+        if (bimgEmbedded) {
+          no_uri_folder = folder.parent_path();
+        } else {
+          no_uri_folder = folder.c_str();
+        }
+        imgEmbeddedFolder = (L"\"");
+        no_uri_folder.replace(no_uri_folder.find(L"file://"), sizeof("file://") - 1, L"");
+        imgEmbeddedFolder.append(no_uri_folder.c_str());
+        imgEmbeddedFolder.append(L"\"");
 
-        //command
-        ShellExecuteW(this->hWnd, L"open", wsCmdSysRoot.c_str(),
-                      wsCmd.c_str(), 0, SW_NORMAL);
+        pfc::stringcvt::string_wide_from_utf8_fast bufferWide;
+        bufferWide.convert(configData->DisplayExtViewerPath);
+
+        ShellExecuteW(this->hWnd, L"open", bufferWide.get_ptr(),
+             imgEmbeddedFolder.c_str(), 0, SW_SHOWNORMAL);
+
       } else {
         //Photos or default
         uShellExecute(0, "open", strPicturePath, 0, 0, SW_NORMAL);
@@ -698,10 +715,14 @@ void EngineWindow::onWindowSize(int width, int height) {
 }
 
 void EngineWindow::onScroll(double /*xoffset*/, double yoffset) {
+
+  bool bset_lib_sel = container.GetCoverDispFlagU(DispFlags::SET_LIB_SEL);
+  HWND hwndBroad = bset_lib_sel ? NULL : hWnd;
+
   scrollAggregator -= yoffset;
   int m = int(scrollAggregator);
   scrollAggregator -= m;
-  engineThread->send<EM::MoveTargetMessage>(m, false);
+  engineThread->send<EM::MoveTargetMessage>(m, false, (LPARAM)hwndBroad);
 }
 
 void EngineWindow::onContextMenu(const int x, const int y) {
@@ -731,10 +752,11 @@ void EngineWindow::onContextMenu(const int x, const int y) {
   if (target) {
     if (configData->CtxShowExtViewerMenu) {
       uAppendMenu(hMenu, MF_STRING, ID_OPENEXTERNALVIEWER,
-                  "Open External Viewer");
+          (configData->CoverUseLegacyExternalViewer ? "Open ImageGlass Viewer" : "Open Image Viewer"));
     }
-    if (configData->IsWholeLibrary()) {
-      if (configData->CtxShowActionsMenu) {
+
+    if (configData->CtxShowActionsMenu) {
+      if (container.coverIsWholeLibrary()) {
         if ((configData->EnterKey.length() > 0) &&
             (strcmp(configData->EnterKey, configData->DoubleClick) != 0)) {
           uAppendMenu(hMenu, MF_STRING, ID_ENTER,
@@ -752,32 +774,51 @@ void EngineWindow::onContextMenu(const int x, const int y) {
               hMenu, MF_STRING, ID_MIDDLECLICK,
               PFC_string_formatter() << configData->MiddleClick << "\tMiddle Click");
         }
+      } else {
+        //playlist mode
+        uAppendMenu(hMenu, MF_STRING | MF_DISABLED, ID_ENTER,
+                    PFC_string_formatter() << "Default playlist action" << "\tEnter/Double Click");
       }
     }
     cmm->init_context(target->tracks, contextmenu_manager::FLAG_SHOW_SHORTCUTS);
     if (cmm->get_root() != nullptr) {
       if (GetMenuItemCount(hMenu) > 0)
         uAppendMenu(hMenu, MF_SEPARATOR, 0, nullptr);
-      cmm->win32_build_menu(hMenu, ID_CONTEXT_FIRST, ID_CONTEXT_LAST);
+      cmm->win32_build_menu(hMenu, ID_CONTEXT_FIRST_DISPLAY, ID_CONTEXT_LAST_DISPLAY);
       uAppendMenu(hMenu, MF_SEPARATOR, 0, nullptr);
     }
   }
 
-  uAppendMenu(hMenu, MF_STRING, ID_PREFERENCES,
-              PFC_string_formatter() << COMPONENT_NAME_LABEL << " Preferences...");
+  bool b_nowplaying = configData->CoverFollowsPlayback;  // global switch
+  bool b_xui_isWholeLib = container.coverIsWholeLibrary();
+  bool b_xui_follow_playnow = container.GetCoverDispFlagU(DispFlags::FOLLOW_PLAY_NOW);
+  bool b_xui_active_playlist = container.GetCoverDispFlagU(DispFlags::SRC_ACTPLAYLIST);
 
+  uAppendMenu(hMenu,
+              MF_STRING | MF_DISABLED | MF_GRAYED,
+              engine::ID_COVER_UI_SETTINGS_LABEL,
+              PFC_string_formatter() << "Coverflow Mod UI Settings ("
+                  << (container.coverIsWholeLibrary() ? "Library"
+                 : b_xui_active_playlist ? "Active Playlist" : "Playlist") << ")";
+  
+  uAppendMenu(hMenu,
+              MF_STRING | b_nowplaying ? b_xui_follow_playnow ? MF_CHECKED : MF_UNCHECKED
+              : (MF_DISABLED | MF_GRAYED),
+              engine::ID_COVER_FOLLOWS_PLAY_NOW,
+              PFC_string_formatter() << "Follow Now Playing";
+  //DISPLAY
   if (configData->CtxShowDisplayMenu)
-    AppendDisplayContextMenuOptions(&hMenu);
-  if (configData->CtxShowSelectorMenu)
-    AppendSelectorContextMenuOptions(&hMenu, false);
-  else {
-    //temporal fix while selector functionality is discussed for inclusion or not in future releases
-    //show only the library selection toggle if appropiate
-    bool bonlylibseltoggle = true;
-    AppendSelectorContextMenuOptions(&hMenu, bonlylibseltoggle);
-  }
+    AppendDisplayContextMenuOptions(&hMenu, container.GetConstCoverConfigNdx());
+
+  //SET/FOLLOW
+  AppendSelectorContextMenuOptions(&hMenu, true, this);
+
+  //PLAYLIST 
   if (configData->CtxShowPlaylistMenu)
-    AppendPlaylistContextMenuOptions(&hMenu);
+    AppendPlaylistContextMenuOptions(&hMenu, this);
+
+  uAppendMenu(hMenu, MF_STRING, ID_PREFERENCES,
+            PFC_string_formatter() << COMPONENT_NAME_LABEL << " Preferences...");
 
   menu_helpers::win32_auto_mnemonics(hMenu);
 
@@ -785,14 +826,22 @@ void EngineWindow::onContextMenu(const int x, const int y) {
       hMenu, TPM_NONOTIFY | TPM_RETURNCMD | TPM_RIGHTBUTTON | TPM_NOANIMATION, pt.x, pt.y,
       0, hWnd, nullptr);
   DestroyMenu(hMenu);
-  if ((cmd == ID_LIBRARY_COVER_FOLLOWS_SELECTION) ||
+  
+  if (cmd == ID_COVER_SETS_SELECTION) {
+    container.ToggleCoverDispFlagU(DispFlags::SET_LIB_SEL);
+  } else if (cmd == ID_COVER_FOLLOWS_PLAY_NOW) {
+    container.ToggleCoverDispFlagU(DispFlags::FOLLOW_PLAY_NOW);
+  } else if ((cmd == ID_LIBRARY_COVER_FOLLOWS_SELECTION) ||
       (cmd == ID_LIBRARY_FILTER_SELECTOR_AS_SOURCE) ||
       (cmd == ID_LIBRARY_FILTER_SELECTOR_LOCK)) {
     OnSelectorContextCommand(&hMenu, cmd, this);
-  } else if ((cmd == ID_PLAYLIST_FOLLOWS_PL_SELECTION) ||
+  } else if ((cmd == ID_PLAYLIST_SET_PL_SELECTION) ||
+             (cmd == ID_PLAYLIST_FOLLOWS_PL_SELECTION) ||
              (cmd == ID_PLAYLIST_CURRENT_AS_SOURCE) ||
              (cmd == ID_PLAYLIST_SOURCE_SET) ||
-             (cmd == ID_PLAYLIST_ACTIVE_AS_SOURCE)) {
+             (cmd == ID_PLAYLIST_ACTIVE_AS_SOURCE) ||
+             (cmd == ID_PLAYLIST_GROUPED) ||
+             (cmd == ID_PLAYLIST_HILIGHT)) {
     OnPlaylistContextCommand(&hMenu, cmd, this);
   } else if (cmd >= ID_DISPLAY_0 && cmd <= ID_DISPLAY_9) {
     OnDisplayContextCommand(&hMenu, cmd, this);
@@ -801,16 +850,18 @@ void EngineWindow::onContextMenu(const int x, const int y) {
   } else if (cmd == ID_OPENEXTERNALVIEWER) {
     cmdShowAlbumOnExternalViewer(target.value());
   } else if (cmd == ID_ENTER) {
-    executeAction(configData->EnterKey, target.value(), this->hWnd,
+    if (b_xui_isWholeLib) {
+      executeAction(configData->EnterKey, target.value(), this->hWnd,
                   ActionGetBlockFlag(configData->CustomActionFlag, AB_ENTER));
+    }
   } else if (cmd == ID_DOUBLECLICK) {
     executeAction(configData->DoubleClick, target.value(), this->hWnd,
                   ActionGetBlockFlag(configData->CustomActionFlag, AB_DOUBLECLICK));
   } else if (cmd == ID_MIDDLECLICK) {
     executeAction(configData->MiddleClick, target.value(), this->hWnd,
                   ActionGetBlockFlag(configData->CustomActionFlag, AB_MIDDLECLICK));
-  } else if (cmd >= ID_CONTEXT_FIRST && cmd <= ID_CONTEXT_LAST) {
-    cmm->execute_by_id(cmd - ID_CONTEXT_FIRST);
+  } else if (cmd >= ID_CONTEXT_FIRST_DISPLAY && cmd <= ID_CONTEXT_LAST_DISPLAY) {
+    cmm->execute_by_id(cmd - ID_CONTEXT_FIRST_DISPLAY);
   }
 }
 
