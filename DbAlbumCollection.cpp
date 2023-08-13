@@ -10,9 +10,9 @@ using FuzzyMatcher = engine::FuzzyMatcher;
 namespace db_structure {
 DB::DB(t_uint64 libraryVersion, const std::string& filterQuery,
        const std::string& keyFormat, const std::string& sortFormat,
-       const std::string& titleFormat)
+       const std::string& titleFormat, const bool wholelib, const bool grouped)
     : keyIndex(container.get<key>()), sortIndex(container.get<sortKey>()),
-      libraryVersion(libraryVersion) {
+      libraryVersion(libraryVersion), cover_whole_lib(wholelib), cover_grouped(grouped) {
 
   if (!filterQuery.empty()) {
     try {
@@ -90,7 +90,7 @@ void DBWriter::add_track(const metadb_handle_ptr& track) {
 
   auto album = db.keyIndex.end();
 
-  if (!configData->IsWholeLibrary() && !configData->SourcePlaylistGroup) {
+  if (!db.cover_whole_lib && !db.cover_grouped) {
     char tmp_str[4];
     memset(tmp_str, ' ', 3);
     tmp_str[3] = '\0';
@@ -152,9 +152,6 @@ void DBWriter::update_album_metadata(const db_structure::Album& album) {
 }
 
 void DBWriter::remove_tracks(metadb_handle_list_cref tracks) {
-  // for (const auto& track : tracks) {
-  //  remove_track(track);
-  //}
   int count = tracks.get_count();
   for (int i = 0; i < count; i++) {
     const auto& track = tracks.get_item(i);
@@ -262,7 +259,8 @@ void DbAlbumCollection::handleLibraryChange(t_uint64 version, LibraryChangeType 
   }
   if (version < db->libraryVersion)
     return;
-  DBWriter writer(*db);
+
+  DBWriter writer(*db, false, false);
   if (type == items_added) {
     abort_callback_dummy aborter{};
     writer.add_tracks(tracks, aborter);

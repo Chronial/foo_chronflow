@@ -41,7 +41,7 @@ class DB {
  public:
   DB(t_uint64 libraryVersion, const std::string& filterQuery,
      const std::string& keyFormat, const std::string& sortFormat,
-     const std::string& titleFormat);
+     const std::string& titleFormat, const bool wholelib, const bool grouped);
   NO_MOVE_NO_COPY(DB);
 
   Container container;
@@ -54,6 +54,9 @@ class DB {
   titleformat_object::ptr keyBuilder;
   titleformat_object::ptr sortFormatter;
   titleformat_object::ptr titleFormatter;
+
+  bool cover_whole_lib = true;
+  bool cover_grouped = true;
 };
 using DBIter = Container::index<sortKey>::type::iterator;
 
@@ -64,7 +67,8 @@ using db_structure::DB;
 
 class DBWriter {
  public:
-  explicit DBWriter(db_structure::DB& db) : db(db){};
+  explicit DBWriter(db_structure::DB& db, bool wholelib, bool grouped)
+      : db(db), cover_wholelib(wholelib), cover_grouped(grouped) {};
   NO_MOVE_NO_COPY(DBWriter);
   void add_tracks(metadb_handle_list_cref tracks, abort_callback& abort);
   void remove_tracks(metadb_handle_list_cref tracks);
@@ -75,6 +79,8 @@ class DBWriter {
   void remove_track(const metadb_handle_ptr& track);
   void update_album_metadata(const db_structure::Album& album);
   db_structure::DB& db;
+  bool cover_wholelib = true;
+  bool cover_grouped = true;
 
   pfc::string8_fast_aggressive keyBuffer;
   pfc::string8_fast_aggressive sortBuffer;
