@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 
 // clang-format off
 #include "PlaylistCallback.h"
@@ -192,6 +192,26 @@ void PlaylistCallback::on_items_removed(t_size p_playlist, const bit_array& p_ma
 }
 // playlist activate and playlist removals
 void PlaylistCallback::on_playlist_activate(t_size p_old, t_size p_new) {
+
+  EngineThread* et = static_cast<EngineThread*>(this);
+
+  bool bIsWholeLib = et->IsWholeLibrary();
+  bool bIsPlaylistSource = et->GetCoverDispFlagU(DispFlags::SRC_PLAYLIST);
+  bool bIsActivePlaylistSource = et->GetCoverDispFlagU(DispFlags::SRC_ACTPLAYLIST);
+  bool bPlaylistFollowSelection = !bIsWholeLib && !et->GetCoverDispFlagU(DispFlags::FOLLOW_LIB_SEL);
+  //todo: tidy up
+  pfc::string8 coverSourcePlaylistName;
+  et->GetPlaylistSource(coverSourcePlaylistName, false, false);
+  pfc::string8 buffer;
+  et->GetPlaylistSource(buffer, false, true);
+  GUID guid_coverSourcePlaylist;
+  guid_coverSourcePlaylist = pfc::GUID_from_text(buffer);
+  pfc::string8 coverSourceActivePlaylistName;
+  et->GetPlaylistSource(buffer, true, false);
+  et->GetPlaylistSource(buffer, true, true);
+  GUID guid_coverSourceActivePlaylist;
+  guid_coverSourceActivePlaylist = pfc::GUID_from_text(buffer);
+
   bool brefresh = false;
   src_state srcstate;
   // on playlist deletion callback is invoked twice...
@@ -199,15 +219,23 @@ void PlaylistCallback::on_playlist_activate(t_size p_old, t_size p_new) {
     // first callback after playlist removal (p_old is removed, p_new is undefined)
     // if p_old is zero we are deleting the last playlist and wont be a second
     // callback
-    if (configData->SourcePlaylist) {
-      static_api_ptr_t<playlist_manager> pm;
-      pfc::string8 playlistname = configData->SourcePlaylistName;
-      t_size playlist = pm->find_playlist(playlistname, playlistname.get_length());
+    if (bIsPlaylistSource) {
+      static_api_ptr_t<playlist_manager_v5> pm;
+      pfc::string8 playlistname = coverSourcePlaylistName;
+      t_size playlist = pm->find_playlist_by_guid(guid_coverSourcePlaylist);
       if (playlist == p_old) {
-        configData->GetState(srcstate);
-        configData->SourcePlaylistName = coverflow::default_SourcePlaylistName;
-        configData->SourcePlaylist = false;
-        configData->GetState(srcstate, false);
+        GUID def_guid = pfc::guid_null;
+        size_t def_ndx = pm->find_playlist(coverflow::default_SourcePlaylistName);
+        bool bdefaultexists = def_ndx != pfc_infinite;
+        if (bdefaultexists) {
+          def_guid = pm->playlist_get_guid(def_ndx);
+        }
+
+        et->GetState(srcstate);
+        et->SetPlaylistSource(coverflow::default_SourcePlaylistName, bIsActivePlaylistSource, false);
+        et->SetPlaylistSource(pfc::print_guid(def_guid), bIsActivePlaylistSource, true);
+        et->SetCoverDispFlagU(DispFlags::SRC_PLAYLIST, false);
+        et->GetState(srcstate, true);
         brefresh = true;
       }
     }
@@ -281,7 +309,11 @@ void PlaylistCallback::on_playlist_renamed(t_size p_index, const char* p_new_nam
 }
 void PlaylistCallback::on_playlists_removed(const bit_array& p_mask, t_size p_old_count,
                                             t_size p_new_count) {
-  if (!configData->IsWholeLibrary())
+
+  EngineThread* et = static_cast<EngineThread*>(this);
+  bool bIsWholeLib = et->IsWholeLibrary();
+
+  if (!bIsWholeLib) {
     // manage state with no available playlist
     // other deletions are processed by on_playlist_activate(...)
     if (p_new_count == 0 /*|| bIsDeletingSrcOn*/) {

@@ -73,8 +73,79 @@ EngineThread::~EngineThread() {
     thread.join();
 }
 
+HWND EngineThread::GetEngineWindowWnd() {
+  return engineWindow.hWnd;
+}
+
+size_t EngineThread::GetDispFlags() {
+  return engineWindow.container.GetDisplayFlag();
+}
+
+bool EngineThread::GetCoverDispFlagU(DispFlags flg) {
+  return engineWindow.container.GetCoverDispFlagU(flg);
+}
+
+void EngineThread::SetCoverDispFlagU(DispFlags flg, bool val) {
+  return engineWindow.container.SetCoverDispFlagU(flg, val);
+}
+
+bool EngineThread::IsWholeLibrary() {
+  return engineWindow.container.coverIsWholeLibrary();
+}
+
+//serves playlist callback engine thread parent
+bool EngineThread::IsSourcePlaylistOn(t_size playlist, PlSrcFilter mode) {
+  return engineWindow.container.IsSourcePlaylistOn(playlist, mode);
+}
+
+void EngineThread::GetState(src_state& srcstate, bool init) {
+  return engineWindow.container.GetState(srcstate, init);
+}
+
+void EngineThread::GetPlaylistSource(pfc::string& out, bool activesource, bool bguid) {
+  if (activesource) {
+    if (bguid) {
+      out = engineWindow.container.GetSourceActivePlaylistGUID();
+    } else {
+      out = engineWindow.container.GetSourceActivePlaylistName();
+    }
+  } else {
+    if (bguid) {
+      out = engineWindow.container.GetSourcePlaylistGUID();
+    } else {
+      out = engineWindow.container.GetSourcePlaylistName();
+    }
+  }
+}
+
+void EngineThread::SetPlaylistSource(pfc::string strval, bool activesource, bool bguid) {
+  if (activesource) {
+    if (bguid) {
+      engineWindow.container.SetSourceActivePlaylistGUID(strval);
+    } else {
+      engineWindow.container.SetSourceActivePlaylistName(strval);
+    }
+  } else {
+    if (bguid) {
+      engineWindow.container.SetSourcePlaylistGUID(strval);
+    } else {
+      engineWindow.container.SetSourcePlaylistName(strval);
+    }
+  }
+}
+
+//..
+
+t_size EngineThread::FindSourcePlaylist(PlSrcFilter mode) const {
+  return engineWindow.container.FindSourcePlaylist(mode);
+}
+
 void EngineThread::invalidateWindow() {
   RedrawWindow(engineWindow.hWnd, nullptr, nullptr, RDW_INVALIDATE);
+}
+
+const metadb_handle_list_ref EngineThread::getEngineWindowSelection() {
+  return engineWindow.getSelection(engineWindow.container.coverIsWholeLibrary());
 }
 
 std::unordered_set<EngineThread*> EngineThread::instances{};

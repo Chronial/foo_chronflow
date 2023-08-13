@@ -6,6 +6,9 @@
 #include "BlockingQueue.h"
 #include "style_manager.h"
 #include "utils.h"
+
+// x ui
+#include "ConfigData.h"
 // clang-format on
 
 namespace engine_messages {
@@ -55,11 +58,26 @@ class EngineThread : public play_callback_impl_base,
     sendMessage(make_unique<T>(std::forward<_Types>(_Args)...));
   };
 
+  //serves playlistcallback sendmessage
+  HWND EngineThread::GetEngineWindowWnd();
+  //
+  size_t GetDispFlags();
+  bool GetCoverDispFlagU(DispFlags flg);
+  void SetCoverDispFlagU(DispFlags flg, bool val);
+  bool IsWholeLibrary();
+  t_size FindSourcePlaylist(PlSrcFilter mode) const;
+  //serves playback callback engine thread
+  bool IsSourcePlaylistOn(t_size playlist, PlSrcFilter mode);
+  void GetState(src_state& srcstate, bool init = true);
+  void GetPlaylistSource(pfc::string& out, bool activesource, bool bguid);
+  void SetPlaylistSource(pfc::string out, bool activesource, bool bguid);
+  //..
   void invalidateWindow();
 
   void on_style_change();
 
   void on_playback_new_track(metadb_handle_ptr p_track) final;
+  // engine
   void on_items_added(metadb_handle_list_cref p_data) final;
   void on_items_removed(metadb_handle_list_cref p_data) final;
   void on_items_modified(metadb_handle_list_cref p_data) final;
@@ -73,6 +91,9 @@ class EngineThread : public play_callback_impl_base,
   /// Library version tag – only access from mainthread
   t_uint64 libraryVersion{0};
 
+ protected:
+  const metadb_handle_list_ref getEngineWindowSelection();
+
  private:
   void run();
   EngineWindow& engineWindow;
@@ -83,5 +104,6 @@ class EngineThread : public play_callback_impl_base,
 
   static std::unordered_set<EngineThread*> instances;
   friend class Engine;
+  friend class PlaybackTracer;
 };
 } // namespace
