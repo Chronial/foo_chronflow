@@ -56,6 +56,7 @@
 #define IDC_CONTROLS_EDIT_DOCU          1037
 #define IDC_COVER_ART_PNG8_ALPHA        1038
 #define IDC_DISPLAY_CONFIG              1039
+#define IDC_COVER_DISPLAY_DISPLAY_FLAG  1039
 #define IDC_DOUBLE_CLICK                1040
 #define IDC_EDIT_BEHA_HRATE             1041
 #define IDC_EMPTY_ON_MINIMIZE           1042
@@ -76,20 +77,27 @@
 #define IDC_GROUP_FOLLOW_PLAYBACK       1057
 #define IDC_HIDDEN_CUSTOM_ACTION_FLAG   1058
 #define IDC_HIDDEN_DISPLAY_CUSTOM_COVER_ART 1059
+#define IDC_HIDDEN_DISPLAY_CUSTOM_COVER_ART2 1060
+#define IDC_HIDDEN_DISPLAY_FLAG         1060
 #define IDC_HIDDEN_LOGFONT              1061
 #define IDC_HIDDEN_PANELBG_CUSTOM       1062
 #define IDC_HIDDEN_TITLE_COLOR_CUSTOM   1063
 #define IDC_HIDDEN_VSYNC_MODE           1064
+#define IDC_HIDDEN_DISPLAY_EXT_ARTFILTER_FLAG 1064
 #define IDC_IMG_LOADING                 1065
 #define IDC_IMG_LOADING_BROWSE          1066
 #define IDC_IMG_NO_COVER                1067
 #define IDC_IMG_NO_COVER_BROWSE         1068
 #define IDC_INNER_SORT                  1069
+#define IDC_EXT_VIEWER_BROWSE           1069
 #define IDC_MIDDLE_CLICK                1070
+#define IDC_EXT_VIEWER_PATH             1070
+#define IDC_HIDDEN_EXT_VIEWER_PATH      1070
 #define IDC_MULTI_SAMPLING              1071
 #define IDC_MULTI_SAMPLING_PASSES       1072
 #define IDC_PANEL_DISPLAY_COMBO_CUSTOM_COVER_ART 1073
 #define IDC_SAVED_ADD                   1074
+#define IDC_PANEL_DISPLAY_COMBO_EXT_ART_FILTER 1074
 #define IDC_SAVED_REMOVE                1075
 #define IDC_SAVED_RENAME                1076
 #define IDC_SAVED_SELECT                1077
@@ -113,6 +121,7 @@
 #define IDC_STATIC_GROUP_BEHA_RATING    1095
 #define IDC_STATIC_CUSTOM_COVER_ART     1096
 #define IDC_STATIC_SRC_PL_NAME          1097
+#define IDC_STATIC_DISPLAY_EXT_ART_FILTER 1097
 #define IDC_TABS                        1098
 #define IDC_TARGET_PL                   1099
 #define IDC_TEXTCOLOR                   1100
@@ -184,6 +193,7 @@
 #define IDC_CTX_EXTERNALVIEWER_HIDE     1160
 #define IDC_CTX_CUSTOMACTIONS_HIDE      1161
 #define IDC_STATIC_PREF_CTX_HEADER      1164
+#define IDC_STATIC_DEFAULT_NOTE         1165
 
 // Next default values for new objects
 //
@@ -192,7 +202,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        215
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1165
+#define _APS_NEXT_CONTROL_VALUE         1166
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
