@@ -1,5 +1,6 @@
 #include "MyActions.h"
 
+#include "utils.h"
 #include "ConfigData.h"
 
 using coverflow::configData;
@@ -38,7 +39,7 @@ void CustomAction::DoPlayItem(t_size p_item, t_size playlist,
   if (p_inspos == pfc_infinite) return; //nothing to do
 
   static_api_ptr_t<playlist_manager> pm;
-  t_size uiplaylist = ~0;
+  size_t uiplaylist = ~0;
   bool b_need_queue = false;
   bool b_target_not_active = false;
 

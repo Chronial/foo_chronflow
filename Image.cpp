@@ -72,8 +72,6 @@ Image Image::fromFile(const char* filename) {
   if (0 != _wfopen_s(&f, wideName, L"rb"))
     throw std::runtime_error{"Failed to open image file"};
 
-  bool hasalpha = false;
-
   int tcomp = 3;
 
   if (configData->CoverArtEnablePngAlpha) {
@@ -97,14 +95,13 @@ Image Image::fromFile(const char* filename) {
   return Image{std::move(data), width, height, tcomp>3};
 }
 
-bool findPngAlphaFromBuffer(stbi_uc* buffer, size_t len) {
-  bool bres;
+bool findPngAlphaFromBuffer(const stbi_uc* buffer, int len) {
 
   bool ispng = false;
   stbi__context s;
-  stbi__start_mem(&s, (stbi_uc*)buffer, len);
+  stbi__start_mem(&s, buffer, len);
   stbi__rewind(&s);
-  stbi__result_info ri;
+  
   stbi__png p;
   p.s = &s;
 
@@ -119,14 +116,14 @@ Image Image::fromFileBuffer(const void* buffer, size_t len) {
   int height;
   int channels_in_file;
 
-  t_size req_comp = 3;
+  int req_comp = 3;
   if (configData->CoverArtEnablePngAlpha) {
-    if (findPngAlphaFromBuffer((stbi_uc*)buffer, len))
+    if (findPngAlphaFromBuffer((stbi_uc*)buffer, static_cast<int>(len)))
       req_comp = 4;
   }
 
-  malloc_ptr data{static_cast<void*>(stbi_load_from_memory(
-      static_cast<const stbi_uc*>(buffer), len, &width, &height, &channels_in_file, req_comp))};
+  malloc_ptr data{static_cast<void*>(stbi_load_from_memory(static_cast<const stbi_uc*>(buffer), static_cast<int>(len),
+                            &width, &height, &channels_in_file, req_comp))};
   if (data == nullptr) {
     throw std::runtime_error{"Failed to load image buffer"};
   }
@@ -213,12 +210,12 @@ std::optional<UploadReadyImage> loadAlbumArt(const metadb_handle_ptr& track,
 
   auto extractor = aam->open(
     pfc::list_single_ref_t(track),
-    pfc::list_single_ref_t(configData->GetGuiArt(configData->CustomCoverFrontArt)),
+    pfc::list_single_ref_t(configData->GetGuidArt(configData->CustomCoverFrontArt)),
     abort);
 
   try {
     auto art = extractor->query(
-      configData->GetGuiArt(configData->CustomCoverFrontArt),
+      configData->GetGuidArt(configData->CustomCoverFrontArt),
       abort);
 
     Image image = Image::fromFileBuffer(art->get_ptr(), art->get_size());
@@ -252,12 +249,12 @@ std::optional<UploadReadyImage> loadAlbumArtv2(const metadb_handle_ptr& track,
   //info: race condition
 
   auto extractor = aam->open(pfc::list_single_ref_t(track),
-      pfc::list_single_ref_t(configData->GetGuiArt(configData->CustomCoverFrontArt)),
+      pfc::list_single_ref_t(configData->GetGuidArt(configData->CustomCoverFrontArt)),
                              abort);
 
   try {
     auto art =
-        extractor->query(configData->GetGuiArt(configData->CustomCoverFrontArt), abort);
+        extractor->query(configData->GetGuidArt(configData->CustomCoverFrontArt), abort);
     Image image = Image::fromFileBuffer(art->get_ptr(), art->get_size());
     IF_DEBUG(auto x = gsl::finally([&] {
                 console::out() << "ART [done] " << std::setw(6)
@@ -344,13 +341,10 @@ GLImage UploadReadyImage::upload() const {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
   GLint glInternalFormat;
-  bool debugalpha = true;
   if (configData->TextureCompression) {
-    glInternalFormat = image.alpha /*&& debugalpha*/? GL_COMPRESSED_RGBA : GL_COMPRESSED_RGB;
-    //glInternalFormat = GL_COMPRESSED_RGB;
+    glInternalFormat = image.alpha? GL_COMPRESSED_RGBA : GL_COMPRESSED_RGB;
   } else {
-    glInternalFormat = image.alpha /*&& debugalpha*/ ? GL_RGBA : GL_RGB;
-    //glInternalFormat = GL_RGB;
+    glInternalFormat = image.alpha ? GL_RGBA : GL_RGB;
   }
 
   glTexImage2D(GL_TEXTURE_2D, 0, glInternalFormat, image.width, image.height, 0, image.alpha /*&& debugalpha*/? GL_RGBA : GL_RGB,

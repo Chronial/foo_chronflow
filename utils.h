@@ -170,8 +170,9 @@ inline bool isCheckBaseVersion(const wchar_t* szVersionFile, int amajor, int ami
 
   if (revision > arevision)
     return true;
-  else if (revision > arevision)
-    return true;
+  else if (revision < arevision)
+    return false;
+
   if (build < abuild)
     return false;
 

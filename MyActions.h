@@ -90,9 +90,9 @@ static inline void ActionFlagsToArray(std::vector<std::vector<byte>>& vec,
                                       unsigned long allflags) {
   vec.resize(nblock, std::vector<byte>(nflag, 0));
   for (int itblock = 0; itblock < nblock; itblock++) {
-    uint8_t block_flag = itblock == 0 ? allflags : allflags >> (1 << (itblock + 2));
+    uint8_t block_flag = (uint8_t)(itblock == 0 ? allflags : allflags >> (1 << (itblock + 2)));
     for (int itflag = 0; itflag < nflag; itflag++) {
-      uint8_t flag_mask = 1 << itflag;
+      uint8_t flag_mask = (uint8_t)(1 << itflag);
       if ((block_flag & flag_mask) == flag_mask)
         vec[itblock][itflag] = 1;
     }
@@ -107,7 +107,7 @@ static inline unsigned long ActionFlagsCalculate(int action_block, int actionfla
   if (flagisndx)
     action_block_flag_mask = 1 << actionflag;
   else
-    action_block_flag_mask = actionflag;
+    action_block_flag_mask = (uint8_t)actionflag;
 
   unsigned long replaceval = action_block_flag_mask;
   if (action_block > 0) {
@@ -126,7 +126,8 @@ static inline uint8_t ActionGetBlockFlag(unsigned long customflags, int abEvent)
     return 0;
 
   int block = abEvent;
-  uint8_t block_flag = block == 0 ? customflags : customflags >> (1 << (block + 2));
+  uint8_t block_flag =
+      (uint8_t)(block == 0 ? customflags : customflags >> (1 << (block + 2)));
   return block_flag;
 }
 
