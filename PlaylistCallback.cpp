@@ -1,4 +1,4 @@
-﻿#include "stdafx.h"
+#include "stdafx.h"
 
 // clang-format off
 #include "PlaylistCallback.h"
@@ -14,33 +14,45 @@ using EM = engine::Engine::Messages;
 
 void PlaylistCallback::on_item_focus_change(t_size p_playlist, t_size p_from,
                                             t_size p_to) {
-  if (!configData->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST))
-    return;
 
-  if (!configData->CoverFollowsPlaylistSelection)
+  EngineThread* et = static_cast<EngineThread*>(this);
+  bool bIsSrcOn = et->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST);
+
+  if (!bIsSrcOn) {
     return;
+  }
+
+  if (!et->GetCoverDispFlagU(DispFlags::FOLLOW_PL_SEL) && p_from != pfc_infinite) {
+    return;
+  }
 
   if (p_to != pfc_infinite) {
     src_state srcstate;
-    configData->GetState(srcstate);
-    configData->GetState(srcstate, false);
-    //track is set but focus is not
-    //srcstate.track_second.second = playlist_manager::get()->playlist_get_item_handle(p_playlist, p_to);
+    et->GetState(srcstate);
+    et->GetState(srcstate, false);
     srcstate.track_second.first = p_to;
-    static_cast<EngineThread*>(this)->send<EM::SourceChangeMessage>(srcstate);
-    static_cast<EngineThread*>(this)->send<EM::ReloadCollection>();
+    et->send<EM::SourceChangeMessage>(srcstate, (LPARAM)et->GetEngineWindowWnd());
+    et->send<EM::ReloadCollection>((LPARAM)et->GetEngineWindowWnd());
   }
-
 }
+
 void PlaylistCallback::on_items_selection_change(t_size p_playlist,
                                                  const bit_array& p_affected,
                                                  const bit_array& p_state) {
 
-  if (!configData->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST))
-    return;
+  EngineThread* ew = static_cast<EngineThread*>(this);
 
-  if (!configData->CoverFollowsPlaylistSelection)
+  bool bIsSrcOn = ew->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST);
+  bool bIsWholeLib = ew->IsWholeLibrary();
+  bool bPlaylistModeGrouped = !bIsWholeLib && !ew->GetCoverDispFlagU(DispFlags::SRC_PL_UNGROUPED);
+
+  if (!bIsSrcOn) {
     return;
+  }
+
+  if (!ew->GetCoverDispFlagU(DispFlags::FOLLOW_PL_SEL)) {
+    return;
+  }
 
   metadb_handle_list p_all;
   metadb_handle_list p_selection;
@@ -84,7 +96,7 @@ void PlaylistCallback::on_items_selection_change(t_size p_playlist,
   titleformat_object::ptr titleBuilder, keyBuilder, sortBuilder;
   pfc::stringcvt::string_wide_from_utf8_fast sortBufferWide;
 
-  if (!configData->IsPlaylistSourceModeUngrouped()) {
+  if (bPlaylistModeGrouped) {
     //grouped
     titleformat_compiler::get()->compile_safe_ex(keyBuilder, configData->Group);
     p_selection.get_item(0)->format_title(nullptr, keyBuffer, keyBuilder, nullptr);
@@ -103,7 +115,7 @@ void PlaylistCallback::on_items_selection_change(t_size p_playlist,
     sortBufferWide.convert(sortBuffer);
 
     char tmp_str[4];
-    memset(tmp_str, ' ', 3);
+    memset(&tmp_str, ' ', 3);
     tmp_str[3] = '\0';
     itoa(int(ft_myselection), tmp_str, 10);
     keyBuffer.add_string("|");
@@ -117,8 +129,8 @@ void PlaylistCallback::on_items_selection_change(t_size p_playlist,
     DBPos sel_pos;
     sel_pos.key = keyBuffer;
     sel_pos.sortKey = sortBufferWide;
-    AlbumInfo sel_albuminfo{titleBuffer, sel_pos, p_selection};
-    static_cast<EngineThread*>(this)->send<EM::MoveToAlbumMessage>(sel_albuminfo, false);
+    AlbumInfo sel_albuminfo{titleBuffer.c_str(), sel_pos, p_selection};
+    ew->send<EM::MoveToAlbumMessage>(sel_albuminfo, false);
   }
 
 };
@@ -127,12 +139,20 @@ void PlaylistCallback::on_items_added(t_size p_playlist, t_size p_start,
                                       const pfc::list_base_const_t<metadb_handle_ptr>& p_data,
                                       const bit_array& p_selection) {
 
-  if (configData->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST)) {
+  EngineThread* et = static_cast<EngineThread*>(this);
+
+  bool bIsSrcOn = et->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST);
+  bool bIsWholeLib = et->IsWholeLibrary();
+  bool bPlaylistFollowSelection = !bIsWholeLib && !et->GetCoverDispFlagU(DispFlags::FOLLOW_LIB_SEL);
+
+  if (bIsSrcOn) {
     t_size plcount = playlist_manager::get()->playlist_get_item_count(p_playlist);
-    if ((plcount == 1 && p_start == 0) || !configData->CoverFollowsPlaylistSelection) {
-      static_cast<EngineThread*>(this)->send<EM::ReloadCollection>();
+
+    if ((plcount == 1 && p_start == 0) || !bPlaylistFollowSelection) {
+      et->send<EM::ReloadCollection>((LPARAM)et->GetEngineWindowWnd());
     } else {
-      // update on next on_focus_changed()
+    //todo: rev update on next on_focus_changed() ?
+      et->send<EM::ReloadCollection>((LPARAM)et->GetEngineWindowWnd());
     }
   }
 }
@@ -142,19 +162,29 @@ void PlaylistCallback::on_items_reordered(t_size p_playlist,
                                           const t_size* p_order,
                                           t_size p_count) {
 
-  if (configData->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST)) {
-    static_cast<EngineThread*>(this)->send<EM::ReloadCollection>();
+  EngineThread* et = static_cast<EngineThread*>(this);
+
+  bool bIsSrcOn = et->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST);
+
+  if (bIsSrcOn) {
+    et->send<EM::ReloadCollection>((LPARAM)et->GetEngineWindowWnd());
   }
 }
 void PlaylistCallback::on_items_removed(t_size p_playlist, const bit_array& p_mask,
                                         t_size p_old_count, t_size p_new_count) {
 
-  if (configData->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST))
+  EngineThread* et = static_cast<EngineThread*>(this);
+
+  bool bIsSrcOn = et->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST);
+  bool bIsWholeLib = et->IsWholeLibrary();
+  bool bPlaylistFollowSelection = !bIsWholeLib && !et->GetCoverDispFlagU(DispFlags::FOLLOW_LIB_SEL);
+
+  if (bIsSrcOn)
     if (p_old_count != p_new_count) {
-      if (p_new_count == 0 || !configData->CoverFollowsPlaylistSelection) {
+      if (p_new_count == 0 || !bPlaylistFollowSelection) {
         //not following selection or
         //empty playlist will not call on_focus_changed()
-        static_cast<EngineThread*>(this)->send<EM::ReloadCollection>();
+        et->send<EM::ReloadCollection>((LPARAM)et->GetEngineWindowWnd());
       } else {
         //update on next on_focus_changed()
       }
@@ -186,39 +216,66 @@ void PlaylistCallback::on_playlist_activate(t_size p_old, t_size p_new) {
     // undefined or normal playlist activation, p_new <> p_old, both p_new and p_old
     // defined
 
-    if (configData->SourceActivePlaylist) {
-      //will only get focus item from callback thread
-      configData->GetState(srcstate);
-      static_api_ptr_t<playlist_manager> pm;
+    if (bIsPlaylistSource) {
+      bool bIsSrcOn = et->IsSourcePlaylistOn(p_new, PlSrcFilter::PLAYLIST);
+      if (bIsSrcOn) {
+        //should we be here, on init?
+        auto targetAlbum = et->sendSync<EM::GetTargetAlbum>().get();
+        if (!targetAlbum) {
+          brefresh = true;
+        }
+      }
+    }
+    else if (bIsActivePlaylistSource) {
+      static_api_ptr_t<playlist_manager_v5> pm;
+      et->GetState(srcstate);
       pfc::string8 playlistname;
       pm->playlist_get_name(p_new, playlistname);
-      configData->SourceActivePlaylistName = playlistname;
-      configData->GetState(srcstate, false);
+      GUID guid_playlist = pm->playlist_get_guid(p_new);
+      et->SetPlaylistSource(playlistname, bIsActivePlaylistSource, false);
+      et->SetPlaylistSource(pfc::print_guid(guid_playlist), bIsActivePlaylistSource, true);
+      et->GetState(srcstate, true);
       brefresh = true;
     }
   }
   if (brefresh) {
-    if (configData->CoverFollowsPlaylistSelection)
-      static_cast<EngineThread*>(this)->send<EM::SourceChangeMessage>(srcstate);
-    static_cast<EngineThread*>(this)->send<EM::ReloadCollection>();
+    if (bPlaylistFollowSelection) {
+      et->send<EM::SourceChangeMessage>(srcstate, (LPARAM)et->GetEngineWindowWnd());
+    }
+    et->send<EM::ReloadCollection>((LPARAM)et->GetEngineWindowWnd());
   }
 }
 void PlaylistCallback::on_playlist_renamed(t_size p_index, const char* p_new_name,
                                            t_size p_new_name_len) {
-  if (!configData->IsWholeLibrary()) {
-    static_api_ptr_t<playlist_manager> pm;
-    pfc::string8 playlistname;
-    if (configData->SourceActivePlaylist)
-      playlistname = configData->SourceActivePlaylistName;
-    else
-      playlistname = configData->SourcePlaylistName;
 
-    t_size playlist = pm->find_playlist(playlistname, playlistname.get_length());
+  EngineThread* et = static_cast<EngineThread*>(this);
+
+  bool bIsWholeLib = et->IsWholeLibrary();
+  bool bIsActivePlaylistSource = et->GetCoverDispFlagU(DispFlags::SRC_ACTPLAYLIST);
+  //todo: tidy up
+  pfc::string8 coverSourcePlaylistName;
+  et->GetPlaylistSource(coverSourcePlaylistName, false, false);
+  pfc::string8 buffer;
+  et->GetPlaylistSource(buffer, false, true);
+  GUID guid_coverSourcePlaylist;
+  guid_coverSourcePlaylist = pfc::GUID_from_text(buffer);
+  pfc::string8 coverSourceActivePlaylistName;
+  et->GetPlaylistSource(buffer, true, false);
+  et->GetPlaylistSource(buffer, true, true);
+  GUID guid_coverSourceActivePlaylist;
+  guid_coverSourceActivePlaylist = pfc::GUID_from_text(buffer);
+
+  if (!bIsWholeLib) {
+    static_api_ptr_t<playlist_manager_v5> pm;
+    pfc::string8 srcPlaylistName;
+    et->GetPlaylistSource(srcPlaylistName, bIsActivePlaylistSource, false);
+    
+    t_size playlist = pm->find_playlist(srcPlaylistName, srcPlaylistName.get_length());
+
     if (playlist == ~0) {
-      if (configData->SourceActivePlaylist)
-        configData->SourceActivePlaylistName = p_new_name;
-      else
-        configData->SourcePlaylistName = p_new_name;
+      GUID guid_playlist = pm->playlist_get_guid(p_index);
+      et->SetPlaylistSource(p_new_name, bIsActivePlaylistSource, false);
+      et->SetPlaylistSource(pfc::print_guid(guid_playlist), bIsActivePlaylistSource, true);
     }
   }
 }
@@ -227,8 +284,10 @@ void PlaylistCallback::on_playlists_removed(const bit_array& p_mask, t_size p_ol
   if (!configData->IsWholeLibrary())
     // manage state with no available playlist
     // other deletions are processed by on_playlist_activate(...)
-    if (p_new_count == 0)
-      static_cast<EngineThread*>(this)->send<EM::ReloadCollection>();
+    if (p_new_count == 0 /*|| bIsDeletingSrcOn*/) {
+      et->send<EM::ReloadCollection>((LPARAM)et->GetEngineWindowWnd());
+    }
+  }
 }
 
 }  // namespace engine
