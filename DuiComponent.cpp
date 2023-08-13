@@ -3,6 +3,7 @@
 
 #include "ContainerWindow.h"
 #include "style_manager.h"
+#include "ConfigData.h"
 
 namespace {
 
@@ -54,19 +55,28 @@ class dui_chronflow : public ui_element_instance {
     return "Displays a 3D rendering of the Album Art in your Media Library";
   }
 
-  virtual void notify(const GUID& p_what, t_size p_param1, const void* p_param2,
-                      t_size p_param2size) {
+  virtual void notify(const GUID& p_what, t_size p_param1, const void* p_param2, t_size p_param2size) override {
     if (p_what == ui_element_notify_colors_changed ||
         p_what == ui_element_notify_font_changed) {
       style_manager.onChange();
     }
   }
 
-  GUID get_guid() final { return guid_dui_foo_chronflow; }
-  GUID get_subclass() final { return element_subclass; }
+  GUID get_guid() override { return guid_dui_foo_chronflow; }
+  GUID get_subclass() override { return element_subclass; }
 
-  void set_configuration(ui_element_config::ptr config) final { this->config = config; }
-  ui_element_config::ptr get_configuration() final { return config; }
+  // TODO: broken callback (temp fix calling from constructor instead)
+  // host to dlg
+  void set_configuration(ui_element_config::ptr data) override {
+   ::ui_element_config_parser in(data);
+   window.set_uicfg(&in, data->get_data_size() , fb2k::noAbort);
+  }
+  // dlg to host
+  ui_element_config::ptr get_configuration() override final {
+    ui_element_config_builder out;
+    window.get_uicfg(&out, fb2k::noAbort);
+    return out.finish(get_guid());
+  }
 };
 
 class UiElement : public ui_element {

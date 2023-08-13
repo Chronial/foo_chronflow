@@ -114,6 +114,21 @@ class cui_chronflow : public ui_extension::window {
     m_host.release();
   }
 
+  void set_config(stream_reader* p_reader, t_size p_size,
+                  abort_callback& p_abort) override {
+
+    stream_reader_formatter<false> reader(*p_reader, p_abort);
+    window->set_uicfg(&reader, p_size, p_abort);
+
+  };
+
+  void get_config(stream_writer* p_writer, abort_callback& p_abort) const override {
+
+    stream_writer_formatter<false> writer(*p_writer, p_abort);
+    window->get_uicfg(&writer, p_abort);
+
+  };
+
   HWND get_wnd() const final { return window->getHWND(); }
   const bool get_is_single_instance() const final { return true; }
 };
