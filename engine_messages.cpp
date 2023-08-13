@@ -385,11 +385,6 @@ void EM::SourceChangeMessage::run(Engine& e, src_state srcstate, LPARAM lphWnd) 
           bskip = true;
           sortgroup = "";
           secondpos = 0;
-          //group = configData->Group;
-          //sort = configData->Sort;
-          //sortgroup = configData->SortGroup;
-          //newtarget = srcstate.track_first.second;
-          //secondpos = srcstate.track_second.first;
         } else {
           // ungrouped playlist to ungrouped playlist
           DBUngroupedParams plparams;

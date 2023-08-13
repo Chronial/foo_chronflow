@@ -1,6 +1,6 @@
-﻿#pragma once
+#pragma once
 
-static const char* docuconfig =
+static const char* docuconfig = 
 R"us5lhvaf(-- Reload & Now Playing --
 
 F5 - Reload collection
@@ -19,7 +19,7 @@ Search fields are determined by the Album Title format (Display Tab)
 
 -- Playlist Covers --
 
-F4 - Group/Ungroup album content
+F4 - Group/Ungroup cover content
 F8 - Set current playlist as source
 F9 - Toggle Playlist Covers on/off
 F10 - Toggle Active Playlist Covers on/off
@@ -29,8 +29,28 @@ F10 - Toggle Active Playlist Covers on/off
 Control + 0: Restore default configuration
 Control + 1..9: Activate configuration
 
--- Legacy External Viewer --
+-- ImageGlass as Image Viewer --
 
-This option enables PhotoViewer as the external art viewer.
+When enabled the 'Open Image Viewer' context menu command
+will be replaced by 'Open ImageGlass Viewer'.
+
+If disabled:
+
+  - fb2k image viewer will open embedded pictures.
+  - the environment default image viewer will open bitmap files.
+
+When enabled, ImageGlass will open the album/track location.
+
+Some useful ImageGlass shortcuts:
+
+Window fit: F9
+Full screen: F11
+Start slideshow: F12
+
+Num 1: Auto zoom
+Num 2: Lock zoom
+Num 5: Scale to fit
+
+
 
 )us5lhvaf";

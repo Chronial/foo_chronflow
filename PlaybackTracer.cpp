@@ -33,6 +33,6 @@ void PlaybackTracer::moveToNowPlaying(HWND wnd) {
 void PlaybackTracer::onPlaybackNewTrack(metadb_handle_ptr /*p_track*/) {
   if (!configData->CoverFollowsPlayback || delayTimer.has_value())
     return;
-  moveToNowPlaying();
+  moveToNowPlaying(NULL);
 }
 } // namespace

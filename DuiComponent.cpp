@@ -39,16 +39,30 @@ static const GUID guid_dui_foo_chronflow = {
 static const GUID element_subclass = ui_element_subclass_media_library_viewers;
 
 class dui_chronflow : public ui_element_instance {
-  ui_element_config::ptr config;
+
+  const ui_element_config::ptr config;
+  uint32_t coverArt = 0;
   DuiStyleManager style_manager;
   ContainerWindow window;
 
  public:
+
   dui_chronflow(HWND parent, ui_element_config::ptr config,
                 ui_element_instance_callback_ptr p_callback)
-      : config(std::move(config)), style_manager(p_callback),
-        window(parent, style_manager, p_callback) {}
-  HWND get_wnd() final { return window.getHWND(); };
+      : config(config.get_ptr()), style_manager(p_callback),
+        window(parent, style_manager, p_callback) {
+
+    // host to dlg
+    set_configuration(config);
+  }
+
+  ~dui_chronflow(){
+
+  }
+
+  HWND get_wnd() override {
+    return window.getHWND();
+  };
 
   static void g_get_name(pfc::string_base& out) { out = component_NAME; }
   static const char* g_get_description() {

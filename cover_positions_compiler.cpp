@@ -62,9 +62,9 @@ public:
     } catch (_com_error& e) {
       rethrow_error(e);
     } catch (...) {
-      std::exception e("Other JScript exception");
+      std::exception e("JScript.dll exception");
       throw(e);
-    }
+    } 
   };
 
 public:
@@ -154,8 +154,8 @@ private:
 } // namespace
 
 bool checkScriptControl() {
-    BSTR bsScript = ::SysAllocString(L"var somevar = 1");
-    CScriptObject sobj(bsScript);
+  BSTR bsScript = ::SysAllocString(L"var checkScriptControl = 1");
+    CScriptObject checkobj(bsScript);
     ::SysFreeString(bsScript);
   return true;
 }

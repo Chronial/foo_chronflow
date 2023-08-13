@@ -397,13 +397,13 @@ class BehaviourTab : public ConfigTab {
           // fix combo dropped width
           HWND combo = GetDlgItem(hWnd, action_block_combo[it]);
           LRESULT width = SendMessage(combo, CB_GETDROPPEDWIDTH, 999, 999);
-          SendMessage(combo, CB_SETDROPPEDWIDTH, width * 1.5, 0);
+          SendMessage(combo, CB_SETDROPPEDWIDTH, static_cast<WPARAM>(width * 1.5), 0);
         }
         // ... combobox: fill list add/insert/replace
         for (int it = 0; it < nblock; it++)
           loadActionAddReplaceList(action_add_replace_combo[it], "" /*blocklist[it]*/);
 
-        unsigned long currentFlags = std::stoull(
+        unsigned long currentFlags = std::stoul(
             uGetDlgItemText(hWnd, IDC_HIDDEN_CUSTOM_ACTION_FLAG).c_str(), nullptr, 0);
 
         // ... checkboxes: check/uncheck action flags
@@ -441,11 +441,11 @@ class BehaviourTab : public ConfigTab {
           buttonClicked(LOWORD(wParam));
 
           const int flagType = (int)getCheckboxFlagType(LOWORD(wParam));
-          if (flagType >= action_flags_checkbox[0].flag) {  // ACT_PLAY is the lowest value flag
+          if (flagType >= static_cast<int>(action_flags_checkbox[0].flag)) {  // ACT_PLAY is the lowest value flag
 
             const int action_block = getCheckboxFlagBlock(LOWORD(wParam));
 
-            const unsigned long currentFlags = std::stoull(
+            const unsigned long currentFlags = std::stoul(
                 uGetDlgItemText(hWnd, IDC_HIDDEN_CUSTOM_ACTION_FLAG).c_str(), nullptr, 0);
 
             const bool benable = (uButton_GetCheck(hWnd, LOWORD(wParam)));
@@ -462,7 +462,7 @@ class BehaviourTab : public ConfigTab {
 
           // check if an action selection combobox triggered the event
 
-          if (const int block = isActionComboBox(LOWORD(wParam)); block > -1) {
+          if (const int accBlock = isActionComboBox(LOWORD(wParam)); accBlock > -1) {
             // selection change on custom action combobox
             listSelChanged(LOWORD(wParam));
             pfc::string8 selected;
@@ -479,7 +479,7 @@ class BehaviourTab : public ConfigTab {
             for (int itflag = 0; itflag < ncheckboxflag; itflag++) {
               bool bshow = bcustomaction;
               UINT idcontrol =
-                  action_flags_checkbox[block * ncheckboxflag + itflag].chkID;
+                  action_flags_checkbox[accBlock * ncheckboxflag + itflag].chkID;
               //disable activate playlist checkbox is not fb2k >= v1.6.4
               if ((idcontrol == IDC_CHECK_BEHA_ACTFLAG_D_SET ||
                    idcontrol == IDC_CHECK_BEHA_ACTFLAG_M_SET ||
@@ -492,7 +492,7 @@ class BehaviourTab : public ConfigTab {
             }
             // update flag combobox: enabled/disabled state for custom
 
-            UINT idcontrol = action_add_replace_combo[block];
+            UINT idcontrol = action_add_replace_combo[accBlock];
             HWND hwndControl = uGetDlgItem(hWnd, idcontrol);
             FlagHide(hwndControl, bcustomaction);
 
@@ -500,25 +500,21 @@ class BehaviourTab : public ConfigTab {
 
             // check if an add/replace selection combobox triggered the event
 
-            if (int block = isAddReplaceComboBox(LOWORD(wParam)); block != -1) {
+            if (int repBlock = isAddReplaceComboBox(LOWORD(wParam)); repBlock != -1) {
               LRESULT itemId = uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETCURSEL, 0, 0);
               if (itemId == CB_ERR) {
                 return FALSE;
               }
-              LRESULT val =
-                  uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETITEMDATA, itemId, 0);
+              LRESULT val = uSendDlgItemMessage(hWnd, LOWORD(wParam), CB_GETITEMDATA, itemId, 0);
 
-              unsigned long updatedflags = std::stoull(
+              unsigned long updatedflags = std::stoul(
                   uGetDlgItemText(hWnd, IDC_HIDDEN_CUSTOM_ACTION_FLAG).c_str(), nullptr,
                   0);
-              updatedflags = ActionFlagsCalculate(
-                  block, ACT_ADD, false, updatedflags, (val & ACT_ADD) == ACT_ADD);
-              updatedflags = ActionFlagsCalculate(block, ACT_INSERT, false, updatedflags,
-                                                  (val & ACT_INSERT) == ACT_INSERT);
+              updatedflags = ActionFlagsCalculate(repBlock, ACT_ADD, false, updatedflags, (val & ACT_ADD) == ACT_ADD);
+              updatedflags = ActionFlagsCalculate(repBlock, ACT_INSERT, false, updatedflags, (val & ACT_INSERT) == ACT_INSERT);
 
               // will trigger textchanged(...)
-              uSetDlgItemText(hWnd, IDC_HIDDEN_CUSTOM_ACTION_FLAG,
-                              std::to_string(updatedflags).data());
+              uSetDlgItemText(hWnd, IDC_HIDDEN_CUSTOM_ACTION_FLAG, std::to_string(updatedflags).data());
             }
           }
         }
