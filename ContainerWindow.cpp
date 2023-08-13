@@ -69,44 +69,54 @@ void ContainerWindow::ensureIsSet(int listposition, shared_ptr<CompiledCPInfo>& 
   try {
     // Try to compile the user's script
 
-    std::string config = configData
-                         ->CoverConfigs.at(configData->CoverConfigSel.c_str()).script;
+    std::string config = configData->CoverConfigs.at(coverConfigScript_Sel.c_str()).script;
     cInfo = compileCPScript(config.c_str());
   } catch (std::exception&) {
     // Fall back to the default script
-    cInfo = compileCPScript(builtInCoverConfigs()[defaultCoverConfig].script.c_str());
+    cInfo = compileCPScript(builtInCoverConfigs()[configData->CoverConfigSel.c_str()].script.c_str());
   }
-  using CoverConfigMap = std::map<std::string, coverflow::CoverConfig, ILessUtf8>;
-
-  int listpos = configData->GetCCPosition();
-
+  int listpos = coverConfigScript_ndx;
   configData->sessionCompiledCPInfo.set(listpos, make_shared<CompiledCPInfo>(cInfo));
 }
 
-void ContainerWindow::applyCoverConfig(bool bcompile) {
-  pfc::string8 script = configData->CoverConfigs.at(configData->CoverConfigSel.c_str()).
-                                    script.c_str();
+HWND ContainerWindow::getEngineWnd() const {
+  return engineWindow->hWnd;
+}
+
+void ContainerWindow::ApplyCoverConfig(bool bcompile, size_t ndx) {
+  pfc::string8 script;
+  if (ndx == ~0) {
+    script = configData->CoverConfigs.at(configData->CoverConfigSel.c_str()).script.c_str();
+  }
+  else {
+    auto it = configData->CoverConfigs.cbegin();
+    std::advance(it, ndx);
+    
+    script = it->second.script.c_str();
+  }
 
   try {
-    int settings_ndx = configData->GetCCPosition();
-    auto ccptr = make_shared<CompiledCPInfo>(compileCPScript(script));
-    configData->sessionCompiledCPInfo.set(settings_ndx, ccptr);
-    std::pair<int, shared_ptr<CompiledCPInfo>> cInfo = { settings_ndx, ccptr };
-    EngineThread::forEach(
-        [&cInfo](EngineThread& t) { t.send<EM::ChangeCoverPositionsMessage>(cInfo.second); });
+    int settings_ndx = coverConfigScript_ndx;
 
-  } catch (std::exception& e) {
+    CompiledCPInfo cinfo = compileCPScript(script.c_str());
+
+    auto ccptr = make_shared<CompiledCPInfo>(cinfo);
+    configData->sessionCompiledCPInfo.set(settings_ndx, ccptr);
+    std::pair<int, shared_ptr<CompiledCPInfo>> cpInfo = { settings_ndx, ccptr };
+    EngineThread::forEach(
+        [&cpInfo, hwnd = engineWindow->hWnd](EngineThread& t) { t.send<EM::ChangeCoverPositionsMessage>(cpInfo.second, (LPARAM)hwnd); });
+
+  } catch (std::exception&) {
 
   }
 }
 
 HWND ContainerWindow::createWindow(HWND parent) {
-  const wchar_t* mainwindowClassname = uT(
-      PFC_string_formatter() << AppNameInternal << " ContainerWindow");
+  LPCWSTR lpszClassName = L"foo_chronflow_mod ContainerWindow";
 
   static bool classRegistered = [&] {
     WNDCLASS wc = {0};
-    wc.lpszClassName = mainwindowClassname;
+    wc.lpszClassName = lpszClassName;
     wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC | CS_DBLCLKS | CS_NOCLOSE;
     wc.lpfnWndProc = ContainerWindow::WndProc;
     wc.cbClsExtra = 0;
@@ -126,8 +136,8 @@ HWND ContainerWindow::createWindow(HWND parent) {
     REGCLS_MULTIPLEUSE, &m_chronClassFactoryRegID);
 
   return check(CreateWindowEx(0,  // Extended Style For The Window
-                              mainwindowClassname,  // Class Name
-                              uT(PFC_string_formatter() << AppNameInternal << " container"), //  Title
+                              lpszClassName,  // Class Name
+                              L"foo_chronflow_mod container", //  Title
                               WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,  // Style
                               CW_USEDEFAULT, CW_USEDEFAULT,  // Window Position
                               CW_USEDEFAULT, CW_USEDEFAULT,  // Window Dimensions
@@ -137,7 +147,10 @@ HWND ContainerWindow::createWindow(HWND parent) {
 
 ContainerWindow::~ContainerWindow() {
 
-  HRESULT hresdbg = CoRevokeClassObject(m_chronClassFactoryRegID);
+  HRESULT hres = CoRevokeClassObject(m_chronClassFactoryRegID);
+  if (!SUCCEEDED(hres)) {
+    FB2K_console_formatter() << AppNameInternal << " failed to revoke IChronControl factory.\n";
+  }
 
   if (hwnd)
     DestroyWindow(hwnd);
@@ -248,4 +261,95 @@ void ContainerWindow::destroyEngineWindow(std::string errorMessage) {
   FB2K_console_formatter() << AppNameInternal << " encountered an error:\n"
                            << errorMessage.c_str();
 }
+
+//x ui ------------------
+//host to dlg
+
+void ContainerWindow::set_uicfg(stream_reader_formatter<>* data, t_size p_size, abort_callback & p_abort) {
+
+  //todo: coverArt
+  bool berror = true;
+  uint32_t dummy_coverArt = 0;
+
+  uint32_t version, disp_info_index, display_flag, reserved_flag;
+  pfc::string8 pl_guid, pl_act_guid, plname, actplname, str_reserved1, str_reserved2;
+
+  version = disp_info_index = display_flag = reserved_flag = 0;
+
+  if (p_size) {
+    try {
+
+        *data >> version;
+        *data >> disp_info_index;
+        *data >> dummy_coverArt;
+        *data >> display_flag;
+        *data >> reserved_flag;
+
+        *data >> pl_guid;
+        *data >> plname;
+        *data >> pl_act_guid;
+        *data >> actplname;
+
+        *data >> str_reserved1;
+        *data >> str_reserved2;
+
+        berror = false;
+    }
+    catch (exception_io_data_truncation e) {
+      FB2K_console_formatter() << "Coverflow failed to parse configuration: " << e.what();
+    } catch (exception_io_data e) {
+      FB2K_console_formatter() << "Coverflow failed to parse configuration" << e.what();
+    }
+  }
+
+
+  if (berror || !p_size)
+  {
+    ResetCoverDisp();
+  }
+  else {
+
+    size_t sz_disp_info_ndx = static_cast<size_t>(disp_info_index);
+
+    SetDisplayFlag(display_flag);
+
+    if (sz_disp_info_ndx < coverflow::configData->CoverConfigs.size()
+      /*sz_disp_info_ndx != ~0 && sz_disp_info_ndx != window.GetCoverConfigNdx()*/) {
+      SetCoverConfigNdx(sz_disp_info_ndx);
+      auto it = configData->CoverConfigs.begin();
+      std::advance(it, sz_disp_info_ndx);
+    
+      coverConfigScript_Sel = it->first.c_str();
+
+      ApplyCoverConfig(false, sz_disp_info_ndx);
+    }
+
+    SetSourcePlaylistGUID(pl_guid);
+    SetSourceActivePlaylistGUID(pl_act_guid);
+    SetSourcePlaylistName(plname);
+    SetSourceActivePlaylistName(actplname);
+  }
+
+}
+
+//dlg to host
+void ContainerWindow::get_uicfg(stream_writer_formatter<>* out, abort_callback & p_abort) const {
+
+  *out << 1; //version
+
+  *out << static_cast<uint32_t>(GetConstCoverConfigNdx());  // dispinfo index
+  *out << static_cast<uint32_t>(0);                         // todo: coverArt;
+  *out << static_cast<uint32_t>(GetDisplayFlag());          // display flag
+  *out << static_cast<uint32_t>(0);                         // reserved flag
+
+  *out << GetSourcePlaylistGUID();
+  *out << GetSourcePlaylistName();
+  *out << GetSourceActivePlaylistGUID();
+  *out << GetSourceActivePlaylistName();
+
+  pfc::string8 str_rsv = "reserved";
+  *out << str_rsv; //str_reserved1;
+  *out << str_rsv; //str_reserved2;
+}
+
 } // namespace engine
