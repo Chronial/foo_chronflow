@@ -335,6 +335,10 @@ bool PngAlphaEnabled(engine::Engine& engine) {
   return engine.coverPos.isCoverPngAlphaEnabled() && configData->CoverArtEnablePngAlpha;
 }
 
+bool CarrouselEnabled(engine::Engine& engine) {
+  return engine.coverPos.isCarouselEnabled() && !(configData->DisplayFlag & DispFlags::DISABLE_CAROUSEL);
+}
+
 void Renderer::drawFrame() {
   TRACK_CALL_TEXT("Renderer::drawFrame");
   wasMissingTextures = false;
@@ -379,9 +383,40 @@ void Renderer::drawCovers(bool showTarget) {
     DBIter lastCover = engine.db.moveIterBy(centerCover, engine.coverPos.getLastCover());
     lastCover++;  // moveIterBy never returns the end() element
 
-    int offset = engine.db.difference(firstCover, centerCover);
+    bool bcarrousel = CarrouselEnabled(engine);
+    
+    // todo: compact
+    
+    if (bcarrousel) {
+      int offset = engine.db.difference(firstCover, centerCover);
+      for (DBIter p = firstCover; p != lastCover; ++p, ++offset) {
+        float co = -centerOffset + offset;
+        #ifdef DEBUG
 
-    for (DBIter p = firstCover; p != lastCover; ++p, ++offset) {
+        auto bcheckderef = (p.valid()&&p!=p.owner()->end())||p.unchecked();
+        auto bvalid = p.valid();
+        auto bunchecked = p.unchecked();
+
+        if (!bcheckderef) {
+          //exit
+          return;
+        }
+        #endif
+        auto tex = engine.texCache.getAlbumTexture(p->key);
+
+        if (tex == nullptr) {
+          wasMissingTextures = true;
+          tex = &engine.texCache.getLoadingTexture();
+        }
+        if (!PngAlphaEnabled(engine))
+          covers.push_back(Cover{tex, co, offset, p == targetCover});
+        else
+          covers_depth.push_back({ co, Cover{tex, co, offset, p == targetCover} });
+       }
+    }
+    else {
+      int offset = engine.db.difference(firstCover, targetCover);
+      DBIter p = targetCover;
       float co = -centerOffset + offset;
 
       auto tex = engine.texCache.getAlbumTexture(p->key);
@@ -404,76 +439,149 @@ void Renderer::drawCovers(bool showTarget) {
       std::back_inserter(covers),
       [](auto const& pair) { return pair.second; });
   }
+  bool bcarrousel = CarrouselEnabled(engine);
+  if (bcarrousel) {
+    for (Cover cover : covers) {
+      cover.tex->bind();
+      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-  for (Cover cover : covers) {
-    cover.tex->bind();
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-    if (PngAlphaEnabled(engine)) {
-      //if (/*cover.tex->getAlpha() &&*/ cover.offset < 0.5) {
+      if (PngAlphaEnabled(engine)) {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-      //}
-    }
-
-    // calculate darkening
-    float g = 1 - (std::min(1.0f, (abs(cover.offset) - 2) / 5)) * 0.5f;
-    if (abs(cover.offset) < 2)
-      g = 1;
-    glColor3f(g, g, g);
-
-    glQuad coverQuad = engine.coverPos.getCoverQuad(cover.offset, cover.tex->getAspect());
-    glPushName(SELECTION_CENTER + cover.index);
-    glBegin(GL_QUADS);
-    glFogCoordf(
-        static_cast<GLfloat>(engine.coverPos.distanceToMirror(coverQuad.topLeft)));
-    glTexCoord2f(0.0f, 0.0f);
-    glVertex3fv(coverQuad.topLeft.as_3fv());
-
-    glFogCoordf(
-        static_cast<GLfloat>(engine.coverPos.distanceToMirror(coverQuad.topRight)));
-    glTexCoord2f(1.0f, 0.0f);
-    glVertex3fv(coverQuad.topRight.as_3fv());
-
-    glFogCoordf(
-        static_cast<GLfloat>(engine.coverPos.distanceToMirror(coverQuad.bottomRight)));
-    glTexCoord2f(1.0f, 1.0f);
-    glVertex3fv(coverQuad.bottomRight.as_3fv());
-
-    glFogCoordf(
-        static_cast<GLfloat>(engine.coverPos.distanceToMirror(coverQuad.bottomLeft)));
-    glTexCoord2f(0.0f, 1.0f);
-    glVertex3fv(coverQuad.bottomLeft.as_3fv());
-    glEnd();
-    glPopName();
-
-    if (showTarget && cover.isTarget) {
-      bool clipPlane = false;
-      if (glIsEnabled(GL_CLIP_PLANE0)) {
-        glDisable(GL_CLIP_PLANE0);
-        clipPlane = true;
       }
 
-      auto color = engine.styleManager.getTitleColorF();
-      glColor3f(color[0], color[1], color[2]);
+      // calculate darkening
+      float g = 1 - (std::min(1.0f, (abs(cover.offset) - 2) / 5)) * 0.5f;
+      if (abs(cover.offset) < 2)
+        g = 1;
+      glColor3f(g, g, g);
 
-      glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-      glDisable(GL_TEXTURE_2D);
+      glQuad coverQuad = engine.coverPos.getCoverQuad(cover.offset, cover.tex->getAspect());
+      glPushName(SELECTION_CENTER + cover.index);
+      glBegin(GL_QUADS);
+      glFogCoordf(
+          static_cast<GLfloat>(engine.coverPos.distanceToMirror(coverQuad.topLeft)));
+      glTexCoord2f(0.0f, 0.0f);
+      glVertex3fv(coverQuad.topLeft.as_3fv());
 
-      glLineWidth(GLfloat(configData->HighlightWidth));
-      glPolygonOffset(-1.0f, -1.0f);
-      glEnable(GL_POLYGON_OFFSET_LINE);
+      glFogCoordf(
+          static_cast<GLfloat>(engine.coverPos.distanceToMirror(coverQuad.topRight)));
+      glTexCoord2f(1.0f, 0.0f);
+      glVertex3fv(coverQuad.topRight.as_3fv());
 
-      glEnable(GL_VERTEX_ARRAY);
-      glVertexPointer(3, GL_FLOAT, 0, static_cast<void*>(&coverQuad));
-      glDrawArrays(GL_QUADS, 0, 4);
+      glFogCoordf(
+          static_cast<GLfloat>(engine.coverPos.distanceToMirror(coverQuad.bottomRight)));
+      glTexCoord2f(1.0f, 1.0f);
+      glVertex3fv(coverQuad.bottomRight.as_3fv());
 
-      glDisable(GL_POLYGON_OFFSET_LINE);
+      glFogCoordf(
+          static_cast<GLfloat>(engine.coverPos.distanceToMirror(coverQuad.bottomLeft)));
+      glTexCoord2f(0.0f, 1.0f);
+      glVertex3fv(coverQuad.bottomLeft.as_3fv());
+      glEnd();
+      glPopName();
 
-      glEnable(GL_TEXTURE_2D);
+      if (showTarget && cover.isTarget) {
+        bool clipPlane = false;
+        if (glIsEnabled(GL_CLIP_PLANE0)) {
+          glDisable(GL_CLIP_PLANE0);
+          clipPlane = true;
+        }
 
-      if (clipPlane)
-        glEnable(GL_CLIP_PLANE0);
+        auto color = engine.styleManager.getTitleColorF();
+        glColor3f(color[0], color[1], color[2]);
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glDisable(GL_TEXTURE_2D);
+
+        glLineWidth(GLfloat(configData->HighlightWidth));
+        glPolygonOffset(-1.0f, -1.0f);
+        glEnable(GL_POLYGON_OFFSET_LINE);
+
+        glEnable(GL_VERTEX_ARRAY);
+        glVertexPointer(3, GL_FLOAT, 0, static_cast<void*>(&coverQuad));
+        glDrawArrays(GL_QUADS, 0, 4);
+
+        glDisable(GL_POLYGON_OFFSET_LINE);
+
+        glEnable(GL_TEXTURE_2D);
+
+        if (clipPlane)
+          glEnable(GL_CLIP_PLANE0);
+      }
+    }
+  }
+  else {
+    // carousel disabled
+    for (Cover cover : covers) {
+      cover.tex->bind();
+      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+      if (PngAlphaEnabled(engine)) {
+          glEnable(GL_BLEND);
+          glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      }
+
+      // calculate darkening
+
+      float g = (std::min(1.0f, (abs(0.0f) - 2) / 5)) * 0.5f;
+      if (abs(0.0f) < 2)
+        g = 1;
+      glColor3f(g, g, g);
+
+      glQuad coverQuad = engine.coverPos.getCoverQuad(0/*cover.offset*/, cover.tex->getAspect());
+      glPushName(SELECTION_CENTER + cover.index);
+      glBegin(GL_QUADS);
+      glFogCoordf(
+          static_cast<GLfloat>(engine.coverPos.distanceToMirror(coverQuad.topLeft)));
+      glTexCoord2f(0.0f, 0.0f);
+      glVertex3fv(coverQuad.topLeft.as_3fv());
+
+      glFogCoordf(
+          static_cast<GLfloat>(engine.coverPos.distanceToMirror(coverQuad.topRight)));
+      glTexCoord2f(1.0f, 0.0f);
+      glVertex3fv(coverQuad.topRight.as_3fv());
+
+      glFogCoordf(
+          static_cast<GLfloat>(engine.coverPos.distanceToMirror(coverQuad.bottomRight)));
+      glTexCoord2f(1.0f, 1.0f);
+      glVertex3fv(coverQuad.bottomRight.as_3fv());
+
+      glFogCoordf(
+          static_cast<GLfloat>(engine.coverPos.distanceToMirror(coverQuad.bottomLeft)));
+      glTexCoord2f(0.0f, 1.0f);
+      glVertex3fv(coverQuad.bottomLeft.as_3fv());
+      glEnd();
+      glPopName();
+
+      if (showTarget && cover.isTarget) {
+        bool clipPlane = false;
+        if (glIsEnabled(GL_CLIP_PLANE0)) {
+          glDisable(GL_CLIP_PLANE0);
+          clipPlane = true;
+        }
+
+        auto color = engine.styleManager.getTitleColorF();
+        glColor3f(color[0], color[1], color[2]);
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glDisable(GL_TEXTURE_2D);
+
+        glLineWidth(GLfloat(configData->HighlightWidth));
+        glPolygonOffset(-1.0f, -1.0f);
+        glEnable(GL_POLYGON_OFFSET_LINE);
+
+        glEnable(GL_VERTEX_ARRAY);
+        glVertexPointer(3, GL_FLOAT, 0, static_cast<void*>(&coverQuad));
+        glDrawArrays(GL_QUADS, 0, 4);
+
+        glDisable(GL_POLYGON_OFFSET_LINE);
+
+        glEnable(GL_TEXTURE_2D);
+
+        if (clipPlane)
+          glEnable(GL_CLIP_PLANE0);
+      }
     }
   }
 }
