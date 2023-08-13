@@ -68,16 +68,16 @@ struct Engine::Messages {
   E_MSG(DeviceModeMessage);
   E_MSG(CharEntered, WPARAM);
   E_MSG(TargetChangedMessage);
-  E_MSG(MoveToNowPlayingMessage);
-  E_MSG(ReloadCollection);
+  E_MSG(MoveToNowPlayingMessage, LPARAM); // x ui mod
+  E_MSG(ReloadCollection, LPARAM); // x ui mod
   E_MSG(CollectionReloadedMessage);
   E_MSG(WindowHideMessage);
   E_MSG(WindowShowMessage);
   E_MSG(WindowResizeMessage, int, int);
-  E_MSG(MoveTargetMessage, int, bool);
+  E_MSG(MoveTargetMessage, int, bool, LPARAM); // x ui mod
   E_MSG(MoveToAlbumMessage, AlbumInfo, bool);
-  E_MSG(MoveToCurrentTrack, metadb_handle_ptr);
-  E_MSG(ChangeCoverPositionsMessage, std::shared_ptr<CompiledCPInfo>);
+  E_MSG(MoveToCurrentTrack, metadb_handle_ptr, bool, LPARAM); // x ui mod
+  E_MSG(ChangeCoverPositionsMessage, std::shared_ptr<CompiledCPInfo>, LPARAM); //x ui mod
   E_ANSWER_MSG(GetAlbumAtCoords, std::optional<AlbumInfo>, int, int);
   E_ANSWER_MSG(GetTargetAlbum, std::optional<AlbumInfo>);
   E_ANSWER_MSG(GetTrackAlbum, std::optional<AlbumInfo>, metadb_handle_ptr);
@@ -86,8 +86,8 @@ struct Engine::Messages {
   E_MSG(LibraryItemsAdded, metadb_handle_list, t_uint64);
   E_MSG(LibraryItemsRemoved, metadb_handle_list, t_uint64);
   E_MSG(LibraryItemsModified, metadb_handle_list, t_uint64);
-  E_MSG(SourceChangeMessage, src_state);
-  E_MSG(ReloadCollectionFromList, std::shared_ptr<metadb_handle_list>);
+  E_MSG(SourceChangeMessage, src_state, LPARAM); // x ui mod
+  E_MSG(ReloadCollectionFromList, std::shared_ptr<metadb_handle_list>, LPARAM); //x ui mod
 };
 
 #undef E_MSG

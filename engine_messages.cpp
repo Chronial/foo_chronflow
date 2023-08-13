@@ -2,7 +2,12 @@
 #include "ConfigData.h"
 #include "Engine.h"
 #include "Renderer.h"
+//... imp instance ui conf
+#include "EngineWindow.h"
+//x ui element
+#include "ContainerWindow.h"
 // clang-format on
+
 
 namespace engine {
 
@@ -26,7 +31,14 @@ void EM::WindowResizeMessage::run(Engine& e, int width, int height) {
 }
 
 void EM::ChangeCoverPositionsMessage::run(Engine& e,
-                std::shared_ptr<CompiledCPInfo> cInfo) {
+                std::shared_ptr<CompiledCPInfo> cInfo, LPARAM lphWnd) {
+
+  if (!e.check_broadmsg_wnd(lphWnd)) {
+    //
+    return;
+    //
+  }
+
   e.coverPos = ScriptedCoverPositions(cInfo);
   e.renderer->setProjectionMatrix();
   e.cacheDirty = true;
@@ -59,11 +71,25 @@ void EM::Run::run(Engine& /*e*/, std::function<void()> f) {
   f();
 }
 
-void EM::MoveToNowPlayingMessage::run(Engine& e) {
-  e.playbackTracer.moveToNowPlaying();
+void EM::MoveToNowPlayingMessage::run(Engine& e, LPARAM lphWnd) {
+
+  if (!e.check_broadmsg_wnd(lphWnd)) {
+    //
+    return;
+    //
+  }
+  e.playbackTracer.moveToNowPlaying((HWND)lphWnd);
+
 }
 
-void EM::MoveTargetMessage::run(Engine& e, int moveBy, bool moveToEnd) {
+void EM::MoveTargetMessage::run(Engine& e, int moveBy, bool moveToEnd, LPARAM lphWnd) {
+
+  if (!e.check_broadmsg_wnd(lphWnd)) {
+    //
+    return;
+    //
+  }
+
   if (e.db.empty())
     return;
   e.findAsYouType.reset();
@@ -81,7 +107,56 @@ void EM::MoveTargetMessage::run(Engine& e, int moveBy, bool moveToEnd) {
   }
 }
 
-void EM::MoveToCurrentTrack::run(Engine& e, metadb_handle_ptr track) {
+//now playing (null hwnd) and selector
+void EM::MoveToCurrentTrack::run(Engine& e, metadb_handle_ptr track, bool selection, /*bool playnow_keypress,*/ LPARAM lphWnd) {
+
+  if (!e.check_broadmsg_wnd(lphWnd)) {
+    //
+    return;
+    //
+  }
+  
+  if (!selection) {
+    // now playing
+    bool bfollow_playback =
+        e.window.container.GetCoverDispFlagU(DispFlags::FOLLOW_PLAY_NOW) || (HWND)lphWnd != NULL;
+
+    if (bfollow_playback) {
+      bool bmove = false;
+      t_size tsNowPos;
+      // todo: x ui
+      if (!e.window.container.coverIsWholeLibrary()) {
+        metadb_handle_list nowSelected;
+        pfc::string8 strSourceList = e.window.container.InSourePlaylistGetName();
+        t_size tsSourceList = playlist_manager::get()->find_playlist(strSourceList);
+        if (tsSourceList == pfc_infinite) {
+          bmove = true;
+        } else {
+          bmove = playlist_manager::get()->playlist_find_item(
+              tsSourceList, track, tsNowPos);
+        }
+      } else  {
+        bmove = !configData->SourceLibrarySelectorLock;
+      }
+ 
+      if (!bmove) {
+        // EXIT
+        return;
+      }
+    } else {
+      // EXIT
+      return;
+    }
+  } else {
+    // selection
+    bool bfollow_lib_sel =
+        e.window.container.GetCoverDispFlagU(DispFlags::FOLLOW_LIB_SEL);
+    if (!bfollow_lib_sel) {
+      // EXIT
+      return;
+    }
+  }
+
   // DBIter target;
   if (auto pos = e.db.getPosForTrack(track)) {
     e.setTarget(pos.value(), false);
@@ -112,11 +187,14 @@ std::optional<AlbumInfo> EM::GetTrackAlbum::run(Engine& e, metadb_handle_ptr tra
     return std::nullopt;
 }
 
-void EM::ReloadCollection::run(Engine& e) {
-  // This will abort any already running reload worker
-//#ifdef DEBUG
-  // PFC_ASSERT(e.thread.libraryVersion<2);
-//#endif
+void EM::ReloadCollection::run(Engine& e, LPARAM lphWnd) {
+
+  if (!e.check_broadmsg_wnd(lphWnd)) {
+    //
+    return;
+    //
+  }
+
   try {
     if (e.reloadWorker) {
       e.reloadWorker.release();
@@ -151,7 +229,7 @@ void EM::PlaybackNewTrack::run(Engine& e, metadb_handle_ptr track) {
 
 void EM::LibraryItemsAdded::run(Engine& e, metadb_handle_list tracks, t_uint64 version) {
 
-  if (!configData->IsWholeLibrary() || configData->SourceLibrarySelectorLock == true)
+  if (!e.window.container.coverIsWholeLibrary() || configData->SourceLibrarySelectorLock)
     return;
 
   e.db.handleLibraryChange(version, DbAlbumCollection::items_added, std::move(tracks));
@@ -168,7 +246,8 @@ void EM::LibraryItemsRemoved::run(Engine& e, metadb_handle_list tracks,
 
 void EM::LibraryItemsModified::run(Engine& e, metadb_handle_list tracks,
                                    t_uint64 version) {
-  if (configData->SourcePlaylist || configData->SourceActivePlaylist)
+
+  if (!e.window.container.coverIsWholeLibrary())
     return;
 
   e.db.handleLibraryChange(version, DbAlbumCollection::items_modified, std::move(tracks));
@@ -188,7 +267,7 @@ bool GetKeys(metadb_handle_ptr newtarget, pfc::string_base & keyBuffer,
     pfc::string8_fast_aggressive sortBuffer;
 
     titleformat_compiler::get()->compile_safe_ex(keyBuilder, group /*configData->Group*/);
-    if (/*configData->SortGroup*/sortgroup) {
+    if (sortgroup) {
       titleformat_compiler::get()->compile_safe_ex(sortBuilder, sort/*configData->Sort*/);
       newtarget->format_title(nullptr, keyBuffer, keyBuilder, nullptr);
       if (sort.equals("NONE")) {
@@ -212,7 +291,13 @@ bool GetKeys(metadb_handle_ptr newtarget, pfc::string_base & keyBuffer,
   }
 }
 
-void EM::SourceChangeMessage::run(Engine& e, src_state srcstate) {
+void EM::SourceChangeMessage::run(Engine& e, src_state srcstate, LPARAM lphWnd) {
+
+  if (!e.check_broadmsg_wnd(lphWnd)) {
+    //
+    return;
+    //
+  }
 
   DBPos pos = e.worldState.getTarget();
   std::optional dbiter = e.db.iterFromPos(pos);
@@ -243,8 +328,7 @@ void EM::SourceChangeMessage::run(Engine& e, src_state srcstate) {
       sortgroup = "";
       secondpos = 0;
       bskip = true;
-    }
-    else {
+    } else {
       // library to playlist...
       if (srcstate.grouped.second) {
         // library to playlist grouped
@@ -264,8 +348,7 @@ void EM::SourceChangeMessage::run(Engine& e, src_state srcstate) {
         secondpos = srcstate.track_second.first;
       }
     }
-  }
-  else {
+  } else {
     //from playlist...
     if (srcstate.wholelib.second) {
       // playlist g/u to library
@@ -295,8 +378,7 @@ void EM::SourceChangeMessage::run(Engine& e, src_state srcstate) {
           newtarget = srcstate.track_first.second;
           secondpos = srcstate.track_first.first;
         }
-      }
-      else {
+      } else {
         //from ungrouped playlist...
         if (srcstate.grouped.second) {
           // from ungrouped playlist to grouped playlist
@@ -332,17 +414,18 @@ void EM::SourceChangeMessage::run(Engine& e, src_state srcstate) {
 
   if (bgetkeys) {
 
-    //e.worldState.hardSetCenteredPos(pos);
     e.worldState.setTarget(pos);
-    //configData->sessionSelectedCover.set_string(pos.key.c_str());
-
-    //ori
-    //e.worldState.setTarget(pos);
-    //e.worldState.hardSetCenteredPos(pos);
-    //e.worldState.update();
   }
 }
-void EM::ReloadCollectionFromList::run(Engine& e, std::shared_ptr<metadb_handle_list> shared_selection) {
+
+void EM::ReloadCollectionFromList::run(Engine& e, std::shared_ptr<metadb_handle_list> shared_selection, LPARAM lphWnd) {
+
+  if (!e.check_broadmsg_wnd(lphWnd)) {
+    //
+    return;
+    //
+  }
+
   // This will abort any already running reload worker
   try {
     if (e.reloadWorker) {
@@ -350,8 +433,7 @@ void EM::ReloadCollectionFromList::run(Engine& e, std::shared_ptr<metadb_handle_
     }
   } catch (std::exception) {
   }
-  t_size count = shared_selection->get_count();
-  metadb_handle_list_ref p_selection = *shared_selection;
+
   e.reloadWorker = make_unique<DbReloadWorker>(e.thread, shared_selection);
   if (!e.reloadWorker) {
     PFC_ASSERT(true);
