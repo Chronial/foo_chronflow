@@ -55,24 +55,24 @@ class CuiStyleManager : public StyleManager {
   }
 };
 
-class cui_chronflow : public ui_extension::window {
+class cui_coverflow : public ui_extension::window {
   ui_extension::window_host_ptr m_host;
   std::optional<ContainerWindow> window;
   std::optional<CuiStyleManager> style_manager;
 
  public:
-  cui_chronflow() = default;
+  cui_coverflow() = default;
 
   void get_category(pfc::string_base& out) const final { out = "Panels"; }
 
   const GUID& get_extension_guid() const final {
     // {3C880108-E9A8-454F-AB82-22B49D6BA105}
-    static const GUID guid_foo_chronflow = {
+    static const GUID guid_foo_coverflow = {
         0x3c880108, 0xe9a8, 0x454f, {0xab, 0x82, 0x22, 0xb4, 0x9d, 0x6b, 0xa1, 0x5}}; //modded
-    return guid_foo_chronflow;
+    return guid_foo_coverflow;
   }
 
-  void get_name(pfc::string_base& out) const final { out = component_NAME; }
+  void get_name(pfc::string_base& out) const final { out = COMPONENT_NAME_LABEL; }
 
   unsigned get_type() const final { return ui_extension::type_panel; }
 
@@ -130,9 +130,9 @@ class cui_chronflow : public ui_extension::window {
   };
 
   HWND get_wnd() const final { return window->getHWND(); }
-  const bool get_is_single_instance() const final { return true; }
+  const bool get_is_single_instance() const final { return false; }
 };
 
-static service_factory_single_t<cui_chronflow> cui_chronflow_instance;
+static service_factory_t<cui_coverflow> cui_coverflow_instance;
 
 } // namespace

@@ -91,6 +91,7 @@ class ContainerWindow {
     static_api_ptr_t<playlist_manager> pm;
     if (pm->playlist_get_item_count(plsource)) {
         bit_array_bittable selmask;
+        pm->playlist_get_selection_mask(plsource, selmask);
         trackpos = selmask.find_first(true, 0, selmask.size());
         if (selmask.size() > 0 && trackpos != pfc_infinite) {
           metadb_handle_list msl;
@@ -297,8 +298,8 @@ class ContainerWindow {
   HWND hwnd = nullptr;
   
   std::unique_ptr<EngineWindow> engineWindow;
-  ChronClassFactory m_chronClassFactory;
-  DWORD m_chronClassFactoryRegID = 0;
+  CoverflowClassFactory m_coverflowClassFactory;
+  DWORD m_coverflowClassFactoryRegID = 0;
 
   //x ui ------------------
   //todo:

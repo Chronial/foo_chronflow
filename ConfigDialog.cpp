@@ -222,7 +222,7 @@ BOOL ConfigDialog::OnInitDialog(CWindow wndFocus, LPARAM lInitParam) {
 }
 
 LRESULT ConfigDialog::OnNotify(int idCtrl, LPNMHDR pnmh) {
-  NMHDR& msg = *reinterpret_cast<LPNMHDR>(pnmh);
+
   HWND wndFrom = pnmh->hwndFrom;
   UINT_PTR idFrom = pnmh->idFrom;
 
@@ -247,6 +247,7 @@ LRESULT ConfigDialog::OnNotify(int idCtrl, LPNMHDR pnmh) {
                 return TRUE;
             }
           }
+
           LoadingBindings(true);
 
           m_configwindow->LoadDisableMap();

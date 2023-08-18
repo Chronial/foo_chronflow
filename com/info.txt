@@ -1,12 +1,24 @@
-Copy to plugin installation folder and run.
+Installation:
 
-example:
+- Install fb2k plugin normally.
 
-const chron = new ActiveX("chron.IChronControl);
+To use coverflow.ICoverflowControl interface from SMP:
 
-const white = 0xffffff; 
-const black = 0x000000;
+x32 bits:
 
-chron.SetPanelColor(white);
-chron.SetTextColor(black);
+- Open user profile folder > user-compenents > foo_coverflow
+- Double click coverflow32.reg to register coverflow ActiveX
 
+x64 bits:
+
+- Open user profile folder > user-components-x64 > foo_coverflow
+- Double click coverflow64.reg to register coverflow ActiveX
+
+ActiveX interface example:
+
+const cf = new ActiveXObject("coverflow.ICoverflowControl")
+
+const col1 = 0x55ffaa; 
+
+cf.SetTextColor(col1, /*skip refresh*/[0]);
+cf.SetPanelColor(RGB(200,200,200), /*refresh*/[1]);

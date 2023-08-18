@@ -6,23 +6,23 @@
 
 STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID *ppAny)
 {
-  static ChronClassFactory pFactory;
+  static CoverflowClassFactory pFactory;
   HRESULT hr;
 
   *ppAny = NULL;
 
-  if (IsEqualCLSID(rclsid, CLSID_Chron_Control)) {
+  if (IsEqualCLSID(rclsid, CLSID_Coverflow_Control)) {
 
     hr = pFactory.QueryInterface(riid, ppAny);
 
   }
   else {
-    FB2K_console_formatter() << "IChronControl COM not available";
+    FB2K_console_formatter() << "ICoverflowControl COM not available";
     hr = CLASS_E_CLASSNOTAVAILABLE;
   }
 
   if (FAILED(hr)) {
-    FB2K_console_formatter() << "IChronControl COM factory failed";
+    FB2K_console_formatter() << "ICoverflowControl COM factory failed";
     hr = CLASS_E_CLASSNOTAVAILABLE;
   }
 

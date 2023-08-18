@@ -211,10 +211,7 @@ void EngineWindow::doDragStart(const AlbumInfo& album) {
 }
 void EngineWindow::onClickOnAlbum(const AlbumInfo& album, UINT uMsg) {
   if (uMsg == WM_LBUTTONDOWN) {
-    if ((container.coverIsWholeLibrary() && container.GetCoverDispFlagU(DispFlags::SET_LIB_SEL)) ||
-        (!container.coverIsWholeLibrary() && container.GetCoverDispFlagU(DispFlags::SET_PL_SEL))) {
-      engineThread->send<EM::MoveToAlbumMessage>(album, true);
-    }
+    engineThread->send<EM::MoveToAlbumMessage>(album, true);
   }
   else if (uMsg == WM_MBUTTONDOWN) {
     if (!container.coverIsWholeLibrary()) return;
@@ -632,57 +629,91 @@ void EngineWindow::cmdShowAlbumOnExternalViewer(AlbumInfo album) {
   abort_callback_impl abort;
   try {
     bool bimgEmbedded = false;
-    std::wstring imgEmbeddedFolder; 
     auto extractor =
         aam->open(pfc::list_single_ref_t(track),
-                  pfc::list_single_ref_t(configData->GetGuidArt(configData->CenterArt)),
-                  abort);
-    try {
-      album_art_path_list::ptr qp = extractor->query_paths(
-          configData->GetGuidArt(configData->CustomCoverFrontArt), abort);
+        pfc::list_single_ref_t(configData->GetGuidArt(configData->CustomCoverFrontArt)), abort);
 
-      pfc::string8 strPicturePath = qp->get_path(0);
-      
+    album_art_path_list::ptr qp;
+
+    bool bArtwork = false;
+
+    try {
+      qp = extractor->query_paths(
+          configData->GetGuidArt(configData->CustomCoverFrontArt), abort);
+      bArtwork = true;
+    } catch (const exception_album_art_not_found&) {
+      //..
+    }
+
+    if (!(bArtwork || configData->CoverUseLegacyExternalViewer)) {
+      // exit
+      return;
+    }
+
+    pfc::string8 strPicturePath;
+
+    if (qp.get_ptr()) {
+      strPicturePath = qp->get_path(0);
+
       if (!HasImageExtension(pfc::string8(PathFindExtensionA(strPicturePath)))) {
         bimgEmbedded = true;
       }
-
-      std::filesystem::path folder(strPicturePath.c_str());
-
-      if (configData->CoverUseLegacyExternalViewer) {
-        std::wstring no_uri_folder;
-        if (bimgEmbedded) {
-          no_uri_folder = folder.parent_path();
-        } else {
-          no_uri_folder = folder.c_str();
-        }
-        imgEmbeddedFolder = (L"\"");
-        no_uri_folder.replace(no_uri_folder.find(L"file://"), sizeof("file://") - 1, L"");
-        imgEmbeddedFolder.append(no_uri_folder.c_str());
-        imgEmbeddedFolder.append(L"\"");
-
-        pfc::stringcvt::string_wide_from_utf8_fast bufferWide;
-        bufferWide.convert(configData->DisplayExtViewerPath);
-
-        ShellExecuteW(this->hWnd, L"open", bufferWide.get_ptr(),
-             imgEmbeddedFolder.c_str(), 0, SW_SHOWNORMAL);
-
-      } else {
-        //Photos or default
-        if (!bimgEmbedded) {
-          ShellExecute(hWnd, L"open", folder.c_str(), 0, 0, SW_SHOWNORMAL);
-        } else {
-          //fb2k photo viewer
-          service_ptr_t<fb2k::imageViewer> img_viewer = fb2k::imageViewer::get();
-          const GUID aaType = configData->GetGuidArt(configData->CustomCoverFrontArt);
-          img_viewer->load_and_show(hWnd, tracks, aaType, 0);
-
-        }
-      }
-    } catch (const exception_aborted&) {
-      return;
     }
-  } catch (const exception_album_art_not_found&) {
+    else {
+      strPicturePath = std::filesystem::path(track->get_path()).parent_path().string().c_str();
+    }
+
+    auto u8picPath = std::filesystem::u8path(strPicturePath.c_str());
+
+    std::wstring wprepShellFolder;
+
+    if (configData->CoverUseLegacyExternalViewer) {
+
+      if (bimgEmbedded) {
+
+        wprepShellFolder = (L"\"");
+        std::filesystem::path fspathFolder = std::filesystem::u8path(strPicturePath.c_str()).parent_path();
+        std::wstring no_uri_folder = fspathFolder.wstring();
+
+        no_uri_folder.replace(no_uri_folder.find(L"file://"), sizeof("file://") - 1, L"");
+        wprepShellFolder.append(no_uri_folder.c_str());
+        wprepShellFolder.append(L"\"");
+      } else {
+        wprepShellFolder = (L"\"");
+        std::wstring no_uri_folder = u8picPath.wstring();
+        no_uri_folder.replace(no_uri_folder.find(L"file://"), sizeof("file://") - 1, L"");
+        wprepShellFolder.append(no_uri_folder.c_str());
+        wprepShellFolder.append(L"\"");
+      }
+      pfc::stringcvt::string_wide_from_utf8_fast bufferWide;
+      bufferWide.convert(configData->DisplayExtViewerPath);
+
+      ShellExecuteW(
+          this->hWnd, L"open",
+          bufferWide.get_ptr(),
+          wprepShellFolder.c_str(),
+          0, SW_SHOWNORMAL);
+
+    }
+    else {
+      if (!bimgEmbedded) {
+        wprepShellFolder = (L"\"");
+        std::wstring no_uri_folder = u8picPath.wstring();
+        no_uri_folder.replace(no_uri_folder.find(L"file://"), sizeof("file://") - 1, L"");
+        wprepShellFolder.append(no_uri_folder.c_str());
+        wprepShellFolder.append(L"\"");
+
+        ShellExecuteW(hWnd, L"open",
+                      wprepShellFolder.c_str(), 0, 0,
+                      SW_SHOWNORMAL);
+      } else {
+        service_ptr_t<fb2k::imageViewer> img_viewer = fb2k::imageViewer::get();
+        const GUID aaType = configData->GetGuidArt(configData->CustomCoverFrontArt);
+        img_viewer->load_and_show(hWnd, tracks, aaType, 0);
+
+      }
+    }
+  } catch (const exception_aborted&) {
     return;
   }
 }
@@ -705,9 +736,11 @@ void EngineWindow::setSelection(metadb_handle_list selection, bool owner) {
   GUID selguid;
   bool isWholeLib = container.coverIsWholeLibrary();
   if (owner) {
-    selguid = isWholeLib
-                  ? contextmenu_item::caller_media_library_viewer
-                  : contextmenu_item::caller_active_playlist_selection;
+    if (isWholeLib) {
+      selguid = contextmenu_item::caller_media_library_viewer;
+    } else {
+      selguid = contextmenu_item::caller_active_playlist_selection;
+    }
   } else {
     selguid = ui_selection_manager::get()->get_selection_type();
   }
@@ -727,8 +760,7 @@ void EngineWindow::onWindowSize(int width, int height) {
 
 void EngineWindow::onScroll(double /*xoffset*/, double yoffset) {
 
-  bool bset_lib_sel = container.GetCoverDispFlagU(DispFlags::SET_LIB_SEL);
-  HWND hwndBroad = bset_lib_sel ? NULL : hWnd;
+  HWND hwndBroad = hWnd;
 
   scrollAggregator -= yoffset;
   int m = int(scrollAggregator);
@@ -880,7 +912,7 @@ void external_selection_callback::on_selection_changed(metadb_handle_list_cref p
 
   bool isWholeLib = engineWindow.container.coverIsWholeLibrary();
   bool bHLSel = engineWindow.container.GetCoverDispFlagU(DispFlags::SRC_PL_HL);
-  bool bFollowPlaylistSel = engineWindow.container.GetCoverDispFlagU(DispFlags::FOLLOW_PL_SEL);
+  bool bFollowAlbumSel = engineWindow.container.GetCoverDispFlagU(DispFlags::FOLLOW_LIB_SEL);
 
   if (engineWindow.getSelection(isWholeLib) == p_selection) {
     if (!isWholeLib && bHLSel) {
@@ -900,14 +932,13 @@ void external_selection_callback::on_selection_changed(metadb_handle_list_cref p
       gui_sel_type == contextmenu_item::caller_active_playlist_selection ||
       gui_sel_type == contextmenu_item::caller_active_playlist;
 
-  //not at function top to ease type debugging
   if (p_selection.get_count() == 0)
     return;  // do nothing
 
-  if (srcFromLibraryViewer ||  srcFromPlaylistManager ||
+  if (srcFromLibraryViewer ||  srcFromPlaylistManager || /*reborn*/
       (gui_sel_type == gui_sel_anon && configData->CoverFollowsAnonymSelection)) {
 
-    if (bFollowPlaylistSel && isWholeLib) {
+    if (bFollowAlbumSel && isWholeLib) {
       if (!engineWindow.engineThread.has_value())
         return;
 
@@ -938,7 +969,7 @@ void external_selection_callback::on_selection_changed(metadb_handle_list_cref p
       //
       //(B)    Selection on external Library Viewer without Selector or Selector Locked
 
-      if (bFollowPlaylistSel) {
+      if (bFollowAlbumSel) {
         if (configData->SourceLibrarySelector && (!configData->SourceLibrarySelectorLock)) {
           //(A)
           engineWindow.setSelection(p_selection, false);

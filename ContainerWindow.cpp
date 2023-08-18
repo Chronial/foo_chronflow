@@ -83,6 +83,10 @@ HWND ContainerWindow::getEngineWnd() const {
   return engineWindow->hWnd;
 }
 
+void ContainerWindow::SetSourceActivePlaylistGUID(pfc::string8 val) {
+  coverSourceActivePlaylistGUID = val;
+}
+
 void ContainerWindow::ApplyCoverConfig(bool bcompile, size_t ndx) {
   pfc::string8 script;
   if (ndx == ~0) {
@@ -112,7 +116,7 @@ void ContainerWindow::ApplyCoverConfig(bool bcompile, size_t ndx) {
 }
 
 HWND ContainerWindow::createWindow(HWND parent) {
-  LPCWSTR lpszClassName = L"foo_chronflow_mod ContainerWindow";
+  LPCWSTR lpszClassName = L"foo_coverflow ContainerWindow";
 
   static bool classRegistered = [&] {
     WNDCLASS wc = {0};
@@ -130,14 +134,18 @@ HWND ContainerWindow::createWindow(HWND parent) {
     return true;
   }();
 
-  CoRegisterClassObject(CLSID_Chron_Control,
-    (IClassFactory*)&m_chronClassFactory,
+  CoRegisterClassObject(CLSID_Coverflow_Control,
+    (IClassFactory*)&m_coverflowClassFactory,
     CLSCTX_LOCAL_SERVER,
-    REGCLS_MULTIPLEUSE, &m_chronClassFactoryRegID);
+    REGCLS_MULTIPLEUSE, &m_coverflowClassFactoryRegID);
+
+  if (!SUCCEEDED(hres)) {
+    FB2K_console_formatter() << AppNameInternal << " failed to register ICoverflowControl factory.\n";
+  }
 
   return check(CreateWindowEx(0,  // Extended Style For The Window
                               lpszClassName,  // Class Name
-                              L"foo_chronflow_mod container", //  Title
+                              L"foo_coverflow container", //  Title
                               WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,  // Style
                               CW_USEDEFAULT, CW_USEDEFAULT,  // Window Position
                               CW_USEDEFAULT, CW_USEDEFAULT,  // Window Dimensions
@@ -147,9 +155,9 @@ HWND ContainerWindow::createWindow(HWND parent) {
 
 ContainerWindow::~ContainerWindow() {
 
-  HRESULT hres = CoRevokeClassObject(m_chronClassFactoryRegID);
+  HRESULT hres = CoRevokeClassObject(m_coverflowClassFactoryRegID);
   if (!SUCCEEDED(hres)) {
-    FB2K_console_formatter() << AppNameInternal << " failed to revoke IChronControl factory.\n";
+    FB2K_console_formatter() << AppNameInternal << " failed to revoke ICoverflowControl factory.\n";
   }
 
   if (hwnd)

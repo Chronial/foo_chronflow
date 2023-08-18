@@ -16,6 +16,15 @@
     <Filter Include="lib">
       <UniqueIdentifier>{44371096-0fc0-45fa-8a10-a0d7034ba8f4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="doc">
+      <UniqueIdentifier>{4075d14f-2b81-40cb-b6bd-32f1db078864}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ps">
+      <UniqueIdentifier>{84e36a2b-18c7-4344-9e95-ea7aa18b2600}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ps">
+      <UniqueIdentifier>{40986f51-2dcc-40c3-bfd4-3040abd51844}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ConfigWindow.cpp">
@@ -120,13 +129,16 @@
     <ClCompile Include="ps_ui\norefreshscope.cpp">
       <Filter>Source Files\ps</Filter>
     </ClCompile>
-    <ClCompile Include="ConfigDialogDisplay.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="cover_positions_compiler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="cover_positions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="COM_ClassFactory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="COM_ICoverflowControl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -308,6 +320,24 @@
     <ClInclude Include="version.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="yesno_dialog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="COM_Guid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="COM_ClassFactory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="COM_GetClassObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="COM_Module.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="COM_ICoverflowControl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="images\cover-loading.jpg">
@@ -319,12 +349,42 @@
     <Image Include="images\spinner.png">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="images\cover-no-img-dark.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="images\cover-loading-dark.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="images\png1.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="images\cover-loading-png-trans-cross.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="images\cover-no-img-png-trans-n.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="bitmap1.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="images\cover-loading-png.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\..\..\..\images\cover-loading-png.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="images\cover-no-img-png.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\..\..\..\images\cover-loading-png.png">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
-    <ResourceCompile Include="foo_chronflow_ver.rc">
+    <ResourceCompile Include="foo_coverflow_ver.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
@@ -333,5 +393,24 @@
     <None Include="CoverPositionsCompile.py" />
     <None Include=".clang-format" />
     <None Include=".clang-tidy" />
+    <None Include="..\columns_ui-sdk\columns_ui-sdk.vcxproj" />
+    <None Include="..\SDK\foobar2000_SDK.vcxproj" />
+    <None Include="cover_lo.bin">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="cover_no.bin">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="jpg1.bin">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="jpg2.bin">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Midl Include="COM_ICoverflowControl.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
   </ItemGroup>
 </Project>

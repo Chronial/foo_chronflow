@@ -1,6 +1,6 @@
 #pragma once
-static const char * const component_NAME = "Coverflow_mod";
-static const char * const component_DLL = "foo_chronflow_mod.dll"; //is_installed_correctly()
+static const char * const component_NAME = "Coverflow";
+static const char * const component_DLL = "foo_coverflow.dll"; //is_installed_correctly()
 static const char * const component_PREF_VER = "6";
 // {01D62223-5500-4518-8052-8E7FB1A21C0E}
 static const GUID guid_config_dialog = {

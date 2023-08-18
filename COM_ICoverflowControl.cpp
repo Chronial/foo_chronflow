@@ -6,7 +6,7 @@
 #include "COM_Guid.h"
 
 #include "COM_ClassFactory.h"
-#include "COM_IChronControl.h"
+#include "COM_ICoverflowControl.h"
 
 #include "ConfigData.h"
 #include "EngineThread.h"
@@ -14,7 +14,7 @@
 
 using EM = engine_messages::Engine::Messages;
 
-IChronControl::IChronControl() {
+ICoverflowControl::ICoverflowControl() {
 
   ITypeLib* pTypeLib = nullptr;
   m_pTypeInfo = nullptr;
@@ -34,14 +34,14 @@ IChronControl::IChronControl() {
 
   try {
     os_src = std::filesystem::u8path(path.c_str());
-    os_src.append("foo_chronflow.tlb");
+    os_src.append("foo_coverflow.tlb");
 
     if (!std::filesystem::exists(os_src)) {
       throw;
     }
 
   } catch (...) {
-    FB2K_console_formatter() << AppNameInternal << " failed to initialize chron COM object\n";
+    FB2K_console_formatter() << AppNameInternal << " failed to initialize coverflow COM object\n";
     return;
   }
 
@@ -49,7 +49,7 @@ IChronControl::IChronControl() {
 
   if SUCCEEDED (hrlib) {
 
-    pTypeLib->GetTypeInfoOfGuid(CLSID_Chron_Control, &m_pTypeInfo);
+    pTypeLib->GetTypeInfoOfGuid(CLSID_Coverflow_Control, &m_pTypeInfo);
 
     if (!m_pTypeInfo) {
       pTypeLib->GetTypeInfo(0, &m_pTypeInfo);
@@ -79,18 +79,18 @@ void LockModule(BOOL bLock) {
   }
 }
 
-IChronControl::~IChronControl()
+ICoverflowControl::~ICoverflowControl()
 {
   SafeRelease(&m_pTypeInfo);
   LockModule(FALSE);
 }
 
-STDMETHODIMP_(ULONG) IChronControl::AddRef()
+STDMETHODIMP_(ULONG) ICoverflowControl::AddRef()
 {
   return InterlockedIncrement(&m_cRef);
 }
 
-STDMETHODIMP_(ULONG) IChronControl::Release()
+STDMETHODIMP_(ULONG) ICoverflowControl::Release()
 {
   if (InterlockedDecrement(&m_cRef) == 0) {
     delete this;
@@ -99,23 +99,23 @@ STDMETHODIMP_(ULONG) IChronControl::Release()
   return m_cRef;
 }
 
-STDMETHODIMP IChronControl::QueryInterface(REFIID riid, void** ppvObject) {
+STDMETHODIMP ICoverflowControl::QueryInterface(REFIID riid, void** ppvObject) {
 #pragma warning(push)
 #pragma warning(disable : 4838)
   static const QITAB qit[] = {
-      QITABENT(IChronControl, IDispatch),
-      {0},
+      QITABENT(ICoverflowControl, IDispatch),
+      { 0 },
   };
 #pragma warning(pop)
   return QISearch(this, qit, riid, ppvObject);
 }
 
-STDMETHODIMP IChronControl::GetTypeInfoCount(UINT* pctinfo) {
+STDMETHODIMP ICoverflowControl::GetTypeInfoCount(UINT* pctinfo) {
   *pctinfo = 1;
   return S_OK;
 }
 
-STDMETHODIMP IChronControl::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo** ppTInfo) {
+STDMETHODIMP ICoverflowControl::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo** ppTInfo) {
   if (m_pTypeInfo) {
     m_pTypeInfo->AddRef();
     *ppTInfo = m_pTypeInfo;
@@ -178,7 +178,7 @@ TEmethod methodTSC[] = {
     {0, nullptr}
 };
 
-STDMETHODIMP IChronControl::GetIDsOfNames(REFIID riid, LPOLESTR* rgszNames, UINT cNames,
+STDMETHODIMP ICoverflowControl::GetIDsOfNames(REFIID riid, LPOLESTR* rgszNames, UINT cNames,
                                             LCID lcid, DISPID* rgDispId) {
   return teGetDispId(methodTSC, _countof(methodTSC), g_map, *rgszNames, rgDispId);
 }
@@ -216,7 +216,7 @@ size_t GetIntFromVariant(VARIANT* pv) {
 }
 
 VOID teVariantChangeType(__out VARIANTARG* pvargDest, __in const VARIANTARG* pvarSrc,
-                         __in VARTYPE vt) {
+                         __in VARTYPE vt) noexcept {
   VariantInit(pvargDest);
   if FAILED(VariantChangeType(pvargDest, pvarSrc, 0, vt)) {
     pvargDest->llVal = 0;
@@ -249,7 +249,7 @@ size_t BSTR_RefColor(BSTR bstr) {
   return ival;
 }
 
-STDMETHODIMP IChronControl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
+STDMETHODIMP ICoverflowControl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
                                      WORD wFlags, DISPPARAMS* pDispParams,
                                      VARIANT* pVarResult, EXCEPINFO* pExcepInfo,
                                      UINT* puArgErr) {
@@ -263,7 +263,7 @@ STDMETHODIMP IChronControl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 
   VARIANT v;
   VariantInit(&v);
-
+  
   HRESULT hr = S_OK;
 
   switch (dispIdMember) {
@@ -290,13 +290,10 @@ STDMETHODIMP IChronControl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 
                   VARIANT vrefresh;
                   VariantInit(&vrefresh);
-                  long ai = 0;
- 
-                  if (SUCCEEDED(::SafeArrayGetElement(pSafeArray, &ai, &vrefresh))) {
 
-                    size_t irefresh = GetIntFromVariant(&vrefresh);
-                    bArg = irefresh;
-                    
+                  long ai = 0;
+                  if (SUCCEEDED(::SafeArrayGetElement(pSafeArray, &ai, &vrefresh))) {
+                    bArg = static_cast<BOOL>(GetIntFromVariant(&vrefresh));
                     VariantClear(&vrefresh);
                   }
                 }
@@ -306,6 +303,7 @@ STDMETHODIMP IChronControl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
         }
       }
 
+      
       VARIANT vcolor;
       VariantInit(&vcolor);
       teVariantChangeType(&vcolor, &pDispParams->rgvarg[ndxArg], VT_BSTR);
@@ -314,7 +312,7 @@ STDMETHODIMP IChronControl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
         return DISP_E_BADPARAMCOUNT;
       }
       
-      COLORREF colref = BSTR_RefColor(vcolor.bstrVal);
+      COLORREF colref = static_cast<COLORREF>(BSTR_RefColor(vcolor.bstrVal));
       VariantClear(&vcolor);
 
       // SET TITLE COLOR
@@ -332,7 +330,7 @@ STDMETHODIMP IChronControl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 
           if (bArg) {
             t.send<EM::RedrawMessage>();
-          }
+        }
       });
             
       break;

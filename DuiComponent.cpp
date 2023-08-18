@@ -34,11 +34,11 @@ class DuiStyleManager : public StyleManager {
 };
 
 // {6D514EFE-4413-4978-94E0-3EB8D8981271}
-static const GUID guid_dui_foo_chronflow = {
+static const GUID guid_dui_foo_coverflow = {
      0x6d514efe, 0x4413, 0x4978, {0x94, 0xe0, 0x3e, 0xb8, 0xd8, 0x98, 0x12, 0x71}}; //modded
 static const GUID element_subclass = ui_element_subclass_media_library_viewers;
 
-class dui_chronflow : public ui_element_instance {
+class dui_coverflow : public ui_element_instance {
 
   const ui_element_config::ptr config;
   uint32_t coverArt = 0;
@@ -47,7 +47,7 @@ class dui_chronflow : public ui_element_instance {
 
  public:
 
-  dui_chronflow(HWND parent, ui_element_config::ptr config,
+  dui_coverflow(HWND parent, ui_element_config::ptr config,
                 ui_element_instance_callback_ptr p_callback)
       : config(config.get_ptr()), style_manager(p_callback),
         window(parent, style_manager, p_callback) {
@@ -56,8 +56,8 @@ class dui_chronflow : public ui_element_instance {
     set_configuration(config);
   }
 
-  ~dui_chronflow(){
-
+  ~dui_coverflow(){
+    //..
   }
 
   HWND get_wnd() override {
@@ -76,7 +76,7 @@ class dui_chronflow : public ui_element_instance {
     }
   }
 
-  GUID get_guid() override { return guid_dui_foo_chronflow; }
+  GUID get_guid() override { return guid_dui_foo_coverflow; }
   GUID get_subclass() override { return element_subclass; }
 
   // TODO: broken callback (temp fix calling from constructor instead)
@@ -95,25 +95,25 @@ class dui_chronflow : public ui_element_instance {
 
 class UiElement : public ui_element {
  public:
-  GUID get_guid() final { return guid_dui_foo_chronflow; }
+  GUID get_guid() final { return guid_dui_foo_coverflow; }
   GUID get_subclass() final { return element_subclass; }
-  void get_name(pfc::string_base& out) final { dui_chronflow::g_get_name(out); }
+  void get_name(pfc::string_base& out) final { dui_coverflow::g_get_name(out); }
   ui_element_instance::ptr instantiate(HWND parent, ui_element_config::ptr cfg,
                                        ui_element_instance_callback::ptr callback) final {
     PFC_ASSERT(cfg->get_guid() == get_guid());
-    service_nnptr_t<dui_chronflow> item =
-        new service_impl_t<dui_chronflow>(parent, cfg, callback);
+    service_nnptr_t<dui_coverflow> item =
+        new service_impl_t<dui_coverflow>(parent, cfg, callback);
     return item;
   }
   ui_element_config::ptr get_default_configuration() final {
-    return ui_element_config::g_create_empty(guid_dui_foo_chronflow);
+    return ui_element_config::g_create_empty(guid_dui_foo_coverflow);
   }
   ui_element_children_enumerator_ptr enumerate_children(
       ui_element_config::ptr /*cfg*/) final {
     return nullptr;
   }
   bool get_description(pfc::string_base& out) final {
-    out = dui_chronflow::g_get_description();
+    out = dui_coverflow::g_get_description();
     return true;
   }
 };

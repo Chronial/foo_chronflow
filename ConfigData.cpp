@@ -54,7 +54,6 @@ ConfigData::ConfigData()
     PanelBg(default_PanelBg),
     HighlightWidth(default_HighlightWidth),
     /******************************** Display tab v.2 ****************************/
-    CenterArt(default_CenterArt),
     CustomCoverFrontArt(default_CustomCoverFrontArt),
     CoverArtEnablePngAlpha(default_CoverArtEnablePngAlpha),
     CoverUseLegacyExternalViewer(default_CoverUseLegacyExternalViewer),
@@ -134,7 +133,6 @@ void ConfigData::Reset() {
   PanelBg = default_PanelBg;
   HighlightWidth = default_HighlightWidth;
   /******************************** Display tab v.2 ****************************/
-  CenterArt = default_CenterArt;
   CustomCoverFrontArt = default_CustomCoverFrontArt;
   CoverArtEnablePngAlpha = default_CoverArtEnablePngAlpha;
   CoverUseLegacyExternalViewer = default_CoverUseLegacyExternalViewer;

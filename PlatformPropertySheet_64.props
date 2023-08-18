@@ -2,19 +2,23 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
-    <FOO_COMPONENT_NAME>foo_chronflow_mod</FOO_COMPONENT_NAME>
+    <FOO_COMPONENT_NAME>foo_coverflow</FOO_COMPONENT_NAME>
     <FOO_USR_FILE>\$(FOO_COMPONENT_NAME)\$(FOO_COMPONENT_NAME).dll</FOO_USR_FILE>
     <FOO_USR_DIR_BETA>\profile\user-components-x64</FOO_USR_DIR_BETA>
     <FOO_WORKING_DIR_BETA>C:\fb2k\foobar2000.portablev2_64</FOO_WORKING_DIR_BETA>
     <FOO_WD>$(FOO_WORKING_DIR_BETA)</FOO_WD>
     <FOO_CMD>$(FOO_WD)\foobar2000.exe</FOO_CMD>
     <FOO_USR>$(FOO_WD)$(FOO_USR_DIR_BETA)</FOO_USR>
-    <FOO_TLB_SUBFOLDER>foo_chronflow</FOO_TLB_SUBFOLDER>
-    <FOO_TLB_NAME>foo_chronflow.tlb</FOO_TLB_NAME>
+    <FOO_TLB_SUBFOLDER>foo_coverflow</FOO_TLB_SUBFOLDER>
+    <FOO_TLB_NAME>foo_coverflow.tlb</FOO_TLB_NAME>
     <FOO_USR_TLB_FILE>\$(FOO_COMPONENT_NAME)\$(FOO_TLB_NAME)</FOO_USR_TLB_FILE>
   </PropertyGroup>
   <PropertyGroup />
-  <ItemDefinitionGroup />
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <BuildMacro Include="FOO_COMPONENT_NAME">
       <Value>$(FOO_COMPONENT_NAME)</Value>

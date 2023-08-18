@@ -52,7 +52,7 @@ using std::unique_ptr;  // NOLINT
 #include <boost/range/sub_range.hpp>
 
 // Require windows vista
-#define _WIN32_WINNT 0x600
+#define _WIN32_WINNT 0x0601
 #define WIN32_LEAN_AND_MEAN
 #define NOSERVICE
 #define NOSOUND
@@ -74,6 +74,7 @@ using std::unique_ptr;  // NOLINT
 #define NOPROFILER
 #define NODEFERWINDOWPOS
 #define NOMCX
+
 #include <windows.h>
 #include <realtimeapiset.h>
 
@@ -103,6 +104,8 @@ using std::unique_ptr;  // NOLINT
 #define APIENTRY WINAPI
 
 #include "version.h"
+
+#include "COM_module.h"
 
 // clang doesn't support stdcall lambdas
 // since we only use it for linting, we just hide those lambdas from it

@@ -1,5 +1,5 @@
 #include "COM_ClassFactory.h"
-#include "COM_IChronControl.h"
+#include "COM_ICoverflowControl.h"
 
 void LockModule(BOOL bLock)
 {
@@ -10,43 +10,43 @@ void LockModule(BOOL bLock)
   }
 }
 
-ChronClassFactory::ChronClassFactory()
+CoverflowClassFactory::CoverflowClassFactory()
 {
   m_refCount = 0;
 
   g_srvObjCount++;
 }
 
-ChronClassFactory::~ChronClassFactory()
+CoverflowClassFactory::~CoverflowClassFactory()
 {
   g_srvObjCount--;
 }
 
-STDMETHODIMP_(ULONG) ChronClassFactory::AddRef()
+STDMETHODIMP_(ULONG) CoverflowClassFactory::AddRef()
 {
   LockModule(TRUE);
   return 2;
 }
 
-STDMETHODIMP_(ULONG) ChronClassFactory::Release()
+STDMETHODIMP_(ULONG) CoverflowClassFactory::Release()
 {
   LockModule(FALSE);
   return 1;
 }
 
-STDMETHODIMP ChronClassFactory::QueryInterface(REFIID riid, LPVOID *ppAny)
+STDMETHODIMP CoverflowClassFactory::QueryInterface(REFIID riid, LPVOID *ppAny)
 {
 #pragma warning(push)
 #pragma warning(disable : 4838)
   static const QITAB qit[] = {
-      QITABENT(ChronClassFactory, IClassFactory),
+      QITABENT(CoverflowClassFactory, IClassFactory),
       {0},
   };
 #pragma warning(pop)
   return QISearch(this, qit, riid, ppAny);
 }
 
-STDMETHODIMP ChronClassFactory::CreateInstance(IUnknown* pUnkOuter, REFIID riid,
+STDMETHODIMP CoverflowClassFactory::CreateInstance(IUnknown* pUnkOuter, REFIID riid,
                                                void** ppvObj) {
   _Module.DllRegisterServer(TRUE);
 
@@ -58,7 +58,8 @@ STDMETHODIMP ChronClassFactory::CreateInstance(IUnknown* pUnkOuter, REFIID riid,
     return CLASS_E_NOAGGREGATION;
   }
 
-  IChronControl* pControl = new IChronControl();
+  ICoverflowControl* pControl = new ICoverflowControl();
+
 
   if (pControl == NULL) {
     return E_UNEXPECTED /*E_OUTOFMEMORY*/;
@@ -75,7 +76,7 @@ STDMETHODIMP ChronClassFactory::CreateInstance(IUnknown* pUnkOuter, REFIID riid,
   return hr;
 }
 
-HRESULT __stdcall ChronClassFactory::LockServer(BOOL fLock)
+HRESULT __stdcall CoverflowClassFactory::LockServer(BOOL fLock)
 {
   if (fLock)
 

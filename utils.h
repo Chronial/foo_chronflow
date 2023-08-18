@@ -8,9 +8,9 @@
 // 3. Main.cpp (VERSION) used in DECLARE_COMPONENT_VERSION()
 // 4. Resource.rc - VS_VERSION_INFO (FileVersion, InternalName, etc) used by windows file explorer (dll info)
 
-constexpr const char * const AppName = "CoverFlowMod";
-constexpr const char * const AppNameInternal = "foo_chronflow_mod";
-constexpr const char * const AppEMail = "foodayuyu@gmail.com"; //foocomp@chronial.de"
+constexpr const char * const AppName = "Coverflow";
+constexpr const char * const AppNameInternal = "foo_coverflow";
+constexpr const char * const AppEMail = "foodayuyu@gmail.com";
 
 #ifdef _DEBUG
 #define IF_DEBUG(X) X

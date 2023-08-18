@@ -112,7 +112,7 @@ __declspec(selectany) extern bool const default_PanelBgCustom = false;
 __declspec(selectany) extern unsigned long const default_PanelBg = RGB(255, 255, 255);
 __declspec(selectany) extern int const default_HighlightWidth = 0;
 /******************************** Display tab v.2 ****************************/
-__declspec(selectany) extern int const default_CenterArt = 0;
+__declspec(selectany) extern int const default_CoverArt = 0;
 __declspec(selectany) extern int const default_CustomCoverFrontArt = 0;
 __declspec(selectany) extern bool const default_CoverArtEnablePngAlpha = false;
 __declspec(selectany) extern bool const default_CoverUseLegacyExternalViewer = false;
@@ -203,7 +203,6 @@ class ConfigData : public cfg_var_legacy::cfg_var {
   int PanelBg;
   int HighlightWidth;
   /******************************** Display tab v.2 ****************************/
-  int CenterArt;
   int CustomCoverFrontArt;
   bool CoverArtEnablePngAlpha;
   bool CoverUseLegacyExternalViewer;

@@ -1,13 +1,13 @@
 import "oaidl.idl";
 import "ocidl.idl";
-[
-  //CLSID_Chron_Control
-  uuid(2543AA7C-5E5A-4F20-AC6D-04D6683ACDFA), 
-  helpstring("chronflow_mod COM interface"),
+[  
+  uuid(2543AA7C-5E5A-4F20-AC6D-04D6683ACDDA),
+  helpstring("coverflow COM interface"),
   dual
 ]
 
-interface IChronControl : IDispatch {
+interface ICoverflowControl : IDispatch {
+  typedef enum { Initialized = 0, Connected = 1 } CoverflowControlStates;
 
   [ id(0x000007d1), vararg]
   HRESULT SetPanelColor(
@@ -18,12 +18,12 @@ interface IChronControl : IDispatch {
   HRESULT SetTextColor(
                   [in] BSTR Expression,
                   [in] SAFEARRAY(VARIANT) * Parameters,
-                  [ out, retval ] VARIANT * pvarResult);
+                  [out, retval] VARIANT * pvarResult);
 };
 
-//CLSID_Chron_Library
-[version(1.0), uuid(2543AA7E-5E5A-4F20-AC6D-04D6683ACDFA), ]
-library chron
+//CLSID_Coverflow_Library
+[version(1.0), uuid(2543AA7E-5E5A-4F20-AC6D-04D6683ACDDA), ]
+library coverflow
 {
-  interface IChronControl;
+  interface ICoverflowControl;
 };

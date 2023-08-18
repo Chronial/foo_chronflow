@@ -1,4 +1,4 @@
-﻿#include "stdafx.h"
+#include "stdafx.h"
 
 // clang-format off
 #include "PlaylistCallback.h"
@@ -40,17 +40,19 @@ void PlaylistCallback::on_items_selection_change(t_size p_playlist,
                                                  const bit_array& p_affected,
                                                  const bit_array& p_state) {
 
-  EngineThread* ew = static_cast<EngineThread*>(this);
+  EngineThread* et = static_cast<EngineThread*>(this);
 
-  bool bIsSrcOn = ew->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST);
-  bool bIsWholeLib = ew->IsWholeLibrary();
-  bool bPlaylistModeGrouped = !bIsWholeLib && !ew->GetCoverDispFlagU(DispFlags::SRC_PL_UNGROUPED);
+  bool bIsSrcOn = et->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST);
+  bool bIsWholeLib = et->IsWholeLibrary();
+  bool bPlaylistModeGrouped = !bIsWholeLib && !et->GetCoverDispFlagU(DispFlags::SRC_PL_UNGROUPED);
 
+
+  //if (!configData->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST)) {
   if (!bIsSrcOn) {
     return;
   }
 
-  if (!ew->GetCoverDispFlagU(DispFlags::FOLLOW_PL_SEL)) {
+  if (!et->GetCoverDispFlagU(DispFlags::FOLLOW_PL_SEL)) {
     return;
   }
 
@@ -130,7 +132,7 @@ void PlaylistCallback::on_items_selection_change(t_size p_playlist,
     sel_pos.key = keyBuffer;
     sel_pos.sortKey = sortBufferWide;
     AlbumInfo sel_albuminfo{titleBuffer.c_str(), sel_pos, p_selection};
-    ew->send<EM::MoveToAlbumMessage>(sel_albuminfo, false);
+    et->send<EM::MoveToAlbumMessage>(sel_albuminfo, false);
   }
 
 };
@@ -143,7 +145,7 @@ void PlaylistCallback::on_items_added(t_size p_playlist, t_size p_start,
 
   bool bIsSrcOn = et->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST);
   bool bIsWholeLib = et->IsWholeLibrary();
-  bool bPlaylistFollowSelection = !bIsWholeLib && !et->GetCoverDispFlagU(DispFlags::FOLLOW_LIB_SEL);
+  bool bPlaylistFollowSelection = !bIsWholeLib && et->GetCoverDispFlagU(DispFlags::FOLLOW_PL_SEL);
 
   if (bIsSrcOn) {
     t_size plcount = playlist_manager::get()->playlist_get_item_count(p_playlist);
@@ -177,7 +179,7 @@ void PlaylistCallback::on_items_removed(t_size p_playlist, const bit_array& p_ma
 
   bool bIsSrcOn = et->IsSourcePlaylistOn(p_playlist, PlSrcFilter::ANY_PLAYLIST);
   bool bIsWholeLib = et->IsWholeLibrary();
-  bool bPlaylistFollowSelection = !bIsWholeLib && !et->GetCoverDispFlagU(DispFlags::FOLLOW_LIB_SEL);
+  bool bPlaylistFollowSelection = !bIsWholeLib && et->GetCoverDispFlagU(DispFlags::FOLLOW_PL_SEL);
 
   if (bIsSrcOn)
     if (p_old_count != p_new_count) {
@@ -198,16 +200,13 @@ void PlaylistCallback::on_playlist_activate(t_size p_old, t_size p_new) {
   bool bIsWholeLib = et->IsWholeLibrary();
   bool bIsPlaylistSource = et->GetCoverDispFlagU(DispFlags::SRC_PLAYLIST);
   bool bIsActivePlaylistSource = et->GetCoverDispFlagU(DispFlags::SRC_ACTPLAYLIST);
-  bool bPlaylistFollowSelection = !bIsWholeLib && !et->GetCoverDispFlagU(DispFlags::FOLLOW_LIB_SEL);
-  //todo: tidy up
+  bool bPlaylistFollowSelection = !bIsWholeLib && et->GetCoverDispFlagU(DispFlags::FOLLOW_PL_SEL);
   pfc::string8 coverSourcePlaylistName;
   et->GetPlaylistSource(coverSourcePlaylistName, false, false);
   pfc::string8 buffer;
   et->GetPlaylistSource(buffer, false, true);
   GUID guid_coverSourcePlaylist;
   guid_coverSourcePlaylist = pfc::GUID_from_text(buffer);
-  pfc::string8 coverSourceActivePlaylistName;
-  et->GetPlaylistSource(buffer, true, false);
   et->GetPlaylistSource(buffer, true, true);
   GUID guid_coverSourceActivePlaylist;
   guid_coverSourceActivePlaylist = pfc::GUID_from_text(buffer);
@@ -235,7 +234,7 @@ void PlaylistCallback::on_playlist_activate(t_size p_old, t_size p_new) {
         et->SetPlaylistSource(coverflow::default_SourcePlaylistName, bIsActivePlaylistSource, false);
         et->SetPlaylistSource(pfc::print_guid(def_guid), bIsActivePlaylistSource, true);
         et->SetCoverDispFlagU(DispFlags::SRC_PLAYLIST, false);
-        et->GetState(srcstate, true);
+        et->GetState(srcstate, false);
         brefresh = true;
       }
     }
@@ -244,17 +243,8 @@ void PlaylistCallback::on_playlist_activate(t_size p_old, t_size p_new) {
     // undefined or normal playlist activation, p_new <> p_old, both p_new and p_old
     // defined
 
-    if (bIsPlaylistSource) {
-      bool bIsSrcOn = et->IsSourcePlaylistOn(p_new, PlSrcFilter::PLAYLIST);
-      if (bIsSrcOn) {
-        //should we be here, on init?
-        auto targetAlbum = et->sendSync<EM::GetTargetAlbum>().get();
-        if (!targetAlbum) {
-          brefresh = true;
-        }
-      }
-    }
-    else if (bIsActivePlaylistSource) {
+    if (bIsActivePlaylistSource) {
+
       static_api_ptr_t<playlist_manager_v5> pm;
       et->GetState(srcstate);
       pfc::string8 playlistname;
@@ -262,8 +252,19 @@ void PlaylistCallback::on_playlist_activate(t_size p_old, t_size p_new) {
       GUID guid_playlist = pm->playlist_get_guid(p_new);
       et->SetPlaylistSource(playlistname, bIsActivePlaylistSource, false);
       et->SetPlaylistSource(pfc::print_guid(guid_playlist), bIsActivePlaylistSource, true);
-      et->GetState(srcstate, true);
+      et->GetState(srcstate, false);
+
       brefresh = true;
+    } else {
+      if (bIsPlaylistSource) {
+        bool bIsSrcOn = et->IsSourcePlaylistOn(p_new, PlSrcFilter::PLAYLIST);
+        if (bIsSrcOn) {
+          auto targetAlbum = et->sendSync<EM::GetTargetAlbum>().get();
+          if (!targetAlbum) {
+            brefresh = true;
+          }
+        }
+      }
     }
   }
   if (brefresh) {
@@ -287,8 +288,6 @@ void PlaylistCallback::on_playlist_renamed(t_size p_index, const char* p_new_nam
   et->GetPlaylistSource(buffer, false, true);
   GUID guid_coverSourcePlaylist;
   guid_coverSourcePlaylist = pfc::GUID_from_text(buffer);
-  pfc::string8 coverSourceActivePlaylistName;
-  et->GetPlaylistSource(buffer, true, false);
   et->GetPlaylistSource(buffer, true, true);
   GUID guid_coverSourceActivePlaylist;
   guid_coverSourceActivePlaylist = pfc::GUID_from_text(buffer);

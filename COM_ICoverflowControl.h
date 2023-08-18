@@ -1,11 +1,11 @@
 #pragma once
 
-interface IChronControl : public IDispatch {
+interface ICoverflowControl : public IDispatch {
 
 public:
 
-  IChronControl();
- ~IChronControl();
+  ICoverflowControl();
+ ~ICoverflowControl();
 
   // IUnknown
   STDMETHODIMP QueryInterface(REFIID riid, void** ppvObject);
@@ -31,7 +31,11 @@ public:
 
  private:
 
+  // atl exceptions
+  HRESULT m_hr;
+
   LONG m_cRef;
   IDispatch* m_pObject;
   ITypeInfo* m_pTypeInfo;
+
 };
