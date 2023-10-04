@@ -31,7 +31,7 @@ void EM::WindowResizeMessage::run(Engine& e, int width, int height) {
 }
 
 void EM::ChangeCoverPositionsMessage::run(Engine& e,
-                std::shared_ptr<CompiledCPInfo> cInfo, LPARAM lphWnd) {
+                std::pair<int, std::shared_ptr<CompiledCPInfo>> cppair, LPARAM lphWnd) {
 
   if (!e.check_broadmsg_wnd(lphWnd)) {
     //
@@ -39,7 +39,10 @@ void EM::ChangeCoverPositionsMessage::run(Engine& e,
     //
   }
 
-  e.coverPos = ScriptedCoverPositions(cInfo);
+  size_t config_ndx = cppair.first;
+  e.window.container.SetCoverConfigNdx(config_ndx);
+
+  e.coverPos = ScriptedCoverPositions(cppair.second);
   e.renderer->setProjectionMatrix();
   e.cacheDirty = true;
   e.thread.invalidateWindow();

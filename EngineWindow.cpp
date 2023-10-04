@@ -574,10 +574,11 @@ bool EngineWindow::cmdActivateVisualization(LPARAM lpActVis, LPARAM hwnd) {
 
     try {
       auto cfg_ptr = make_shared<CompiledCPInfo>(compileCPScript(new_cc.script.c_str()));
-      EngineThread::forEach([mod_ndx, cfg_ptr, hwnd](EngineThread& t) {
-        t.send<EM::ChangeCoverPositionsMessage>(cfg_ptr, (LPARAM)hwnd);
+      std::pair<int, std::shared_ptr<CompiledCPInfo>> cppair = std::pair(mod_ndx, cfg_ptr);
+      EngineThread::forEach([cppair, hwnd](EngineThread& t) {
+        t.send<EM::ChangeCoverPositionsMessage>(cppair, (LPARAM)hwnd);
       });
-      configData->sessionCompiledCPInfo.set(mod_ndx, cfg_ptr);
+      configData->sessionCompiledCPInfo.set(cppair.first, cfg_ptr);
     } catch (std::exception&) {
       //..
     }

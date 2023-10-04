@@ -77,7 +77,7 @@ struct Engine::Messages {
   E_MSG(MoveTargetMessage, int, bool, LPARAM); // x ui mod
   E_MSG(MoveToAlbumMessage, AlbumInfo, bool);
   E_MSG(MoveToCurrentTrack, metadb_handle_ptr, bool, LPARAM); // x ui mod
-  E_MSG(ChangeCoverPositionsMessage, std::shared_ptr<CompiledCPInfo>, LPARAM); //x ui mod
+  E_MSG(ChangeCoverPositionsMessage, std::pair<int, std::shared_ptr<CompiledCPInfo>>, LPARAM); //x ui mod
   E_ANSWER_MSG(GetAlbumAtCoords, std::optional<AlbumInfo>, int, int);
   E_ANSWER_MSG(GetTargetAlbum, std::optional<AlbumInfo>);
   E_ANSWER_MSG(GetTrackAlbum, std::optional<AlbumInfo>, metadb_handle_ptr);
