@@ -216,14 +216,14 @@ void EngineWindow::onClickOnAlbum(const AlbumInfo& album, UINT uMsg) {
   else if (uMsg == WM_MBUTTONDOWN) {
     if (!container.coverIsWholeLibrary()) return;
     executeAction(configData->MiddleClick, album, this->hWnd,
-    ActionGetBlockFlag(configData->CustomActionFlag, AB_MIDDLECLICK));
+        ActionGetBlockFlag(configData->CustomActionFlag, AB_MIDDLECLICK));
   }
   else if (uMsg == WM_LBUTTONDBLCLK) {
     if (!container.coverIsWholeLibrary()) {
       cmdPlaylistSourcePlay(album);
     } else {
       executeAction(configData->DoubleClick, album, this->hWnd,
-      ActionGetBlockFlag(configData->CustomActionFlag, AB_DOUBLECLICK));
+          ActionGetBlockFlag(configData->CustomActionFlag, AB_DOUBLECLICK));
     }
   }
 }

@@ -415,6 +415,13 @@ void executeAction(const char* action, const ::db::AlbumInfo& album, HWND hwnd,
   }
   GUID commandGuid;
   if (menu_helpers::find_command_by_name(action, commandGuid)) {
-    menu_helpers::run_command_context(commandGuid, pfc::guid_null, album.tracks);
+    const bool bsingle_item_cmd = !stricmp_utf8(action, "Play");
+    if (bsingle_item_cmd) {
+      metadb_handle_list mhl_first_item;
+      mhl_first_item.add_item(album.tracks.begin()->get_ptr());
+      menu_helpers::run_command_context(commandGuid, pfc::guid_null, mhl_first_item);
+    } else {
+      menu_helpers::run_command_context(commandGuid, pfc::guid_null, album.tracks);
+    }
   }
 }
